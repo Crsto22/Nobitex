@@ -1,26 +1,375 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
+  --color-primary: #101d69;
+  --color-secondary: #fd741a;
+  --color-background: #ffffff;
+  --color-text: #1f1f23;
+  --color-sidebar-bg: #f4f4f4;
+  --color-sidebar-text: #1f1f23;
+  --color-sidebar-hover: #ececeb;
+  --color-sidebar-active: #11253a;
+  --color-header-bg: #ffffff;
+  --color-card: #ffffff;
+  --color-input-bg: #f6f6f7;
+  --color-input-text: #404047;
+  --color-placeholder: #b2b2b9;
+  --color-button-hover: #f4f4f4;
+  --font-primary: var(--font-raleway), sans-serif;
+  --font-heading-primary: var(--font-circular-x-sub), sans-serif;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #101d69;
+  --card: #ffffff;
+  --card-foreground: #101d69;
+  --popover: #ffffff;
+  --popover-foreground: #101d69;
+  --primary: #101d69;
+  --primary-foreground: #ffffff;
+  --secondary: #fd741a;
+  --secondary-foreground: #ffffff;
+  --muted: #eff2ff;
+  --muted-foreground: #4a578f;
+  --accent: #fff2e8;
+  --accent-foreground: #101d69;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #d8def8;
+  --input: #d8def8;
+  --ring: #fd741a;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: #101d69;
+  --sidebar-primary: #101d69;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fff2e8;
+  --sidebar-accent-foreground: #101d69;
+  --sidebar-border: #d8def8;
+  --sidebar-ring: #fd741a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html,
+body {
+  margin: 0;
+  font-family: var(--font-primary);
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: var(--font-heading-primary);
+}
+
+@keyframes nobitex-loader-slide {
+  0% {
+    left: 0;
+  }
+
+  50% {
+    left: calc(100% - 92px);
+  }
+
+  100% {
+    left: 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.nobitex-loader-bar {
+  animation: nobitex-loader-slide 1.8s ease-in-out infinite;
+  will-change: left;
+}
+
+@keyframes selected-choice-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.82);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.06);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.selected-choice-pop {
+  animation: selected-choice-pop 220ms ease-out both;
+}
+
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-sidebar-text) 22%, transparent)
+    transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(
+    in srgb,
+    var(--color-sidebar-text) 18%,
+    transparent
+  );
+  border-radius: 999px;
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: color-mix(
+    in srgb,
+    var(--color-sidebar-text) 32%,
+    transparent
+  );
+}
+
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-shell {
+  width: 76px !important;
+  padding-right: 0.5rem !important;
+  padding-left: 0.5rem !important;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-brand-name,
+html[data-sidebar-collapsed="true"] .sidebar-section-label,
+html[data-sidebar-collapsed="true"] .sidebar-section-toggle,
+html[data-sidebar-collapsed="true"] .sidebar-section-children {
+  display: none !important;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-expanded-nav {
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding-right: 0 !important;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-section {
+  width: auto !important;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-section-row,
+html[data-sidebar-collapsed="true"] .sidebar-section-button {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-section-row {
+  justify-content: center !important;
+}
+
+html[data-sidebar-collapsed="true"] .sidebar-section-button {
+  flex: none !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Operaciones"]
+  )
+  .sidebar-section[data-sidebar-section="Operaciones"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Historial"]
+  )
+  .sidebar-section[data-sidebar-section="Historial"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Facturacion"]
+  )
+  .sidebar-section[data-sidebar-section="Facturacion"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not([data-sidebar-expanded-sections~="GRE"])
+  .sidebar-section[data-sidebar-section="GRE"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Catalogo"]
+  )
+  .sidebar-section[data-sidebar-section="Catalogo"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Stock"]
+  )
+  .sidebar-section[data-sidebar-section="Stock"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Reportes"]
+  )
+  .sidebar-section[data-sidebar-section="Reportes"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Administracion"]
+  )
+  .sidebar-section[data-sidebar-section="Administracion"]
+  .sidebar-section-children,
+html[data-sidebar-expanded-sections]:not(
+    [data-sidebar-expanded-sections~="Configuracion"]
+  )
+  .sidebar-section[data-sidebar-section="Configuracion"]
+  .sidebar-section-children {
+  display: none !important;
+}
+
+@theme inline {
+  --font-heading: var(--font-circular-x-sub);
+  --font-sans: var(--font-raleway);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --color-primary: #fd741a;
+  --color-secondary: #fd741a;
+  --color-background: #0a0a0a;
+  --color-text: #f6f8ff;
+  --color-sidebar-bg: #11253a;
+  --color-sidebar-text: #f6f8ff;
+  --color-sidebar-hover: #1b2a82;
+  --color-sidebar-active: #11253a;
+  --color-header-bg: #0a0a0a;
+  --color-card: #11253a;
+  --color-input-bg: #11253a;
+  --color-input-text: #c8d0ff;
+  --color-placeholder: #4a578f;
+  --color-button-hover: #1b2a82;
+  --background: #0b133f;
+  --foreground: #f6f8ff;
+  --card: #101d69;
+  --card-foreground: #f6f8ff;
+  --popover: #101d69;
+  --popover-foreground: #f6f8ff;
+  --primary: #fd741a;
+  --primary-foreground: #101d69;
+  --secondary: #1b2a82;
+  --secondary-foreground: #f6f8ff;
+  --muted: #1b2a82;
+  --muted-foreground: #c8d0ff;
+  --accent: #223394;
+  --accent-foreground: #f6f8ff;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #31439f;
+  --input: #31439f;
+  --ring: #fd741a;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: #101d69;
+  --sidebar-foreground: #f6f8ff;
+  --sidebar-primary: #fd741a;
+  --sidebar-primary-foreground: #101d69;
+  --sidebar-accent: #223394;
+  --sidebar-accent-foreground: #f6f8ff;
+  --sidebar-border: #31439f;
+  --sidebar-ring: #fd741a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@keyframes color-image-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(22px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.color-image-card-motion {
+  animation: color-image-page-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .color-image-card-motion {
+    animation: none;
+  }
 }
