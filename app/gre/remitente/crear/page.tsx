@@ -35,32 +35,34 @@ import {
 } from "@/lib/api/guia-remision";
 import { productsApi, type ProductResponse } from "@/lib/api/products";
 
-const defaultForm = {
-  sucursalId: "",
-  sucursalPartidaId: "",
-  sucursalLlegadaId: "",
-  fechaInicioTraslado: new Date().toISOString().slice(0, 10),
-  motivoTraslado: "04",
-  descripcionMotivo: "",
-  pesoBrutoTotal: "1.000",
-  numeroBultos: "1",
-  destinatarioTipoDoc: "6",
-  destinatarioNroDoc: "",
-  destinatarioRazonSocial: "",
-  conductorId: "",
-  vehiculoId: "",
-  documentoTipo: "",
-  documentoSerie: "",
-  documentoNumero: "",
-  observaciones: "",
-  emitirDirectamente: false,
-  partidaModo: "sucursal" as "sucursal" | "externa",
-  llegadaModo: "sucursal" as "sucursal" | "externa",
-  ubigeoPartida: "",
-  direccionPartida: "",
-  ubigeoLlegada: "",
-  direccionLlegada: "",
-};
+function getDefaultForm() {
+  return {
+    sucursalId: "",
+    sucursalPartidaId: "",
+    sucursalLlegadaId: "",
+    fechaInicioTraslado: new Date().toISOString().slice(0, 10),
+    motivoTraslado: "04",
+    descripcionMotivo: "",
+    pesoBrutoTotal: "1.000",
+    numeroBultos: "1",
+    destinatarioTipoDoc: "6",
+    destinatarioNroDoc: "",
+    destinatarioRazonSocial: "",
+    conductorId: "",
+    vehiculoId: "",
+    documentoTipo: "",
+    documentoSerie: "",
+    documentoNumero: "",
+    observaciones: "",
+    emitirDirectamente: false,
+    partidaModo: "sucursal" as "sucursal" | "externa",
+    llegadaModo: "sucursal" as "sucursal" | "externa",
+    ubigeoPartida: "",
+    direccionPartida: "",
+    ubigeoLlegada: "",
+    direccionLlegada: "",
+  };
+}
 
 const defaultDetail: CreateGuiaRemisionDetalle = {
   descripcion: "",
@@ -89,7 +91,7 @@ export default function CrearGuiaRemisionPage() {
   const router = useRouter();
   const toast = useSystemToast();
 
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState(() => getDefaultForm());
   const [details, setDetails] = useState<DraftDetail[]>([
     { ...defaultDetail, uiId: "initial" },
   ]);
@@ -485,6 +487,7 @@ export default function CrearGuiaRemisionPage() {
                           }))
                         }
                         placeholder="Ej. Envio por mantenimiento"
+                        aria-label="Ej. Envio por mantenimiento"
                         className="min-h-20 w-full resize-none rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <p className="mt-1 text-right text-[10px] text-[var(--color-muted-foreground)]">
@@ -683,6 +686,7 @@ export default function CrearGuiaRemisionPage() {
                             }))
                           }
                           placeholder="Direccion completa de partida"
+                          aria-label="Direccion completa de partida"
                           className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
                         />
                       </div>
@@ -806,6 +810,7 @@ export default function CrearGuiaRemisionPage() {
                             }))
                           }
                           placeholder="Direccion completa de llegada"
+                          aria-label="Direccion completa de llegada"
                           className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
                         />
                       </div>
@@ -933,6 +938,7 @@ export default function CrearGuiaRemisionPage() {
                     }))
                   }
                   placeholder="Notas adicionales sobre el traslado..."
+                  aria-label="Notas adicionales sobre el traslado..."
                   className="min-h-24 w-full resize-none rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               </section>
@@ -1105,6 +1111,7 @@ export default function CrearGuiaRemisionPage() {
                                 })
                               }
                               placeholder="Descripcion del producto"
+                              aria-label="Descripcion del producto"
                               className="h-10 flex-1 rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
                             />
                             <button

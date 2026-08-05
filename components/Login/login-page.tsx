@@ -126,12 +126,13 @@ export function LoginPage() {
       const message =
         error instanceof Error ? error.message : "No se pudo iniciar sesion.";
 
-      setIsLoading(false);
       showToast({
         title: "No se pudo iniciar sesion",
         description: message,
         variant: "error",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -119,7 +119,12 @@ export default function SeriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBranchesLoading, setIsBranchesLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: SerieComprobante | null; form: SeriesForm; error: string }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<
@@ -132,11 +137,6 @@ export default function SeriesPage() {
   const [isEstadoOpen, setIsEstadoOpen] = useState(false);
   const [isBranchOpen, setIsBranchOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingSerie, setEditingSerie] = useState<SerieComprobante | null>(
-    null,
-  );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form, setForm] = useState<SeriesForm>(defaultForm);
 
   const typeRef = useRef<HTMLDivElement>(null);
   const estadoRef = useRef<HTMLDivElement>(null);
@@ -303,26 +303,25 @@ export default function SeriesPage() {
   };
 
   const openCreateModal = () => {
-    setEditingSerie(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "" });
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const openEditModal = (serie: SerieComprobante) => {
-    setEditingSerie(serie);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: serie,
+      form: {
       tipoComprobante: serie.tipoComprobante,
       serie: serie.serie,
       activo: serie.activo,
       esPrincipal: serie.esPrincipal,
       alcance: serie.aplicaTodasSucursales ? "todas" : "especificas",
       sucursalIds: serie.sucursales.map((sucursal) => sucursal.id),
+    },
+      error: "",
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -330,25 +329,22 @@ export default function SeriesPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingSerie(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "" });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const serie = normalizeSerie(form.serie);
+    const serie = normalizeSerie(modal.form.serie);
 
     if (!serie) {
-      setFormError("Ingresa el codigo de serie.");
+      setModal((prev) => ({ ...prev, error: "Ingresa el codigo de serie." }));
       return;
     }
 
-    if (form.alcance === "especificas" && form.sucursalIds.length === 0) {
-      setFormError("Selecciona al menos una sucursal.");
+    if (modal.form.alcance === "especificas" && modal.form.sucursalIds.length === 0) {
+      setModal((prev) => ({ ...prev, error: "Selecciona al menos una sucursal." }));
       return;
     }
 
@@ -356,25 +352,25 @@ export default function SeriesPage() {
 
     try {
       const payload = {
-        esPrincipal: form.esPrincipal,
-        activo: form.activo,
-        aplicaTodasSucursales: form.alcance === "todas",
-        sucursalIds: form.alcance === "todas" ? [] : form.sucursalIds,
+        esPrincipal: modal.form.esPrincipal,
+        activo: modal.form.activo,
+        aplicaTodasSucursales: modal.form.alcance === "todas",
+        sucursalIds: modal.form.alcance === "todas" ? [] : modal.form.sucursalIds,
       };
 
-      const savedSerie = editingSerie
-        ? await seriesApi.update(editingSerie.id, payload)
+      const savedSerie = modal.editing
+        ? await seriesApi.update(modal.editing.id, payload)
         : await seriesApi.create({
             ...payload,
             serie,
-            tipoComprobante: form.tipoComprobante,
+            tipoComprobante: modal.form.tipoComprobante,
           });
-      const targetPage = editingSerie ? page : 1;
+      const targetPage = modal.editing ? page : 1;
 
       setPage(targetPage);
       await refreshSeries(targetPage);
       showToast({
-        title: editingSerie ? "Serie actualizada" : "Serie creada",
+        title: modal.editing ? "Serie actualizada" : "Serie creada",
         description: `${savedSerie.serie} quedo guardada correctamente.`,
         variant: "success",
       });
@@ -382,7 +378,7 @@ export default function SeriesPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No se pudo guardar la serie.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -418,13 +414,16 @@ export default function SeriesPage() {
   };
 
   const toggleSucursal = (sucursalId: string) => {
-    setForm((currentForm) => {
-      const selected = currentForm.sucursalIds.includes(sucursalId);
+    setModal((prev) => {
+      const selected = prev.form.sucursalIds.includes(sucursalId);
       return {
-        ...currentForm,
-        sucursalIds: selected
-          ? currentForm.sucursalIds.filter((id) => id !== sucursalId)
-          : [...currentForm.sucursalIds, sucursalId],
+        ...prev,
+        form: {
+          ...prev.form,
+          sucursalIds: selected
+            ? prev.form.sucursalIds.filter((id) => id !== sucursalId)
+            : [...prev.form.sucursalIds, sucursalId],
+        },
       };
     });
   };
@@ -444,7 +443,7 @@ export default function SeriesPage() {
     inactivos: series.filter((s) => !s.activo).length,
     totalEmitidos: series.reduce((sum, s) => sum + s.numeroActual, 0),
   };
-  const selectedSucursalIds = new Set(form.sucursalIds);
+  const selectedSucursalIds = new Set(modal.form.sucursalIds);
 
   return (
     <DashboardShell headerTitle="Series y Correlativos">
@@ -479,6 +478,7 @@ export default function SeriesPage() {
             <input
               type="text"
               placeholder="Buscar por serie..."
+              aria-label="Buscar por serie..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
@@ -715,9 +715,9 @@ export default function SeriesPage() {
         </div>
 
         <Modal
-          isOpen={isModalOpen}
+          isOpen={modal.isOpen}
           onClose={closeModal}
-          title={editingSerie ? "Editar serie" : "Nueva serie"}
+          title={modal.editing ? "Editar serie" : "Nueva serie"}
           description="Configura el correlativo y las sucursales donde se podra usar."
           size="lg"
         >
@@ -725,30 +725,24 @@ export default function SeriesPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
                 options={seriesTypeOptions}
-                value={form.tipoComprobante}
+                value={modal.form.tipoComprobante}
                 onChange={(value) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    tipoComprobante: value as VentaTipoComprobante,
-                  }))
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, tipoComprobante: value as VentaTipoComprobante, } }))
                 }
                 placeholder="Seleccionar tipo"
                 label="Tipo de comprobante"
-                disabled={isSubmitting || Boolean(editingSerie)}
+                disabled={isSubmitting || Boolean(modal.editing)}
               />
 
               <InputField
                 id="serie-code"
                 label="Serie"
-                value={form.serie}
+                value={modal.form.serie}
                 placeholder="NV01"
                 maxLength={4}
-                disabled={isSubmitting || Boolean(editingSerie)}
+                disabled={isSubmitting || Boolean(modal.editing)}
                 onChange={(value) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    serie: normalizeSerie(value),
-                  }))
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, serie: normalizeSerie(value), } }))
                 }
               />
             </div>
@@ -759,12 +753,9 @@ export default function SeriesPage() {
                   { label: "Activo", value: "activo" },
                   { label: "Inactivo", value: "inactivo" },
                 ]}
-                value={form.activo ? "activo" : "inactivo"}
+                value={modal.form.activo ? "activo" : "inactivo"}
                 onChange={(value) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    activo: value === "activo",
-                  }))
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, activo: value === "activo", } }))
                 }
                 placeholder="Seleccionar estado"
                 label="Estado"
@@ -775,7 +766,7 @@ export default function SeriesPage() {
                   Correlativo actual
                 </p>
                 <div className="flex h-11 items-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]">
-                  {String(editingSerie?.numeroActual ?? 0).padStart(6, "0")}
+                  {String(modal.editing?.numeroActual ?? 0).padStart(6, "0")}
                 </div>
               </div>
             </div>
@@ -783,7 +774,7 @@ export default function SeriesPage() {
             <div
               className={cn(
                 "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
-                form.esPrincipal
+                modal.form.esPrincipal
                   ? "text-[var(--color-text)]"
                   : "text-[var(--color-muted-foreground)]",
               )}
@@ -792,12 +783,9 @@ export default function SeriesPage() {
               <input
                 id="serie-principal"
                 type="checkbox"
-                checked={form.esPrincipal}
+                checked={modal.form.esPrincipal}
                 onChange={(event) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    esPrincipal: event.target.checked,
-                  }))
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, esPrincipal: event.target.checked, } }))
                 }
                 disabled={isSubmitting}
                 className="h-5 w-5 accent-[var(--color-primary)]"
@@ -811,30 +799,26 @@ export default function SeriesPage() {
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <ScopeButton
                   label="Todas las tiendas"
-                  selected={form.alcance === "todas"}
+                  selected={modal.form.alcance === "todas"}
                   disabled={isSubmitting}
                   onClick={() =>
-                    setForm((currentForm) => ({
-                      ...currentForm,
-                      alcance: "todas",
-                      sucursalIds: [],
+                    setModal((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, alcance: "todas", sucursalIds: [] },
                     }))
                   }
                 />
                 <ScopeButton
                   label="Tiendas especificas"
-                  selected={form.alcance === "especificas"}
+                  selected={modal.form.alcance === "especificas"}
                   disabled={isSubmitting || branches.length === 0}
                   onClick={() =>
-                    setForm((currentForm) => ({
-                      ...currentForm,
-                      alcance: "especificas",
-                    }))
+                    setModal((prev) => ({ ...prev, form: { ...prev.form, alcance: "especificas", } }))
                   }
                 />
               </div>
 
-              {form.alcance === "especificas" && (
+              {modal.form.alcance === "especificas" && (
                 <div className="mt-4">
                   {isBranchesLoading ? (
                     <p className="text-xs text-[var(--color-muted-foreground)]">
@@ -876,9 +860,9 @@ export default function SeriesPage() {
               )}
             </div>
 
-            {formError && (
+            {modal.error && (
               <p className="text-sm font-circular-regular text-[#d9480f]">
-                {formError}
+                {modal.error}
               </p>
             )}
 
@@ -899,7 +883,7 @@ export default function SeriesPage() {
               >
                 {isSubmitting
                   ? "Guardando..."
-                  : editingSerie
+                  : modal.editing
                     ? "Guardar"
                     : "Crear serie"}
               </Button>

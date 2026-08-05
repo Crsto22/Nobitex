@@ -92,7 +92,7 @@ export function ProductCard({
   return (
     <div
       className={cn(
-        "group relative flex min-h-[220px] flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all duration-200 hover:-translate-y-0.5 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
+        "group relative flex min-h-[220px] flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors duration-200 hover:-translate-y-0.5 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
         isUnavailable && "opacity-60",
       )}
     >
@@ -162,7 +162,7 @@ export function ProductCard({
                   type="button"
                   onClick={() => setSelectedColorId(color.id)}
                   className={cn(
-                    "h-5 w-5 rounded-full border border-white shadow-sm ring-2 ring-offset-1 ring-offset-[var(--color-card)] transition-all hover:scale-110",
+                    "h-5 w-5 rounded-full border border-white shadow-sm ring-2 ring-offset-1 ring-offset-[var(--color-card)] transition-colors hover:scale-110",
                     isSelected ? "scale-110" : "ring-transparent",
                   )}
                   style={{

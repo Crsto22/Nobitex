@@ -27,6 +27,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { formatDate, formatTime } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import {
@@ -199,6 +200,7 @@ export default function PlatformUsersPage() {
                 setPage(1);
               }}
               placeholder="Buscar por nombre o correo..."
+              aria-label="Buscar por nombre o correo..."
               className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>
@@ -709,18 +711,3 @@ function EmptyUsers() {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(value));
-}

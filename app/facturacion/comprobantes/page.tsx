@@ -451,6 +451,7 @@ export default function ComprobantesPage() {
             <input
               type="text"
               placeholder="Buscar por comprobante, cliente, documento o codigo SUNAT..."
+              aria-label="Buscar por comprobante, cliente, documento o codigo SUNAT..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
@@ -611,7 +612,7 @@ export default function ComprobantesPage() {
               return (
                 <div
                   key={venta.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(126px,0.9fr)_minmax(180px,1.45fr)_minmax(118px,0.9fr)_minmax(104px,0.75fr)_minmax(132px,0.9fr)_minmax(108px,0.85fr)_28px] md:items-center md:gap-3 xl:grid-cols-[155px_minmax(220px,1.35fr)_132px_112px_150px_136px_40px] xl:gap-4"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(126px,0.9fr)_minmax(180px,1.45fr)_minmax(118px,0.9fr)_minmax(104px,0.75fr)_minmax(132px,0.9fr)_minmax(108px,0.85fr)_28px] md:items-center md:gap-3 xl:grid-cols-[155px_minmax(220px,1.35fr)_132px_112px_150px_136px_40px] xl:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">

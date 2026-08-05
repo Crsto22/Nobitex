@@ -17,6 +17,7 @@ import {
   type PlatformPlanCode,
   type PlatformPlanStatus,
 } from "@/lib/api/platform-admin";
+import { formatDateShort as formatDate } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 import {
   CompanyControls,
@@ -281,10 +282,4 @@ function LoadingRows() {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
+

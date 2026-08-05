@@ -30,6 +30,7 @@ import {
   type AppNotification,
   type NotificationsResponse,
 } from "@/lib/api/notifications";
+import { relativeTimeFormatter } from "@/lib/intl";
 
 type HeaderProps = {
   title?: ReactNode;
@@ -416,11 +417,10 @@ function NotificationIcon({ level }: { level: AppNotification["level"] }) {
 
 function relativeDate(value: string) {
   const seconds = Math.round((new Date(value).getTime() - Date.now()) / 1000);
-  const formatter = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
-  if (Math.abs(seconds) < 60) return formatter.format(seconds, "second");
+  if (Math.abs(seconds) < 60) return relativeTimeFormatter.format(seconds, "second");
   const minutes = Math.round(seconds / 60);
-  if (Math.abs(minutes) < 60) return formatter.format(minutes, "minute");
+  if (Math.abs(minutes) < 60) return relativeTimeFormatter.format(minutes, "minute");
   const hours = Math.round(minutes / 60);
-  if (Math.abs(hours) < 24) return formatter.format(hours, "hour");
-  return formatter.format(Math.round(hours / 24), "day");
+  if (Math.abs(hours) < 24) return relativeTimeFormatter.format(hours, "hour");
+  return relativeTimeFormatter.format(Math.round(hours / 24), "day");
 }

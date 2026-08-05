@@ -17,6 +17,7 @@ import {
   type DashboardDateFilter,
   type DashboardResponse,
 } from "@/lib/api/dashboard";
+import { formatCurrency } from "@/lib/intl";
 
 export default function DashboardPage() {
   const { user, currentPlan } = useAuth();
@@ -194,10 +195,7 @@ function getAssistantMessage(
     return "Hola, bienvenido. Todo esta listo para registrar tu primera venta.";
   }
 
-  const total = new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-  }).format(Number(dashboard.summary.salesFilterTotal) || 0);
+  const total = formatCurrency(Number(dashboard.summary.salesFilterTotal) || 0);
   const topProduct = dashboard.topVariants[0];
 
   if (topProduct) {

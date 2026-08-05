@@ -767,6 +767,7 @@ export default function CotizacionDetallePage() {
               value={annulReason}
               onChange={(event) => setAnnulReason(event.target.value)}
               placeholder="Motivo de anulacion..."
+              aria-label="Motivo de anulacion..."
               className="mt-4 min-h-24 w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] p-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
             <button

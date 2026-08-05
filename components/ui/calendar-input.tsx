@@ -35,10 +35,9 @@ const displayDateFormatter = new Intl.DateTimeFormat("es-PE", {
   month: "2-digit",
   year: "numeric",
 });
+const monthShortFormatter = new Intl.DateTimeFormat("es-PE", { month: "short" });
 const monthLabels = Array.from({ length: 12 }, (_, month) =>
-  new Intl.DateTimeFormat("es-PE", { month: "short" }).format(
-    new Date(2026, month, 1),
-  ),
+  monthShortFormatter.format(new Date(2026, month, 1)),
 );
 
 function toDateOnly(date: Date) {

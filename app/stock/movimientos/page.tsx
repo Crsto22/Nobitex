@@ -116,7 +116,7 @@ export default function StockMovementsPage() {
           <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_0.8fr_0.8fr_auto]">
             <div className="relative">
               <MagnifyingGlassIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
-              <input value={search} onChange={(event) => { setSearch(event.target.value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Buscar producto, SKU o motivo" className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20" />
+              <input value={search} onChange={(event) => { setSearch(event.target.value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Buscar producto, SKU o motivo" aria-label="Buscar producto, SKU o motivo" className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20" />
             </div>
             <Select value={branchId} onChange={(value) => { setBranchId(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todas las ubicaciones" options={[{ value: "", label: "Todas las ubicaciones" }, ...branches.map((branch) => ({ value: branch.id, label: branch.nombre }))]} />
             <Select value={type} onChange={(value) => { setType(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todos los tipos" options={[{ value: "", label: "Todos los tipos" }, ...Object.entries(movementLabels).map(([value, label]) => ({ value, label }))]} />

@@ -316,6 +316,7 @@ export default function RenewSubscriptionPage() {
                         className={inputClass}
                         maxLength={30}
                         placeholder="Código de afiliado"
+                        aria-label="Código de afiliado"
                       />
                       <button
                         type="button"
@@ -518,6 +519,7 @@ export default function RenewSubscriptionPage() {
                 ) : null}
               </div>
               <button
+                type="submit"
                 disabled={
                   saving ||
                   company.state !== "activa" ||

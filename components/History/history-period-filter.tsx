@@ -16,13 +16,15 @@ const periodOptions = [
   { value: "custom", label: "Personalizado" },
 ];
 
+const limaDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Lima",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 function todayInLima() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Lima",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  return limaDateFormatter.format(new Date());
 }
 
 export function HistoryPeriodFilter({

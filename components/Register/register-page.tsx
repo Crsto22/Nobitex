@@ -452,7 +452,7 @@ export function RegisterPage() {
         }`}
       >
         <div
-          className={`relative z-10 hidden min-h-dvh overflow-hidden bg-cover bg-center px-8 py-10 text-white transition-all duration-500 ease-out lg:flex lg:items-center xl:px-12 ${
+          className={`relative z-10 hidden min-h-dvh overflow-hidden bg-cover bg-center px-8 py-10 text-white transition-colors duration-500 ease-out lg:flex lg:items-center xl:px-12 ${
             isCompanyStep || isActivating
               ? "pointer-events-none -translate-x-full opacity-0"
               : "translate-x-0 opacity-100"
@@ -514,7 +514,7 @@ export function RegisterPage() {
         </div>
 
         <div
-          className={`relative z-10 flex min-h-dvh justify-center overflow-hidden px-5 py-6 transition-all duration-500 ease-out sm:px-8 lg:max-h-dvh lg:py-7 ${
+          className={`relative z-10 flex min-h-dvh justify-center overflow-hidden px-5 py-6 transition-colors duration-500 ease-out sm:px-8 lg:max-h-dvh lg:py-7 ${
             isActivating
               ? "items-center lg:px-10 xl:px-10"
               : isCompanyStep
@@ -713,6 +713,7 @@ export function RegisterPage() {
                             )
                           }
                           placeholder="000000"
+                          aria-label="000000"
                           required
                           className="font-heading mt-5 h-12 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-center text-lg font-black tracking-[0.35em] text-[var(--color-primary)] outline-none transition placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                         />
@@ -901,7 +902,7 @@ function StepProgress({
                 className="flex w-20 flex-col items-center text-center"
               >
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-4 border-white text-xs font-black shadow-[0_4px_12px_rgba(16,29,105,0.14)] transition-all duration-300 ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-4 border-white text-xs font-black shadow-[0_4px_12px_rgba(16,29,105,0.14)] transition-colors duration-300 ${
                     isReached
                       ? "bg-[var(--color-primary)] text-white"
                       : "bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"

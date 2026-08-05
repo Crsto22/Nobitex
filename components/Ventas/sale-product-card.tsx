@@ -115,7 +115,7 @@ export function SaleProductCard({
         }
       }}
       className={cn(
-        "group relative flex min-h-[220px] cursor-pointer flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
+        "group relative flex min-h-[220px] cursor-pointer flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
         productStock <= 0 && "cursor-not-allowed opacity-60",
       )}
     >

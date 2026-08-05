@@ -24,6 +24,7 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { formatDate } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -796,14 +797,6 @@ function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${Math.ceil(size / 1024)} KB`;
   return `${(size / 1024 / 1024).toFixed(2)} MB`;
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

@@ -423,6 +423,7 @@ export default function PlatformNotificationsPage() {
                     setLoading(true);
                   }}
                   placeholder="Buscar aviso..."
+                  aria-label="Buscar aviso..."
                   className={cn(inputClass, "pl-10")}
                 />
               </div>

@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { formatCurrency, formatDateShort as formatDate, formatDateTime } from "@/lib/intl";
 import {
   platformAdminApi,
   type PlatformAuditResponse,
@@ -239,8 +240,8 @@ export default function PlatformPlanAuditPage() {
                       ) : isPricingUpdate ? (
                         <div>
                           <p className="font-circular-bold text-[var(--color-text)]">
-                            {formatMoney(previousMonthlyPrice)} →{" "}
-                            {formatMoney(monthlyPrice)}
+                            {formatCurrency(previousMonthlyPrice)} →{" "}
+                            {formatCurrency(monthlyPrice)}
                           </p>
                           <p className="text-xs text-[var(--color-muted-foreground)]">
                             Oferta mensual{" "}
@@ -337,34 +338,9 @@ function readPlan(
   return value && value in planNames ? (value as PlatformPlanCode) : null;
 }
 
-function formatMoney(value: string | null) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-    minimumFractionDigits: 2,
-  }).format(Number(value ?? 0));
-}
-
 function formatPercent(value: string | null) {
   return `${Number(value ?? 0).toLocaleString("es-PE", {
     maximumFractionDigits: 2,
   })}%`;
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}

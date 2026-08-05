@@ -211,7 +211,7 @@ export default function OnboardingPage() {
             {[1, 2, 3].map((item) => (
               <span
                 key={item}
-                className={`h-2.5 rounded-full transition-all ${
+                className={`h-2.5 rounded-full transition-colors ${
                   step === item
                     ? "w-8 bg-[var(--color-primary)]"
                     : item < step
@@ -259,14 +259,14 @@ export default function OnboardingPage() {
                   setBranch((current) => ({ ...current, nombre: value }))
                 }
               />
-              <label className="block">
+              <div className="block">
                 <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
                   Tipo de sucursal
                 </span>
                 <span className="flex h-11 w-full items-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)]">
                   Tienda
                 </span>
-              </label>
+              </div>
               <UbigeoSelect
                 value={branch.ubigeo}
                 onSelect={(item) =>

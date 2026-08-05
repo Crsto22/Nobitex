@@ -19,6 +19,7 @@ import {
   XCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { formatDate } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -112,14 +113,6 @@ const typeOptions: { label: string; value: TypeFilter }[] = [
   { label: "N/C Factura", value: "nota_credito_factura" },
   { label: "N/C Boleta", value: "nota_credito_boleta" },
 ];
-
-function formatDate(iso: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(iso));
-}
 
 function formatMoney(amount: string) {
   const value = Number(amount);
@@ -299,6 +292,7 @@ export default function NotaCreditoPage() {
             <input
               type="text"
               placeholder="Buscar por nota, comprobante ref., cliente o documento..."
+              aria-label="Buscar por nota, comprobante ref., cliente o documento..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
@@ -374,7 +368,7 @@ export default function NotaCreditoPage() {
               return (
                 <div
                   key={note.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[155px_minmax(220px,1.4fr)_125px_135px_135px_40px] md:items-center"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[155px_minmax(220px,1.4fr)_125px_135px_135px_40px] md:items-center"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">

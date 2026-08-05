@@ -28,6 +28,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { formatCurrency, formatDateShort as formatDate, formatDateTime } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -1441,34 +1442,8 @@ function getPlanLabel(code: PlatformPlanCode) {
   }[code];
 }
 
-function formatDate(value: string | Date) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
 function formatNumber(value: number | undefined) {
   return (value ?? 0).toLocaleString("es-PE");
-}
-
-function formatCurrency(value: string | undefined) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-    minimumFractionDigits: 2,
-  }).format(Number(value ?? 0));
 }
 
 function getErrorMessage(error: unknown) {

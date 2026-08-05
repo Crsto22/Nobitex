@@ -34,6 +34,7 @@ import {
 } from "@/lib/api/plans";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
+import { formatCurrency, formatDate, formatDateShort } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 type Tab = "plans" | "usage" | "receipts";
@@ -1056,27 +1057,11 @@ function formatReceiptType(type: PlatformReceipt["type"]) {
   }[type];
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 function formatBytes(value: number) {
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   if (value < 1024 * 1024 * 1024)
     return `${(value / (1024 * 1024)).toFixed(1)} MB`;
   return `${(value / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
-function formatCurrency(value: string) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
 }
 
 function formatPercent(value: string) {

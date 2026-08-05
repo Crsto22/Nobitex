@@ -55,25 +55,27 @@ import { documentFileName } from "@/lib/document-file-name";
 type EstadoFilter = GuiaRemisionEstado | "todos";
 type SunatFilter = GuiaRemisionSunatEstado | "todos";
 
-const defaultCreateForm = {
-  sucursalId: "",
-  sucursalPartidaId: "",
-  sucursalLlegadaId: "",
-  fechaInicioTraslado: new Date().toISOString().slice(0, 10),
-  motivoTraslado: "04",
-  pesoBrutoTotal: "1.000",
-  numeroBultos: "1",
-  destinatarioTipoDoc: "6",
-  destinatarioNroDoc: "",
-  destinatarioRazonSocial: "",
-  conductorId: "",
-  vehiculoId: "",
-  documentoTipo: "",
-  documentoSerie: "",
-  documentoNumero: "",
-  observaciones: "",
-  emitirDirectamente: false,
-};
+function getDefaultCreateForm() {
+  return {
+    sucursalId: "",
+    sucursalPartidaId: "",
+    sucursalLlegadaId: "",
+    fechaInicioTraslado: new Date().toISOString().slice(0, 10),
+    motivoTraslado: "04",
+    pesoBrutoTotal: "1.000",
+    numeroBultos: "1",
+    destinatarioTipoDoc: "6",
+    destinatarioNroDoc: "",
+    destinatarioRazonSocial: "",
+    conductorId: "",
+    vehiculoId: "",
+    documentoTipo: "",
+    documentoSerie: "",
+    documentoNumero: "",
+    observaciones: "",
+    emitirDirectamente: false,
+  };
+}
 
 const defaultDetail: CreateGuiaRemisionDetalle = {
   descripcion: "",
@@ -88,7 +90,7 @@ function createDraftDetail(): DraftDetail {
   return { ...defaultDetail, uiId: crypto.randomUUID() };
 }
 
-type CreateGuiaForm = typeof defaultCreateForm;
+type CreateGuiaForm = ReturnType<typeof getDefaultCreateForm>;
 
 const motivoOptions = [
   { label: "Traslado entre establecimientos", value: "04" },
@@ -265,7 +267,7 @@ export default function GuiasRemisionPage() {
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [createError, setCreateError] = useState("");
   const [createForm, setCreateForm] =
-    useState<CreateGuiaForm>(defaultCreateForm);
+    useState<CreateGuiaForm>(() => getDefaultCreateForm());
   const [details, setDetails] = useState<DraftDetail[]>([
     { ...defaultDetail, uiId: "initial" },
   ]);
@@ -525,7 +527,7 @@ export default function GuiasRemisionPage() {
   const closeCreateModal = () => {
     if (isSubmittingCreate) return;
     setIsCreateOpen(false);
-    setCreateForm(defaultCreateForm);
+    setCreateForm(getDefaultCreateForm());
     setDetails([{ ...defaultDetail, uiId: "initial" }]);
     setCreateError("");
   };
@@ -678,6 +680,7 @@ export default function GuiasRemisionPage() {
             <input
               type="text"
               placeholder="Buscar por guia, cliente, documento o destino..."
+              aria-label="Buscar por guia, cliente, documento o destino..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
@@ -770,7 +773,7 @@ export default function GuiasRemisionPage() {
               return (
                 <div
                   key={guia.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_1fr_1fr_0.8fr_0.8fr_0.9fr_40px] md:items-center md:gap-3 xl:gap-4"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_1fr_1fr_0.8fr_0.8fr_0.9fr_40px] md:items-center md:gap-3 xl:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
@@ -1216,6 +1219,7 @@ export default function GuiasRemisionPage() {
                     )
                   }
                   placeholder="Descripcion"
+                  aria-label="Descripcion"
                   className="h-10 rounded-[12px] bg-[var(--color-card)] px-3 text-sm outline-none"
                 />
                 <input
@@ -1236,6 +1240,7 @@ export default function GuiasRemisionPage() {
                     )
                   }
                   placeholder="Cant."
+                  aria-label="Cant."
                   className="h-10 rounded-[12px] bg-[var(--color-card)] px-3 text-sm outline-none"
                 />
                 <input
@@ -1255,10 +1260,12 @@ export default function GuiasRemisionPage() {
                     )
                   }
                   placeholder="NIU"
+                  aria-label="NIU"
                   className="h-10 rounded-[12px] bg-[var(--color-card)] px-3 text-sm outline-none"
                 />
                 <button
                   type="button"
+                  aria-label="Eliminar detalle"
                   disabled={details.length === 1}
                   onClick={() =>
                     setDetails((current) =>

@@ -22,7 +22,13 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { formatCurrency } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+
+const dayMonthFormatter = new Intl.DateTimeFormat("es-PE", {
+  day: "2-digit",
+  month: "short",
+});
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   platformAdminApi,
@@ -397,6 +403,7 @@ function OveragePricingModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-label="Crear plan"
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 animate-in fade-in duration-200 sm:items-center sm:p-4"
     >
       <form
@@ -1017,14 +1024,6 @@ function MetricCard({
   );
 }
 
-function formatCurrency(value: string) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
-}
-
 function formatPercent(value: string) {
   return `${Number(value).toLocaleString("es-PE", {
     maximumFractionDigits: 2,
@@ -1033,10 +1032,7 @@ function formatPercent(value: string) {
 
 function formatPricingUpdate(plan: PlatformPlanPricing) {
   if (!plan.updatedBy) return "Tarifa inicial";
-  return `${plan.updatedBy.name} · ${new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-  }).format(new Date(plan.pricingUpdatedAt))}`;
+  return `${plan.updatedBy.name} · ${dayMonthFormatter.format(new Date(plan.pricingUpdatedAt))}`;
 }
 
 function formatBytes(value: number) {

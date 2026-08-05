@@ -23,6 +23,7 @@ import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import { defaultPageSize } from "@/lib/pagination";
+import { formatDate } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 import {
   usersApi,
@@ -333,7 +334,7 @@ function UserRow({
     : Math.max(0, user.modules.length - displayedModules.length);
 
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_1fr_1.2fr_0.55fr_0.55fr_0.5fr] md:items-center md:gap-3 xl:gap-4">
+    <div className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_1fr_1.2fr_0.55fr_0.55fr_0.5fr] md:items-center md:gap-3 xl:gap-4">
       <div className="flex min-w-0 items-center gap-3">
         <UserAvatar
           seed={user.id}
@@ -470,14 +471,6 @@ function IconButton({
       {children}
     </button>
   );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function MetricCard({

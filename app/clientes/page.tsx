@@ -113,11 +113,13 @@ export default function ClientesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchingDocument, setIsSearchingDocument] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<ClientForm>(defaultForm);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteClient, setDeleteClient] = useState<Client | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: Client | null; form: ClientForm; error: string; delete: Client | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -181,15 +183,14 @@ export default function ClientesPage() {
   };
 
   const openCreateModal = () => {
-    setEditingClient(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (client: Client) => {
-    setEditingClient(client);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: client,
+      form: {
       tipoDocumento: client.tipoDocumento,
       numeroDocumento: client.numeroDocumento ?? "",
       nombre: client.nombre ?? "",
@@ -200,10 +201,11 @@ export default function ClientesPage() {
       ubigeo: client.ubigeo ?? "",
       distrito: client.distrito ?? "",
       estado: client.estado,
+    },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -211,30 +213,27 @@ export default function ClientesPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingClient(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSearchDocument = async () => {
-    const numeroDocumento = form.numeroDocumento.trim();
-    const documentLabel = documentConfig[form.tipoDocumento].label;
-    const expectedLength = form.tipoDocumento === "dni" ? 8 : 11;
+    const numeroDocumento = modal.form.numeroDocumento.trim();
+    const documentLabel = documentConfig[modal.form.tipoDocumento].label;
+    const expectedLength = modal.form.tipoDocumento === "dni" ? 8 : 11;
 
     if (
-      form.tipoDocumento === "sin_documento" ||
+      modal.form.tipoDocumento === "sin_documento" ||
       numeroDocumento.length !== expectedLength
     ) {
-      setFormError(`El ${documentLabel} debe tener ${expectedLength} digitos.`);
+      setModal((prev) => ({ ...prev, error: `El ${documentLabel} debe tener ${expectedLength} digitos.` }));
       return;
     }
 
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
     setIsSearchingDocument(true);
 
     try {
-      if (form.tipoDocumento === "dni") {
+      if (modal.form.tipoDocumento === "dni") {
         const response = await clientsApi.consultarDni(numeroDocumento);
         const nombre = [
           response.nombres,
@@ -244,32 +243,19 @@ export default function ClientesPage() {
           .filter(Boolean)
           .join(" ");
 
-        setForm((currentForm) =>
-          currentForm.tipoDocumento === "dni" &&
-          currentForm.numeroDocumento === numeroDocumento
-            ? {
-                ...currentForm,
-                nombre,
-              }
-            : currentForm,
-        );
+        setModal((prev) => {
+          if (!(prev.form.tipoDocumento === "dni" && prev.form.numeroDocumento === numeroDocumento)) return prev;
+          return { ...prev, form: { ...prev.form, nombre } };
+        });
       }
 
-      if (form.tipoDocumento === "ruc") {
+      if (modal.form.tipoDocumento === "ruc") {
         const response = await clientsApi.consultarRuc(numeroDocumento);
 
-        setForm((currentForm) =>
-          currentForm.tipoDocumento === "ruc" &&
-          currentForm.numeroDocumento === numeroDocumento
-            ? {
-                ...currentForm,
-                razonSocial: response.razonSocial ?? currentForm.razonSocial,
-                direccion: response.direccion ?? currentForm.direccion,
-                ubigeo: response.ubigeo ?? currentForm.ubigeo,
-                distrito: response.distrito ?? currentForm.distrito,
-              }
-            : currentForm,
-        );
+        setModal((prev) => {
+          if (!(prev.form.tipoDocumento === "ruc" && prev.form.numeroDocumento === numeroDocumento)) return prev;
+          return { ...prev, form: { ...prev.form, razonSocial: response.razonSocial ?? prev.form.razonSocial, direccion: response.direccion ?? prev.form.direccion, ubigeo: response.ubigeo ?? prev.form.ubigeo, distrito: response.distrito ?? prev.form.distrito } };
+        });
       }
 
       showToast({
@@ -283,7 +269,7 @@ export default function ClientesPage() {
           ? error.message
           : "No se pudo consultar el documento.";
 
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo consultar",
         description: message,
@@ -296,28 +282,28 @@ export default function ClientesPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const payload = buildPayload(form);
+    const payload = buildPayload(modal.form);
     const validationError = validateForm(payload);
 
     if (validationError) {
-      setFormError(validationError);
+      setModal((prev) => ({ ...prev, error: validationError }));
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const savedClient = editingClient
-        ? await clientsApi.update(editingClient.id, payload)
+      const savedClient = modal.editing
+        ? await clientsApi.update(modal.editing.id, payload)
         : await clientsApi.create(payload);
-      const targetPage = editingClient ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
 
       setCurrentPage(targetPage);
       await refreshClients(targetPage);
       showToast({
-        title: editingClient ? "Cliente actualizado" : "Cliente creado",
+        title: modal.editing ? "Cliente actualizado" : "Cliente creado",
         description: `${savedClient.displayName} quedo guardado correctamente.`,
         variant: "success",
       });
@@ -327,7 +313,7 @@ export default function ClientesPage() {
         error instanceof Error
           ? error.message
           : "No se pudo guardar el cliente.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -369,14 +355,14 @@ export default function ClientesPage() {
 
   const removeClient = async (client: Client) => {
     setOpenMenuId(null);
-    setDeleteClient(client);
+    setModal((prev) => ({ ...prev, delete: client }));
   };
 
   const confirmDelete = async () => {
-    if (!deleteClient) return;
+    if (!modal.delete) return;
 
     try {
-      await clientsApi.remove(deleteClient.id);
+      await clientsApi.remove(modal.delete.id);
       const targetPage =
         clients.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
@@ -398,7 +384,7 @@ export default function ClientesPage() {
         variant: "error",
       });
     } finally {
-      setDeleteClient(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -518,7 +504,7 @@ export default function ClientesPage() {
               return (
                 <div
                   key={client.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(210px,1.2fr)_minmax(140px,0.75fr)_minmax(230px,1.25fr)_minmax(140px,0.75fr)_minmax(100px,0.55fr)_minmax(132px,0.7fr)] md:items-center md:gap-4"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(210px,1.2fr)_minmax(140px,0.75fr)_minmax(230px,1.25fr)_minmax(140px,0.75fr)_minmax(100px,0.55fr)_minmax(132px,0.7fr)] md:items-center md:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <UserAvatar
@@ -688,9 +674,9 @@ export default function ClientesPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingClient ? "Editar cliente" : "Nuevo cliente"}
+        title={modal.editing ? "Editar cliente" : "Nuevo cliente"}
         description="Registra los datos comerciales del cliente."
         size="lg"
       >
@@ -702,41 +688,37 @@ export default function ClientesPage() {
                 { label: "RUC", value: "ruc" },
                 { label: "Sin documento", value: "sin_documento" },
               ]}
-              value={form.tipoDocumento}
+              value={modal.form.tipoDocumento}
               onChange={(value) => {
-                setFormError("");
-                setForm((currentForm) => ({
-                  ...currentForm,
+                setModal((prev) => ({ ...prev, error: "" }));
+                setModal((prev) => ({ ...prev, form: { ...prev.form,
                   tipoDocumento: value as ClientDocumentType,
                   numeroDocumento:
                     value === "sin_documento"
                       ? ""
-                      : currentForm.numeroDocumento,
-                }));
+                      : prev.form.numeroDocumento,
+                } }));
               }}
               placeholder="Seleccionar documento"
               label="Tipo de documento"
               required
             />
 
-            {form.tipoDocumento !== "sin_documento" ? (
+            {modal.form.tipoDocumento !== "sin_documento" ? (
               <DocumentInputField
                 id="client-document"
                 label="Numero de documento"
-                documentType={form.tipoDocumento}
-                value={form.numeroDocumento}
+                documentType={modal.form.tipoDocumento}
+                value={modal.form.numeroDocumento}
                 placeholder={
-                  form.tipoDocumento === "dni" ? "12345678" : "20601234567"
+                  modal.form.tipoDocumento === "dni" ? "12345678" : "20601234567"
                 }
-                maxLength={form.tipoDocumento === "dni" ? 8 : 11}
+                maxLength={modal.form.tipoDocumento === "dni" ? 8 : 11}
                 disabled={isSubmitting || isSearchingDocument}
                 isSearching={isSearchingDocument}
                 onChange={(value) => {
-                  setFormError("");
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    numeroDocumento: value.replace(/\D/g, ""),
-                  }));
+                  setModal((prev) => ({ ...prev, error: "" }));
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, numeroDocumento: value.replace(/\D/g, ""), } }));
                 }}
                 onSearch={() => void handleSearchDocument()}
               />
@@ -745,46 +727,43 @@ export default function ClientesPage() {
             )}
           </div>
 
-          {form.tipoDocumento === "ruc" ? (
+          {modal.form.tipoDocumento === "ruc" ? (
             <InputField
               id="client-business-name"
               label="Razon social"
-              value={form.razonSocial}
+              value={modal.form.razonSocial}
               placeholder="Textiles Demo SAC"
               maxLength={200}
               disabled={isSubmitting}
               onChange={(value) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  razonSocial: value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, razonSocial: value, } }))
               }
             />
           ) : (
             <InputField
               id="client-name"
               label="Nombre"
-              value={form.nombre}
+              value={modal.form.nombre}
               placeholder="Juan Perez"
               maxLength={150}
               disabled={isSubmitting}
               onChange={(value) =>
-                setForm((currentForm) => ({ ...currentForm, nombre: value }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: value } }))
               }
             />
           )}
 
-          {form.tipoDocumento === "ruc" ? (
+          {modal.form.tipoDocumento === "ruc" ? (
             <InputField
               id="client-contact-name"
               label="Contacto"
-              value={form.nombre}
+              value={modal.form.nombre}
               placeholder="Nombre de contacto"
               maxLength={150}
               disabled={isSubmitting}
               required={false}
               onChange={(value) =>
-                setForm((currentForm) => ({ ...currentForm, nombre: value }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: value } }))
               }
             />
           ) : null}
@@ -793,27 +772,27 @@ export default function ClientesPage() {
             <InputField
               id="client-phone"
               label="Telefono"
-              value={form.telefono}
+              value={modal.form.telefono}
               placeholder="999888777"
               maxLength={30}
               disabled={isSubmitting}
               required={false}
               onChange={(value) =>
-                setForm((currentForm) => ({ ...currentForm, telefono: value }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, telefono: value } }))
               }
             />
 
             <InputField
               id="client-email"
               label="Email"
-              value={form.email}
+              value={modal.form.email}
               placeholder="cliente@email.com"
               maxLength={150}
               disabled={isSubmitting}
               required={false}
               type="email"
               onChange={(value) =>
-                setForm((currentForm) => ({ ...currentForm, email: value }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, email: value } }))
               }
             />
           </div>
@@ -825,25 +804,24 @@ export default function ClientesPage() {
           <InputField
             id="client-address"
             label="Direccion"
-            value={form.direccion}
+            value={modal.form.direccion}
             placeholder="Av. Principal 123"
             maxLength={255}
             disabled={isSubmitting}
             required={false}
             onChange={(value) =>
-              setForm((currentForm) => ({ ...currentForm, direccion: value }))
+              setModal((prev) => ({ ...prev, form: { ...prev.form, direccion: value } }))
             }
           />
 
           <UbigeoSelect
-            value={form.ubigeo}
+            value={modal.form.ubigeo}
             disabled={isSubmitting}
             onSelect={(item) =>
-              setForm((currentForm) => ({
-                ...currentForm,
+              setModal((prev) => ({ ...prev, form: { ...prev.form,
                 ubigeo: item.ubigeo,
                 distrito: item.distrito,
-              }))
+              } }))
             }
           />
 
@@ -852,12 +830,9 @@ export default function ClientesPage() {
               { label: "Activo", value: "activo" },
               { label: "Inactivo", value: "inactivo" },
             ]}
-            value={form.estado}
+            value={modal.form.estado}
             onChange={(value) =>
-              setForm((currentForm) => ({
-                ...currentForm,
-                estado: value as ClientStatus,
-              }))
+              setModal((prev) => ({ ...prev, form: { ...prev.form, estado: value as ClientStatus, } }))
             }
             placeholder="Seleccionar estado"
             label="Estado"
@@ -873,19 +848,19 @@ export default function ClientesPage() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {previewName(form)}
+                  {previewName(modal.form)}
                 </p>
                 <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {documentConfig[form.tipoDocumento].label}{" "}
-                  {form.numeroDocumento || "sin numero"}
+                  {documentConfig[modal.form.tipoDocumento].label}{" "}
+                  {modal.form.numeroDocumento || "sin numero"}
                 </p>
               </div>
             </div>
           </div>
 
-          {formError && (
+          {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
-              {formError}
+              {modal.error}
             </p>
           )}
 
@@ -906,7 +881,7 @@ export default function ClientesPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingClient
+                : modal.editing
                   ? "Guardar"
                   : "Crear cliente"}
             </Button>
@@ -915,12 +890,12 @@ export default function ClientesPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteClient !== null}
-        onClose={() => setDeleteClient(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar cliente"
         description="Seguro que deseas eliminar este cliente? Se marcara como inactivo."
-        itemName={deleteClient?.displayName}
+        itemName={modal.delete?.displayName}
       />
     </DashboardShell>
   );
@@ -1056,7 +1031,7 @@ function QuickContactButtons({ client }: { client: Client }) {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] transition-all hover:bg-[#20bd5a] hover:shadow-[0_4px_12px_rgba(37,211,102,0.35)]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] transition-colors hover:bg-[#20bd5a] hover:shadow-[0_4px_12px_rgba(37,211,102,0.35)]"
           aria-label={`Enviar WhatsApp a ${client.displayName}`}
           title="WhatsApp"
         >
@@ -1085,7 +1060,7 @@ function QuickContactButtons({ client }: { client: Client }) {
       {emailUrl ? (
         <a
           href={emailUrl}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F6B75A] transition-all hover:bg-[#EAA12F] hover:shadow-[0_4px_12px_rgba(246,183,90,0.35)]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F6B75A] transition-colors hover:bg-[#EAA12F] hover:shadow-[0_4px_12px_rgba(246,183,90,0.35)]"
           aria-label={`Enviar correo a ${client.displayName}`}
           title="Correo"
         >
@@ -1216,6 +1191,7 @@ function UbigeoSelect({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar..."
+              aria-label="Buscar..."
               className="h-9 w-full rounded-lg bg-[var(--color-input-bg)] pl-9 pr-4 text-xs font-circular-regular text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>

@@ -164,6 +164,7 @@ export function StockItemPicker({
               <input
                 type="number"
                 min={1}
+                aria-label="Cantidad"
                 max={enforceAvailable ? item.available : undefined}
                 value={item.cantidad}
                 onChange={(event) => setQuantity(item.productoVarianteId, Number(event.target.value) || 1)}

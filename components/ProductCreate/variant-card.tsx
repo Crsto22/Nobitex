@@ -42,7 +42,7 @@ export function VariantCard({
   return (
     <div
       className={cn(
-        "rounded-[18px] bg-[#F4F4F4] p-3 shadow-sm transition-all duration-300 ease-out will-change-transform motion-reduce:transition-none dark:bg-[var(--color-input-bg)]",
+        "rounded-[18px] bg-[#F4F4F4] p-3 shadow-sm transition-colors duration-300 ease-out will-change-transform motion-reduce:transition-none dark:bg-[var(--color-input-bg)]",
         motionState === "enter" && "translate-y-3 scale-[0.98] opacity-0",
         motionState === "visible" && "translate-y-0 scale-100 opacity-100",
         motionState === "exit" && "-translate-y-2 scale-[0.97] opacity-0",

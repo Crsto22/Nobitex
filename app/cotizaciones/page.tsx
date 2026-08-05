@@ -56,7 +56,6 @@ import { defaultPageSize } from "@/lib/pagination";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { useAuth } from "@/lib/auth/auth-provider";
 
-const minimumQuotationDate = new Date().toISOString().slice(0, 10);
 const productPlaceholderImage = "/Logo/Norvitex.png";
 const filterPageSize = Math.min(defaultPageSize, 12);
 const emptySaleProductsMeta: SaleProductsResponse["meta"] = {
@@ -221,6 +220,7 @@ function DropdownButton({
 }
 
 export default function CotizacionesPage() {
+  const minimumQuotationDate = new Date().toISOString().slice(0, 10);
   const { user } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -899,7 +899,7 @@ export default function CotizacionesPage() {
                         setProductPage(1);
                       }}
                       className={cn(
-                        "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-all hover:scale-105",
+                        "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors hover:scale-105",
                         isSelected ? "scale-105" : "ring-transparent",
                       )}
                       style={
@@ -1145,6 +1145,7 @@ export default function CotizacionesPage() {
                         ref={clientSearchRef}
                         type="text"
                         placeholder="Buscar por nombre, documento, email..."
+                        aria-label="Buscar por nombre, documento, email..."
                         value={clientSearch}
                         onChange={(e) => {
                           setClientSearch(e.target.value);
@@ -1162,7 +1163,7 @@ export default function CotizacionesPage() {
                         setIsClientDropdownOpen(false);
                         setIsClientCreateModalOpen(true);
                       }}
-                      className="mb-1 flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-left text-[var(--color-text)] transition-all duration-150 hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-card)]"
+                      className="mb-1 flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-left text-[var(--color-text)] transition-colors duration-150 hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-card)]"
                     >
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
                         <PlusIcon size={18} weight="bold" />
@@ -1184,7 +1185,7 @@ export default function CotizacionesPage() {
                         setIsClientDropdownOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150",
                         !selectedClient
                           ? "bg-[var(--color-primary)] text-white shadow-sm"
                           : "text-[var(--color-text)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]",
@@ -1226,7 +1227,7 @@ export default function CotizacionesPage() {
                             setIsClientDropdownOpen(false);
                           }}
                           className={cn(
-                            "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                            "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150",
                             isActive
                               ? "bg-[var(--color-primary)] text-white shadow-sm"
                               : "text-[var(--color-text)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]",
@@ -1263,7 +1264,7 @@ export default function CotizacionesPage() {
                           type="button"
                           onClick={() => void loadClients(clientPage + 1, true)}
                           disabled={isLoadingClients}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-circular-bold text-[var(--color-muted-foreground)] transition-all duration-150 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-circular-bold text-[var(--color-muted-foreground)] transition-colors duration-150 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <CaretDownIcon
                             size={14}
@@ -1480,7 +1481,7 @@ export default function CotizacionesPage() {
           <div className="mt-4 flex gap-3 px-2">
             <div
               className={cn(
-                "min-w-0 overflow-hidden rounded-[14px] transition-all duration-300 ease-out",
+                "min-w-0 overflow-hidden rounded-[14px] transition-colors duration-300 ease-out",
                 isDiscountEditorOpen
                   ? "flex-1 bg-[var(--color-input-bg)]"
                   : isNoteEditorOpen
@@ -1579,7 +1580,7 @@ export default function CotizacionesPage() {
                     setIsNoteEditorOpen(false);
                     setIsDiscountEditorOpen(true);
                   }}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-all duration-200 hover:bg-[var(--color-button-hover)]"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-colors duration-200 hover:bg-[var(--color-button-hover)]"
                 >
                   <TicketIcon size={18} />
                   {hasDiscountApplied
@@ -1590,7 +1591,7 @@ export default function CotizacionesPage() {
             </div>
             <div
               className={cn(
-                "min-w-0 overflow-hidden rounded-[14px] transition-all duration-300 ease-out",
+                "min-w-0 overflow-hidden rounded-[14px] transition-colors duration-300 ease-out",
                 isNoteEditorOpen
                   ? "flex-1 bg-[var(--color-input-bg)]"
                   : isDiscountEditorOpen
@@ -1610,6 +1611,7 @@ export default function CotizacionesPage() {
                       value={quotationNote}
                       onChange={(event) => setQuotationNote(event.target.value)}
                       placeholder="Agregar observacion..."
+                      aria-label="Agregar observacion..."
                       maxLength={240}
                       className="h-10 min-w-0 flex-1 rounded-[12px] border-none bg-[var(--color-input-bg)] px-3 text-sm font-circular-regular text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-0"
                     />
@@ -1643,7 +1645,7 @@ export default function CotizacionesPage() {
                     setIsDiscountEditorOpen(false);
                     setIsNoteEditorOpen(true);
                   }}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-all duration-200 hover:bg-[var(--color-button-hover)]"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-colors duration-200 hover:bg-[var(--color-button-hover)]"
                 >
                   <NotepadIcon size={18} />
                   {quotationNote.trim() ? "Nota agregada" : "Nota"}

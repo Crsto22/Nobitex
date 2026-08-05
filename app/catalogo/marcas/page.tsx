@@ -59,11 +59,13 @@ export default function CatalogoMarcasPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<BrandForm>(defaultForm);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteBrand, setDeleteBrand] = useState<Brand | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: Brand | null; form: BrandForm; error: string; delete: Brand | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -127,21 +129,21 @@ export default function CatalogoMarcasPage() {
   const totalCount = meta.activeTotal + meta.inactiveTotal;
 
   const openCreateModal = () => {
-    setEditingBrand(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (brand: Brand) => {
-    setEditingBrand(brand);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: brand,
+      form: {
       nombre: brand.nombre,
       activo: brand.activo,
+    },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -149,41 +151,38 @@ export default function CatalogoMarcasPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingBrand(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const nombre = form.nombre.trim();
+    const nombre = modal.form.nombre.trim();
 
     if (!nombre) {
-      setFormError("Ingresa el nombre de la marca.");
+      setModal((prev) => ({ ...prev, error: "Ingresa el nombre de la marca." }));
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const savedBrand = editingBrand
-        ? await brandsApi.update(editingBrand.id, {
+      const savedBrand = modal.editing
+        ? await brandsApi.update(modal.editing.id, {
             nombre,
-            activo: form.activo,
+            activo: modal.form.activo,
           })
         : await brandsApi.create({
             nombre,
-            activo: form.activo,
+            activo: modal.form.activo,
           });
-      const targetPage = editingBrand ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
 
       setCurrentPage(targetPage);
       await refreshBrands(targetPage);
       showToast({
-        title: editingBrand ? "Marca actualizada" : "Marca creada",
+        title: modal.editing ? "Marca actualizada" : "Marca creada",
         description: `${savedBrand.nombre} quedo guardada correctamente.`,
         variant: "success",
       });
@@ -191,7 +190,7 @@ export default function CatalogoMarcasPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No se pudo guardar la marca.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -228,14 +227,14 @@ export default function CatalogoMarcasPage() {
 
   const removeBrand = async (brand: Brand) => {
     setOpenMenuId(null);
-    setDeleteBrand(brand);
+    setModal((prev) => ({ ...prev, delete: brand }));
   };
 
   const confirmDelete = async () => {
-    if (!deleteBrand) return;
+    if (!modal.delete) return;
 
     try {
-      await brandsApi.remove(deleteBrand.id);
+      await brandsApi.remove(modal.delete.id);
       const targetPage =
         brands.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
@@ -255,7 +254,7 @@ export default function CatalogoMarcasPage() {
         variant: "error",
       });
     } finally {
-      setDeleteBrand(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -372,7 +371,7 @@ export default function CatalogoMarcasPage() {
               return (
                 <div
                   key={brand.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
@@ -506,9 +505,9 @@ export default function CatalogoMarcasPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingBrand ? "Editar marca" : "Nueva marca"}
+        title={modal.editing ? "Editar marca" : "Nueva marca"}
         description="Define el nombre de la marca para tus productos."
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -522,12 +521,9 @@ export default function CatalogoMarcasPage() {
             <input
               id="brand-name"
               type="text"
-              value={form.nombre}
+              value={modal.form.nombre}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  nombre: event.target.value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: event.target.value, } }))
               }
               placeholder="Nike, Adidas, Marca propia"
               maxLength={120}
@@ -540,7 +536,7 @@ export default function CatalogoMarcasPage() {
           <label
             className={cn(
               "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
-              form.activo
+              modal.form.activo
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]"
             )}
@@ -548,12 +544,9 @@ export default function CatalogoMarcasPage() {
             <span>Marca activa</span>
             <input
               type="checkbox"
-              checked={form.activo}
+              checked={modal.form.activo}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  activo: event.target.checked,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, activo: event.target.checked, } }))
               }
               disabled={isSubmitting}
               className="h-5 w-5 accent-[var(--color-primary)]"
@@ -570,18 +563,18 @@ export default function CatalogoMarcasPage() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {form.nombre.trim() || "Nombre de la marca"}
+                  {modal.form.nombre.trim() || "Nombre de la marca"}
                 </p>
                 <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {form.activo ? "Activa" : "Inactiva"}
+                  {modal.form.activo ? "Activa" : "Inactiva"}
                 </p>
               </div>
             </div>
           </div>
 
-          {formError && (
+          {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
-              {formError}
+              {modal.error}
             </p>
           )}
 
@@ -602,7 +595,7 @@ export default function CatalogoMarcasPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingBrand
+                : modal.editing
                   ? "Guardar"
                   : "Crear marca"}
             </Button>
@@ -611,12 +604,12 @@ export default function CatalogoMarcasPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteBrand !== null}
-        onClose={() => setDeleteBrand(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar marca"
         description="Seguro que deseas eliminar esta marca? Esta accion no se puede deshacer."
-        itemName={deleteBrand?.nombre}
+        itemName={modal.delete?.nombre}
       />
     </DashboardShell>
   );

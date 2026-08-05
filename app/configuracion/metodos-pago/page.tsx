@@ -89,11 +89,13 @@ export default function PaymentMethodsPage() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<PaymentMethodForm>(defaultForm);
-  const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteMethod, setDeleteMethod] = useState<PaymentMethod | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: PaymentMethod | null; form: PaymentMethodForm; error: string; delete: PaymentMethod | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const loadMethods = useCallback(() => {
@@ -147,39 +149,36 @@ export default function PaymentMethodsPage() {
   };
 
   const openCreateModal = () => {
-    setEditingMethod(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (method: PaymentMethod) => {
-    setEditingMethod(method);
-    setForm({
-      nombre: method.nombre,
-      descripcion: method.descripcion ?? "",
-      estado: method.estado,
+    setModal({
+      isOpen: true,
+      editing: method,
+      form: {
+        nombre: method.nombre,
+        descripcion: method.descripcion ?? "",
+        estado: method.estado,
+      },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
     if (isSubmitting) return;
 
-    setIsModalOpen(false);
-    setEditingMethod(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    if (!form.nombre.trim()) {
-      setFormError("Ingresa el nombre del metodo de pago.");
+    if (!modal.form.nombre.trim()) {
+      setModal((prev) => ({ ...prev, error: "Ingresa el nombre del metodo de pago." }));
       return;
     }
 
@@ -187,24 +186,24 @@ export default function PaymentMethodsPage() {
 
     try {
       const payload = {
-        nombre: form.nombre.trim(),
-        descripcion: form.descripcion.trim() || undefined,
-        activo: form.estado === "activo",
+        nombre: modal.form.nombre.trim(),
+        descripcion: modal.form.descripcion.trim() || undefined,
+        activo: modal.form.estado === "activo",
       };
 
-      const savedMethod = editingMethod
-        ? await paymentMethodsApi.update(editingMethod.id, {
-            nombre: !editingMethod.esSistema && payload.nombre !== editingMethod.nombre ? payload.nombre : undefined,
-            descripcion: payload.descripcion !== (editingMethod.descripcion ?? undefined) ? payload.descripcion : undefined,
-            estado: payload.activo !== (editingMethod.estado === "activo") ? (payload.activo ? "activo" : "inactivo") : undefined,
+      const savedMethod = modal.editing
+        ? await paymentMethodsApi.update(modal.editing.id, {
+            nombre: !modal.editing.esSistema && payload.nombre !== modal.editing.nombre ? payload.nombre : undefined,
+            descripcion: payload.descripcion !== (modal.editing.descripcion ?? undefined) ? payload.descripcion : undefined,
+            estado: payload.activo !== (modal.editing.estado === "activo") ? (payload.activo ? "activo" : "inactivo") : undefined,
           })
         : await paymentMethodsApi.create(payload);
 
-      const targetPage = editingMethod ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
       setCurrentPage(targetPage);
       await refreshMethods(targetPage);
       showToast({
-        title: editingMethod ? "Metodo actualizado" : "Metodo creado",
+        title: modal.editing ? "Metodo actualizado" : "Metodo creado",
         description: `${savedMethod.nombre} quedo guardado correctamente.`,
         variant: "success",
       });
@@ -212,7 +211,7 @@ export default function PaymentMethodsPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No se pudo guardar el metodo.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -251,10 +250,10 @@ export default function PaymentMethodsPage() {
   };
 
   const confirmDelete = async () => {
-    if (!deleteMethod) return;
+    if (!modal.delete) return;
 
     try {
-      await paymentMethodsApi.remove(deleteMethod.id);
+      await paymentMethodsApi.remove(modal.delete.id);
       const targetPage =
         methods.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
@@ -274,7 +273,7 @@ export default function PaymentMethodsPage() {
         variant: "error",
       });
     } finally {
-      setDeleteMethod(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -457,7 +456,7 @@ export default function PaymentMethodsPage() {
                           {!method.esSistema ? (
                             <button
                               type="button"
-                              onClick={() => setDeleteMethod(method)}
+                              onClick={() => setModal((prev) => ({ ...prev, delete: method }))}
                               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[#ef4444] hover:bg-[var(--color-button-hover)]"
                             >
                               <TrashIcon size={16} weight="bold" />
@@ -529,9 +528,9 @@ export default function PaymentMethodsPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingMethod ? "Editar metodo de pago" : "Nuevo metodo de pago"}
+        title={modal.editing ? "Editar metodo de pago" : "Nuevo metodo de pago"}
         description="Registra un nuevo metodo de pago para tus ventas."
         size="lg"
       >
@@ -539,25 +538,25 @@ export default function PaymentMethodsPage() {
           <InputField
             id="payment-name"
             label="Nombre"
-            value={form.nombre}
+            value={modal.form.nombre}
             placeholder="Efectivo, Visa, Yape, etc."
             maxLength={120}
-            disabled={isSubmitting || !!editingMethod?.esSistema}
+            disabled={isSubmitting || !!modal.editing?.esSistema}
             onChange={(value) =>
-              setForm((current) => ({ ...current, nombre: value }))
+              setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: value } }))
             }
           />
 
           <InputField
             id="payment-description"
             label="Descripcion"
-            value={form.descripcion}
+            value={modal.form.descripcion}
             placeholder="Breve descripcion del metodo de pago"
             maxLength={500}
             disabled={isSubmitting}
             required={false}
             onChange={(value) =>
-              setForm((current) => ({ ...current, descripcion: value }))
+              setModal((prev) => ({ ...prev, form: { ...prev.form, descripcion: value } }))
             }
           />
 
@@ -566,11 +565,11 @@ export default function PaymentMethodsPage() {
               { label: "Activo", value: "activo" },
               { label: "Inactivo", value: "inactivo" },
             ]}
-            value={form.estado}
+            value={modal.form.estado}
             onChange={(value) =>
-              setForm((current) => ({
-                ...current,
-                estado: value as PaymentMethodStatus,
+              setModal((prev) => ({
+                ...prev,
+                form: { ...prev.form, estado: value as PaymentMethodStatus },
               }))
             }
             placeholder="Seleccionar estado"
@@ -583,7 +582,7 @@ export default function PaymentMethodsPage() {
             </p>
             <div className="mt-3 flex items-center gap-3">
               {(() => {
-                const config = getPaymentMethodConfig(form.nombre);
+                const config = getPaymentMethodConfig(modal.form.nombre);
                 return config ? (
                   <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", config.bgColor)}>
                     <Image src={config.src} width={48} height={48} alt={config.label} className="h-8 w-8 object-contain" />
@@ -596,7 +595,7 @@ export default function PaymentMethodsPage() {
               })()}
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {form.nombre || "Nombre del metodo"}
+                  {modal.form.nombre || "Nombre del metodo"}
                 </p>
                 <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
                   Metodo de pago
@@ -605,8 +604,8 @@ export default function PaymentMethodsPage() {
             </div>
           </div>
 
-          {formError && (
-            <p className="text-sm font-circular-regular text-[#d9480f]">{formError}</p>
+          {modal.error && (
+            <p className="text-sm font-circular-regular text-[#d9480f]">{modal.error}</p>
           )}
 
           <div className="flex gap-3 pt-1">
@@ -626,7 +625,7 @@ export default function PaymentMethodsPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingMethod
+                : modal.editing
                   ? "Guardar"
                   : "Crear metodo"}
             </Button>
@@ -635,12 +634,12 @@ export default function PaymentMethodsPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteMethod !== null}
-        onClose={() => setDeleteMethod(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar metodo de pago"
         description="Seguro que deseas eliminar este metodo personalizado? Se marcara como inactivo."
-        itemName={deleteMethod?.nombre}
+        itemName={modal.delete?.nombre}
       />
     </DashboardShell>
   );

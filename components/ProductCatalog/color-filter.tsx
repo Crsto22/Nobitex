@@ -46,7 +46,7 @@ export function ColorFilter({
               type="button"
               onClick={() => onColorChange(color.id)}
               className={cn(
-                "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-all",
+                "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors",
                 isSelected ? "scale-105" : "ring-transparent hover:scale-105",
               )}
               style={{

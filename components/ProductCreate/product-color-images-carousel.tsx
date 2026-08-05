@@ -90,7 +90,7 @@ export function ProductColorImagesCarousel({
                   style={{ animationDelay: `${index * 45}ms` }}
                 >
                   <label
-                    className="relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[16px] border border-[var(--color-border)]/70 bg-[var(--color-card)] px-2 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.45)] transition-all hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-input-bg)] dark:shadow-none"
+                    className="relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[16px] border border-[var(--color-border)]/70 bg-[var(--color-card)] px-2 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.45)] transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-input-bg)] dark:shadow-none"
                     aria-label={
                       simple
                         ? "Seleccionar imagen del producto"

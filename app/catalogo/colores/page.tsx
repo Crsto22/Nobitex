@@ -60,11 +60,13 @@ export default function CatalogoColoresPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<ColorForm>(defaultForm);
-  const [editingColor, setEditingColor] = useState<Color | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteColor, setDeleteColor] = useState<Color | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: Color | null; form: ColorForm; error: string; delete: Color | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -128,22 +130,22 @@ export default function CatalogoColoresPage() {
   const totalCount = meta.activeTotal + meta.inactiveTotal;
 
   const openCreateModal = () => {
-    setEditingColor(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (color: Color) => {
-    setEditingColor(color);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: color,
+      form: {
       nombre: color.nombre,
       hex: color.hex,
       activo: color.activo,
+    },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -151,49 +153,46 @@ export default function CatalogoColoresPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingColor(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const nombre = form.nombre.trim();
-    const hex = normalizeHex(form.hex);
+    const nombre = modal.form.nombre.trim();
+    const hex = normalizeHex(modal.form.hex);
 
     if (!nombre) {
-      setFormError("Ingresa el nombre del color.");
+      setModal((prev) => ({ ...prev, error: "Ingresa el nombre del color." }));
       return;
     }
 
     if (!isValidHex(hex)) {
-      setFormError("Ingresa un color hexadecimal valido. Ejemplo: #FF7417");
+      setModal((prev) => ({ ...prev, error: "Ingresa un color hexadecimal valido. Ejemplo: #FF7417" }));
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const savedColor = editingColor
-        ? await colorsApi.update(editingColor.id, {
+      const savedColor = modal.editing
+        ? await colorsApi.update(modal.editing.id, {
             nombre,
             hex,
-            activo: form.activo,
+            activo: modal.form.activo,
           })
         : await colorsApi.create({
             nombre,
             hex,
-            activo: form.activo,
+            activo: modal.form.activo,
           });
-      const targetPage = editingColor ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
 
       setCurrentPage(targetPage);
       await refreshColors(targetPage);
       showToast({
-        title: editingColor ? "Color actualizado" : "Color creado",
+        title: modal.editing ? "Color actualizado" : "Color creado",
         description: `${savedColor.nombre} quedo guardado correctamente.`,
         variant: "success",
       });
@@ -201,7 +200,7 @@ export default function CatalogoColoresPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No se pudo guardar el color.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -238,14 +237,14 @@ export default function CatalogoColoresPage() {
 
   const removeColor = async (color: Color) => {
     setOpenMenuId(null);
-    setDeleteColor(color);
+    setModal((prev) => ({ ...prev, delete: color }));
   };
 
   const confirmDelete = async () => {
-    if (!deleteColor) return;
+    if (!modal.delete) return;
 
     try {
-      await colorsApi.remove(deleteColor.id);
+      await colorsApi.remove(modal.delete.id);
       const targetPage =
         colors.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
@@ -265,7 +264,7 @@ export default function CatalogoColoresPage() {
         variant: "error",
       });
     } finally {
-      setDeleteColor(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -382,7 +381,7 @@ export default function CatalogoColoresPage() {
               return (
                 <div
                   key={color.id}
-                  className="relative rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)]"
+                  className="relative rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)]"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">
@@ -517,9 +516,9 @@ export default function CatalogoColoresPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingColor ? "Editar color" : "Nuevo color"}
+        title={modal.editing ? "Editar color" : "Nuevo color"}
         description="Define el nombre y el hexadecimal para tus variantes."
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -533,12 +532,9 @@ export default function CatalogoColoresPage() {
             <input
               id="color-name"
               type="text"
-              value={form.nombre}
+              value={modal.form.nombre}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  nombre: event.target.value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: event.target.value, } }))
               }
               placeholder="Rojo"
               maxLength={80}
@@ -559,12 +555,9 @@ export default function CatalogoColoresPage() {
               <input
                 id="color-picker"
                 type="color"
-                value={isValidHex(form.hex) ? form.hex : "#111827"}
+                value={isValidHex(modal.form.hex) ? modal.form.hex : "#111827"}
                 onChange={(event) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    hex: event.target.value.toUpperCase(),
-                  }))
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, hex: event.target.value.toUpperCase(), } }))
                 }
                 disabled={isSubmitting}
                 className="h-11 w-14 shrink-0 cursor-pointer rounded-[14px] border-0 bg-[var(--color-input-bg)] p-1 disabled:opacity-70"
@@ -573,12 +566,9 @@ export default function CatalogoColoresPage() {
               <input
                 id="color-hex"
                 type="text"
-                value={form.hex}
+                value={modal.form.hex}
                 onChange={(event) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    hex: event.target.value.toUpperCase(),
-                  }))
+                  setModal((prev) => ({ ...prev, form: { ...prev.form, hex: event.target.value.toUpperCase(), } }))
                 }
                 placeholder="#FF7417"
                 maxLength={7}
@@ -592,7 +582,7 @@ export default function CatalogoColoresPage() {
           <label
             className={cn(
               "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
-              form.activo
+              modal.form.activo
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]"
             )}
@@ -600,12 +590,9 @@ export default function CatalogoColoresPage() {
             <span>Color activo</span>
             <input
               type="checkbox"
-              checked={form.activo}
+              checked={modal.form.activo}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  activo: event.target.checked,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, activo: event.target.checked, } }))
               }
               disabled={isSubmitting}
               className="h-5 w-5 accent-[var(--color-primary)]"
@@ -620,25 +607,25 @@ export default function CatalogoColoresPage() {
               <div
                 className="h-12 w-12 rounded-full ring-1 ring-black/10"
                 style={{
-                  backgroundColor: isValidHex(form.hex)
-                    ? form.hex
+                  backgroundColor: isValidHex(modal.form.hex)
+                    ? modal.form.hex
                     : "#111827",
                 }}
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {form.nombre.trim() || "Nombre del color"}
+                  {modal.form.nombre.trim() || "Nombre del color"}
                 </p>
                 <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)] font-circular-regular">
-                  {normalizeHex(form.hex)}
+                  {normalizeHex(modal.form.hex)}
                 </p>
               </div>
             </div>
           </div>
 
-          {formError && (
+          {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
-              {formError}
+              {modal.error}
             </p>
           )}
 
@@ -659,7 +646,7 @@ export default function CatalogoColoresPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingColor
+                : modal.editing
                   ? "Guardar"
                   : "Crear color"}
             </Button>
@@ -668,12 +655,12 @@ export default function CatalogoColoresPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteColor !== null}
-        onClose={() => setDeleteColor(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar color"
         description="Seguro que deseas eliminar este color? Esta accion no se puede deshacer."
-        itemName={deleteColor?.nombre}
+        itemName={modal.delete?.nombre}
       />
     </DashboardShell>
   );

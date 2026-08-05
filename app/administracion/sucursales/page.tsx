@@ -113,11 +113,13 @@ export default function SucursalesPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<BranchForm>(defaultForm);
-  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteBranch, setDeleteBranch] = useState<Branch | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: Branch | null; form: BranchForm; error: string; delete: Branch | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -179,15 +181,14 @@ export default function SucursalesPage() {
   };
 
   const openCreateModal = () => {
-    setEditingBranch(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (branch: Branch) => {
-    setEditingBranch(branch);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: branch,
+      form: {
       nombre: branch.nombre,
       tipo: branch.tipo,
       ubigeo: branch.ubigeo,
@@ -197,10 +198,11 @@ export default function SucursalesPage() {
       estado: branch.estado,
       esPrincipal: branch.esPrincipal,
       modoCajaHabilitado: branch.modoCajaHabilitado,
+    },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -208,30 +210,27 @@ export default function SucursalesPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingBranch(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const nombre = form.nombre.trim();
-    const ubigeo = form.ubigeo.trim();
-    const distrito = form.distrito.trim();
-    const direccion = form.direccion.trim();
+    const nombre = modal.form.nombre.trim();
+    const ubigeo = modal.form.ubigeo.trim();
+    const distrito = modal.form.distrito.trim();
+    const direccion = modal.form.direccion.trim();
     const codigoEstablecimientoSunat =
-      form.codigoEstablecimientoSunat.trim() || null;
+      modal.form.codigoEstablecimientoSunat.trim() || null;
 
     if (!nombre || !ubigeo || !distrito || !direccion) {
-      setFormError("Completa nombre, ubigeo, distrito y direccion.");
+      setModal((prev) => ({ ...prev, error: "Completa nombre, ubigeo, distrito y direccion." }));
       return;
     }
 
     if (!/^\d{6}$/.test(ubigeo)) {
-      setFormError("El ubigeo debe tener 6 digitos.");
+      setModal((prev) => ({ ...prev, error: "El ubigeo debe tener 6 digitos." }));
       return;
     }
 
@@ -240,25 +239,25 @@ export default function SucursalesPage() {
     try {
       const payload = {
         nombre,
-        tipo: form.tipo,
+        tipo: modal.form.tipo,
         ubigeo,
         distrito,
         direccion,
         codigoEstablecimientoSunat,
-        estado: form.estado,
-        esPrincipal: form.esPrincipal,
+        estado: modal.form.estado,
+        esPrincipal: modal.form.esPrincipal,
         modoCajaHabilitado:
-          form.tipo === "tienda" ? form.modoCajaHabilitado : false,
+          modal.form.tipo === "tienda" ? modal.form.modoCajaHabilitado : false,
       };
-      const savedBranch = editingBranch
-        ? await branchesApi.update(editingBranch.id, payload)
+      const savedBranch = modal.editing
+        ? await branchesApi.update(modal.editing.id, payload)
         : await branchesApi.create(payload);
-      const targetPage = editingBranch ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
 
       setCurrentPage(targetPage);
       await refreshBranches(targetPage);
       showToast({
-        title: editingBranch ? "Sucursal actualizada" : "Sucursal creada",
+        title: modal.editing ? "Sucursal actualizada" : "Sucursal creada",
         description: `${savedBranch.nombre} quedo guardada correctamente.`,
         variant: "success",
       });
@@ -268,7 +267,7 @@ export default function SucursalesPage() {
         error instanceof Error
           ? error.message
           : "No se pudo guardar la sucursal.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -335,14 +334,14 @@ export default function SucursalesPage() {
 
   const removeBranch = async (branch: Branch) => {
     setOpenMenuId(null);
-    setDeleteBranch(branch);
+    setModal((prev) => ({ ...prev, delete: branch }));
   };
 
   const confirmDelete = async () => {
-    if (!deleteBranch) return;
+    if (!modal.delete) return;
 
     try {
-      await branchesApi.remove(deleteBranch.id);
+      await branchesApi.remove(modal.delete.id);
       const targetPage =
         branches.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
@@ -364,7 +363,7 @@ export default function SucursalesPage() {
         variant: "error",
       });
     } finally {
-      setDeleteBranch(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -489,7 +488,7 @@ export default function SucursalesPage() {
               return (
                 <div
                   key={branch.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.1fr)_minmax(110px,0.6fr)_minmax(220px,1.3fr)_minmax(120px,0.7fr)_minmax(110px,0.6fr)_minmax(110px,0.6fr)_40px] md:items-center md:gap-4"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.1fr)_minmax(110px,0.6fr)_minmax(220px,1.3fr)_minmax(120px,0.7fr)_minmax(110px,0.6fr)_minmax(110px,0.6fr)_40px] md:items-center md:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
@@ -689,9 +688,9 @@ export default function SucursalesPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingBranch ? "Editar sucursal" : "Nueva sucursal"}
+        title={modal.editing ? "Editar sucursal" : "Nueva sucursal"}
         description="Registra una tienda o almacen de la empresa."
         size="lg"
       >
@@ -700,12 +699,12 @@ export default function SucursalesPage() {
             <InputField
               id="branch-name"
               label="Nombre"
-              value={form.nombre}
+              value={modal.form.nombre}
               placeholder="Sede Principal"
               maxLength={120}
               disabled={isSubmitting}
               onChange={(value) =>
-                setForm((currentForm) => ({ ...currentForm, nombre: value }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: value } }))
               }
             />
 
@@ -714,17 +713,16 @@ export default function SucursalesPage() {
                 { label: "Tienda", value: "tienda" },
                 { label: "Almacen", value: "almacen" },
               ]}
-              value={form.tipo}
+              value={modal.form.tipo}
               onChange={(value) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
+                setModal((prev) => ({ ...prev, form: { ...prev.form,
                   tipo: value as BranchType,
-                  esPrincipal: value === "tienda" ? currentForm.esPrincipal : false,
+                  esPrincipal: value === "tienda" ? prev.form.esPrincipal : false,
                   modoCajaHabilitado:
                     value === "tienda"
-                      ? currentForm.modoCajaHabilitado
+                      ? prev.form.modoCajaHabilitado
                       : false,
-                }))
+                } }))
               }
               placeholder="Seleccionar tipo"
               label="Tipo"
@@ -732,26 +730,25 @@ export default function SucursalesPage() {
           </div>
 
           <UbigeoSelect
-            value={form.ubigeo}
+            value={modal.form.ubigeo}
             disabled={isSubmitting}
             onSelect={(item) =>
-              setForm((currentForm) => ({
-                ...currentForm,
+              setModal((prev) => ({ ...prev, form: { ...prev.form,
                 ubigeo: item.ubigeo,
                 distrito: item.distrito,
-              }))
+              } }))
             }
           />
 
           <InputField
             id="branch-address"
             label="Direccion"
-            value={form.direccion}
+            value={modal.form.direccion}
             placeholder="Av. Principal 123"
             maxLength={255}
             disabled={isSubmitting}
             onChange={(value) =>
-              setForm((currentForm) => ({ ...currentForm, direccion: value }))
+              setModal((prev) => ({ ...prev, form: { ...prev.form, direccion: value } }))
             }
           />
 
@@ -759,15 +756,12 @@ export default function SucursalesPage() {
             <InputField
               id="branch-sunat-code"
               label="Codigo establecimiento SUNAT"
-              value={form.codigoEstablecimientoSunat}
+              value={modal.form.codigoEstablecimientoSunat}
               placeholder="0001"
               maxLength={10}
               disabled={isSubmitting}
               onChange={(value) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  codigoEstablecimientoSunat: value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, codigoEstablecimientoSunat: value, } }))
               }
             />
 
@@ -776,12 +770,9 @@ export default function SucursalesPage() {
                 { label: "Activo", value: "activo" },
                 { label: "Inactivo", value: "inactivo" },
               ]}
-              value={form.estado}
+              value={modal.form.estado}
               onChange={(value) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  estado: value as BranchStatus,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, estado: value as BranchStatus, } }))
               }
               placeholder="Seleccionar estado"
               label="Estado"
@@ -791,7 +782,7 @@ export default function SucursalesPage() {
           <label
             className={cn(
               "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
-              form.esPrincipal
+              modal.form.esPrincipal
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]"
             )}
@@ -799,14 +790,11 @@ export default function SucursalesPage() {
             <span>Sucursal principal</span>
             <input
               type="checkbox"
-              checked={form.esPrincipal}
+              checked={modal.form.esPrincipal}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  esPrincipal: event.target.checked,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, esPrincipal: event.target.checked, } }))
               }
-              disabled={isSubmitting || form.tipo === "almacen"}
+              disabled={isSubmitting || modal.form.tipo === "almacen"}
               className="h-5 w-5 accent-[var(--color-primary)]"
             />
           </label>
@@ -814,10 +802,10 @@ export default function SucursalesPage() {
           <label
             className={cn(
               "flex items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors",
-              form.tipo === "almacen"
+              modal.form.tipo === "almacen"
                 ? "cursor-not-allowed opacity-60"
                 : "cursor-pointer hover:bg-[var(--color-button-hover)]",
-              form.modoCajaHabilitado
+              modal.form.modoCajaHabilitado
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]",
             )}
@@ -828,17 +816,16 @@ export default function SucursalesPage() {
             </span>
             <input
               type="checkbox"
-              checked={form.modoCajaHabilitado}
+              checked={modal.form.modoCajaHabilitado}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
+                setModal((prev) => ({ ...prev, form: { ...prev.form,
                   modoCajaHabilitado:
-                    currentForm.tipo === "tienda"
+                    prev.form.tipo === "tienda"
                       ? event.target.checked
                       : false,
-                }))
+                } }))
               }
-              disabled={isSubmitting || form.tipo === "almacen"}
+              disabled={isSubmitting || modal.form.tipo === "almacen"}
               className="h-5 w-5 accent-[var(--color-primary)]"
             />
           </label>
@@ -849,7 +836,7 @@ export default function SucursalesPage() {
             </p>
             <div className="mt-3 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
-                {form.tipo === "tienda" ? (
+                {modal.form.tipo === "tienda" ? (
                   <StorefrontIcon size={22} weight="fill" />
                 ) : (
                   <WarehouseIcon size={22} weight="fill" />
@@ -857,14 +844,14 @@ export default function SucursalesPage() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {form.nombre.trim() || "Nombre de la sucursal"}
+                  {modal.form.nombre.trim() || "Nombre de la sucursal"}
                 </p>
                 <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {form.direccion.trim() || "Direccion"} -{" "}
-                  {form.distrito.trim() || "Distrito"}
+                  {modal.form.direccion.trim() || "Direccion"} -{" "}
+                  {modal.form.distrito.trim() || "Distrito"}
                 </p>
                 <p className="mt-1 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
-                  {form.tipo === "tienda" && form.modoCajaHabilitado
+                  {modal.form.tipo === "tienda" && modal.form.modoCajaHabilitado
                     ? "Caja activa para ventas"
                     : "Caja no requerida"}
                 </p>
@@ -872,9 +859,9 @@ export default function SucursalesPage() {
             </div>
           </div>
 
-          {formError && (
+          {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
-              {formError}
+              {modal.error}
             </p>
           )}
 
@@ -895,7 +882,7 @@ export default function SucursalesPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingBranch
+                : modal.editing
                   ? "Guardar"
                   : "Crear sucursal"}
             </Button>
@@ -904,12 +891,12 @@ export default function SucursalesPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteBranch !== null}
-        onClose={() => setDeleteBranch(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar sucursal"
         description="Seguro que deseas eliminar esta sucursal? Se marcara como inactiva."
-        itemName={deleteBranch?.nombre}
+        itemName={modal.delete?.nombre}
       />
     </DashboardShell>
   );
@@ -1123,6 +1110,7 @@ function UbigeoSelect({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar..."
+              aria-label="Buscar..."
               className="h-9 w-full rounded-lg bg-[var(--color-input-bg)] pl-9 pr-4 text-xs font-circular-regular text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>

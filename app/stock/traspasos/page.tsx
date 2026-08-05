@@ -75,7 +75,7 @@ export default function StockTransfersPage() {
 
         <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
           <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_auto]">
-            <div className="relative"><MagnifyingGlassIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" /><input value={search} onChange={(event) => { setSearch(event.target.value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Buscar producto, ubicacion o motivo" className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none" /></div>
+            <div className="relative"><MagnifyingGlassIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" /><input value={search} onChange={(event) => { setSearch(event.target.value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Buscar producto, ubicacion o motivo" aria-label="Buscar producto, ubicacion o motivo" className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none" /></div>
             <Select value={origin} onChange={(value) => { setOrigin(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todos los origenes" options={branchOptions} />
             <Select value={destination} onChange={(value) => { setDestination(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todos los destinos" options={branchOptions} />
             <button onClick={() => void load()} className="h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white">Actualizar</button>

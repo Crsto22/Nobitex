@@ -256,7 +256,7 @@ export default function AffiliateFormPage() {
                 </div>
               </div>
               <button
-                disabled={saving}
+                type="submit"
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-circular-bold text-[var(--color-primary)] disabled:opacity-60"
               >
                 <CheckCircleIcon size={18} />{" "}

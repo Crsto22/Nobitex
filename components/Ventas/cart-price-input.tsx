@@ -27,7 +27,7 @@ export function CartPriceInput({
   onClose: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(currentPrice.toFixed(2));
+  const [draft, setDraft] = useState(() => currentPrice.toFixed(2));
   const [error, setError] = useState("");
 
   const apply = () => {
@@ -147,7 +147,7 @@ function PriceOption({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative min-h-[104px] rounded-[12px] bg-[var(--color-input-bg)] p-3 text-left transition-all hover:bg-[var(--color-button-hover)]",
+        "relative min-h-[104px] rounded-[12px] bg-[var(--color-input-bg)] p-3 text-left transition-colors hover:bg-[var(--color-button-hover)]",
         active && "ring-2 ring-[var(--color-primary)]",
       )}
     >

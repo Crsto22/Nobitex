@@ -1435,6 +1435,7 @@ function UbigeoSelect({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar..."
+              aria-label="Buscar..."
               className="h-9 w-full rounded-lg bg-[var(--color-input-bg)] pl-9 pr-4 text-xs font-circular-regular text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>

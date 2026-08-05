@@ -28,6 +28,11 @@ import {
 import { cn } from "@/lib/utils";
 import { documentFileName } from "@/lib/document-file-name";
 
+const dateTimeFullFormatter = new Intl.DateTimeFormat("es-PE", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
 const statusConfig: Record<
   CreditNoteSunatEstado,
   { label: string; bg: string; text: string }
@@ -80,10 +85,7 @@ function formatMoney(value: string) {
 
 function formatDateTime(value: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("es-PE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return dateTimeFullFormatter.format(new Date(value));
 }
 
 function downloadBlob(blob: Blob, name: string) {

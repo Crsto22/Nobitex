@@ -18,6 +18,7 @@ import {
   type AppNotification,
   type NotificationsResponse,
 } from "@/lib/api/notifications";
+import { formatDateShort as formatDate, formatTime24 as formatTime } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 const pageSize = 10;
@@ -371,17 +372,3 @@ function categoryLabel(category: AppNotification["category"]) {
   }[category];
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}

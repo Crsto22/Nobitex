@@ -1108,7 +1108,7 @@ export default function VentasPage() {
                   <button
                     type="button"
                     onClick={() => setIsCashMovementModalOpen(true)}
-                    className="group relative flex h-6 items-center justify-center rounded-full bg-[var(--color-primary)] px-2.5 text-[10px] font-circular-bold text-white transition-all duration-150 "
+                    className="group relative flex h-6 items-center justify-center rounded-full bg-[var(--color-primary)] px-2.5 text-[10px] font-circular-bold text-white transition-colors duration-150 "
                     aria-label="Registrar movimiento"
                   >
                     Agregar Movimiento
@@ -1132,11 +1132,11 @@ export default function VentasPage() {
                 <button
                   type="button"
                   onClick={() => setIsOpenCashModalOpen(true)}
-                  className="group relative flex h-6 w-6 items-center justify-center rounded-full bg-[#10b981] text-white transition-all duration-150 hover:-translate-y-0.5 hover:scale-105 hover:bg-[#059669] hover:shadow-[0_6px_14px_rgba(16,185,129,0.28)]"
+                  className="group relative flex h-6 w-6 items-center justify-center rounded-full bg-[#10b981] text-white transition-colors duration-150 hover:-translate-y-0.5 hover:scale-105 hover:bg-[#059669] hover:shadow-[0_6px_14px_rgba(16,185,129,0.28)]"
                   aria-label="Abrir caja"
                 >
                   <LockOpenIcon size={15} weight="bold" />
-                  <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg transition-all duration-150 group-hover:translate-y-0.5 group-hover:opacity-100">
+                  <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg transition-colors duration-150 group-hover:translate-y-0.5 group-hover:opacity-100">
                     Abrir caja
                   </span>
                 </button>
@@ -1229,7 +1229,7 @@ export default function VentasPage() {
                         setProductPage(1);
                       }}
                       className={cn(
-                        "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-all hover:scale-105",
+                        "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors hover:scale-105",
                         isSelected ? "scale-105" : "ring-transparent",
                       )}
                       style={
@@ -1460,7 +1460,7 @@ export default function VentasPage() {
                   setClientSearch("");
                   setIsClientDropdownOpen(!isClientDropdownOpen);
                 }}
-                className="flex h-11 w-full items-center justify-between rounded-[16px] border-2 border-transparent bg-[var(--color-input-bg)] px-4 text-left shadow-sm transition-all duration-200 hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/5 hover:shadow-md"
+                className="flex h-11 w-full items-center justify-between rounded-[16px] border-2 border-transparent bg-[var(--color-input-bg)] px-4 text-left shadow-sm transition-colors duration-200 hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/5 hover:shadow-md"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   {selectedClient ? (
@@ -1499,6 +1499,7 @@ export default function VentasPage() {
                         setClientPage(1);
                       }}
                       placeholder="Buscar por nombre, documento, email..."
+                      aria-label="Buscar por nombre, documento, email..."
                       className="font-circular-regular h-9 w-full rounded-lg bg-[var(--color-input-bg)] pl-9 pr-4 text-sm text-[var(--color-input-text)] outline-none transition-shadow duration-200 placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/30"
                     />
                   </div>
@@ -1510,7 +1511,7 @@ export default function VentasPage() {
                         setIsClientDropdownOpen(false);
                         setIsClientCreateModalOpen(true);
                       }}
-                      className="mb-1 flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-left text-[var(--color-text)] transition-all duration-150 hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-card)]"
+                      className="mb-1 flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-left text-[var(--color-text)] transition-colors duration-150 hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-card)]"
                     >
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
                         <PlusIcon size={18} weight="bold" />
@@ -1532,7 +1533,7 @@ export default function VentasPage() {
                         setIsClientDropdownOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150",
                         !selectedClient
                           ? "bg-[var(--color-primary)] text-white shadow-sm"
                           : "text-[var(--color-text)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]",
@@ -1574,7 +1575,7 @@ export default function VentasPage() {
                             setIsClientDropdownOpen(false);
                           }}
                           className={cn(
-                            "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                            "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150",
                             isActive
                               ? "bg-[var(--color-primary)] text-white shadow-sm"
                               : "text-[var(--color-text)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]",
@@ -1611,7 +1612,7 @@ export default function VentasPage() {
                           type="button"
                           onClick={() => void loadClients(clientPage + 1, true)}
                           disabled={isLoadingClients}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-circular-bold text-[var(--color-muted-foreground)] transition-all duration-150 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-circular-bold text-[var(--color-muted-foreground)] transition-colors duration-150 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <CaretDownIcon
                             size={14}
@@ -1864,7 +1865,7 @@ export default function VentasPage() {
           <div className="mt-4 flex gap-3 px-2">
             <div
               className={cn(
-                "min-w-0 overflow-hidden rounded-[14px] transition-all duration-300 ease-out",
+                "min-w-0 overflow-hidden rounded-[14px] transition-colors duration-300 ease-out",
                 isDiscountEditorOpen
                   ? "flex-1 bg-[var(--color-input-bg)]"
                   : isNoteEditorOpen
@@ -1963,7 +1964,7 @@ export default function VentasPage() {
                     setIsNoteEditorOpen(false);
                     setIsDiscountEditorOpen(true);
                   }}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-all duration-200 hover:bg-[var(--color-button-hover)]"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-colors duration-200 hover:bg-[var(--color-button-hover)]"
                 >
                   <TicketIcon size={18} />
                   {hasDiscountApplied
@@ -1974,7 +1975,7 @@ export default function VentasPage() {
             </div>
             <div
               className={cn(
-                "min-w-0 overflow-hidden rounded-[14px] transition-all duration-300 ease-out",
+                "min-w-0 overflow-hidden rounded-[14px] transition-colors duration-300 ease-out",
                 isNoteEditorOpen
                   ? "flex-1 bg-[var(--color-input-bg)]"
                   : isDiscountEditorOpen
@@ -1994,6 +1995,7 @@ export default function VentasPage() {
                       value={saleNote}
                       onChange={(event) => setSaleNote(event.target.value)}
                       placeholder="Agregar observacion..."
+                      aria-label="Agregar observacion..."
                       maxLength={240}
                       className="h-10 min-w-0 flex-1 rounded-[12px] border-none bg-[var(--color-input-bg)] px-3 text-sm font-circular-regular text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-0"
                     />
@@ -2027,7 +2029,7 @@ export default function VentasPage() {
                     setIsDiscountEditorOpen(false);
                     setIsNoteEditorOpen(true);
                   }}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-all duration-200 hover:bg-[var(--color-button-hover)]"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] transition-colors duration-200 hover:bg-[var(--color-button-hover)]"
                 >
                   <NotepadIcon size={18} />
                   {saleNote.trim() ? "Nota agregada" : "Nota"}

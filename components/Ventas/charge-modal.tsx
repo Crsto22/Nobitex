@@ -760,7 +760,7 @@ export function ChargeModal({
                             type="button"
                             onClick={() => setSelectedMethod(method)}
                             className={cn(
-                              "flex h-16 items-center gap-2 rounded-[14px] px-3 text-sm font-circular-bold transition-all duration-150",
+                              "flex h-16 items-center gap-2 rounded-[14px] px-3 text-sm font-circular-bold transition-colors duration-150",
                               selectedMethod?.id === method.id
                                 ? "bg-[var(--color-primary)] text-white shadow-md scale-[0.98]"
                                 : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
@@ -961,7 +961,7 @@ export function ChargeModal({
 
                           <div
                             className={cn(
-                              "grid transition-all duration-200 ease-out",
+                              "grid transition-colors duration-200 ease-out",
                               expandedReferenceUid === entry.uid
                                 ? "grid-rows-[1fr] opacity-100"
                                 : "grid-rows-[0fr] opacity-0",
@@ -978,7 +978,8 @@ export function ChargeModal({
                                       event.target.value,
                                     )
                                   }
-                                  placeholder="Referencia (opcional)"
+                          placeholder="Referencia (opcional)"
+                                  aria-label="Referencia (opcional)"
                                   className="h-8 w-full rounded-[9px] bg-[var(--color-input-bg)] px-2 text-xs text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                                 />
                               </div>
@@ -1140,6 +1141,7 @@ export function ChargeModal({
                             updateEntryReference(entry.uid, e.target.value)
                           }
                           placeholder="Referencia (opcional)"
+                          aria-label="Referencia (opcional)"
                           className="h-9 w-full rounded-[10px] bg-[var(--color-background)] px-3 text-xs text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                         />
                       </div>

@@ -31,6 +31,11 @@ import {
 import { downloadBlob } from "@/lib/api/platform-billing";
 import { cn } from "@/lib/utils";
 
+const currencyFormatter = new Intl.NumberFormat("es-PE", {
+  style: "currency",
+  currency: "PEN",
+});
+
 type Tab = "codes" | "companies" | "commissions";
 const emptyMeta: PlatformPaginationMeta = {
   page: 1,
@@ -69,7 +74,7 @@ export default function AffiliatesPage() {
     pendingCommission: "0.00",
   });
   const [affiliateId, setAffiliateId] = useState("");
-  const [period, setPeriod] = useState(previousLimaPeriod());
+  const [period, setPeriod] = useState(() => previousLimaPeriod());
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] =
     useState<PlatformSubscriptionPaymentMethod>("yape");
@@ -461,6 +466,7 @@ export default function AffiliatesPage() {
                       value={reference}
                       onChange={(event) => setReference(event.target.value)}
                       placeholder="Referencia del pago"
+                      aria-label="Referencia del pago"
                       className="h-11 rounded-xl bg-[var(--color-input-bg)] px-3 text-sm outline-none"
                     />
                     <button
@@ -655,6 +661,7 @@ function Pagination({
       </p>
       <div className="flex gap-2">
         <button
+          aria-label="Pagina anterior"
           disabled={meta.page <= 1}
           onClick={() => onPage(meta.page - 1)}
           className="grid size-9 place-items-center rounded-lg bg-[var(--color-card)] disabled:opacity-40"
@@ -665,6 +672,7 @@ function Pagination({
           {meta.page}/{meta.totalPages}
         </span>
         <button
+          aria-label="Pagina siguiente"
           disabled={meta.page >= meta.totalPages}
           onClick={() => onPage(meta.page + 1)}
           className="grid size-9 place-items-center rounded-lg bg-[var(--color-card)] disabled:opacity-40"
@@ -688,10 +696,7 @@ function LoadingRows() {
   );
 }
 function currency(value: string | number) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-  }).format(Number(value) || 0);
+  return currencyFormatter.format(Number(value) || 0);
 }
 function date(value: string) {
   return new Date(value).toLocaleDateString("es-PE");

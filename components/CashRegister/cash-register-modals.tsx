@@ -457,6 +457,7 @@ export function OpenCashRegisterModal({
           disabled={isSubmitting}
           maxLength={500}
           placeholder="Observacion de apertura"
+          aria-label="Observacion de apertura"
           className="min-h-20 w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60"
         />
 
@@ -601,6 +602,7 @@ export function CloseCashRegisterModal({
           disabled={isSubmitting}
           maxLength={500}
           placeholder="Observacion de cierre"
+          aria-label="Observacion de cierre"
           className="min-h-20 w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60"
         />
 
@@ -759,6 +761,7 @@ export function CashMovementModal({
           onChange={(event) => setMonto(event.target.value)}
           disabled={isSubmitting}
           placeholder="Monto"
+          aria-label="Monto"
           className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60"
         />
 
@@ -768,6 +771,7 @@ export function CashMovementModal({
           disabled={isSubmitting}
           maxLength={500}
           placeholder="Motivo"
+          aria-label="Motivo"
           className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60"
         />
 
@@ -777,6 +781,7 @@ export function CashMovementModal({
           disabled={isSubmitting}
           maxLength={200}
           placeholder="Referencia opcional"
+          aria-label="Referencia opcional"
           className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60"
         />
 

@@ -79,7 +79,12 @@ export default function PlatformSeriesPage() {
   const [result, setResult] = useState<PlatformSeriesResponse>(emptyResult);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: PlatformSeries | null; form: typeof defaultForm; error: string }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+  });
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState<
     PlatformReceiptType | "todos"
@@ -87,13 +92,10 @@ export default function PlatformSeriesPage() {
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("todos");
   const [page, setPage] = useState(1);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<PlatformSeries | null>(null);
-  const [form, setForm] = useState(defaultForm);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setModal((prev) => ({ ...prev, error: "" }));
     try {
       setResult(
         await platformBillingApi.findSeries({
@@ -105,7 +107,7 @@ export default function PlatformSeriesPage() {
         }),
       );
     } catch (requestError) {
-      setError(getErrorMessage(requestError));
+      setModal((prev) => ({ ...prev, error: getErrorMessage(requestError) }));
     } finally {
       setLoading(false);
     }
@@ -122,63 +124,57 @@ export default function PlatformSeriesPage() {
   const totalPages = result.meta.totalPages;
 
   const openCreate = () => {
-    setEditing(null);
-    setForm(defaultForm);
-    setError("");
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "" });
     setOpenMenuId(null);
-    setModalOpen(true);
   };
 
   const openEdit = (row: PlatformSeries) => {
-    setEditing(row);
-    setForm({ type: row.type, series: row.series, active: row.active });
-    setError("");
+    setModal({
+      isOpen: true,
+      editing: row,
+      form: { type: row.type, series: row.series, active: row.active },
+      error: "",
+    });
     setOpenMenuId(null);
-    setModalOpen(true);
   };
 
   const closeModal = () => {
     if (submitting) return;
-    setModalOpen(false);
-    setEditing(null);
-    setForm(defaultForm);
-    setError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "" });
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const series = normalizeSeries(form.series);
+    const series = normalizeSeries(modal.form.series);
     if (series.length !== 4) {
-      setError("La serie debe tener exactamente 4 letras o numeros.");
+      setModal((prev) => ({ ...prev, error: "La serie debe tener exactamente 4 letras o numeros." }));
       return;
     }
 
     setSubmitting(true);
-    setError("");
+    setModal((prev) => ({ ...prev, error: "" }));
     try {
-      const saved = editing
-        ? await platformBillingApi.updateSeries(editing.id, {
-            type: form.type,
+      const saved = modal.editing
+        ? await platformBillingApi.updateSeries(modal.editing.id, {
+            type: modal.form.type,
             series,
-            active: form.active,
+            active: modal.form.active,
           })
         : await platformBillingApi.createSeries({
-            type: form.type,
+            type: modal.form.type,
             series,
-            active: form.active,
+            active: modal.form.active,
           });
       await load();
-      setModalOpen(false);
-      setEditing(null);
-      setForm(defaultForm);
+      setModal((prev) => ({ ...prev, isOpen: false, editing: null, form: defaultForm }));
       showToast({
-        title: editing ? "Serie actualizada" : "Serie creada",
+        title: modal.editing ? "Serie actualizada" : "Serie creada",
         description: `${saved.series} quedo disponible para la plataforma.`,
         variant: "success",
       });
     } catch (requestError) {
       const message = getErrorMessage(requestError);
-      setError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -245,6 +241,7 @@ export default function PlatformSeriesPage() {
             <input
               type="search"
               placeholder="Buscar por serie..."
+              aria-label="Buscar por serie..."
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
@@ -307,9 +304,9 @@ export default function PlatformSeriesPage() {
           </button>
         </section>
 
-        {error && !modalOpen ? (
+        {modal.error && !modal.isOpen ? (
           <p className="rounded-[12px] bg-[#ef4444]/10 px-4 py-3 text-sm text-[#dc2626]">
-            {error}
+            {modal.error}
           </p>
         ) : null}
 
@@ -362,20 +359,20 @@ export default function PlatformSeriesPage() {
         </footer>
 
         <Modal
-          isOpen={modalOpen}
+          isOpen={modal.isOpen}
           onClose={closeModal}
-          title={editing ? "Editar serie" : "Nueva serie"}
+          title={modal.editing ? "Editar serie" : "Nueva serie"}
           description="Configura la numeracion disponible para los comprobantes de Norbitex."
           size="md"
         >
           <form className="space-y-4" onSubmit={submit}>
             <Select
               options={typeOptions}
-              value={form.type}
+              value={modal.form.type}
               onChange={(value) =>
-                setForm((current) => ({
-                  ...current,
-                  type: value as PlatformReceiptType,
+                setModal((prev) => ({
+                  ...prev,
+                  form: { ...prev.form, type: value as PlatformReceiptType },
                 }))
               }
               placeholder="Seleccionar tipo"
@@ -384,38 +381,38 @@ export default function PlatformSeriesPage() {
             <InputField
               id="platform-series-code"
               label="Serie"
-              value={form.series}
+              value={modal.form.series}
               placeholder="F001"
               disabled={submitting}
               onChange={(value) =>
-                setForm((current) => ({
-                  ...current,
-                  series: normalizeSeries(value),
+                setModal((prev) => ({
+                  ...prev,
+                  form: { ...prev.form, series: normalizeSeries(value) },
                 }))
               }
             />
             <div>
               <p className="mb-2 text-sm text-[#4e5671]">Correlativo actual</p>
               <div className="flex h-11 items-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]">
-                {String(editing?.currentNumber ?? 0).padStart(8, "0")}
+                {String(modal.editing?.currentNumber ?? 0).padStart(8, "0")}
               </div>
             </div>
             <label className="flex items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold text-[var(--color-text)]">
               Serie activa
               <input
                 type="checkbox"
-                checked={form.active}
+                checked={modal.form.active}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    active: event.target.checked,
+                  setModal((prev) => ({
+                    ...prev,
+                    form: { ...prev.form, active: event.target.checked },
                   }))
                 }
                 className="size-5 accent-[var(--color-primary)]"
               />
             </label>
-            {error && modalOpen ? (
-              <p className="text-sm text-[#dc2626]">{error}</p>
+            {modal.error && modal.isOpen ? (
+              <p className="text-sm text-[#dc2626]">{modal.error}</p>
             ) : null}
             <div className="flex gap-3 pt-1">
               <Button
@@ -434,7 +431,7 @@ export default function PlatformSeriesPage() {
               >
                 {submitting
                   ? "Guardando..."
-                  : editing
+                  : modal.editing
                     ? "Guardar"
                     : "Crear serie"}
               </Button>

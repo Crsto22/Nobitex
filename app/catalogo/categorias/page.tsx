@@ -61,11 +61,13 @@ export default function CatalogoCategoriasPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<CategoryForm>(defaultForm);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: Category | null; form: CategoryForm; error: string; delete: Category | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -129,22 +131,22 @@ export default function CatalogoCategoriasPage() {
   const totalCount = meta.activeTotal + meta.inactiveTotal;
 
   const openCreateModal = () => {
-    setEditingCategory(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (category: Category) => {
-    setEditingCategory(category);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: category,
+      form: {
       nombre: category.nombre,
       descripcion: category.descripcion ?? "",
       activo: category.activo,
+    },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -152,21 +154,18 @@ export default function CatalogoCategoriasPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingCategory(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const nombre = form.nombre.trim();
-    const descripcion = form.descripcion.trim();
+    const nombre = modal.form.nombre.trim();
+    const descripcion = modal.form.descripcion.trim();
 
     if (!nombre) {
-      setFormError("Ingresa el nombre de la categoria.");
+      setModal((prev) => ({ ...prev, error: "Ingresa el nombre de la categoria." }));
       return;
     }
 
@@ -176,17 +175,17 @@ export default function CatalogoCategoriasPage() {
       const payload = {
         nombre,
         descripcion: descripcion || null,
-        activo: form.activo,
+        activo: modal.form.activo,
       };
-      const savedCategory = editingCategory
-        ? await categoriesApi.update(editingCategory.id, payload)
+      const savedCategory = modal.editing
+        ? await categoriesApi.update(modal.editing.id, payload)
         : await categoriesApi.create(payload);
-      const targetPage = editingCategory ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
 
       setCurrentPage(targetPage);
       await refreshCategories(targetPage);
       showToast({
-        title: editingCategory ? "Categoria actualizada" : "Categoria creada",
+        title: modal.editing ? "Categoria actualizada" : "Categoria creada",
         description: `${savedCategory.nombre} quedo guardada correctamente.`,
         variant: "success",
       });
@@ -196,7 +195,7 @@ export default function CatalogoCategoriasPage() {
         error instanceof Error
           ? error.message
           : "No se pudo guardar la categoria.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -235,14 +234,14 @@ export default function CatalogoCategoriasPage() {
 
   const removeCategory = async (category: Category) => {
     setOpenMenuId(null);
-    setDeleteCategory(category);
+    setModal((prev) => ({ ...prev, delete: category }));
   };
 
   const confirmDelete = async () => {
-    if (!deleteCategory) return;
+    if (!modal.delete) return;
 
     try {
-      await categoriesApi.remove(deleteCategory.id);
+      await categoriesApi.remove(modal.delete.id);
       const targetPage =
         categories.length === 1 && currentPage > 1
           ? currentPage - 1
@@ -266,7 +265,7 @@ export default function CatalogoCategoriasPage() {
         variant: "error",
       });
     } finally {
-      setDeleteCategory(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -383,7 +382,7 @@ export default function CatalogoCategoriasPage() {
               return (
                 <div
                   key={category.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(220px,1.3fr)_minmax(220px,1.2fr)_minmax(130px,0.7fr)_minmax(110px,0.6fr)_40px] md:items-center md:gap-5"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(220px,1.3fr)_minmax(220px,1.2fr)_minmax(130px,0.7fr)_minmax(110px,0.6fr)_40px] md:items-center md:gap-5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
@@ -528,9 +527,9 @@ export default function CatalogoCategoriasPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingCategory ? "Editar categoria" : "Nueva categoria"}
+        title={modal.editing ? "Editar categoria" : "Nueva categoria"}
         description="Define como vas a agrupar los productos de tu catalogo."
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -544,12 +543,9 @@ export default function CatalogoCategoriasPage() {
             <input
               id="category-name"
               type="text"
-              value={form.nombre}
+              value={modal.form.nombre}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  nombre: event.target.value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: event.target.value, } }))
               }
               placeholder="Polos, Zapatillas, Accesorios"
               maxLength={120}
@@ -568,12 +564,9 @@ export default function CatalogoCategoriasPage() {
             </label>
             <textarea
               id="category-description"
-              value={form.descripcion}
+              value={modal.form.descripcion}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  descripcion: event.target.value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, descripcion: event.target.value, } }))
               }
               placeholder="Productos principales de esta categoria"
               maxLength={500}
@@ -585,7 +578,7 @@ export default function CatalogoCategoriasPage() {
           <label
             className={cn(
               "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
-              form.activo
+              modal.form.activo
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]"
             )}
@@ -593,12 +586,9 @@ export default function CatalogoCategoriasPage() {
             <span>Categoria activa</span>
             <input
               type="checkbox"
-              checked={form.activo}
+              checked={modal.form.activo}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  activo: event.target.checked,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, activo: event.target.checked, } }))
               }
               disabled={isSubmitting}
               className="h-5 w-5 accent-[var(--color-primary)]"
@@ -615,18 +605,18 @@ export default function CatalogoCategoriasPage() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {form.nombre.trim() || "Nombre de la categoria"}
+                  {modal.form.nombre.trim() || "Nombre de la categoria"}
                 </p>
                 <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {form.descripcion.trim() || "Sin descripcion"}
+                  {modal.form.descripcion.trim() || "Sin descripcion"}
                 </p>
               </div>
             </div>
           </div>
 
-          {formError && (
+          {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
-              {formError}
+              {modal.error}
             </p>
           )}
 
@@ -647,7 +637,7 @@ export default function CatalogoCategoriasPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingCategory
+                : modal.editing
                   ? "Guardar"
                   : "Crear categoria"}
             </Button>
@@ -656,12 +646,12 @@ export default function CatalogoCategoriasPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteCategory !== null}
-        onClose={() => setDeleteCategory(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar categoria"
         description="Seguro que deseas eliminar esta categoria? Esta accion no se puede deshacer."
-        itemName={deleteCategory?.nombre}
+        itemName={modal.delete?.nombre}
       />
     </DashboardShell>
   );

@@ -27,6 +27,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { formatDate, formatTime } from "@/lib/intl";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   platformAdminApi,
@@ -287,6 +288,7 @@ export default function PlatformReceiptsPage() {
             <input
               type="search"
               placeholder="Buscar por correlativo, empresa o documento..."
+              aria-label="Buscar por correlativo, empresa o documento..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
@@ -801,6 +803,7 @@ function CancelReceiptModal({
             Cancelar
           </button>
           <button
+            type="submit"
             disabled={saving || reason.trim().length < 5}
             className="h-10 rounded-lg bg-[#ef4444] px-5 text-sm font-circular-bold text-white disabled:opacity-50"
           >
@@ -970,6 +973,7 @@ function ExtraChargeModal({
             Cancelar
           </button>
           <button
+            type="submit"
             disabled={saving || !companyId}
             className="h-10 rounded-lg bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-50"
           >
@@ -998,6 +1002,15 @@ function Field({
   );
 }
 
+const moneyFormatter = new Intl.NumberFormat("es-PE", {
+  style: "currency",
+  currency: "PEN",
+});
+
+function formatMoney(value: number) {
+  return moneyFormatter.format(value);
+}
+
 function sourceLabel(source: PlatformReceipt["source"]["type"]) {
   return {
     subscription: "Suscripcion",
@@ -1005,29 +1018,6 @@ function sourceLabel(source: PlatformReceipt["source"]["type"]) {
     extra: "Cobro adicional",
     "credit-note": "Nota de credito",
   }[source];
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("es-PE", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(value));
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-  }).format(value);
 }
 
 function getErrorMessage(error: unknown) {

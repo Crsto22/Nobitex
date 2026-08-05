@@ -436,7 +436,7 @@ export const sidebarModules: SidebarModule[] = sidebarSections.flatMap(
       : section.children,
 );
 
-export const sidebarModuleMap = new Map(
+const sidebarModuleMap = new Map(
   sidebarModules.map((module) => [module.key, module]),
 );
 

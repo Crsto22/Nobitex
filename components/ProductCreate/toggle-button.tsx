@@ -16,7 +16,7 @@ export function ToggleButton({ active, onClick, children }: ToggleButtonProps) {
       aria-checked={active}
       onClick={onClick}
       className={cn(
-        "flex h-11 min-w-0 items-center justify-between gap-3 overflow-hidden rounded-[16px] bg-[#F4F4F4] px-3 text-xs font-circular-bold shadow-sm transition-all dark:bg-[var(--color-input-bg)]",
+        "flex h-11 min-w-0 items-center justify-between gap-3 overflow-hidden rounded-[16px] bg-[#F4F4F4] px-3 text-xs font-circular-bold shadow-sm transition-colors dark:bg-[var(--color-input-bg)]",
         active
           ? "text-[var(--color-primary)] dark:text-[var(--color-input-text)]"
           : "text-[var(--color-muted-foreground)] dark:text-[var(--color-input-text)]",

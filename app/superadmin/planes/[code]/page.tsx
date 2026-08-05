@@ -21,6 +21,7 @@ import {
   type UpdatePlatformPlanPricingPayload,
 } from "@/lib/api/platform-admin";
 import { ApiError } from "@/lib/api/client";
+import { formatCurrency } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 const planCodes: PlatformPlanCode[] = [
@@ -260,6 +261,13 @@ function PricingForm({
   const [annualDiscount, setAnnualDiscount] = useState(
     plan.annualDiscountPercent,
   );
+
+  useEffect(() => {
+    setMonthlyPrice(plan.priceMonthly);
+    setMonthlyDiscount(plan.monthlyDiscountPercent);
+    setAnnualDiscount(plan.annualDiscountPercent);
+  }, [plan.priceMonthly, plan.monthlyDiscountPercent, plan.annualDiscountPercent]);
+
   const monthly = Number(monthlyPrice);
   const monthlyDiscountValue = Number(monthlyDiscount);
   const annualDiscountValue = Number(annualDiscount);
@@ -590,10 +598,4 @@ function getErrorMessage(error: unknown) {
     : "No se pudo completar la solicitud.";
 }
 
-function formatCurrency(value: string) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
-}
+

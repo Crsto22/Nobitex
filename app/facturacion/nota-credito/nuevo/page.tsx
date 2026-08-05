@@ -214,6 +214,7 @@ export default function NuevaNotaCreditoPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar factura, boleta o cliente"
+                aria-label="Buscar factura, boleta o cliente"
                 className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none"
               />
             </div>
@@ -391,6 +392,7 @@ export default function NuevaNotaCreditoPage() {
                                     ),
                                   }))
                                 }
+                                aria-label="Cantidad ajustada"
                                 className="h-9 w-20 rounded-[10px] bg-[var(--color-input-bg)] px-2 text-center text-[var(--color-text)] outline-none"
                               />
                             ) : (

@@ -59,11 +59,13 @@ export default function CatalogoTallasPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<SizeForm>(defaultForm);
-  const [editingSize, setEditingSize] = useState<Size | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteSize, setDeleteSize] = useState<Size | null>(null);
+  const [modal, setModal] = useState<{ isOpen: boolean; editing: Size | null; form: SizeForm; error: string; delete: Size | null }>({
+    isOpen: false,
+    editing: null,
+    form: defaultForm,
+    error: "",
+    delete: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -127,21 +129,21 @@ export default function CatalogoTallasPage() {
   const totalCount = meta.activeTotal + meta.inactiveTotal;
 
   const openCreateModal = () => {
-    setEditingSize(null);
-    setForm(defaultForm);
-    setFormError("");
-    setIsModalOpen(true);
+    setModal({ isOpen: true, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const openEditModal = (size: Size) => {
-    setEditingSize(size);
-    setForm({
+    setModal({
+      isOpen: true,
+      editing: size,
+      form: {
       nombre: size.nombre,
       activo: size.activo,
+    },
+      error: "",
+      delete: null,
     });
-    setFormError("");
     setOpenMenuId(null);
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -149,41 +151,38 @@ export default function CatalogoTallasPage() {
       return;
     }
 
-    setIsModalOpen(false);
-    setEditingSize(null);
-    setForm(defaultForm);
-    setFormError("");
+    setModal({ isOpen: false, editing: null, form: defaultForm, error: "", delete: null });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError("");
+    setModal((prev) => ({ ...prev, error: "" }));
 
-    const nombre = form.nombre.trim();
+    const nombre = modal.form.nombre.trim();
 
     if (!nombre) {
-      setFormError("Ingresa el nombre de la talla.");
+      setModal((prev) => ({ ...prev, error: "Ingresa el nombre de la talla." }));
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const savedSize = editingSize
-        ? await sizesApi.update(editingSize.id, {
+      const savedSize = modal.editing
+        ? await sizesApi.update(modal.editing.id, {
             nombre,
-            activo: form.activo,
+            activo: modal.form.activo,
           })
         : await sizesApi.create({
             nombre,
-            activo: form.activo,
+            activo: modal.form.activo,
           });
-      const targetPage = editingSize ? currentPage : 1;
+      const targetPage = modal.editing ? currentPage : 1;
 
       setCurrentPage(targetPage);
       await refreshSizes(targetPage);
       showToast({
-        title: editingSize ? "Talla actualizada" : "Talla creada",
+        title: modal.editing ? "Talla actualizada" : "Talla creada",
         description: `${savedSize.nombre} quedo guardada correctamente.`,
         variant: "success",
       });
@@ -191,7 +190,7 @@ export default function CatalogoTallasPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No se pudo guardar la talla.";
-      setFormError(message);
+      setModal((prev) => ({ ...prev, error: message }));
       showToast({
         title: "No se pudo guardar",
         description: message,
@@ -228,14 +227,14 @@ export default function CatalogoTallasPage() {
 
   const removeSize = async (size: Size) => {
     setOpenMenuId(null);
-    setDeleteSize(size);
+    setModal((prev) => ({ ...prev, delete: size }));
   };
 
   const confirmDelete = async () => {
-    if (!deleteSize) return;
+    if (!modal.delete) return;
 
     try {
-      await sizesApi.remove(deleteSize.id);
+      await sizesApi.remove(modal.delete.id);
       const targetPage =
         sizes.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
@@ -255,7 +254,7 @@ export default function CatalogoTallasPage() {
         variant: "error",
       });
     } finally {
-      setDeleteSize(null);
+      setModal((prev) => ({ ...prev, delete: null }));
     }
   };
 
@@ -372,7 +371,7 @@ export default function CatalogoTallasPage() {
               return (
                 <div
                   key={size.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-black text-white font-circular-regular">
@@ -506,9 +505,9 @@ export default function CatalogoTallasPage() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={modal.isOpen}
         onClose={closeModal}
-        title={editingSize ? "Editar talla" : "Nueva talla"}
+        title={modal.editing ? "Editar talla" : "Nueva talla"}
         description="Define el nombre de la talla para tus variantes."
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -522,12 +521,9 @@ export default function CatalogoTallasPage() {
             <input
               id="size-name"
               type="text"
-              value={form.nombre}
+              value={modal.form.nombre}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  nombre: event.target.value,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, nombre: event.target.value, } }))
               }
               placeholder="S, M, L, XL, 36, Talla unica"
               maxLength={80}
@@ -540,7 +536,7 @@ export default function CatalogoTallasPage() {
           <label
             className={cn(
               "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
-              form.activo
+              modal.form.activo
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]"
             )}
@@ -548,12 +544,9 @@ export default function CatalogoTallasPage() {
             <span>Talla activa</span>
             <input
               type="checkbox"
-              checked={form.activo}
+              checked={modal.form.activo}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  activo: event.target.checked,
-                }))
+                setModal((prev) => ({ ...prev, form: { ...prev.form, activo: event.target.checked, } }))
               }
               disabled={isSubmitting}
               className="h-5 w-5 accent-[var(--color-primary)]"
@@ -566,22 +559,22 @@ export default function CatalogoTallasPage() {
             </p>
             <div className="mt-3 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-black text-white font-circular-regular">
-                {form.nombre.trim() || "M"}
+                {modal.form.nombre.trim() || "M"}
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  Talla {form.nombre.trim() || "Nombre de la talla"}
+                  Talla {modal.form.nombre.trim() || "Nombre de la talla"}
                 </p>
                 <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {form.activo ? "Activa" : "Inactiva"}
+                  {modal.form.activo ? "Activa" : "Inactiva"}
                 </p>
               </div>
             </div>
           </div>
 
-          {formError && (
+          {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
-              {formError}
+              {modal.error}
             </p>
           )}
 
@@ -602,7 +595,7 @@ export default function CatalogoTallasPage() {
             >
               {isSubmitting
                 ? "Guardando..."
-                : editingSize
+                : modal.editing
                   ? "Guardar"
                   : "Crear talla"}
             </Button>
@@ -611,12 +604,12 @@ export default function CatalogoTallasPage() {
       </Modal>
 
       <ConfirmDialog
-        isOpen={deleteSize !== null}
-        onClose={() => setDeleteSize(null)}
+        isOpen={modal.delete !== null}
+        onClose={() => setModal((prev) => ({ ...prev, delete: null }))}
         onConfirm={() => void confirmDelete()}
         title="Eliminar talla"
         description="Seguro que deseas eliminar esta talla? Esta accion no se puede deshacer."
-        itemName={deleteSize?.nombre}
+        itemName={modal.delete?.nombre}
       />
     </DashboardShell>
   );

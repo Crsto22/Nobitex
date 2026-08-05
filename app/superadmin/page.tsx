@@ -115,7 +115,7 @@ export default function SuperAdminDashboardPage() {
               onClick={loadDashboard}
               disabled={isLoading}
               className={cn(
-                "flex h-9 items-center gap-2 rounded-xl bg-[var(--color-sidebar-active)] px-4 text-xs font-circular-bold text-white shadow-md transition-all duration-200 dark:bg-[var(--color-secondary)]",
+                "flex h-9 items-center gap-2 rounded-xl bg-[var(--color-sidebar-active)] px-4 text-xs font-circular-bold text-white shadow-md transition-colors duration-200 dark:bg-[var(--color-secondary)]",
                 isLoading && "cursor-not-allowed opacity-70",
               )}
             >
