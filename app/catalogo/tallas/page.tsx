@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   CaretDownIcon,
   DotsThreeVerticalIcon,
@@ -12,149 +12,331 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react/ssr";
 
-import { cn } from "@/lib/utils";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
-
-const sizes = [
-  { id: "TAL-001", name: "XS", group: "Ropa", products: 8, order: 1, status: "active" },
-  { id: "TAL-002", name: "S", group: "Ropa", products: 18, order: 2, status: "active" },
-  { id: "TAL-003", name: "M", group: "Ropa", products: 27, order: 3, status: "active" },
-  { id: "TAL-004", name: "L", group: "Ropa", products: 21, order: 4, status: "active" },
-  { id: "TAL-005", name: "XL", group: "Ropa", products: 11, order: 5, status: "active" },
-  { id: "TAL-006", name: "42", group: "Calzado", products: 7, order: 6, status: "active" },
-  { id: "TAL-007", name: "U", group: "Unica", products: 15, order: 7, status: "inactive" },
-];
+import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
+import { Modal } from "@/components/Modal/modal";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { Button } from "@/components/ui/button";
+import { defaultPageSize } from "@/lib/pagination";
+import { sizesApi, type Size } from "@/lib/api/sizes";
+import { cn } from "@/lib/utils";
 
 const statusConfig = {
   active: { label: "Activo", bg: "bg-[#10b981]", text: "text-white" },
   inactive: { label: "Inactivo", bg: "bg-[#ef4444]", text: "text-white" },
 };
 
+const defaultForm = {
+  nombre: "",
+  activo: true,
+};
+
+const pageSize = defaultPageSize;
+type SizeForm = typeof defaultForm;
+type StatusFilter = "todos" | "active" | "inactive";
+
+const statusOptions: { label: string; value: StatusFilter }[] = [
+  { label: "Todos", value: "todos" },
+  { label: "Activo", value: "active" },
+  { label: "Inactivo", value: "inactive" },
+];
+
 export default function CatalogoTallasPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("todos");
-  const [isGroupOpen, setIsGroupOpen] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  const groups = [
-    { label: "Todos", value: "todos" },
-    { label: "Ropa", value: "Ropa" },
-    { label: "Calzado", value: "Calzado" },
-    { label: "Unica", value: "Unica" },
-  ];
-
-  const filteredSizes = sizes.filter((size) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      size.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      size.group.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      size.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesGroup = selectedGroup === "todos" || size.group === selectedGroup;
-
-    return matchesSearch && matchesGroup;
+  const { showToast } = useSystemToast();
+  const [sizes, setSizes] = useState<Size[]>([]);
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    totalPages: 1,
+    activeTotal: 0,
+    inactiveTotal: 0,
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("todos");
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState<SizeForm>(defaultForm);
+  const [editingSize, setEditingSize] = useState<Size | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteSize, setDeleteSize] = useState<Size | null>(null);
 
-  const activeCount = sizes.filter((size) => size.status === "active").length;
-  const productCount = sizes.reduce((sum, size) => sum + size.products, 0);
+  useEffect(() => {
+    let isMounted = true;
+    const timeoutId = window.setTimeout(() => {
+      setIsLoading(true);
+
+      sizesApi
+        .findAll({
+          page: currentPage,
+          limit: pageSize,
+          search: searchTerm,
+          status: selectedStatus === "todos" ? undefined : selectedStatus,
+        })
+        .then((response) => {
+          if (isMounted) {
+            setSizes(response.data);
+            setMeta(response.meta);
+          }
+        })
+        .catch((error) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar tallas.";
+
+          if (isMounted) {
+            showToast({
+              title: "Error al cargar tallas",
+              description: message,
+              variant: "error",
+            });
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentPage, searchTerm, selectedStatus, showToast]);
+
+  const refreshSizes = async (targetPage = currentPage) => {
+    const response = await sizesApi.findAll({
+      page: targetPage,
+      limit: pageSize,
+      search: searchTerm,
+      status: selectedStatus === "todos" ? undefined : selectedStatus,
+    });
+
+    setSizes(response.data);
+    setMeta(response.meta);
+  };
+
+  const activeCount = meta.activeTotal;
+  const inactiveCount = meta.inactiveTotal;
+  const totalCount = meta.activeTotal + meta.inactiveTotal;
+
+  const openCreateModal = () => {
+    setEditingSize(null);
+    setForm(defaultForm);
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (size: Size) => {
+    setEditingSize(size);
+    setForm({
+      nombre: size.nombre,
+      activo: size.activo,
+    });
+    setFormError("");
+    setOpenMenuId(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsModalOpen(false);
+    setEditingSize(null);
+    setForm(defaultForm);
+    setFormError("");
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError("");
+
+    const nombre = form.nombre.trim();
+
+    if (!nombre) {
+      setFormError("Ingresa el nombre de la talla.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const savedSize = editingSize
+        ? await sizesApi.update(editingSize.id, {
+            nombre,
+            activo: form.activo,
+          })
+        : await sizesApi.create({
+            nombre,
+            activo: form.activo,
+          });
+      const targetPage = editingSize ? currentPage : 1;
+
+      setCurrentPage(targetPage);
+      await refreshSizes(targetPage);
+      showToast({
+        title: editingSize ? "Talla actualizada" : "Talla creada",
+        description: `${savedSize.nombre} quedo guardada correctamente.`,
+        variant: "success",
+      });
+      closeModal();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo guardar la talla.";
+      setFormError(message);
+      showToast({
+        title: "No se pudo guardar",
+        description: message,
+        variant: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleActive = async (size: Size) => {
+    setOpenMenuId(null);
+
+    try {
+      const updatedSize = await sizesApi.update(size.id, {
+        activo: !size.activo,
+      });
+      await refreshSizes();
+      showToast({
+        title: updatedSize.activo ? "Talla activada" : "Talla inactivada",
+        description: updatedSize.nombre,
+        variant: "success",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo cambiar el estado.";
+      showToast({
+        title: "No se pudo actualizar",
+        description: message,
+        variant: "error",
+      });
+    }
+  };
+
+  const removeSize = async (size: Size) => {
+    setOpenMenuId(null);
+    setDeleteSize(size);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteSize) return;
+
+    try {
+      await sizesApi.remove(deleteSize.id);
+      const targetPage =
+        sizes.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+
+      setCurrentPage(targetPage);
+      await refreshSizes(targetPage);
+      showToast({
+        title: "Talla eliminada",
+        description: "Se elimino de manera logica. Puedes recrearla luego.",
+        variant: "success",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo eliminar la talla.";
+      showToast({
+        title: "No se pudo eliminar",
+        description: message,
+        variant: "error",
+      });
+    } finally {
+      setDeleteSize(null);
+    }
+  };
 
   return (
     <DashboardShell headerTitle="Tallas">
-      <div className="scrollbar-hidden flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
         <div className="grid shrink-0 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-                <RulerIcon size={22} weight="fill" className="text-[var(--color-primary)]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                  Total Tallas
-                </p>
-                <p className="text-2xl font-bold leading-none text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                  {sizes.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#10b981]/10">
-                <RulerIcon size={22} weight="fill" className="text-[#10b981]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                  Activas
-                </p>
-                <p className="text-2xl font-bold leading-none text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                  {activeCount}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#3b82f6]/10">
-                <PackageIcon size={22} weight="fill" className="text-[#3b82f6]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                  Productos Asignados
-                </p>
-                <p className="text-2xl font-bold leading-none text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                  {productCount}
-                </p>
-              </div>
-            </div>
-          </div>
+          <MetricCard
+            icon={<RulerIcon size={22} weight="fill" />}
+            label="Total Tallas"
+            value={totalCount}
+            tone="primary"
+          />
+          <MetricCard
+            icon={<RulerIcon size={22} weight="fill" />}
+            label="Activas"
+            value={activeCount}
+            tone="success"
+          />
+          <MetricCard
+            icon={<PackageIcon size={22} weight="fill" />}
+            label="Inactivas"
+            value={inactiveCount}
+            tone="info"
+          />
         </div>
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 sm:flex-row sm:items-center lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
           <label className="relative flex-1">
             <MagnifyingGlassIcon
               size={18}
-              className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-placeholder)]"
             />
             <input
               type="text"
-              placeholder="Buscar por talla, grupo o codigo..."
+              placeholder="Buscar por talla o codigo..."
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </label>
 
           <div className="relative w-full sm:w-[180px]">
             <button
               type="button"
-              onClick={() => setIsGroupOpen(!isGroupOpen)}
-              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              onClick={() => setIsStatusOpen(!isStatusOpen)}
+              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
             >
               <span className="truncate">
-                {groups.find((group) => group.value === selectedGroup)?.label ?? "Todos"}
+                {selectedStatus === "todos"
+                  ? "Todos"
+                  : statusConfig[selectedStatus as keyof typeof statusConfig]
+                      ?.label}
               </span>
-              <CaretDownIcon size={16} className="shrink-0 text-[var(--color-muted-foreground)]" />
+              <CaretDownIcon
+                size={16}
+                className="shrink-0 text-[var(--color-muted-foreground)]"
+              />
             </button>
-            {isGroupOpen && (
+            {isStatusOpen && (
               <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                {groups.map((group) => (
+                {statusOptions.map((option) => (
                   <button
-                    key={group.value}
+                    key={option.value}
                     type="button"
                     onClick={() => {
-                      setSelectedGroup(group.value);
-                      setIsGroupOpen(false);
+                      setSelectedStatus(option.value);
+                      setCurrentPage(1);
+                      setIsStatusOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors",
-                      selectedGroup === group.value
+                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
+                      selectedStatus === option.value
                         ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
                     )}
                   >
-                    {group.label}
+                    {option.label}
                   </button>
                 ))}
               </div>
@@ -163,110 +345,330 @@ export default function CatalogoTallasPage() {
 
           <button
             type="button"
-            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
+            onClick={openCreateModal}
+            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
           >
             <PlusIcon size={18} weight="bold" />
             Nueva Talla
           </button>
         </div>
 
-        <div className="grid gap-3 pb-2">
-          {filteredSizes.map((size) => {
-            const status = statusConfig[size.status as keyof typeof statusConfig];
-
-            return (
+        {isLoading ? (
+          <div className="grid gap-3 pb-2">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div
-                key={size.id}
-                className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.3fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-lg font-black text-white [font-family:var(--font-circular-x-sub)]">
-                    {size.name}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-[var(--color-text)]">
-                      Talla {size.name}
-                    </p>
-                    <p className="text-xs text-[var(--color-muted-foreground)] [font-family:var(--font-circular-x-sub)]">
-                      {size.id}
-                    </p>
-                  </div>
-                </div>
+                key={index}
+                className="h-24 animate-pulse rounded-[14px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.08)]"
+              />
+            ))}
+          </div>
+        ) : sizes.length > 0 ? (
+          <div className="grid gap-3 pb-2">
+            {sizes.map((size) => {
+              const status = size.activo
+                ? statusConfig.active
+                : statusConfig.inactive;
 
-                <div>
-                  <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
-                    Grupo
-                  </p>
-                  <p className="text-sm font-bold text-[var(--color-text)]">
-                    {size.group}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
-                    Productos
-                  </p>
-                  <p className="text-sm font-bold text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                    {size.products}
-                  </p>
-                </div>
-
-                <div className="flex md:justify-center">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold",
-                      status.bg,
-                      status.text,
-                    )}
-                  >
-                    {status.label}
-                  </span>
-                </div>
-
-                <div className="relative flex md:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setOpenMenuId(openMenuId === size.id ? null : size.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)]"
-                    aria-label="Mas opciones"
-                  >
-                    <DotsThreeVerticalIcon size={20} weight="bold" />
-                  </button>
-                  {openMenuId === size.id && (
-                    <div className="absolute right-0 top-full z-20 mt-2 w-40 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                      <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]">
-                        <PencilSimpleIcon size={16} weight="bold" />
-                        Editar
-                      </button>
-                      <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[#ef4444] hover:bg-[var(--color-button-hover)]">
-                        <TrashIcon size={16} weight="bold" />
-                        Eliminar
-                      </button>
+              return (
+                <div
+                  key={size.id}
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-black text-white font-circular-regular">
+                      {size.nombre}
                     </div>
-                  )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-[var(--color-text)]">
+                        Talla {size.nombre}
+                      </p>
+                      <p className="text-xs text-[var(--color-muted-foreground)] font-circular-regular">
+                        TAL-{size.id.padStart(3, "0")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
+                      Actualizado
+                    </p>
+                    <p className="text-sm font-circular-bold text-[var(--color-text)] font-circular-regular">
+                      {formatDate(size.updatedAt)}
+                    </p>
+                  </div>
+
+                  <div className="flex md:justify-center">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
+                        status.bg,
+                        status.text
+                      )}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+
+                  <div className="relative flex md:justify-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === size.id ? null : size.id)
+                      }
+                      className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)]"
+                      aria-label="Mas opciones"
+                    >
+                      <DotsThreeVerticalIcon size={20} weight="bold" />
+                    </button>
+                    {openMenuId === size.id && (
+                      <div className="absolute right-0 top-full z-20 mt-2 w-44 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(size)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                        >
+                          <PencilSimpleIcon size={16} weight="bold" />
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void toggleActive(size)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                        >
+                          <RulerIcon size={16} weight="bold" />
+                          {size.activo ? "Inactivar" : "Activar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void removeSize(size)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[#ef4444] hover:bg-[var(--color-button-hover)]"
+                        >
+                          <TrashIcon size={16} weight="bold" />
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] p-8 text-center shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+              <RulerIcon size={26} weight="fill" />
+            </div>
+            <h2 className="mt-4 text-lg font-black text-[var(--color-text)]">
+              No hay tallas para mostrar
+            </h2>
+            <p className="mt-2 max-w-md text-sm font-medium text-[var(--color-muted-foreground)]">
+              Crea tallas como S, M, L, XL, 36, 37 o talla unica para tus
+              variantes.
+            </p>
+            <Button
+              type="button"
+              onClick={openCreateModal}
+              className="mt-5 h-10 rounded-[12px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
+            >
+              Crear talla
+            </Button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
           <p className="text-xs text-[var(--color-muted-foreground)]">
-            Mostrando {filteredSizes.length} de {sizes.length} tallas
+            Mostrando {sizes.length} de {meta.total} tallas
           </p>
           <div className="flex items-center gap-2">
-            <button className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-semibold text-[var(--color-text)] opacity-40">
+            <button
+              type="button"
+              disabled={currentPage <= 1 || isLoading}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
               Anterior
             </button>
-            <button className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-xs font-bold text-white">
-              1
-            </button>
-            <button className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-xs font-circular-bold text-white">
+              {meta.page}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage >= meta.totalPages || isLoading}
+              onClick={() =>
+                setCurrentPage((page) => Math.min(meta.totalPages, page + 1))
+              }
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
               Siguiente
             </button>
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingSize ? "Editar talla" : "Nueva talla"}
+        description="Define el nombre de la talla para tus variantes."
+      >
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label
+              htmlFor="size-name"
+              className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
+            >
+              Nombre de la talla
+            </label>
+            <input
+              id="size-name"
+              type="text"
+              value={form.nombre}
+              onChange={(event) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  nombre: event.target.value,
+                }))
+              }
+              placeholder="S, M, L, XL, 36, Talla unica"
+              maxLength={80}
+              required
+              disabled={isSubmitting}
+              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-70"
+            />
+          </div>
+
+          <label
+            className={cn(
+              "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
+              form.activo
+                ? "text-[var(--color-text)]"
+                : "text-[var(--color-muted-foreground)]"
+            )}
+          >
+            <span>Talla activa</span>
+            <input
+              type="checkbox"
+              checked={form.activo}
+              onChange={(event) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  activo: event.target.checked,
+                }))
+              }
+              disabled={isSubmitting}
+              className="h-5 w-5 accent-[var(--color-primary)]"
+            />
+          </label>
+
+          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
+            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+              Vista previa
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-black text-white font-circular-regular">
+                {form.nombre.trim() || "M"}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[var(--color-text)]">
+                  Talla {form.nombre.trim() || "Nombre de la talla"}
+                </p>
+                <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
+                  {form.activo ? "Activa" : "Inactiva"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {formError && (
+            <p className="text-sm font-circular-regular text-[#d9480f]">
+              {formError}
+            </p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeModal}
+              disabled={isSubmitting}
+              className="h-11 flex-1 rounded-[14px] border-transparent bg-[var(--color-input-bg)] text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-11 flex-1 rounded-[14px] bg-[var(--color-primary)] text-sm font-circular-bold text-white hover:opacity-90"
+            >
+              {isSubmitting
+                ? "Guardando..."
+                : editingSize
+                  ? "Guardar"
+                  : "Crear talla"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={deleteSize !== null}
+        onClose={() => setDeleteSize(null)}
+        onConfirm={() => void confirmDelete()}
+        title="Eliminar talla"
+        description="Seguro que deseas eliminar esta talla? Esta accion no se puede deshacer."
+        itemName={deleteSize?.nombre}
+      />
     </DashboardShell>
   );
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  tone: "primary" | "success" | "info";
+}) {
+  const toneClass = {
+    primary: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
+    success: "bg-[#10b981]/10 text-[#10b981]",
+    info: "bg-[#3b82f6]/10 text-[#3b82f6]",
+  }[tone];
+
+  return (
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-xl",
+            toneClass
+          )}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+            {label}
+          </p>
+          <p className="text-2xl font-circular-bold leading-none text-[var(--color-text)] font-circular-regular">
+            {value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const dateFormatter = new Intl.DateTimeFormat("es-PE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+function formatDate(value: string) {
+  return dateFormatter.format(new Date(value));
 }

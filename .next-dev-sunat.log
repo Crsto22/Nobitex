@@ -1,0 +1,32 @@
+
+> nobitex@0.1.0 dev
+> next dev --port 3001
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.107:3001
+- Environments: .env
+✓ Ready in 1206ms
+Creating turbopack project { dir: 'C:\\Users\\cristofer\\Desktop\\SASS\\nobitex', testMode: true }
+
+ GET /configuracion/empresa 200 in 4.5s (next.js: 3.1s, application-code: 1425ms)
+✓ Finished filesystem cache database compaction in 11.0s
+ GET / 200 in 470ms (next.js: 234ms, application-code: 236ms)
+ GET /dashboard 200 in 210ms (next.js: 85ms, application-code: 125ms)
+ GET /configuracion/empresa 200 in 51ms (next.js: 10ms, application-code: 40ms)
+✓ Compiled in 3.6s
+ GET /configuracion/empresa 200 in 985ms (next.js: 500ms, application-code: 485ms)
+ GET /configuracion/empresa 200 in 152ms (next.js: 9ms, application-code: 143ms)
+ GET /configuracion/empresa 200 in 69ms (next.js: 7ms, application-code: 62ms)
+✓ Compiled in 266ms
+ GET /configuracion/empresa 200 in 856ms (next.js: 229ms, application-code: 628ms)
+ GET /login 200 in 574ms (next.js: 410ms, application-code: 164ms)
+ GET /dashboard 200 in 199ms (next.js: 98ms, application-code: 101ms)
+ GET /configuracion/empresa 200 in 94ms (next.js: 25ms, application-code: 69ms)
+ GET /historial/ventas 200 in 226ms (next.js: 110ms, application-code: 116ms)
+ GET /configuracion/empresa 200 in 50ms (next.js: 5ms, application-code: 45ms)
+ GET /configuracion/empresa 200 in 167ms (next.js: 12ms, application-code: 155ms)
+ GET /configuracion/empresa 200 in 187ms (next.js: 25ms, application-code: 162ms)
+ GET /configuracion/mi-cuenta 404 in 731ms (next.js: 508ms, application-code: 223ms)
+ GET /configuracion/mi-cuenta 404 in 219ms (next.js: 23ms, application-code: 196ms)
+ GET /configuracion/empresa 200 in 219ms (next.js: 29ms, application-code: 190ms)

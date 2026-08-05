@@ -9,9 +9,9 @@ type DateFilterOption = {
 
 const dateFilterOptions: DateFilterOption[] = [
   { label: "Hoy", value: "today" },
-  { label: "Últimos 7 días", value: "7days" },
-  { label: "Últimos 14 días", value: "14days" },
-  { label: "Últimos 30 días", value: "30days" },
+  { label: "Ultimos 7 dias", value: "7days" },
+  { label: "Ultimos 14 dias", value: "14days" },
+  { label: "Ultimos 30 dias", value: "30days" },
 ];
 
 type DateFilterProps = {
@@ -28,8 +28,8 @@ export function DateFilter({ selected, onChange }: DateFilterProps) {
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-200",
-            "font-[var(--font-circular-x-sub)]",
+            "rounded-xl px-5 py-2.5 text-sm font-circular-bold transition-all duration-200",
+            "font-circular-regular",
             selected === option.value
               ? "bg-[var(--color-sidebar-active)] text-white shadow-md dark:bg-[var(--color-secondary)]"
               : "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]",

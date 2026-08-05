@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="270" height="255" viewBox="0 0 270 255"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Animación de carga del icono Norbitex</title>
+  <desc id="desc">El icono muestra una letra N azul con dos cuadrados naranjas animados como indicador de carga.</desc>
+
+  <style>
+    .n-shape {
+      fill: #001A5C;
+      transform-origin: 130px 122px;
+      animation: pulseN 1.6s ease-in-out infinite;
+    }
+
+    .dot1, .dot2 {
+      fill: #FD7204;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .dot1 {
+      animation: pop1 1s ease-in-out infinite;
+    }
+
+    .dot2 {
+      animation: pop2 1s ease-in-out infinite 0.2s;
+    }
+
+    @keyframes pulseN {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.82;
+        transform: scale(0.985);
+      }
+    }
+
+    @keyframes pop1 {
+      0%, 100% {
+        opacity: 0.35;
+        transform: translateY(0px) scale(0.92);
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(-10px) scale(1.06);
+      }
+    }
+
+    @keyframes pop2 {
+      0%, 100% {
+        opacity: 0.35;
+        transform: translateY(0px) scale(0.92);
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(-10px) scale(1.06);
+      }
+    }
+  </style>
+
+  <path class="n-shape"
+    d="M 237 21
+       L 192 21
+       L 191 162
+       L 70 21
+       L 24 21
+       L 24 157
+       L 70 157
+       L 70 94
+       L 183 223
+       L 237 223
+       Z"/>
+
+  <rect class="dot1" x="24" y="173" width="46" height="47" rx="1" ry="1"/>
+  <rect class="dot2" x="86" y="202" width="44" height="40" rx="1" ry="1"/>
+</svg>

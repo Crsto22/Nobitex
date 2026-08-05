@@ -1,0 +1,51 @@
+
+> nobitex@0.1.0 dev
+> next dev -p 3001
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.107:3001
+- Environments: .env
+✓ Ready in 1338ms
+
+ GET /dashboard 200 in 5.9s (next.js: 1912ms, application-code: 4.0s)
+ GET /dashboard 200 in 637ms (next.js: 18ms, application-code: 619ms)
+ GET /cotizaciones 200 in 930ms (next.js: 219ms, application-code: 711ms)
+ GET /facturacion/comprobantes 200 in 680ms (next.js: 95ms, application-code: 585ms)
+ GET /historial/ventas 200 in 691ms (next.js: 219ms, application-code: 472ms)
+ GET /dashboard 200 in 134ms (next.js: 10ms, application-code: 124ms)
+ GET /historial/ventas 200 in 353ms (next.js: 22ms, application-code: 331ms)
+ GET /facturacion/comprobantes 200 in 730ms (next.js: 13ms, application-code: 717ms)
+ GET /historial/ventas/cmpvej9qk0001v9zcfjr53no7 200 in 2.4s (next.js: 2.3s, application-code: 97ms)
+ GET /historial/ventas 200 in 36ms (next.js: 5ms, application-code: 31ms)
+ GET /historial/ventas 200 in 85ms (next.js: 5ms, application-code: 80ms)
+ GET /historial/ventas/cmpvej9qk0001v9zcfjr53no7 200 in 61ms (next.js: 19ms, application-code: 42ms)
+ GET /historial/ventas 200 in 29ms (next.js: 3ms, application-code: 25ms)
+ GET /facturacion/comprobantes 200 in 33ms (next.js: 5ms, application-code: 28ms)
+ GET /historial/ventas/cmpvej9qk0001v9zcfjr53no7 200 in 121ms (next.js: 17ms, application-code: 105ms)
+ GET /historial/ventas 200 in 32ms (next.js: 5ms, application-code: 27ms)
+ GET /dashboard 200 in 88ms (next.js: 36ms, application-code: 52ms)
+ GET /historial/ventas 200 in 57ms (next.js: 8ms, application-code: 49ms)
+ GET /dashboard 200 in 69ms (next.js: 8ms, application-code: 61ms)
+ GET /ventas 200 in 188ms (next.js: 108ms, application-code: 80ms)
+ GET /facturacion/comprobantes 200 in 59ms (next.js: 34ms, application-code: 25ms)
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 73ms (next.js: 22ms, application-code: 50ms)
+✓ Compiled in 1142ms
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 3.3s (next.js: 2.8s, application-code: 492ms)
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 156ms (next.js: 16ms, application-code: 140ms)
+✓ Compiled in 227ms
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 476ms (next.js: 302ms, application-code: 174ms)
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 608ms (next.js: 34ms, application-code: 574ms)
+✓ Compiled in 292ms
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 571ms (next.js: 337ms, application-code: 234ms)
+✓ Compiled in 171ms
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 420ms (next.js: 270ms, application-code: 150ms)
+✓ Compiled in 177ms
+ GET /historial/ventas/cmpxj8z5h0001v9wk92ynve8n 200 in 457ms (next.js: 305ms, application-code: 152ms)
+ GET /historial/ventas 200 in 331ms (next.js: 215ms, application-code: 116ms)
+ GET /historial/ventas/cmpvej9qk0001v9zcfjr53no7 200 in 62ms (next.js: 21ms, application-code: 41ms)
+ GET /historial/ventas 200 in 391ms (next.js: 7ms, application-code: 384ms)
+ GET /historial/ventas 200 in 140ms (next.js: 7ms, application-code: 132ms)
+ GET /historial/ventas/cmpvej9qk0001v9zcfjr53no7 200 in 62ms (next.js: 21ms, application-code: 41ms)
+ GET /dashboard 200 in 153ms (next.js: 95ms, application-code: 58ms)
+ GET /ventas 200 in 112ms (next.js: 63ms, application-code: 49ms)

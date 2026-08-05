@@ -5,11 +5,11 @@ export function LoadingScreen() {
     <div className="flex min-h-screen items-center justify-center bg-white px-6">
       <div className="flex w-full max-w-[360px] flex-col items-center">
         <Image
-          src="/Logo/NovitexLogo.png"
+          src="/Logo/norbitex_logo.svg"
           alt="Nobitex"
-          width={220}
-          height={70}
-          className="max-w-[220px]"
+          width={270}
+          height={86}
+          className="max-w-[270px]"
           style={{ width: "auto", height: "auto" }}
           priority
         />

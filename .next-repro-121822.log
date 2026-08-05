@@ -1,0 +1,16 @@
+
+> nobitex@0.1.0 dev
+> next dev -p 3001 -p 3011
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3011
+- Network:       http://192.168.0.105:3011
+- Environments: .env
+✓ Ready in 1181ms
+
+○ Compiling /catalogo/productos ...
+ GET /catalogo/productos 200 in 7.5s (next.js: 7.0s, application-code: 575ms)
+ GET /gre/remitente 200 in 1236ms (next.js: 1057ms, application-code: 178ms)
+ GET /catalogo/productos/crear 200 in 1334ms (next.js: 1228ms, application-code: 106ms)
+ GET /gre/remitente/crear 200 in 1006ms (next.js: 828ms, application-code: 178ms)
+[?25h

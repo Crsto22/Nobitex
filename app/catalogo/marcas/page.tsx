@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   CaretDownIcon,
   DotsThreeVerticalIcon,
@@ -12,158 +12,292 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react/ssr";
 
-import { cn } from "@/lib/utils";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
-
-const marcas = [
-  {
-    id: "MAR-001",
-    name: "Nike",
-    slug: "nike",
-    products: 42,
-    status: "active",
-    color: "#111111",
-    updated: "17/05/2026",
-  },
-  {
-    id: "MAR-002",
-    name: "Adidas",
-    slug: "adidas",
-    products: 38,
-    status: "active",
-    color: "#000000",
-    updated: "16/05/2026",
-  },
-  {
-    id: "MAR-003",
-    name: "Puma",
-    slug: "puma",
-    products: 25,
-    status: "active",
-    color: "#e4002b",
-    updated: "15/05/2026",
-  },
-  {
-    id: "MAR-004",
-    name: "Reebok",
-    slug: "reebok",
-    products: 19,
-    status: "active",
-    color: "#d4002a",
-    updated: "14/05/2026",
-  },
-  {
-    id: "MAR-005",
-    name: "Under Armour",
-    slug: "under-armour",
-    products: 15,
-    status: "active",
-    color: "#1d428a",
-    updated: "13/05/2026",
-  },
-  {
-    id: "MAR-006",
-    name: "New Balance",
-    slug: "new-balance",
-    products: 8,
-    status: "inactive",
-    color: "#cf0a2c",
-    updated: "12/05/2026",
-  },
-];
+import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
+import { Modal } from "@/components/Modal/modal";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { Button } from "@/components/ui/button";
+import { brandsApi, type Brand } from "@/lib/api/brands";
+import { defaultPageSize } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
 
 const statusConfig = {
   active: { label: "Activo", bg: "bg-[#10b981]", text: "text-white" },
   inactive: { label: "Inactivo", bg: "bg-[#ef4444]", text: "text-white" },
 };
 
+const defaultForm = {
+  nombre: "",
+  activo: true,
+};
+
+const pageSize = defaultPageSize;
+type BrandForm = typeof defaultForm;
+type StatusFilter = "todos" | "active" | "inactive";
+
+const statusOptions: { label: string; value: StatusFilter }[] = [
+  { label: "Todos", value: "todos" },
+  { label: "Activo", value: "active" },
+  { label: "Inactivo", value: "inactive" },
+];
+
 export default function CatalogoMarcasPage() {
+  const { showToast } = useSystemToast();
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    totalPages: 1,
+    activeTotal: 0,
+    inactiveTotal: 0,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("todos");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("todos");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState<BrandForm>(defaultForm);
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteBrand, setDeleteBrand] = useState<Brand | null>(null);
 
-  const filteredMarcas = marcas.filter((marca) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      marca.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      marca.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      marca.id.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    let isMounted = true;
+    const timeoutId = window.setTimeout(() => {
+      setIsLoading(true);
 
-    const matchesStatus =
-      selectedStatus === "todos" || marca.status === selectedStatus;
+      brandsApi
+        .findAll({
+          page: currentPage,
+          limit: pageSize,
+          search: searchTerm,
+          status: selectedStatus === "todos" ? undefined : selectedStatus,
+        })
+        .then((response) => {
+          if (isMounted) {
+            setBrands(response.data);
+            setMeta(response.meta);
+          }
+        })
+        .catch((error) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar marcas.";
 
-    return matchesSearch && matchesStatus;
-  });
+          if (isMounted) {
+            showToast({
+              title: "Error al cargar marcas",
+              description: message,
+              variant: "error",
+            });
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        });
+    }, 250);
 
-  const activeCount = marcas.filter((marca) => marca.status === "active").length;
-  const productCount = marcas.reduce((sum, marca) => sum + marca.products, 0);
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentPage, searchTerm, selectedStatus, showToast]);
+
+  const refreshBrands = async (targetPage = currentPage) => {
+    const response = await brandsApi.findAll({
+      page: targetPage,
+      limit: pageSize,
+      search: searchTerm,
+      status: selectedStatus === "todos" ? undefined : selectedStatus,
+    });
+
+    setBrands(response.data);
+    setMeta(response.meta);
+  };
+
+  const activeCount = meta.activeTotal;
+  const inactiveCount = meta.inactiveTotal;
+  const totalCount = meta.activeTotal + meta.inactiveTotal;
+
+  const openCreateModal = () => {
+    setEditingBrand(null);
+    setForm(defaultForm);
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (brand: Brand) => {
+    setEditingBrand(brand);
+    setForm({
+      nombre: brand.nombre,
+      activo: brand.activo,
+    });
+    setFormError("");
+    setOpenMenuId(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsModalOpen(false);
+    setEditingBrand(null);
+    setForm(defaultForm);
+    setFormError("");
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError("");
+
+    const nombre = form.nombre.trim();
+
+    if (!nombre) {
+      setFormError("Ingresa el nombre de la marca.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const savedBrand = editingBrand
+        ? await brandsApi.update(editingBrand.id, {
+            nombre,
+            activo: form.activo,
+          })
+        : await brandsApi.create({
+            nombre,
+            activo: form.activo,
+          });
+      const targetPage = editingBrand ? currentPage : 1;
+
+      setCurrentPage(targetPage);
+      await refreshBrands(targetPage);
+      showToast({
+        title: editingBrand ? "Marca actualizada" : "Marca creada",
+        description: `${savedBrand.nombre} quedo guardada correctamente.`,
+        variant: "success",
+      });
+      closeModal();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo guardar la marca.";
+      setFormError(message);
+      showToast({
+        title: "No se pudo guardar",
+        description: message,
+        variant: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleActive = async (brand: Brand) => {
+    setOpenMenuId(null);
+
+    try {
+      const updatedBrand = await brandsApi.update(brand.id, {
+        activo: !brand.activo,
+      });
+      await refreshBrands();
+      showToast({
+        title: updatedBrand.activo ? "Marca activada" : "Marca inactivada",
+        description: updatedBrand.nombre,
+        variant: "success",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo cambiar el estado.";
+      showToast({
+        title: "No se pudo actualizar",
+        description: message,
+        variant: "error",
+      });
+    }
+  };
+
+  const removeBrand = async (brand: Brand) => {
+    setOpenMenuId(null);
+    setDeleteBrand(brand);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteBrand) return;
+
+    try {
+      await brandsApi.remove(deleteBrand.id);
+      const targetPage =
+        brands.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+
+      setCurrentPage(targetPage);
+      await refreshBrands(targetPage);
+      showToast({
+        title: "Marca eliminada",
+        description: "Se elimino de manera logica. Puedes recrearla luego.",
+        variant: "success",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo eliminar la marca.";
+      showToast({
+        title: "No se pudo eliminar",
+        description: message,
+        variant: "error",
+      });
+    } finally {
+      setDeleteBrand(null);
+    }
+  };
 
   return (
     <DashboardShell headerTitle="Marcas">
-      <div className="scrollbar-hidden flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
         <div className="grid shrink-0 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-                <TagIcon size={22} weight="fill" className="text-[var(--color-primary)]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                  Total Marcas
-                </p>
-                <p className="text-2xl font-bold leading-none text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                  {marcas.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#10b981]/10">
-                <TagIcon size={22} weight="fill" className="text-[#10b981]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                  Activas
-                </p>
-                <p className="text-2xl font-bold leading-none text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                  {activeCount}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#3b82f6]/10">
-                <PackageIcon size={22} weight="fill" className="text-[#3b82f6]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                  Productos Asignados
-                </p>
-                <p className="text-2xl font-bold leading-none text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                  {productCount}
-                </p>
-              </div>
-            </div>
-          </div>
+          <MetricCard
+            icon={<TagIcon size={22} weight="fill" />}
+            label="Total Marcas"
+            value={totalCount}
+            tone="primary"
+          />
+          <MetricCard
+            icon={<TagIcon size={22} weight="fill" />}
+            label="Activas"
+            value={activeCount}
+            tone="success"
+          />
+          <MetricCard
+            icon={<PackageIcon size={22} weight="fill" />}
+            label="Inactivas"
+            value={inactiveCount}
+            tone="info"
+          />
         </div>
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 sm:flex-row sm:items-center lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
           <label className="relative flex-1">
             <MagnifyingGlassIcon
               size={18}
-              className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-placeholder)]"
             />
             <input
               type="text"
-              placeholder="Buscar por marca, slug o codigo..."
+              placeholder="Buscar por marca o codigo..."
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </label>
 
@@ -171,34 +305,35 @@ export default function CatalogoMarcasPage() {
             <button
               type="button"
               onClick={() => setIsStatusOpen(!isStatusOpen)}
-              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
             >
               <span className="truncate">
                 {selectedStatus === "todos"
                   ? "Todos"
-                  : statusConfig[selectedStatus as keyof typeof statusConfig]?.label}
+                  : statusConfig[selectedStatus as keyof typeof statusConfig]
+                      ?.label}
               </span>
-              <CaretDownIcon size={16} className="shrink-0 text-[var(--color-muted-foreground)]" />
+              <CaretDownIcon
+                size={16}
+                className="shrink-0 text-[var(--color-muted-foreground)]"
+              />
             </button>
             {isStatusOpen && (
               <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                {[
-                  { label: "Todos", value: "todos" },
-                  { label: "Activo", value: "active" },
-                  { label: "Inactivo", value: "inactive" },
-                ].map((option) => (
+                {statusOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => {
                       setSelectedStatus(option.value);
+                      setCurrentPage(1);
                       setIsStatusOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors",
+                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
                       selectedStatus === option.value
                         ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
                     )}
                   >
                     {option.label}
@@ -210,115 +345,330 @@ export default function CatalogoMarcasPage() {
 
           <button
             type="button"
-            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
+            onClick={openCreateModal}
+            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
           >
             <PlusIcon size={18} weight="bold" />
             Nueva Marca
           </button>
         </div>
 
-        <div className="grid gap-3 pb-2">
-          {filteredMarcas.map((marca) => {
-            const status = statusConfig[marca.status as keyof typeof statusConfig];
-
-            return (
+        {isLoading ? (
+          <div className="grid gap-3 pb-2">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div
-                key={marca.id}
-                className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
-                    style={{ backgroundColor: marca.color }}
-                  >
-                    <TagIcon size={22} weight="fill" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-[var(--color-text)]">
-                      {marca.name}
-                    </p>
-                    <p className="text-xs text-[var(--color-muted-foreground)] [font-family:var(--font-circular-x-sub)]">
-                      {marca.id} - {marca.slug}
-                    </p>
-                  </div>
-                </div>
+                key={index}
+                className="h-24 animate-pulse rounded-[14px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.08)]"
+              />
+            ))}
+          </div>
+        ) : brands.length > 0 ? (
+          <div className="grid gap-3 pb-2">
+            {brands.map((brand) => {
+              const status = brand.activo
+                ? statusConfig.active
+                : statusConfig.inactive;
 
-                <div>
-                  <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
-                    Productos
-                  </p>
-                  <p className="text-sm font-bold text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                    {marca.products}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
-                    Actualizado
-                  </p>
-                  <p className="text-sm font-bold text-[var(--color-text)] [font-family:var(--font-circular-x-sub)]">
-                    {marca.updated}
-                  </p>
-                </div>
-
-                <div className="flex md:justify-center">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold",
-                      status.bg,
-                      status.text,
-                    )}
-                  >
-                    {status.label}
-                  </span>
-                </div>
-
-                <div className="relative flex md:justify-end">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenMenuId(openMenuId === marca.id ? null : marca.id)
-                    }
-                    className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)]"
-                    aria-label="Mas opciones"
-                  >
-                    <DotsThreeVerticalIcon size={20} weight="bold" />
-                  </button>
-                  {openMenuId === marca.id && (
-                    <div className="absolute right-0 top-full z-20 mt-2 w-40 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                      <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]">
-                        <PencilSimpleIcon size={16} weight="bold" />
-                        Editar
-                      </button>
-                      <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[#ef4444] hover:bg-[var(--color-button-hover)]">
-                        <TrashIcon size={16} weight="bold" />
-                        Eliminar
-                      </button>
+              return (
+                <div
+                  key={brand.id}
+                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(130px,0.8fr)_minmax(110px,0.7fr)_40px] md:items-center md:gap-5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
+                      <TagIcon size={22} weight="fill" />
                     </div>
-                  )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-[var(--color-text)]">
+                        {brand.nombre}
+                      </p>
+                      <p className="text-xs text-[var(--color-muted-foreground)] font-circular-regular">
+                        MAR-{brand.id.padStart(3, "0")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
+                      Actualizado
+                    </p>
+                    <p className="text-sm font-circular-bold text-[var(--color-text)] font-circular-regular">
+                      {formatDate(brand.updatedAt)}
+                    </p>
+                  </div>
+
+                  <div className="flex md:justify-center">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
+                        status.bg,
+                        status.text
+                      )}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+
+                  <div className="relative flex md:justify-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === brand.id ? null : brand.id)
+                      }
+                      className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)]"
+                      aria-label="Mas opciones"
+                    >
+                      <DotsThreeVerticalIcon size={20} weight="bold" />
+                    </button>
+                    {openMenuId === brand.id && (
+                      <div className="absolute right-0 top-full z-20 mt-2 w-44 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(brand)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                        >
+                          <PencilSimpleIcon size={16} weight="bold" />
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void toggleActive(brand)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                        >
+                          <TagIcon size={16} weight="bold" />
+                          {brand.activo ? "Inactivar" : "Activar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void removeBrand(brand)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[#ef4444] hover:bg-[var(--color-button-hover)]"
+                        >
+                          <TrashIcon size={16} weight="bold" />
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] p-8 text-center shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+              <TagIcon size={26} weight="fill" />
+            </div>
+            <h2 className="mt-4 text-lg font-black text-[var(--color-text)]">
+              No hay marcas para mostrar
+            </h2>
+            <p className="mt-2 max-w-md text-sm font-medium text-[var(--color-muted-foreground)]">
+              Crea marcas como Nike, Adidas, marca propia o sin marca para tus
+              productos.
+            </p>
+            <Button
+              type="button"
+              onClick={openCreateModal}
+              className="mt-5 h-10 rounded-[12px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
+            >
+              Crear marca
+            </Button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
           <p className="text-xs text-[var(--color-muted-foreground)]">
-            Mostrando {filteredMarcas.length} de {marcas.length} marcas
+            Mostrando {brands.length} de {meta.total} marcas
           </p>
           <div className="flex items-center gap-2">
-            <button className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-semibold text-[var(--color-text)] opacity-40">
+            <button
+              type="button"
+              disabled={currentPage <= 1 || isLoading}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
               Anterior
             </button>
-            <button className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-xs font-bold text-white">
-              1
-            </button>
-            <button className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-xs font-circular-bold text-white">
+              {meta.page}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage >= meta.totalPages || isLoading}
+              onClick={() =>
+                setCurrentPage((page) => Math.min(meta.totalPages, page + 1))
+              }
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
               Siguiente
             </button>
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingBrand ? "Editar marca" : "Nueva marca"}
+        description="Define el nombre de la marca para tus productos."
+      >
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label
+              htmlFor="brand-name"
+              className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
+            >
+              Nombre de la marca
+            </label>
+            <input
+              id="brand-name"
+              type="text"
+              value={form.nombre}
+              onChange={(event) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  nombre: event.target.value,
+                }))
+              }
+              placeholder="Nike, Adidas, Marca propia"
+              maxLength={120}
+              required
+              disabled={isSubmitting}
+              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-70"
+            />
+          </div>
+
+          <label
+            className={cn(
+              "flex cursor-pointer items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]",
+              form.activo
+                ? "text-[var(--color-text)]"
+                : "text-[var(--color-muted-foreground)]"
+            )}
+          >
+            <span>Marca activa</span>
+            <input
+              type="checkbox"
+              checked={form.activo}
+              onChange={(event) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  activo: event.target.checked,
+                }))
+              }
+              disabled={isSubmitting}
+              className="h-5 w-5 accent-[var(--color-primary)]"
+            />
+          </label>
+
+          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
+            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+              Vista previa
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
+                <TagIcon size={22} weight="fill" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[var(--color-text)]">
+                  {form.nombre.trim() || "Nombre de la marca"}
+                </p>
+                <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
+                  {form.activo ? "Activa" : "Inactiva"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {formError && (
+            <p className="text-sm font-circular-regular text-[#d9480f]">
+              {formError}
+            </p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeModal}
+              disabled={isSubmitting}
+              className="h-11 flex-1 rounded-[14px] border-transparent bg-[var(--color-input-bg)] text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-11 flex-1 rounded-[14px] bg-[var(--color-primary)] text-sm font-circular-bold text-white hover:opacity-90"
+            >
+              {isSubmitting
+                ? "Guardando..."
+                : editingBrand
+                  ? "Guardar"
+                  : "Crear marca"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={deleteBrand !== null}
+        onClose={() => setDeleteBrand(null)}
+        onConfirm={() => void confirmDelete()}
+        title="Eliminar marca"
+        description="Seguro que deseas eliminar esta marca? Esta accion no se puede deshacer."
+        itemName={deleteBrand?.nombre}
+      />
     </DashboardShell>
   );
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  tone: "primary" | "success" | "info";
+}) {
+  const toneClass = {
+    primary: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
+    success: "bg-[#10b981]/10 text-[#10b981]",
+    info: "bg-[#3b82f6]/10 text-[#3b82f6]",
+  }[tone];
+
+  return (
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-xl",
+            toneClass
+          )}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+            {label}
+          </p>
+          <p className="text-2xl font-circular-bold leading-none text-[var(--color-text)] font-circular-regular">
+            {value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const dateFormatter = new Intl.DateTimeFormat("es-PE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+function formatDate(value: string) {
+  return dateFormatter.format(new Date(value));
 }
