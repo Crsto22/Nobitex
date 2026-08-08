@@ -63,7 +63,7 @@ export default function StockTransfersPage() {
     <DashboardShell headerTitle="Traspasos de stock">
       <div className="min-h-full space-y-4 bg-[var(--color-background)] p-4 lg:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div><h1 className="text-lg font-circular-bold text-[var(--color-text)]">Traspasos</h1><p className="text-sm text-[var(--color-muted-foreground)]">Movimientos entre tiendas y almacenes.</p></div>
+          <div><h1 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">Traspasos</h1><p className="text-sm text-[var(--color-muted-foreground)]">Movimientos entre tiendas y almacenes.</p></div>
           <button onClick={() => router.push("/stock/traspasos/nuevo")} className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white"><PlusIcon size={17} weight="bold" /> Nuevo traspaso</button>
         </div>
 

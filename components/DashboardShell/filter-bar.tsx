@@ -42,19 +42,21 @@ export function FilterBar({
   const currentBranch = branchOptions.find((b) => b.value === selectedBranch);
 
   return (
-    <div className="flex items-center justify-between gap-4">
-      <DateFilter selected={selectedDateFilter} onChange={onDateFilterChange} />
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="-mx-3 px-3 sm:mx-0 sm:px-0">
+        <DateFilter selected={selectedDateFilter} onChange={onDateFilterChange} />
+      </div>
+      <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
         {ownOperations ? (
           <span className="hidden h-10 items-center rounded-xl bg-[var(--color-primary)]/10 px-3 text-xs font-circular-bold text-[var(--color-primary)] sm:flex">
             Mis operaciones
           </span>
         ) : null}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-none">
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="font-circular-regular flex items-center gap-2 rounded-xl bg-[var(--color-sidebar-bg)] px-5 py-2.5 text-sm font-circular-bold text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-button-hover)]"
+            className="font-circular-regular flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-sidebar-bg)] px-5 py-2.5 text-sm font-circular-bold text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-button-hover)] whitespace-nowrap"
           >
             <BuildingsIcon size={16} weight="bold" />
             {currentBranch?.label ?? "Cargando..."}
@@ -89,7 +91,7 @@ export function FilterBar({
           onClick={onRefresh}
           disabled={isRefreshing}
           className={cn(
-            "font-circular-regular flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-circular-bold text-white shadow-md transition-colors duration-200",
+            "font-circular-regular flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-circular-bold text-white shadow-md transition-colors duration-200 whitespace-nowrap sm:flex-none",
             "bg-[var(--color-sidebar-active)] dark:bg-[var(--color-secondary)]",
             isRefreshing && "cursor-not-allowed opacity-70",
           )}

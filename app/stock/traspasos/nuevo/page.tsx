@@ -71,7 +71,7 @@ export default function NewStockTransferPage() {
   return (
     <DashboardShell headerTitle="Nuevo traspaso" headerParent={{ label: "Traspasos", href: "/stock/traspasos" }}>
       <form onSubmit={submit} className="min-h-full space-y-4 bg-[var(--color-background)] p-4 lg:p-6">
-        <div className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm"><h1 className="text-lg font-circular-bold text-[var(--color-text)]">Registrar traspaso</h1><p className="text-sm text-[var(--color-muted-foreground)]">Mueve productos entre tiendas y almacenes.</p></div>
+        <div className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm"><h1 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">Registrar traspaso</h1><p className="text-sm text-[var(--color-muted-foreground)]">Mueve productos entre tiendas y almacenes.</p></div>
 
         <div className="grid gap-4 xl:grid-cols-[0.72fr_1.28fr]">
           <section className="space-y-5 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">

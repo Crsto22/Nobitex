@@ -155,7 +155,7 @@ export default function CustomerReportPage() {
                     {label}
                   </p>
                   <p
-                    className={`mt-3 text-2xl font-circular-bold ${
+                    className={`mt-3 text-2xl font-circular-bold text-fixed-2xl ${
                       featured ? "text-white" : "text-[var(--color-text)]"
                     }`}
                   >

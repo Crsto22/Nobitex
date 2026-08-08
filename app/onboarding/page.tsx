@@ -229,7 +229,7 @@ export default function OnboardingPage() {
               <p className="text-sm font-circular-bold text-[var(--color-primary)]">
                 Paso {step} de 3
               </p>
-              <h1 className="mt-1 text-2xl font-circular-bold text-[var(--color-text)] sm:text-3xl">
+              <h1 className="mt-1 text-2xl font-circular-bold text-[var(--color-text)] sm:text-3xl text-fixed-2xl">
                 Bienvenido, {getUserDisplayName(user)}
               </h1>
             </div>

@@ -68,7 +68,7 @@ export default function NewStockMovementPage() {
     <DashboardShell headerTitle="Nuevo movimiento" headerParent={{ label: "Movimientos", href: "/stock/movimientos" }}>
       <form onSubmit={submit} className="min-h-full space-y-4 bg-[var(--color-background)] p-4 lg:p-6">
         <div className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <h1 className="text-lg font-circular-bold text-[var(--color-text)]">Registrar movimiento</h1>
+          <h1 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">Registrar movimiento</h1>
           <p className="text-sm text-[var(--color-muted-foreground)]">Ajusta el stock de una tienda o almacen.</p>
         </div>
 

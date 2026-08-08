@@ -1046,7 +1046,7 @@ export default function VentaDetallePage() {
                 <span className="font-black text-[var(--color-text)]">
                   Total
                 </span>
-                <span className="font-circular-bold text-lg font-black text-[var(--color-text)]">
+                <span className="font-circular-bold text-lg font-black text-[var(--color-text)] text-fixed-lg">
                   {formatPrice(venta.total)}
                 </span>
               </div>

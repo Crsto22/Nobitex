@@ -88,7 +88,7 @@ export default function SuperAdminDashboardPage() {
     <DashboardShell headerTitle="Dashboard administrativo">
       <div className="flex flex-1 flex-col gap-6 px-4 py-6 md:px-10 md:py-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-lg font-circular-bold text-[var(--color-text)] sm:text-xl">
+          <p className="text-lg font-circular-bold text-[var(--color-text)] sm:text-xl text-fixed-lg">
             Hola, bienvenido{" "}
             <span className="text-[var(--color-primary)]">
               {getUserDisplayName(user) || "Administrador"}
@@ -246,7 +246,7 @@ function SummaryGrid({
               >
                 {item.label}
               </p>
-              <p className="truncate text-2xl leading-none font-circular-bold">
+              <p className="truncate text-2xl leading-none font-circular-bold text-fixed-2xl">
                 {!dashboard && isLoading ? "..." : item.value}
               </p>
             </div>
@@ -264,7 +264,7 @@ function CompanyTrendChart({
 }) {
   return (
     <article className="rounded-2xl bg-[var(--color-sidebar-bg)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-circular-bold text-[var(--color-text)]">
+      <h2 className="mb-4 text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
         Nuevas empresas
       </h2>
       <div className="h-[280px]">
@@ -352,7 +352,7 @@ function PlanDistribution({
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-circular-bold text-[var(--color-text)]">
+              <span className="text-2xl font-circular-bold text-[var(--color-text)] text-fixed-2xl">
                 {numberFormatter.format(total)}
               </span>
             </div>
@@ -394,7 +394,7 @@ function RecentCompanies({
   return (
     <section className="overflow-hidden rounded-2xl bg-[var(--color-sidebar-bg)] shadow-sm">
       <div className="px-6 pt-6 pb-4">
-        <h2 className="text-lg font-circular-bold text-[var(--color-text)]">
+        <h2 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
           Empresas recientes
         </h2>
       </div>

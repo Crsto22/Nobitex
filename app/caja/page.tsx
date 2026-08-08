@@ -213,8 +213,8 @@ export default function CajaPage() {
 
   return (
     <DashboardShell headerTitle="Caja">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <MetricCard
             icon={<ReceiptIcon size={22} weight="fill" />}
             label="Sesiones"
@@ -242,7 +242,7 @@ export default function CajaPage() {
         </div>
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:px-6 xl:flex-row xl:items-center xl:justify-between dark:bg-[var(--color-background)]">
-          <div className="grid w-full max-w-5xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(180px,260px)_minmax(140px,160px)_minmax(150px,170px)_minmax(150px,170px)]">
+          <div className="grid w-full max-w-5xl grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-[minmax(180px,260px)_minmax(140px,160px)_minmax(150px,170px)_minmax(150px,170px)]">
             <FilterSelect
               value={selectedBranch}
               options={branchFilterOptions}
@@ -340,7 +340,7 @@ export default function CajaPage() {
               return (
                 <div
                   key={session.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(170px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_110px_120px_40px] md:items-center md:gap-4"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[minmax(170px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_110px_120px_40px] md:items-center md:gap-4 md:gap-y-0"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
@@ -382,7 +382,7 @@ export default function CajaPage() {
                     </span>
                   </div>
 
-                  <div className="flex md:justify-center">
+                  <div className="flex justify-end md:justify-center">
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
@@ -410,7 +410,7 @@ export default function CajaPage() {
                     ) : null}
                   </div>
 
-                  <div className="relative flex items-center md:justify-end">
+                  <div className="relative flex items-center justify-end md:justify-end">
                     <button
                       type="button"
                       onClick={() =>

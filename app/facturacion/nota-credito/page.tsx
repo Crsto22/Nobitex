@@ -255,8 +255,8 @@ export default function NotaCreditoPage() {
 
   return (
     <DashboardShell headerTitle="Notas de Credito">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           <SummaryCard
             icon={CheckCircleIcon}
             label="Aceptadas SUNAT"
@@ -299,50 +299,52 @@ export default function NotaCreditoPage() {
             />
           </div>
 
-          <FilterSelect
-            refEl={statusRef}
-            open={isStatusOpen}
-            onToggle={() => {
-              setIsStatusOpen((value) => !value);
-              setIsTypeOpen(false);
-            }}
-            label={
-              selectedStatus === "todos"
-                ? "Estado SUNAT"
-                : statusConfig[selectedStatus].label
-            }
-            options={statusOptions}
-            selected={selectedStatus}
-            onSelect={(value) => {
-              setSelectedStatus(value as StatusFilter);
-              setPage(1);
-              setIsStatusOpen(false);
-            }}
-          />
-          <FilterSelect
-            refEl={typeRef}
-            open={isTypeOpen}
-            onToggle={() => {
-              setIsTypeOpen((value) => !value);
-              setIsStatusOpen(false);
-            }}
-            label={
-              typeOptions.find((item) => item.value === selectedType)?.label ??
-              "Tipo"
-            }
-            options={typeOptions}
-            selected={selectedType}
-            onSelect={(value) => {
-              setSelectedType(value as TypeFilter);
-              setPage(1);
-              setIsTypeOpen(false);
-            }}
-          />
+          <div className="flex gap-2 sm:gap-3">
+            <FilterSelect
+              refEl={statusRef}
+              open={isStatusOpen}
+              onToggle={() => {
+                setIsStatusOpen((value) => !value);
+                setIsTypeOpen(false);
+              }}
+              label={
+                selectedStatus === "todos"
+                  ? "Estado SUNAT"
+                  : statusConfig[selectedStatus].label
+              }
+              options={statusOptions}
+              selected={selectedStatus}
+              onSelect={(value) => {
+                setSelectedStatus(value as StatusFilter);
+                setPage(1);
+                setIsStatusOpen(false);
+              }}
+            />
+            <FilterSelect
+              refEl={typeRef}
+              open={isTypeOpen}
+              onToggle={() => {
+                setIsTypeOpen((value) => !value);
+                setIsStatusOpen(false);
+              }}
+              label={
+                typeOptions.find((item) => item.value === selectedType)?.label ??
+                "Tipo"
+              }
+              options={typeOptions}
+              selected={selectedType}
+              onSelect={(value) => {
+                setSelectedType(value as TypeFilter);
+                setPage(1);
+                setIsTypeOpen(false);
+              }}
+            />
+          </div>
 
           <button
             type="button"
             onClick={() => router.push("/facturacion/nota-credito/nuevo")}
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 sm:w-auto"
           >
             Nueva Nota de Credito
           </button>
@@ -368,7 +370,7 @@ export default function NotaCreditoPage() {
               return (
                 <div
                   key={note.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[155px_minmax(220px,1.4fr)_125px_135px_135px_40px] md:items-center"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[155px_minmax(220px,1.4fr)_125px_135px_135px_40px] md:items-center md:gap-3 md:gap-y-0"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
@@ -412,7 +414,7 @@ export default function NotaCreditoPage() {
                       {formatMoney(note.total)}
                     </p>
                   </div>
-                  <div className="relative flex md:justify-end">
+                  <div className="relative flex items-center justify-end md:justify-end">
                     <button
                       type="button"
                       onClick={() =>
@@ -554,7 +556,7 @@ function FilterSelect({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div ref={refEl} className="relative w-full sm:w-[170px]">
+    <div ref={refEl} className="relative flex-1 sm:w-[170px] sm:flex-none">
       <button
         type="button"
         onClick={onToggle}

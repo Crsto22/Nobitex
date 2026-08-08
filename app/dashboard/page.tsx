@@ -102,7 +102,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-6 md:px-10 md:py-10">
+      <div className="flex flex-1 flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:px-10 md:py-10">
         <FilterBar
           selectedDateFilter={selectedFilter}
           onDateFilterChange={(value) =>
@@ -122,7 +122,7 @@ export default function DashboardPage() {
           </div>
         ) : null}
         <StatsGrid summary={dashboard?.summary} />
-        <div className="grid grid-cols-[2fr_1fr_1fr] gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[2fr_1fr_1fr]">
           <SalesTrendChart
             data={dashboard?.salesTrend.data}
             granularity={dashboard?.salesTrend.granularity}
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-circular-regular text-[var(--color-muted-foreground)]">
                   Plan actual
                 </p>
-                <p className="truncate text-lg font-circular-bold text-[var(--color-text)]">
+                <p className="truncate text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
                   {currentPlan?.plan.name ?? "Cargando..."}
                 </p>
               </div>

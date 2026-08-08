@@ -490,7 +490,7 @@ export function ChargeModal({
       >
         <div className="flex shrink-0 items-start justify-between gap-4 p-5 pb-0">
           <div>
-            <h2 className="text-lg font-black text-[var(--color-text)]">
+            <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
               {title}
             </h2>
             <p className="mt-1 text-sm font-medium text-[var(--color-muted-foreground)]">

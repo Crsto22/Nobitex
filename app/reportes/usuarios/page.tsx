@@ -109,7 +109,7 @@ export default function UserReportPage() {
         ) : null}
 
         <section className="min-w-0">
-          <h2 className="text-lg font-circular-bold text-[var(--color-text)]">
+          <h2 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
             KPIs por usuario
           </h2>
           <p className="mt-1 text-sm font-circular-regular text-[var(--color-muted-foreground)]">

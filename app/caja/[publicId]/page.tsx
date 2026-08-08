@@ -182,7 +182,7 @@ export default function CajaDetallePage() {
       <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 lg:px-6">
         <div className="flex flex-col gap-3 rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="truncate text-lg font-black text-[var(--color-text)]">
+            <p className="truncate text-lg font-black text-[var(--color-text)] text-fixed-lg">
               {session.sucursal.nombre}
             </p>
             <p className="truncate text-xs text-[var(--color-muted-foreground)]">

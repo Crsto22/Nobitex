@@ -42,7 +42,7 @@ export function SalesTrendChart({
     <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-circular-bold text-[var(--color-text)]">
+          <h3 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
             Tendencia de ventas
           </h3>
           <p className="text-sm text-[var(--color-muted-foreground)]">

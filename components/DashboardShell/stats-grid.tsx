@@ -78,7 +78,7 @@ function StatCard({
         </span>
         <span
           className={cn(
-            "font-circular-bold text-2xl leading-none",
+            "font-circular-bold text-2xl leading-none text-fixed-2xl",
             textColor || (active ? "text-white" : "text-[var(--color-text)]"),
           )}
         >
@@ -336,13 +336,13 @@ export function StatsGrid({ summary }: { summary?: DashboardSummary | null }) {
   const mainStatsData = buildStatsData(currentSummary);
 
   return (
-    <div className="flex gap-4">
-      <div className="grid min-w-0 flex-1 grid-cols-3 gap-4">
+    <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {mainStatsData.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
-      <div className="w-[500px] shrink-0">
+      <div className="w-full lg:w-[500px] lg:shrink-0">
         <CompactStatsCard
           emitted={currentSummary.emittedCount}
           voided={currentSummary.voidedCount}

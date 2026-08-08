@@ -41,7 +41,7 @@ export function PaymentMethodsChart({
 
   return (
     <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-6 shadow-sm">
-      <h3 className="mb-4 text-lg font-circular-bold text-[var(--color-text)]">
+      <h3 className="mb-4 text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
         Ingresos por metodo de pago
       </h3>
       <div className="relative flex h-[220px] items-center justify-center">

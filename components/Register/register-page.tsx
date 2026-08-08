@@ -475,7 +475,7 @@ export function RegisterPage() {
                 priority
               />
             </div>
-            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl">
+            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl text-fixed-5xl">
               Crea tu empresa y empieza a vender con control.
             </h2>
             <div className="mt-8 space-y-4 text-base font-circular-regular text-white/88">
@@ -553,7 +553,7 @@ export function RegisterPage() {
                       />
                     </div>
                     <div>
-                      <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl">
+                      <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
                         Crea tu cuenta
                       </h1>
                       <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
@@ -691,7 +691,7 @@ export function RegisterPage() {
                         <div className="mx-auto flex h-14 w-14 items-center justify-center text-[var(--color-secondary)]">
                           <EnvelopeSimpleIcon size={38} weight="fill" />
                         </div>
-                        <h2 className="mt-4 text-center text-2xl font-black text-[var(--color-primary)]">
+                        <h2 className="mt-4 text-center text-2xl font-black text-[var(--color-primary)] text-fixed-2xl">
                           Verifica tu email
                         </h2>
                         <p className="mx-auto mt-2 max-w-[360px] text-center text-sm font-circular-regular leading-6 text-[#525b75]">
@@ -803,7 +803,7 @@ function ActivationScreen({ progress }: { progress: number }) {
   return (
     <div className="login-form-motion flex min-h-[calc(100dvh-3rem)] flex-col justify-center py-8">
       <div className="mx-auto w-full max-w-[420px] text-center">
-        <h2 className="text-2xl font-black text-[var(--color-primary)]">
+        <h2 className="text-2xl font-black text-[var(--color-primary)] text-fixed-2xl">
           {isReady ? "Tu tienda esta lista!" : "Activando ventas"}
         </h2>
         {!isReady && (

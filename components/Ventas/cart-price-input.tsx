@@ -163,7 +163,7 @@ function PriceOption({
         <span className="block text-[11px] font-circular-bold text-[var(--color-muted-foreground)]">
           {label}
         </span>
-        <span className="mt-1 block text-base font-circular-bold text-[var(--color-text)]">
+        <span className="mt-1 block text-base font-circular-bold text-[var(--color-text)] text-fixed-base">
           S/{price.toFixed(2)}
         </span>
         <span className="mt-1 block text-[10px] text-[var(--color-muted-foreground)]">

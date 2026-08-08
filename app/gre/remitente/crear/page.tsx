@@ -397,7 +397,7 @@ export default function CrearGuiaRemisionPage() {
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
         <div>
           <div>
-            <h1 className="text-2xl font-circular-bold text-[var(--color-text)]">
+            <h1 className="text-2xl font-circular-bold text-[var(--color-text)] text-fixed-2xl">
               Nueva guia de remision
             </h1>
             <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">

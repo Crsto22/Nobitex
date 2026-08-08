@@ -649,3 +649,21 @@ html[data-sidebar-expanded-sections]:not(
     animation: none;
   }
 }
+
+/* ── Mobile typography: reduce base font-size globally ── */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px;
+  }
+
+  .text-fixed-xs   { font-size: calc(0.75rem * 16 / 14) !important; }
+  .text-fixed-sm   { font-size: calc(0.875rem * 16 / 14) !important; }
+  .text-fixed-base { font-size: calc(1rem * 16 / 14) !important; }
+  .text-fixed-lg   { font-size: calc(1.125rem * 16 / 14) !important; }
+  .text-fixed-xl   { font-size: calc(1.25rem * 16 / 14) !important; }
+  .text-fixed-2xl  { font-size: calc(1.5rem * 16 / 14) !important; }
+  .text-fixed-3xl  { font-size: calc(1.875rem * 16 / 14) !important; }
+  .text-fixed-4xl  { font-size: calc(2.25rem * 16 / 14) !important; }
+  .text-fixed-5xl  { font-size: calc(3rem * 16 / 14) !important; }
+  .text-fixed-6xl  { font-size: calc(3.75rem * 16 / 14) !important; }
+}

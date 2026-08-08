@@ -151,7 +151,7 @@ export function LoginPage() {
                 style={{ width: "auto", height: "auto" }}
                 priority
               />
-              <h1 className="text-center text-3xl font-black text-[var(--color-primary)]">
+              <h1 className="text-center text-3xl font-black text-[var(--color-primary)] text-fixed-3xl">
                 Ingresa a tu negocio
               </h1>
               <p className="mt-2 text-center text-sm font-circular-regular text-[#525b75]">
@@ -303,7 +303,7 @@ export function LoginPage() {
                 priority
               />
             </div>
-            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl">
+            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl text-fixed-5xl">
               Vende por tallas, colores y sucursales sin perder el control.
             </h2>
             <div className="mt-8 space-y-4 text-base font-circular-regular text-white/88">

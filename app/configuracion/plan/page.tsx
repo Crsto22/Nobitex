@@ -519,7 +519,7 @@ function PlanCard({
       <p className="mt-1 min-h-10 text-xs leading-5 text-[var(--color-muted-foreground)]">
         {getPlanDescription(plan.code)}
       </p>
-      <p className="mt-2 text-2xl font-extrabold text-[var(--color-text)]">
+      <p className="mt-2 text-2xl font-extrabold text-[var(--color-text)] text-fixed-2xl">
         {formatCurrency(amount)}
         <span className="ml-1 text-xs font-normal text-[var(--color-muted-foreground)]">
           {annual ? "/ año" : plan.code === "prueba" ? "" : "/ mes"}

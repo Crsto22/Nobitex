@@ -83,7 +83,7 @@ export function Modal({
           <div>
             <h2
               id={titleId}
-              className="text-lg font-black text-[var(--color-text)]"
+              className="text-lg font-black text-[var(--color-text)] text-fixed-lg"
             >
               {title}
             </h2>

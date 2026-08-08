@@ -447,8 +447,8 @@ export default function SeriesPage() {
 
   return (
     <DashboardShell headerTitle="Series y Correlativos">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <MetricCard
             icon={<CheckCircleIcon size={22} weight="fill" />}
             label="Series Activas"
@@ -485,7 +485,8 @@ export default function SeriesPage() {
             />
           </div>
 
-          <div className="relative w-full sm:w-[160px]" ref={typeRef}>
+          <div className="flex gap-2 sm:gap-3">
+            <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={typeRef}>
             <DropdownButton
               label={
                 selectedType === "todos"
@@ -512,7 +513,7 @@ export default function SeriesPage() {
             )}
           </div>
 
-          <div className="relative w-full sm:w-[160px]" ref={estadoRef}>
+          <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={estadoRef}>
             <DropdownButton
               label={
                 selectedEstado === "todos"
@@ -541,7 +542,7 @@ export default function SeriesPage() {
             )}
           </div>
 
-          <div className="relative w-full sm:w-[180px]" ref={branchRef}>
+          <div className="relative flex-1 sm:w-[180px] sm:flex-none" ref={branchRef}>
             <DropdownButton
               label={selectedBranch === "todos" ? "Sucursal" : selectedBranchLabel}
               isOpen={isBranchOpen}
@@ -563,11 +564,12 @@ export default function SeriesPage() {
               />
             )}
           </div>
+          </div>
 
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 sm:w-auto"
           >
             <PlusIcon size={16} weight="bold" />
             Nueva Serie
@@ -589,7 +591,7 @@ export default function SeriesPage() {
               return (
                 <div
                   key={serie.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_0.7fr_0.9fr_1.2fr_0.7fr_40px] md:items-center md:gap-3 xl:gap-4"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-all hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[1.1fr_0.7fr_0.9fr_1.2fr_0.7fr_40px] md:items-center md:gap-3 md:gap-y-0 xl:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
@@ -646,7 +648,7 @@ export default function SeriesPage() {
                     </span>
                   </div>
 
-                  <div className="relative flex items-center md:justify-end">
+                  <div className="relative flex items-center justify-end md:justify-end">
                     <button
                       type="button"
                       onClick={() =>

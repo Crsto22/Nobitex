@@ -276,7 +276,7 @@ function OpeningCashAmountInput({
             disabled={disabled}
             onChange={(event) => updateAmount(method.id, event.target.value)}
             placeholder="0.00"
-            className="mt-4 h-11 w-full rounded-[12px] bg-[var(--color-background)] px-3 text-center text-base font-circular-bold text-[var(--color-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60 sm:ml-4 sm:mt-0 sm:w-36"
+            className="mt-4 h-11 w-full rounded-[12px] bg-[var(--color-background)] px-3 text-center text-base font-circular-bold text-[var(--color-text)] text-fixed-base outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-60 sm:ml-4 sm:mt-0 sm:w-36"
           />
         </label>
       ))}

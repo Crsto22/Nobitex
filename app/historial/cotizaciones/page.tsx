@@ -426,8 +426,8 @@ export default function HistorialCotizacionesPage() {
 
   return (
     <DashboardShell headerTitle="Historial Cotizaciones">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#10b981]/10">
@@ -505,7 +505,8 @@ export default function HistorialCotizacionesPage() {
             />
           </div>
 
-          <div className="relative w-[160px]" ref={statusRef}>
+          <div className="flex gap-2 sm:gap-3">
+            <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={statusRef}>
             <button
               type="button"
               onClick={() => {
@@ -549,7 +550,7 @@ export default function HistorialCotizacionesPage() {
             )}
           </div>
 
-          <div className="relative w-[160px]" ref={typeRef}>
+          <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={typeRef}>
             <button
               type="button"
               onClick={() => {
@@ -593,6 +594,7 @@ export default function HistorialCotizacionesPage() {
                 ))}
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -646,7 +648,7 @@ export default function HistorialCotizacionesPage() {
               return (
                 <div
                   key={quote.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(112px,0.8fr)_minmax(170px,1.45fr)_minmax(108px,0.9fr)_minmax(88px,0.75fr)_minmax(96px,0.85fr)_minmax(96px,0.85fr)_28px] md:items-center md:gap-3 xl:grid-cols-[150px_minmax(220px,1.4fr)_140px_140px_130px_140px_40px] xl:gap-5"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[minmax(112px,0.8fr)_minmax(170px,1.45fr)_minmax(108px,0.9fr)_minmax(88px,0.75fr)_minmax(96px,0.85fr)_minmax(96px,0.85fr)_28px] md:items-center md:gap-3 md:gap-y-0 xl:grid-cols-[150px_minmax(220px,1.4fr)_140px_140px_130px_140px_40px] xl:gap-5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
@@ -726,7 +728,7 @@ export default function HistorialCotizacionesPage() {
                     </div>
                   </div>
 
-                  <div className="flex md:justify-center">
+                  <div className="flex justify-end md:justify-center">
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
@@ -749,7 +751,7 @@ export default function HistorialCotizacionesPage() {
                     </div>
                   </div>
 
-                  <div className="relative flex items-center md:justify-end">
+                  <div className="relative flex items-center justify-end md:justify-end">
                     <button
                       type="button"
                       onClick={() =>

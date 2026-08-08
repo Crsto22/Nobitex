@@ -1072,7 +1072,7 @@ export default function CotizacionesPage() {
                 size={23}
                 className="text-[var(--color-text)]"
               />
-              <h2 className="text-lg font-black text-[var(--color-text)]">
+              <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
                 Carrito
               </h2>
             </div>

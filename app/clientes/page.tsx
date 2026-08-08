@@ -390,8 +390,8 @@ export default function ClientesPage() {
 
   return (
     <DashboardShell headerTitle="Clientes">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <MetricCard
             icon={<UsersThreeIcon size={22} weight="fill" />}
             label="Total Clientes"
@@ -504,7 +504,7 @@ export default function ClientesPage() {
               return (
                 <div
                   key={client.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(210px,1.2fr)_minmax(140px,0.75fr)_minmax(230px,1.25fr)_minmax(140px,0.75fr)_minmax(100px,0.55fr)_minmax(132px,0.7fr)] md:items-center md:gap-4"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[minmax(210px,1.2fr)_minmax(140px,0.75fr)_minmax(230px,1.25fr)_minmax(140px,0.75fr)_minmax(100px,0.55fr)_minmax(132px,0.7fr)] md:items-center md:gap-4 md:gap-y-0"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <UserAvatar
@@ -558,7 +558,7 @@ export default function ClientesPage() {
                     />
                   </div>
 
-                  <div className="flex md:justify-center">
+                  <div className="flex justify-end md:justify-center">
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
@@ -570,7 +570,7 @@ export default function ClientesPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 md:justify-end">
+                  <div className="flex items-center gap-2 justify-end md:justify-end">
                     <QuickContactButtons client={client} />
                     <button
                       type="button"

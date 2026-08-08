@@ -175,7 +175,7 @@ export default function EditPlanPage() {
                 <p className="text-[10px] text-[var(--color-muted-foreground)]">
                   Precio mensual
                 </p>
-                <p className="text-lg font-circular-bold text-[var(--color-text)]">
+                <p className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
                   {formatCurrency(plan.priceMonthly)}
                 </p>
               </div>

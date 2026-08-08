@@ -292,7 +292,7 @@ function ReportPanel({
 }) {
   return (
     <section className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm ring-1 ring-[var(--color-border)]/60 md:p-6">
-      <h2 className="text-lg font-circular-bold text-[var(--color-text)]">
+      <h2 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
         {title}
       </h2>
       <p className="mt-1 text-sm font-circular-regular text-[var(--color-muted-foreground)]">
