@@ -3,6 +3,10 @@ const TOKEN_COOKIE = "nobitex-token";
 let accessToken: string | null = null;
 
 export function getAccessToken() {
+  if (!accessToken && typeof document !== "undefined") {
+    accessToken = getCookie(TOKEN_COOKIE);
+  }
+
   return accessToken;
 }
 
@@ -22,4 +26,13 @@ export function clearAccessToken() {
   if (typeof document !== "undefined") {
     document.cookie = `${TOKEN_COOKIE}=;path=/;SameSite=Lax;max-age=0`;
   }
+}
+
+function getCookie(name: string) {
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split("; ")
+    .find((value) => value.startsWith(prefix));
+
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
 }
