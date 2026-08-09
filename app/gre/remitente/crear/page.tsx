@@ -193,9 +193,7 @@ export default function CrearGuiaRemisionPage() {
           setProductResults([]);
         }
       } finally {
-        if (!controller.signal.aborted) {
-          setLoadingProducts(false);
-        }
+        setLoadingProducts(false);
       }
     }, 300);
 

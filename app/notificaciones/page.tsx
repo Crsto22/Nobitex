@@ -88,8 +88,8 @@ export default function NotificationsPage() {
 
   return (
     <DashboardShell headerTitle="Notificaciones">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <section className="grid gap-4 sm:grid-cols-3">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <MetricCard
             label="Notificaciones"
             value={result.meta.total}
@@ -274,7 +274,7 @@ function NotificationRow({
     <button
       type="button"
       onClick={onOpen}
-      className="grid w-full grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(160px,1fr)_minmax(260px,2.2fr)_minmax(120px,0.8fr)_minmax(145px,0.9fr)_110px_32px] md:items-center md:gap-4"
+      className="grid w-full grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[minmax(160px,1fr)_minmax(260px,2.2fr)_minmax(120px,0.8fr)_minmax(145px,0.9fr)_110px_32px] md:items-center md:gap-4 md:gap-y-0"
     >
       <span className="flex min-w-0 items-center gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">

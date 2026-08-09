@@ -252,8 +252,8 @@ export default function PlatformSubscriptionsPage() {
   const summary = dashboard?.summary;
   return (
     <DashboardShell headerTitle="Suscripciones">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-5 overflow-y-auto bg-[var(--color-background)] p-4 lg:px-6 lg:py-5">
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-5 sm:p-4 lg:px-6 lg:py-5">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           <MetricCard
             icon={<ClockCountdownIcon size={20} weight="bold" />}
             label="Pruebas activas"

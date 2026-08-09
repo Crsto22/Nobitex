@@ -86,7 +86,7 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <DashboardShell headerTitle="Dashboard administrativo">
-      <div className="flex flex-1 flex-col gap-6 px-4 py-6 md:px-10 md:py-10">
+      <div className="flex flex-1 flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:px-10 md:py-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-lg font-circular-bold text-[var(--color-text)] sm:text-xl text-fixed-lg">
             Hola, bienvenido{" "}
@@ -216,7 +216,7 @@ function SummaryGrid({
   ];
 
   return (
-    <section className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       {items.map((item) => {
         const Icon = item.icon;
         return (

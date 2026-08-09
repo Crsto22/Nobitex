@@ -245,8 +245,8 @@ export default function AffiliatesPage() {
 
   return (
     <DashboardShell headerTitle="Afiliados">
-      <main className="content-scrollbar h-[calc(100dvh-4rem)] overflow-y-auto bg-[var(--color-background)] p-4 lg:px-6 lg:py-5">
-        <section className="grid gap-4 sm:grid-cols-3">
+      <main className="content-scrollbar h-[calc(100dvh-4rem)] overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6 lg:py-5">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <Metric
             icon={<TagIcon size={20} weight="fill" />}
             label="Códigos"
