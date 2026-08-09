@@ -270,8 +270,8 @@ export default function CatalogoColoresPage() {
 
   return (
     <DashboardShell headerTitle="Colores">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid shrink-0 gap-4 sm:grid-cols-3">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <MetricCard
             icon={<PaletteIcon size={22} weight="fill" />}
             label="Total Colores"
@@ -355,7 +355,7 @@ export default function CatalogoColoresPage() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90 sm:w-auto"
           >
             <PlusIcon size={18} weight="bold" />
             Nuevo Color

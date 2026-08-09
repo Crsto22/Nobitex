@@ -460,8 +460,8 @@ export default function GreConductoresPage() {
 
   return (
     <DashboardShell headerTitle="Conductores GRE">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <SummaryCard label="Activos" value={summary.activos} icon={CheckCircleIcon} color="text-[#10b981]" bg="bg-[#10b981]/10" />
           <SummaryCard label="Inactivos" value={summary.inactivos} icon={WarningCircleIcon} color="text-[#f59e0b]" bg="bg-[#f59e0b]/10" />
           <SummaryCard label={activeTab === "conductores" ? "Conductores" : "Placas"} value={summary.total} icon={activeTab === "conductores" ? UserCircleIcon : TruckIcon} color="text-[var(--color-primary)]" bg="bg-[#101d69]/10 dark:bg-[#fd741a]/10" />
@@ -817,7 +817,7 @@ function DriverRow(props: {
     .join(" ");
 
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] md:grid-cols-[1.3fr_0.8fr_0.8fr_0.7fr_40px] md:items-center">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] sm:p-4 md:grid-cols-[1.3fr_0.8fr_0.8fr_0.7fr_40px] md:items-center md:gap-3 md:gap-y-0">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
           <UserCircleIcon size={22} weight="fill" className="text-[var(--color-primary)]" />
@@ -853,7 +853,7 @@ function VehicleRow(props: {
 }) {
   const status = statusConfig[String(props.vehicle.activo) as "true" | "false"];
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] md:grid-cols-[1.3fr_0.8fr_0.8fr_0.7fr_40px] md:items-center">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] sm:p-4 md:grid-cols-[1.3fr_0.8fr_0.8fr_0.7fr_40px] md:items-center md:gap-3 md:gap-y-0">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
           <TruckIcon size={22} weight="fill" className="text-[var(--color-primary)]" />
@@ -915,7 +915,7 @@ function RowMenu(props: {
 }) {
   const isOpen = props.openMenuId === props.id;
   return (
-    <div className="relative flex items-center md:justify-end">
+    <div className="relative flex items-center justify-end md:justify-end">
       <button
         type="button"
         onClick={() => props.setOpenMenuId(isOpen ? null : props.id)}

@@ -112,7 +112,7 @@ export default function CustomerReportPage() {
 
   return (
     <DashboardShell headerTitle="Reporte de clientes">
-      <div className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 md:px-8 lg:px-10 lg:py-8">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:px-8 lg:px-10 lg:py-8">
         <FilterBar
           selectedDateFilter={selectedFilter}
           onDateFilterChange={(value) =>
@@ -133,7 +133,7 @@ export default function CustomerReportPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           {summaryCards.map(({ label, value, icon: Icon, featured }) => (
             <div
               key={label}

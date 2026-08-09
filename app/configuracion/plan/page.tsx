@@ -202,7 +202,7 @@ export default function PlanPage() {
 
   return (
     <DashboardShell headerTitle="Plan y facturación">
-      <div className="plan-page-sora content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-5 overflow-y-auto bg-[var(--color-background)] p-4 lg:px-6 lg:py-5">
+      <div className="plan-page-sora content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-5 sm:p-4 lg:px-6 lg:py-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-circular-bold text-[var(--color-text)]">
@@ -236,7 +236,7 @@ export default function PlanPage() {
           </div>
         ) : null}
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           <MetricCard
             label="Plan actual"
             value={currentPlan?.plan.name ?? (isLoading ? "Cargando..." : "-")}
@@ -387,12 +387,13 @@ function PlansTab({
         </div>
       </div>
 
-      <div className="grid gap-4 pt-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="-mx-3 px-3 sm:mx-0 sm:px-0 md:contents">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hidden pb-2 sm:gap-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-5">
         {loading && plans.length === 0
           ? Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={index}
-                className="h-[340px] animate-pulse rounded-[14px] bg-[var(--color-card)]"
+                className="h-[340px] w-[280px] shrink-0 animate-pulse rounded-[14px] bg-[var(--color-card)] sm:w-[300px] md:w-auto"
               />
             ))
           : plans.map((plan, index) => (
@@ -415,6 +416,7 @@ function PlansTab({
                 })}
               />
             ))}
+      </div>
       </div>
     </section>
   );
@@ -490,7 +492,7 @@ function PlanCard({
   return (
     <article
       className={cn(
-        "relative flex min-h-[700px] flex-col rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)] ring-1 ring-[var(--color-border)]",
+        "relative flex shrink-0 w-[280px] flex-col rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)] ring-1 ring-[var(--color-border)] sm:w-[300px] md:w-auto md:min-h-[700px]",
         popular && "ring-2 ring-[var(--color-primary)]",
       )}
     >
@@ -697,7 +699,7 @@ function UsageTab({
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {usageItems.map((item) => (
           <UsageCard
             key={item.key}

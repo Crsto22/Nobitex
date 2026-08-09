@@ -61,30 +61,29 @@ export default function StockTransfersPage() {
 
   return (
     <DashboardShell headerTitle="Traspasos de stock">
-      <div className="min-h-full space-y-4 bg-[var(--color-background)] p-4 lg:p-6">
+      <div className="min-h-full space-y-3 bg-[var(--color-background)] p-3 sm:space-y-4 sm:p-4 lg:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div><h1 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">Traspasos</h1><p className="text-sm text-[var(--color-muted-foreground)]">Movimientos entre tiendas y almacenes.</p></div>
-          <button onClick={() => router.push("/stock/traspasos/nuevo")} className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white"><PlusIcon size={17} weight="bold" /> Nuevo traspaso</button>
+          <button onClick={() => router.push("/stock/traspasos/nuevo")} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white sm:w-auto"><PlusIcon size={17} weight="bold" /> Nuevo traspaso</button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Metric icon={<TruckIcon size={19} />} label="Traspasos" value={meta.total} featured />
           <Metric icon={<PackageIcon size={19} />} label="Unidades en pagina" value={pageUnits} tone="success" />
           <Metric icon={<ArrowRightIcon size={19} />} label="Ubicaciones disponibles" value={branches.length} tone="info" />
         </div>
 
         <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_auto]">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-[1.4fr_1fr_1fr_auto]">
             <div className="relative"><MagnifyingGlassIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" /><input value={search} onChange={(event) => { setSearch(event.target.value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Buscar producto, ubicacion o motivo" aria-label="Buscar producto, ubicacion o motivo" className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none" /></div>
             <Select value={origin} onChange={(value) => { setOrigin(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todos los origenes" options={branchOptions} />
             <Select value={destination} onChange={(value) => { setDestination(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todos los destinos" options={branchOptions} />
-            <button onClick={() => void load()} className="h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white">Actualizar</button>
+            <button onClick={() => void load()} className="h-11 w-full rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white lg:w-auto">Actualizar</button>
           </div>
         </section>
 
         <section className="space-y-2">
           {rows.map((row) => (
-            <article key={row.id} className="grid gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm md:grid-cols-[1.1fr_auto_1.1fr_0.7fr_1fr_auto] md:items-center">
+            <article key={row.id} className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.1fr_auto_1.1fr_0.7fr_1fr_auto] md:items-center md:gap-3 md:gap-y-0">
               <Location label="Origen" name={row.origen.nombre} type={row.origen.tipo} />
               <ArrowRightIcon size={20} className="hidden text-[var(--color-primary)] md:block" />
               <Location label="Destino" name={row.destino.nombre} type={row.destino.tipo} />
@@ -104,4 +103,7 @@ export default function StockTransfersPage() {
 }
 
 function Location({ label, name, type }: { label: string; name: string; type: string }) { return <div className="min-w-0"><p className="text-xs text-[var(--color-muted-foreground)]">{label}</p><p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{name}</p><p className="text-xs capitalize text-[var(--color-muted-foreground)]">{type}</p></div>; }
-function Metric({ icon, label, value, featured = false, tone = "info" }: { icon: React.ReactNode; label: string; value: number; featured?: boolean; tone?: "success" | "info" }) { const colors = tone === "success" ? "bg-[#10b981]/10 text-[#10b981]" : "bg-[#3b82f6]/10 text-[#3b82f6]"; return <div className={`rounded-[14px] p-4 shadow-sm ${featured ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-card)] text-[var(--color-text)]"}`}><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${featured ? "bg-white/15" : colors}`}>{icon}</div><p className={`text-xs ${featured ? "text-white/75" : "text-[var(--color-muted-foreground)]"}`}>{label}</p><p className="text-xl font-circular-bold">{value.toLocaleString("es-PE")}</p></div>; }
+function Metric({ icon, label, value, featured = false, tone = "info" }: { icon: React.ReactNode; label: string; value: number; featured?: boolean; tone?: "success" | "info" }) { 
+  const colors = tone === "success" ? "bg-[#10b981]/10 text-[#10b981]" : "bg-[#3b82f6]/10 text-[#3b82f6]"; 
+  return <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 items-center justify-center rounded-xl ${colors}`}>{icon}</div><div><p className="text-sm font-medium text-[var(--color-muted-foreground)]">{label}</p><p className="text-2xl font-circular-bold leading-none text-[var(--color-text)]">{value.toLocaleString("es-PE")}</p></div></div></div>; 
+}

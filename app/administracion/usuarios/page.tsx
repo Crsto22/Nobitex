@@ -171,8 +171,8 @@ export default function UsuariosPage() {
 
   return (
     <DashboardShell headerTitle="Usuarios del Sistema">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           <MetricCard icon={<UserCircleIcon size={22} weight="fill" />} label="Total Usuarios" value={meta.total} tone="primary" />
           <MetricCard icon={<CheckCircleIcon size={22} weight="fill" />} label="Activos" value={meta.activeTotal} tone="success" />
           <MetricCard icon={<WarningCircleIcon size={22} weight="fill" />} label="Inactivos" value={meta.inactiveTotal} tone="warning" />
@@ -217,7 +217,7 @@ export default function UsuariosPage() {
           <button
             type="button"
             onClick={() => router.push("/administracion/usuarios/nuevo")}
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 sm:w-auto"
           >
             <PlusIcon size={16} weight="bold" />
             Nuevo Usuario
@@ -334,7 +334,7 @@ function UserRow({
     : Math.max(0, user.modules.length - displayedModules.length);
 
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_1fr_1.2fr_0.55fr_0.55fr_0.5fr] md:items-center md:gap-3 xl:gap-4">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[1.1fr_1fr_1.2fr_0.55fr_0.55fr_0.5fr] md:items-center md:gap-3 md:gap-y-0 xl:gap-4">
       <div className="flex min-w-0 items-center gap-3">
         <UserAvatar
           seed={user.id}
@@ -403,7 +403,7 @@ function UserRow({
         </p>
       </div>
 
-      <div className="flex md:justify-center">
+      <div className="flex justify-end md:justify-center">
         <span
           className={cn(
             "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
@@ -415,7 +415,7 @@ function UserRow({
         </span>
       </div>
 
-      <div className="flex items-center gap-1 md:justify-end">
+      <div className="flex items-center gap-1 justify-end md:justify-end">
         <IconButton
           label="Editar"
           disabled={isWorking || user.isOwner}

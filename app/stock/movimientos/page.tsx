@@ -95,25 +95,21 @@ export default function StockMovementsPage() {
 
   return (
     <DashboardShell headerTitle="Movimientos de stock">
-      <div className="min-h-full space-y-4 bg-[var(--color-background)] p-4 lg:p-6">
+      <div className="min-h-full space-y-3 bg-[var(--color-background)] p-3 sm:space-y-4 sm:p-4 lg:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">Movimientos de stock</h1>
-            <p className="text-sm text-[var(--color-muted-foreground)]">Entradas, salidas y ajustes por ubicacion.</p>
-          </div>
-          <button onClick={() => router.push("/stock/movimientos/nuevo")} className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white">
+          <button onClick={() => router.push("/stock/movimientos/nuevo")} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white sm:w-auto">
             <PlusIcon size={17} weight="bold" /> Nuevo movimiento
           </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Metric icon={<ArrowsDownUpIcon size={19} />} label="Movimientos" value={meta.total} featured />
           <Metric icon={<ArrowDownIcon size={19} />} label="Entradas en pagina" value={pageEntries} tone="success" />
           <Metric icon={<ArrowUpIcon size={19} />} label="Salidas en pagina" value={pageExits} tone="warning" />
         </div>
 
         <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_0.8fr_0.8fr_auto]">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-[1.4fr_1fr_1fr_0.8fr_0.8fr_auto]">
             <div className="relative">
               <MagnifyingGlassIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
               <input value={search} onChange={(event) => { setSearch(event.target.value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Buscar producto, SKU o motivo" aria-label="Buscar producto, SKU o motivo" className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20" />
@@ -122,13 +118,13 @@ export default function StockMovementsPage() {
             <Select value={type} onChange={(value) => { setType(value); setMeta((current) => ({ ...current, page: 1 })); }} placeholder="Todos los tipos" options={[{ value: "", label: "Todos los tipos" }, ...Object.entries(movementLabels).map(([value, label]) => ({ value, label }))]} />
             <CalendarInput value={from} onChange={(value) => { setFrom(value); setMeta((current) => ({ ...current, page: 1 })); }} labelInline="Desde" clearable />
             <CalendarInput value={to} onChange={(value) => { setTo(value); setMeta((current) => ({ ...current, page: 1 })); }} labelInline="Hasta" clearable />
-            <button onClick={() => void load()} className="h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white">Actualizar</button>
+            <button onClick={() => void load()} className="h-11 w-full rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white lg:w-auto">Actualizar</button>
           </div>
         </section>
 
         <section className="space-y-2">
           {rows.map((row) => (
-            <article key={row.id} className="grid gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm md:grid-cols-[1.4fr_0.8fr_0.7fr_0.8fr_1.2fr] md:items-center">
+            <article key={row.id} className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.4fr_0.8fr_0.7fr_0.8fr_1.2fr] md:items-center md:gap-3 md:gap-y-0">
               <div className="min-w-0">
                 <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{stockProductLabel(row.producto)}</p>
                 <p className="truncate text-xs text-[var(--color-muted-foreground)]">{row.producto.sku || "Sin SKU"} · {row.sucursal.nombre}</p>
@@ -151,5 +147,15 @@ export default function StockMovementsPage() {
 
 function Metric({ icon, label, value, featured = false, tone = "primary" }: { icon: React.ReactNode; label: string; value: number; featured?: boolean; tone?: "primary" | "success" | "warning" }) {
   const colors = tone === "success" ? "bg-[#10b981]/10 text-[#10b981]" : tone === "warning" ? "bg-[#f97316]/10 text-[#f97316]" : "bg-[#3b82f6]/10 text-[#3b82f6]";
-  return <div className={`rounded-[14px] p-4 shadow-sm ${featured ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-card)] text-[var(--color-text)]"}`}><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${featured ? "bg-white/15" : colors}`}>{icon}</div><p className={`text-xs ${featured ? "text-white/75" : "text-[var(--color-muted-foreground)]"}`}>{label}</p><p className="text-xl font-circular-bold">{value.toLocaleString("es-PE")}</p></div>;
+  return (
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${colors}`}>{icon}</div>
+        <div>
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">{label}</p>
+          <p className="text-2xl font-circular-bold leading-none text-[var(--color-text)]">{value.toLocaleString("es-PE")}</p>
+        </div>
+      </div>
+    </div>
+  );
 }

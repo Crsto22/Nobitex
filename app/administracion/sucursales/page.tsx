@@ -369,8 +369,8 @@ export default function SucursalesPage() {
 
   return (
     <DashboardShell headerTitle="Sucursales">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-5">
           <MetricCard
             icon={<StorefrontIcon size={22} weight="fill" />}
             label="Total Sucursales"
@@ -421,48 +421,50 @@ export default function SucursalesPage() {
             />
           </label>
 
-          <DropdownFilter
-            value={selectedType}
-            label={
-              selectedType === "todos" ? "Tipo" : typeConfig[selectedType].label
-            }
-            options={typeOptions}
-            isOpen={isTypeOpen}
-            onToggle={() => {
-              setIsTypeOpen(!isTypeOpen);
-              setIsStatusOpen(false);
-            }}
-            onSelect={(value) => {
-              setSelectedType(value as TypeFilter);
-              setCurrentPage(1);
-              setIsTypeOpen(false);
-            }}
-          />
+          <div className="flex gap-2 sm:gap-3">
+            <DropdownFilter
+              value={selectedType}
+              label={
+                selectedType === "todos" ? "Tipo" : typeConfig[selectedType].label
+              }
+              options={typeOptions}
+              isOpen={isTypeOpen}
+              onToggle={() => {
+                setIsTypeOpen(!isTypeOpen);
+                setIsStatusOpen(false);
+              }}
+              onSelect={(value) => {
+                setSelectedType(value as TypeFilter);
+                setCurrentPage(1);
+                setIsTypeOpen(false);
+              }}
+            />
 
-          <DropdownFilter
-            value={selectedStatus}
-            label={
-              selectedStatus === "todos"
-                ? "Estado"
-                : statusConfig[selectedStatus].label
-            }
-            options={statusOptions}
-            isOpen={isStatusOpen}
-            onToggle={() => {
-              setIsStatusOpen(!isStatusOpen);
-              setIsTypeOpen(false);
-            }}
-            onSelect={(value) => {
-              setSelectedStatus(value as StatusFilter);
-              setCurrentPage(1);
-              setIsStatusOpen(false);
-            }}
-          />
+            <DropdownFilter
+              value={selectedStatus}
+              label={
+                selectedStatus === "todos"
+                  ? "Estado"
+                  : statusConfig[selectedStatus].label
+              }
+              options={statusOptions}
+              isOpen={isStatusOpen}
+              onToggle={() => {
+                setIsStatusOpen(!isStatusOpen);
+                setIsTypeOpen(false);
+              }}
+              onSelect={(value) => {
+                setSelectedStatus(value as StatusFilter);
+                setCurrentPage(1);
+                setIsStatusOpen(false);
+              }}
+            />
+          </div>
 
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90 sm:w-auto"
           >
             <PlusIcon size={16} weight="bold" />
             Nueva Sucursal
@@ -488,7 +490,7 @@ export default function SucursalesPage() {
               return (
                 <div
                   key={branch.id}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.1fr)_minmax(110px,0.6fr)_minmax(220px,1.3fr)_minmax(120px,0.7fr)_minmax(110px,0.6fr)_minmax(110px,0.6fr)_40px] md:items-center md:gap-4"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[minmax(190px,1.1fr)_minmax(110px,0.6fr)_minmax(220px,1.3fr)_minmax(120px,0.7fr)_minmax(110px,0.6fr)_minmax(110px,0.6fr)_40px] md:items-center md:gap-4 md:gap-y-0"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
@@ -549,7 +551,7 @@ export default function SucursalesPage() {
                     </p>
                   </div>
 
-                  <div className="flex md:justify-center">
+                  <div className="flex justify-end md:justify-center">
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full px-3 py-1 text-xs font-circular-bold",
@@ -561,7 +563,7 @@ export default function SucursalesPage() {
                     </span>
                   </div>
 
-                  <div className="flex md:justify-center">
+                  <div className="flex justify-end md:justify-center">
                     {branch.tipo === "tienda" ? (
                       <span
                         className={cn(
@@ -581,7 +583,7 @@ export default function SucursalesPage() {
                     )}
                   </div>
 
-                  <div className="relative flex items-center md:justify-end">
+                  <div className="relative flex items-center justify-end md:justify-end">
                     <button
                       type="button"
                       onClick={() =>
@@ -960,7 +962,7 @@ function DropdownFilter({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="relative w-full sm:w-[160px]">
+    <div className="relative flex-1 sm:w-[160px] sm:flex-none">
       <button
         type="button"
         onClick={onToggle}

@@ -485,7 +485,7 @@ export default function EmpresaPage() {
   if (isLoading) {
     return (
       <DashboardShell headerTitle="Empresa">
-        <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 lg:px-6">
+        <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-4 sm:p-4 lg:px-6">
           <div className="h-11 w-full max-w-md animate-pulse rounded-[16px] bg-[var(--color-input-bg)]" />
           <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
             <div className="animate-pulse p-6">
@@ -511,7 +511,7 @@ export default function EmpresaPage() {
 
   return (
     <DashboardShell headerTitle="Empresa">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
         <div className="flex flex-wrap gap-2 rounded-[16px] bg-[var(--color-input-bg)] p-1">
           <TabButton
             active={activeTab === "empresa"}
@@ -774,7 +774,7 @@ export default function EmpresaPage() {
           </form>
         ) : (
           <form className="space-y-4" onSubmit={handleSunatSubmit}>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
               <StatusTile
                 icon={<ShieldCheckIcon size={22} weight="fill" />}
                 label="Facturacion electronica"

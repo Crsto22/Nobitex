@@ -639,8 +639,8 @@ export default function GuiasRemisionPage() {
 
   return (
     <DashboardShell headerTitle="Guias de Remision">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           <SummaryCard
             label="Aceptadas"
             value={summary.aceptadas}
@@ -687,7 +687,8 @@ export default function GuiasRemisionPage() {
             />
           </div>
 
-          <div className="relative w-full sm:w-[180px]" ref={estadoRef}>
+          <div className="flex gap-2 sm:gap-3">
+            <div className="relative flex-1 sm:w-[180px] sm:flex-none" ref={estadoRef}>
             <FilterDropdown
               label={
                 selectedEstado === "todos"
@@ -709,7 +710,7 @@ export default function GuiasRemisionPage() {
             />
           </div>
 
-          <div className="relative w-full sm:w-[180px]" ref={sunatRef}>
+          <div className="relative flex-1 sm:w-[180px] sm:flex-none" ref={sunatRef}>
             <FilterDropdown
               label={
                 selectedSunat === "todos"
@@ -730,10 +731,11 @@ export default function GuiasRemisionPage() {
               }}
             />
           </div>
+          </div>
 
           <Link
             href="/gre/remitente/crear"
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             <PlusIcon size={17} weight="bold" />
             Nueva Guia
@@ -773,7 +775,7 @@ export default function GuiasRemisionPage() {
               return (
                 <div
                   key={guia.publicId}
-                  className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_1fr_1fr_0.8fr_0.8fr_0.9fr_40px] md:items-center md:gap-3 xl:gap-4"
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[1.1fr_1fr_1fr_0.8fr_0.8fr_0.9fr_40px] md:items-center md:gap-3 md:gap-y-0 xl:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
@@ -890,7 +892,7 @@ export default function GuiasRemisionPage() {
                     </span>
                   </div>
 
-                  <div className="relative flex items-center md:justify-end">
+                  <div className="relative flex items-center justify-end md:justify-end">
                     <button
                       type="button"
                       onClick={() =>

@@ -82,7 +82,7 @@ export default function SalesReportPage() {
 
   return (
     <DashboardShell headerTitle="Reporte de ventas">
-      <div className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 md:px-8 lg:px-10 lg:py-8">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:px-8 lg:px-10 lg:py-8">
         <FilterBar
           selectedDateFilter={selectedFilter}
           onDateFilterChange={(value) =>
