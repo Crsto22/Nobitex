@@ -56,7 +56,7 @@ import { defaultPageSize } from "@/lib/pagination";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { useAuth } from "@/lib/auth/auth-provider";
 
-const productPlaceholderImage = "/Logo/Norvitex.png";
+const productPlaceholderImage = "/Logo/Nuvex.png";
 const filterPageSize = Math.min(defaultPageSize, 12);
 const emptySaleProductsMeta: SaleProductsResponse["meta"] = {
   page: 1,

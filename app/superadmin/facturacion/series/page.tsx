@@ -362,7 +362,7 @@ export default function PlatformSeriesPage() {
           isOpen={modal.isOpen}
           onClose={closeModal}
           title={modal.editing ? "Editar serie" : "Nueva serie"}
-          description="Configura la numeracion disponible para los comprobantes de Norbitex."
+          description="Configura la numeracion disponible para los comprobantes de Nuvex."
           size="md"
         >
           <form className="space-y-4" onSubmit={submit}>

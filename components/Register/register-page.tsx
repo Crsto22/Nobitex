@@ -466,8 +466,8 @@ export function RegisterPage() {
           <div className="relative z-10 w-full max-w-[640px]">
             <div className="mb-24 inline-flex rounded-[16px] border-2 border-white bg-white px-4 py-2 shadow-[0_14px_34px_rgba(16,29,105,0.18)]">
               <Image
-                src="/Logo/logopng.png"
-                alt="Norbitex"
+                src="/Logo/logopng.webp"
+                alt="Nuvex"
                 width={180}
                 height={42}
                 className="h-auto w-[160px] xl:w-[180px]"
@@ -514,21 +514,32 @@ export function RegisterPage() {
         </div>
 
         <div
-          className={`relative z-10 flex min-h-dvh justify-center overflow-hidden px-5 py-6 transition-colors duration-500 ease-out sm:px-8 lg:max-h-dvh lg:py-7 ${
+          className={`relative z-10 flex min-h-dvh flex-col overflow-hidden px-5 py-6 transition-colors duration-500 ease-out sm:px-8 lg:max-h-dvh lg:py-7 ${
             isActivating
-              ? "items-center lg:px-10 xl:px-10"
+              ? "lg:px-10 xl:px-10"
               : isCompanyStep
-                ? "items-start lg:px-12 xl:px-16"
-                : "items-center lg:px-14 xl:px-20"
+                ? "lg:px-12 xl:px-16"
+                : "lg:px-14 xl:px-20"
           }`}
         >
+          <div className="mb-4 flex w-full justify-start lg:hidden">
+            <Image
+              src="/Logo/logopng.webp"
+              alt="Nuvex"
+              width={96}
+              height={22}
+              className="h-auto w-24"
+              style={{ width: "auto", height: "auto" }}
+              priority
+            />
+          </div>
           <div
-            className={`register-form-scroll flex max-h-[calc(100dvh-3rem)] w-full flex-col overflow-y-auto pr-2 transition-[max-width] duration-500 ease-out ${
+            className={`register-form-scroll flex max-h-[calc(100dvh-6rem)] w-full flex-col overflow-y-auto pr-2 transition-[max-width] duration-500 ease-out lg:max-h-[calc(100dvh-3rem)] ${
               isActivating
-                ? "max-w-[560px]"
+                ? "m-auto max-w-[560px]"
                 : isCompanyStep
-                  ? "max-w-7xl"
-                  : "max-w-[560px]"
+                  ? "mx-auto max-w-7xl"
+                  : "m-auto max-w-[560px]"
             }`}
           >
             {isComplete ? (
@@ -541,26 +552,13 @@ export function RegisterPage() {
                   onSubmit={handleSubmit}
                 >
                   <div>
-                    <div className="sticky top-0 z-30 bg-white pb-3 pt-1">
-                      <Image
-                        src="/Logo/logopng.png"
-                        alt="Nobitex"
-                        width={145}
-                        height={46}
-                        className="h-auto w-[128px] sm:w-[145px] lg:hidden"
-                        style={{ width: "auto", height: "auto" }}
-                        priority
-                      />
-                    </div>
-                    <div>
-                      <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
-                        Crea tu cuenta
-                      </h1>
-                      <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
-                        Completa tus datos para registrar tu acceso en Nobitex.
-                      </p>
-                      <StepProgress currentStep={currentStep} steps={steps} />
-                    </div>
+                    <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
+                      Crea tu cuenta
+                    </h1>
+                    <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
+                      Completa tus datos para registrar tu acceso en Nuvex.
+                    </p>
+                    <StepProgress currentStep={currentStep} steps={steps} />
                   </div>
 
                   <div

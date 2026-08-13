@@ -265,7 +265,7 @@ export function DashboardShell({
   }
 
   const displayName = isSuperAdmin
-    ? "Nobitex Admin"
+    ? "Nuvex Admin"
     : companyInfo?.nombreComercial || user?.empresaNombreComercial;
   const logoUrl = isSuperAdmin
     ? null

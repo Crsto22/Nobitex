@@ -6,8 +6,8 @@ import {
   shouldRefreshProactively,
 } from "@/lib/auth/session";
 
-export const sessionExpiredEventName = "nobitex-session-expired";
-export const planLimitReachedEventName = "nobitex-plan-limit-reached";
+export const sessionExpiredEventName = "nuvex-session-expired";
+export const planLimitReachedEventName = "nuvex-plan-limit-reached";
 
 export type PlanLimitReachedDetail = {
   message: string;

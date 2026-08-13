@@ -3,11 +3,11 @@ import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Nobitex",
+  title: "Nuvex",
   icons: {
-    icon: "/Logo/Norvitex.ico",
-    shortcut: "/Logo/Norvitex.ico",
-    apple: "/Logo/Norvitex.ico",
+    icon: "/Logo/Nuvex.ico",
+    shortcut: "/Logo/Nuvex.ico",
+    apple: "/Logo/Nuvex.ico",
   },
 };
 

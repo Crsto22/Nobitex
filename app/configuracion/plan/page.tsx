@@ -645,7 +645,7 @@ function formatPlanLimit(value: number | null) {
 
 function getPlanDescription(code: PlanDefinition["code"]) {
   return {
-    prueba: "Conoce todas las funciones de Norbitex durante 7 días.",
+    prueba: "Conoce todas las funciones de Nuvex durante 7 días.",
     basico: "Para una tienda que empieza a ordenar sus ventas e inventario.",
     emprendedor: "Para negocios en crecimiento con equipo y más capacidad.",
     crecimiento: "Para operaciones consolidadas que necesitan control total.",
@@ -1014,7 +1014,7 @@ function buildWhatsAppUrl({
       ? plan.monthlyOfferPrice
       : plan.priceMonthly;
   const message = [
-    "Hola, deseo solicitar un plan de Norbitex.",
+    "Hola, deseo solicitar un plan de Nuvex.",
     `Empresa: ${companyName}`,
     `Cliente: ${customerName}`,
     customerEmail ? `Correo: ${customerEmail}` : "",
@@ -1024,7 +1024,7 @@ function buildWhatsAppUrl({
   ]
     .filter(Boolean)
     .join("\n");
-  const phone = (process.env.NEXT_PUBLIC_NORBITEX_WHATSAPP ?? "").replace(
+  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
     /\D/g,
     "",
   );

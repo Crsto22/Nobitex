@@ -7,7 +7,7 @@ import { PackageIcon } from "@phosphor-icons/react/ssr";
 import type { SaleProduct, SaleProductVariant } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
 
-const placeholderImage = "/Logo/Norvitex.png";
+const placeholderImage = "/Logo/Nuvex.png";
 
 type SaleProductCardProps = {
   product: SaleProduct;

@@ -1,4 +1,4 @@
-const TOKEN_COOKIE = "nobitex-token";
+const TOKEN_COOKIE = "nuvex-token";
 
 let accessToken: string | null = null;
 

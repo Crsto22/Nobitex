@@ -1,5 +1,5 @@
-const CHANNEL_NAME = "nobitex-auth-events";
-const AUTH_EVENT_STORAGE_KEY = "nobitex:auth-event:v1";
+const CHANNEL_NAME = "nuvex-auth-events";
+const AUTH_EVENT_STORAGE_KEY = "nuvex:auth-event:v1";
 
 type AuthEventType = "logout" | "session-expired";
 

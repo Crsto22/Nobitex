@@ -4,10 +4,10 @@ import {
   setAccessToken,
 } from "./token-store";
 
-export const ONBOARDING_TOKEN_STORAGE_KEY = "nobitex_onboarding_token";
-export const ONBOARDING_USER_STORAGE_KEY = "nobitex_onboarding_user";
-export const COMPANY_INFO_STORAGE_KEY = "nobitex_company_info";
-export const SESSION_EXPIRED_KEY = "nobitex_session_expired";
+export const ONBOARDING_TOKEN_STORAGE_KEY = "nuvex_onboarding_token";
+export const ONBOARDING_USER_STORAGE_KEY = "nuvex_onboarding_user";
+export const COMPANY_INFO_STORAGE_KEY = "nuvex_company_info";
+export const SESSION_EXPIRED_KEY = "nuvex_session_expired";
 
 export type SessionUser = {
   id: string;

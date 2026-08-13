@@ -45,7 +45,7 @@ export type ProductCatalogSize = {
   sku: string;
 };
 
-const productPlaceholderImage = "/Logo/Norvitex.png";
+const productPlaceholderImage = "/Logo/Nuvex.png";
 
 export function ProductCard({
   product,

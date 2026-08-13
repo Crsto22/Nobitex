@@ -156,8 +156,8 @@ export default function DashboardPage() {
 
           <section className="flex min-h-28 items-center gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
             <span
-              className="norbitex-mascot norbitex-mascot--celebrate shrink-0"
-              style={{ "--norbitex-scale": 0.32 } as CSSProperties}
+              className="nuvex-mascot nuvex-mascot--celebrate shrink-0"
+              style={{ "--nuvex-scale": 0.32 } as CSSProperties}
               aria-hidden="true"
             />
             <div className="relative min-w-0 flex-1 rounded-[18px] bg-[var(--color-input-bg)] px-4 py-3 shadow-sm ring-1 ring-[var(--color-border)]">
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                 aria-hidden="true"
               />
               <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                Tu asistente Norbitex
+                Tu asistente Nuvex
               </p>
               <p className="mt-1 text-sm leading-5 text-[var(--color-muted-foreground)]">
                 {assistantMessage}

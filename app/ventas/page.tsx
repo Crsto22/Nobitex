@@ -78,7 +78,7 @@ const emptySaleProductsMeta: SaleProductsResponse["meta"] = {
   totalPages: 1,
 };
 
-const productPlaceholderImage = "/Logo/Norvitex.png";
+const productPlaceholderImage = "/Logo/Nuvex.png";
 
 const paymentMethodIconConfig: Record<
   string,

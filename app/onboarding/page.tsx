@@ -200,8 +200,8 @@ export default function OnboardingPage() {
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-6 flex items-center justify-between gap-4">
           <Image
-            src="/Logo/Norvitex.png"
-            alt="Norbitex"
+            src="/Logo/Nuvex.png"
+            alt="Nuvex"
             width={142}
             height={44}
             className="h-10 w-auto object-contain"
@@ -234,7 +234,7 @@ export default function OnboardingPage() {
               </h1>
             </div>
             <div
-              className="norbitex-mascot norbitex-mascot--happy shrink-0 self-center"
+              className="nuvex-mascot nuvex-mascot--happy shrink-0 self-center"
               aria-hidden="true"
             />
           </div>

@@ -51,10 +51,10 @@ export function LoginPage() {
   const shouldShowPasswordToggle =
     isPasswordFocused || passwordValue.length > 0;
   const whatsappMessage = encodeURIComponent(
-    "Hola, necesito ayuda con Norbitex.",
+    "Hola, necesito ayuda con Nuvex.",
   );
   const whatsappPhone = (
-    process.env.NEXT_PUBLIC_NORBITEX_WHATSAPP ?? ""
+    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? ""
   ).replace(/\D/g, "");
   const whatsappUrl = whatsappPhone
     ? `https://wa.me/${whatsappPhone}?text=${whatsappMessage}`
@@ -101,7 +101,7 @@ export function LoginPage() {
         return;
       }
       showToast({
-        title: "Bienvenido a Nobitex",
+        title: "Bienvenido a Nuvex",
         description: "Inicio de sesion correcto.",
         variant: "success",
       });
@@ -139,18 +139,20 @@ export function LoginPage() {
   return (
     <main className="h-dvh overflow-hidden bg-[#f3f5fb]">
       <div className="grid h-full lg:grid-cols-[1fr_minmax(460px,620px)]">
-        <section className="order-2 flex h-full items-center justify-center overflow-y-auto bg-white px-5 py-6 shadow-[90px_0_40px_rgba(16,29,105,0.05)] lg:px-8 lg:py-8">
-          <div className="flex w-full max-w-100 flex-col justify-center gap-5 lg:max-h-[100dvh] xl:gap-6">
+        <section className="order-2 flex h-full flex-col overflow-y-auto bg-white px-5 py-6 shadow-[90px_0_40px_rgba(16,29,105,0.05)] lg:px-8 lg:py-8">
+          <div className="mb-4 flex w-full justify-start lg:hidden">
+            <Image
+              src="/Logo/logopng.webp"
+              alt="Nuvex"
+              width={96}
+              height={22}
+              className="h-auto w-24"
+              style={{ width: "auto", height: "auto" }}
+              priority
+            />
+          </div>
+          <div className="m-auto flex w-full max-w-100 flex-col justify-center gap-5 lg:max-h-[100dvh] xl:gap-6">
             <div className="mb-2">
-              <Image
-                src="/Logo/logopng.png"
-                alt="Norbitex"
-                width={150}
-                height={34}
-                className="mx-auto mb-4 h-auto w-[132px] lg:hidden"
-                style={{ width: "auto", height: "auto" }}
-                priority
-              />
               <h1 className="text-center text-3xl font-black text-[var(--color-primary)] text-fixed-3xl">
                 Ingresa a tu negocio
               </h1>
@@ -294,8 +296,8 @@ export function LoginPage() {
           <div className="relative z-10 w-full max-w-[640px]">
             <div className="mb-24 inline-flex rounded-[16px] border-2 border-white bg-white px-4 py-2 shadow-[0_14px_34px_rgba(16,29,105,0.18)]">
               <Image
-                src="/Logo/logopng.png"
-                alt="Norbitex"
+                src="/Logo/logopng.webp"
+                alt="Nuvex"
                 width={180}
                 height={42}
                 className="h-auto w-[160px] xl:w-[180px]"
@@ -362,7 +364,7 @@ export function LoginPage() {
               Necesitas ayuda?
             </span>
             <span
-              className="norbitex-mascot norbitex-mascot--help drop-shadow-[0_18px_26px_rgba(16,29,105,0.22)]"
+              className="nuvex-mascot nuvex-mascot--help drop-shadow-[0_18px_26px_rgba(16,29,105,0.22)]"
               aria-hidden="true"
             />
           </a>

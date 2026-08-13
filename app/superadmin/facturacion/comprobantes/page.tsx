@@ -258,7 +258,7 @@ export default function PlatformReceiptsPage() {
   };
 
   return (
-    <DashboardShell headerTitle="Comprobantes de Norbitex">
+    <DashboardShell headerTitle="Comprobantes de Nuvex">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <MetricCard

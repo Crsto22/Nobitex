@@ -1020,7 +1020,7 @@ function QuickContactButtons({ client }: { client: Client }) {
   const whatsappUrl = whatsappNumber ? `https://wa.me/51${whatsappNumber}` : "";
   const emailUrl = client.email
     ? `mailto:${client.email}?subject=${encodeURIComponent(
-        `Contacto Nobitex - ${client.displayName}`,
+        `Contacto Nuvex - ${client.displayName}`,
       )}`
     : "";
 

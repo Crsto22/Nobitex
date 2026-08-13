@@ -229,7 +229,7 @@ export default function PlatformIssuerPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                    Emisor Norbitex
+                    Emisor Nuvex
                   </h2>
                   <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
                     Datos fiscales y acceso usados para emitir comprobantes de la
@@ -300,7 +300,7 @@ export default function PlatformIssuerPage() {
                   id="issuer-trade-name"
                   label="Nombre comercial"
                   value={form.tradeName}
-                  placeholder="Norbitex"
+                  placeholder="Nuvex"
                   maxLength={150}
                   icon={<StorefrontIcon size={16} weight="bold" />}
                   disabled={saving}

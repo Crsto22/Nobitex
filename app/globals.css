@@ -164,7 +164,7 @@ h6,
   font-family: var(--font-sora) !important;
 }
 
-@keyframes nobitex-loader-slide {
+@keyframes nuvex-loader-slide {
   0% {
     left: 0;
   }
@@ -178,8 +178,8 @@ h6,
   }
 }
 
-.nobitex-loader-bar {
-  animation: nobitex-loader-slide 1.8s ease-in-out infinite;
+.nuvex-loader-bar {
+  animation: nuvex-loader-slide 1.8s ease-in-out infinite;
   will-change: left;
 }
 
@@ -204,70 +204,70 @@ h6,
   animation: selected-choice-pop 220ms ease-out both;
 }
 
-.norbitex-mascot {
-  --norbitex-scale: 0.62;
-  width: calc(192px * var(--norbitex-scale));
-  height: calc(208px * var(--norbitex-scale));
+.nuvex-mascot {
+  --nuvex-scale: 0.62;
+  width: calc(192px * var(--nuvex-scale));
+  height: calc(208px * var(--nuvex-scale));
   background-image: url("/mascot/norbitex-spritesheet.webp");
   background-repeat: no-repeat;
-  background-size: calc(1536px * var(--norbitex-scale))
-    calc(2288px * var(--norbitex-scale));
+  background-size: calc(1536px * var(--nuvex-scale))
+    calc(2288px * var(--nuvex-scale));
 }
 
-.norbitex-mascot--idle {
-  animation: norbitex-idle 1.1s steps(6) infinite;
+.nuvex-mascot--idle {
+  animation: nuvex-idle 1.1s steps(6) infinite;
 }
 
-.norbitex-mascot--wave {
-  --norbitex-scale: 0.9;
-  animation: norbitex-wave 0.9s steps(4) infinite;
+.nuvex-mascot--wave {
+  --nuvex-scale: 0.9;
+  animation: nuvex-wave 0.9s steps(4) infinite;
 }
 
-.norbitex-mascot--help {
-  --norbitex-scale: 0.58;
-  animation: norbitex-wave 0.9s steps(4) infinite;
+.nuvex-mascot--help {
+  --nuvex-scale: 0.58;
+  animation: nuvex-wave 0.9s steps(4) infinite;
 }
 
-.norbitex-mascot--happy {
-  --norbitex-scale: 0.5;
-  animation: norbitex-wave 0.9s steps(4) infinite;
+.nuvex-mascot--happy {
+  --nuvex-scale: 0.5;
+  animation: nuvex-wave 0.9s steps(4) infinite;
 }
 
-.norbitex-mascot--celebrate {
-  animation: norbitex-celebrate 1s steps(6) infinite;
+.nuvex-mascot--celebrate {
+  animation: nuvex-celebrate 1s steps(6) infinite;
 }
 
-@keyframes norbitex-idle {
+@keyframes nuvex-idle {
   from {
     background-position: 0 0;
   }
   to {
-    background-position: calc(-1152px * var(--norbitex-scale)) 0;
+    background-position: calc(-1152px * var(--nuvex-scale)) 0;
   }
 }
 
-@keyframes norbitex-wave {
+@keyframes nuvex-wave {
   from {
-    background-position: 0 calc(-624px * var(--norbitex-scale));
+    background-position: 0 calc(-624px * var(--nuvex-scale));
   }
   to {
-    background-position: calc(-768px * var(--norbitex-scale))
-      calc(-624px * var(--norbitex-scale));
+    background-position: calc(-768px * var(--nuvex-scale))
+      calc(-624px * var(--nuvex-scale));
   }
 }
 
-@keyframes norbitex-celebrate {
+@keyframes nuvex-celebrate {
   from {
-    background-position: 0 calc(-1248px * var(--norbitex-scale));
+    background-position: 0 calc(-1248px * var(--nuvex-scale));
   }
   to {
-    background-position: calc(-1152px * var(--norbitex-scale))
-      calc(-1248px * var(--norbitex-scale));
+    background-position: calc(-1152px * var(--nuvex-scale))
+      calc(-1248px * var(--nuvex-scale));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .norbitex-mascot {
+  .nuvex-mascot {
     animation: none;
   }
 }

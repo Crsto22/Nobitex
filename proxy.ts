@@ -32,7 +32,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!request.cookies.has("nobitex-token")) {
+  if (!request.cookies.has("nuvex-token")) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }

@@ -294,17 +294,17 @@ export function Sidebar({
           />
         ) : (
           <Image
-            src="/Logo/Norvitex.png"
+            src="/Logo/Nuvex.png"
             width={38}
             height={38}
             className="h-auto w-[38px]"
             priority
-            alt="Norbitex"
+            alt="Nuvex"
           />
         )}
         {!collapsed ? (
           <p className="sidebar-brand-name font-circular-bold mt-2 text-center text-sm leading-none dark:text-[#f6f8ff] text-[#0f2239]">
-            {isSuperAdmin ? "Norbitex Admin" : companyName || "Mi Empresa"}
+            {isSuperAdmin ? "Nuvex Admin" : companyName || "Mi Empresa"}
           </p>
         ) : null}
       </div>

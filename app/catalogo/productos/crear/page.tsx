@@ -53,7 +53,7 @@ import { colorsApi, type Color } from "@/lib/api/colors";
 import { productsApi } from "@/lib/api/products";
 import { sizesApi, type Size } from "@/lib/api/sizes";
 
-const productPlaceholderImage = "/Logo/Norvitex.png";
+const productPlaceholderImage = "/Logo/Nuvex.png";
 const selectorPageSize = 24;
 const normalColor: CatalogColor = {
   id: "normal",
