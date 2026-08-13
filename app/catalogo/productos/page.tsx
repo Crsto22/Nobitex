@@ -355,8 +355,8 @@ export default function CatalogoProductosPage() {
         </div>
       }
     >
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
-        <div className="grid shrink-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid shrink-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <MetricCard
             icon={<PackageIcon size={22} weight="fill" />}
             label="Total Productos"
@@ -457,7 +457,7 @@ export default function CatalogoProductosPage() {
           ) : catalogProducts.length === 0 ? (
             <EmptyProducts message="Intenta con otros filtros de busqueda" />
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {catalogProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -534,18 +534,18 @@ function MetricCard({
   }[tone];
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-3 shadow-sm sm:p-5">
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneClassName}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneClassName}`}
         >
           {icon}
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
             {label}
           </p>
-          <p className="text-2xl font-circular-bold leading-none text-[var(--color-text)] font-circular-regular">
+          <p className="truncate text-xl font-circular-bold leading-none text-[var(--color-text)] sm:text-2xl">
             {value}
           </p>
         </div>
@@ -556,7 +556,7 @@ function MetricCard({
 
 function ProductGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {Array.from({ length: 12 }).map((_, index) => (
         <div
           key={index}

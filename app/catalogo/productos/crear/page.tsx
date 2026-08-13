@@ -43,7 +43,10 @@ import {
   normalizeHex,
   toCatalogColor,
 } from "@/components/ProductCreate/utils";
-import { VariantCard } from "@/components/ProductCreate/variant-card";
+import {
+  PriceInput,
+  VariantCard,
+} from "@/components/ProductCreate/variant-card";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { Select } from "@/components/ui/select";
 import { brandsApi, type Brand } from "@/lib/api/brands";
@@ -52,6 +55,7 @@ import { categoriesApi, type Category } from "@/lib/api/categories";
 import { colorsApi, type Color } from "@/lib/api/colors";
 import { productsApi } from "@/lib/api/products";
 import { sizesApi, type Size } from "@/lib/api/sizes";
+import { sunatUnitOptions } from "@/lib/sunat-unit-codes";
 
 const productPlaceholderImage = "/Logo/Nuvex.png";
 const selectorPageSize = 24;
@@ -89,7 +93,11 @@ function CrearProductoPageContent() {
     name: "",
     brand: "",
     category: "",
+    unitCode: "NIU",
     description: "",
+    globalPurchasePrice: "",
+    globalSalePrice: "",
+    globalWholesalePrice: "",
   });
   const [catalogSizes, setCatalogSizes] = useState<Size[]>([]);
   const [catalogColors, setCatalogColors] = useState<Color[]>([]);
@@ -347,11 +355,16 @@ function CrearProductoPageContent() {
 
           setIsEditMode(true);
           setProductType(product.tipo);
+          const firstVariant = product.variantes[0];
           setFormData({
             name: product.nombre,
             brand: product.marca?.id ?? "",
             category: product.categoria?.id ?? "",
+            unitCode: product.unidadMedida.codigo,
             description: product.descripcion ?? "",
+            globalPurchasePrice: firstVariant?.precioCompra ?? "",
+            globalSalePrice: firstVariant?.precioVenta ?? "",
+            globalWholesalePrice: firstVariant?.precioMayorista ?? "",
           });
 
           const isNormalProduct = product.tipo === "normal";
@@ -896,14 +909,21 @@ function CrearProductoPageContent() {
 
     try {
       variantsPayload = productVariants.map((variant) => {
+        const useGlobalPrices =
+          productType === "variantes" &&
+          getOptionalFormString(submitForm, `priceOverride-${variant.id}`) !==
+            "true";
+        const pricePrefix = useGlobalPrices ? "global" : variant.id;
         const precioVenta = getFormString(
           submitForm,
-          `precioVenta-${variant.id}`,
+          useGlobalPrices ? "globalSalePrice" : `precioVenta-${pricePrefix}`,
         );
 
         if (!precioVenta) {
           throw new Error(
-            `Ingresa precio de venta para ${variant.color.label} ${variant.size.nombre}.`,
+            useGlobalPrices
+              ? "Ingresa el precio de venta global."
+              : `Ingresa precio de venta para ${variant.color.label} ${variant.size.nombre}.`,
           );
         }
 
@@ -917,12 +937,16 @@ function CrearProductoPageContent() {
           ),
           precioCompra: getOptionalFormString(
             submitForm,
-            `precioCompra-${variant.id}`,
+            useGlobalPrices
+              ? "globalPurchasePrice"
+              : `precioCompra-${pricePrefix}`,
           ),
           precioVenta,
           precioMayorista: getOptionalFormString(
             submitForm,
-            `precioMayorista-${variant.id}`,
+            useGlobalPrices
+              ? "globalWholesalePrice"
+              : `precioMayorista-${pricePrefix}`,
           ),
           stocks: stockBranches.map((branch) => ({
             sucursalId: branch.id,
@@ -952,7 +976,7 @@ function CrearProductoPageContent() {
     productPayload.append("nombre", productName);
     productPayload.append("tipo", productType);
     productPayload.append("categoriaId", formData.category);
-    productPayload.append("unidadMedidaCodigo", "NIU");
+    productPayload.append("unidadMedidaCodigo", formData.unitCode);
     productPayload.append("tipoAfectacionIgvCodigo", "10");
     productPayload.append("activo", "true");
 
@@ -1267,6 +1291,17 @@ function CrearProductoPageContent() {
                     searchable
                     required
                   />
+                  <Select
+                    options={sunatUnitOptions}
+                    value={formData.unitCode}
+                    onChange={(value) =>
+                      setFormData((prev) => ({ ...prev, unitCode: value }))
+                    }
+                    placeholder="NIU - Unidad"
+                    label="Unidad SUNAT"
+                    searchable
+                    required
+                  />
                 </div>
 
                 <div>
@@ -1286,6 +1321,30 @@ function CrearProductoPageContent() {
                     className="w-full resize-none rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                   />
                 </div>
+
+                {productType === "variantes" ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    <PriceInput
+                      name="globalPurchasePrice"
+                      label="Compra"
+                      initialValue={formData.globalPurchasePrice}
+                      surface="page"
+                    />
+                    <PriceInput
+                      name="globalSalePrice"
+                      label="Venta"
+                      required
+                      initialValue={formData.globalSalePrice}
+                      surface="page"
+                    />
+                    <PriceInput
+                      name="globalWholesalePrice"
+                      label="Mayor"
+                      initialValue={formData.globalWholesalePrice}
+                      surface="page"
+                    />
+                  </div>
+                ) : null}
 
                 <div className="grid grid-cols-2 gap-3">
                   <ToggleButton
@@ -1318,7 +1377,7 @@ function CrearProductoPageContent() {
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
                   {productType === "normal"
-                    ? "PRESENTACION"
+                    ? "DATOS"
                     : "PRODUCTOS VARIANTES"}
                 </p>
 
@@ -1352,11 +1411,19 @@ function CrearProductoPageContent() {
                           <span className="h-px flex-1 bg-[var(--color-border)]/60" />
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                           {group.variants.map((variant) => {
                             const motionState =
                               variantMotion[variant.id] ?? "visible";
                             const initialValues = loadedVariantData[variant.id];
+                            const hasCustomPrices =
+                              initialValues &&
+                              ((initialValues.precioCompra ?? "") !==
+                                formData.globalPurchasePrice ||
+                                initialValues.precioVenta !==
+                                  formData.globalSalePrice ||
+                                (initialValues.precioMayorista ?? "") !==
+                                  formData.globalWholesalePrice);
 
                             return (
                               <VariantCard
@@ -1373,6 +1440,8 @@ function CrearProductoPageContent() {
                                 }
                                 autoSku={autoSku}
                                 autoBarcode={autoBarcode}
+                                allowPriceEdit
+                                defaultPriceEditorOpen={hasCustomPrices}
                                 initialValues={initialValues}
                               />
                             );

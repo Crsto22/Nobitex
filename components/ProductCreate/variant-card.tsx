@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { CaretRightIcon, PackageIcon } from "@phosphor-icons/react/ssr";
 
@@ -17,14 +18,18 @@ type VariantCardProps = {
   autoSku: boolean;
   autoBarcode: boolean;
   simple?: boolean;
-  initialValues?: {
-    sku: string | null;
-    codigoBarras: string | null;
-    precioCompra: string | null;
-    precioVenta: string;
-    precioMayorista: string | null;
-    stocks: Record<string, number>;
-  };
+  allowPriceEdit?: boolean;
+  defaultPriceEditorOpen?: boolean;
+  initialValues?: VariantInitialValues;
+};
+
+type VariantInitialValues = {
+  sku: string | null;
+  codigoBarras: string | null;
+  precioCompra: string | null;
+  precioVenta: string;
+  precioMayorista: string | null;
+  stocks: Record<string, number>;
 };
 
 export function VariantCard({
@@ -37,8 +42,14 @@ export function VariantCard({
   autoSku,
   autoBarcode,
   simple = false,
+  allowPriceEdit = false,
+  defaultPriceEditorOpen = false,
   initialValues,
 }: VariantCardProps) {
+  const [isEditingPrices, setIsEditingPrices] = useState(
+    Boolean(defaultPriceEditorOpen),
+  );
+
   return (
     <div
       className={cn(
@@ -48,7 +59,12 @@ export function VariantCard({
         motionState === "exit" && "-translate-y-2 scale-[0.97] opacity-0",
       )}
     >
-      <div className="mb-3 flex min-w-0 items-center gap-2">
+      <div
+        className={cn(
+          "mb-3 flex min-w-0 items-center gap-2",
+          simple && "hidden",
+        )}
+      >
         {simple ? (
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
             <PackageIcon size={16} weight="fill" />
@@ -71,14 +87,33 @@ export function VariantCard({
           </p>
           {!simple ? (
             <p className="truncate text-[10px] font-circular-regular text-[var(--color-muted-foreground)]">
-              {variant.color.label}
-            </p>
-          ) : null}
+            {variant.color.label}
+          </p>
+        ) : null}
         </div>
+        {allowPriceEdit ? (
+          <button
+            type="button"
+            onClick={() => setIsEditingPrices((current) => !current)}
+            className="ml-auto h-8 shrink-0 rounded-[12px] bg-white px-3 text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-background)]"
+          >
+            {isEditingPrices ? "Usar global" : "Editar precio"}
+          </button>
+        ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-[96px_minmax(0,1fr)]">
-        <div className="relative flex aspect-square min-h-24 items-center justify-center overflow-hidden rounded-[16px] bg-white dark:bg-[var(--color-background)]">
+      <div
+        className={cn(
+          "grid gap-3",
+          simple ? "grid-cols-1" : "grid-cols-[96px_minmax(0,1fr)]",
+        )}
+      >
+        <div
+          className={cn(
+            "relative flex aspect-square min-h-24 items-center justify-center overflow-hidden rounded-[16px] bg-white dark:bg-[var(--color-background)]",
+            simple && "hidden",
+          )}
+        >
           {imagePreview ? (
             <Image
               src={imagePreview}
@@ -165,24 +200,35 @@ export function VariantCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <PriceInput
-          name={`precioCompra-${variant.id}`}
-          label="Compra"
-          initialValue={initialValues?.precioCompra}
-        />
-        <PriceInput
-          name={`precioVenta-${variant.id}`}
-          label="Venta"
-          required
-          initialValue={initialValues?.precioVenta}
-        />
-        <PriceInput
-          name={`precioMayorista-${variant.id}`}
-          label="Mayor"
-          initialValue={initialValues?.precioMayorista}
-        />
-      </div>
+      {simple || isEditingPrices ? (
+        <>
+          {allowPriceEdit && isEditingPrices ? (
+            <input
+              type="hidden"
+              name={`priceOverride-${variant.id}`}
+              value="true"
+            />
+          ) : null}
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <PriceInput
+              name={`precioCompra-${variant.id}`}
+              label="Compra"
+              initialValue={initialValues?.precioCompra}
+            />
+            <PriceInput
+              name={`precioVenta-${variant.id}`}
+              label="Venta"
+              required
+              initialValue={initialValues?.precioVenta}
+            />
+            <PriceInput
+              name={`precioMayorista-${variant.id}`}
+              label="Mayor"
+              initialValue={initialValues?.precioMayorista}
+            />
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -211,8 +257,13 @@ function AutoCodeInputs({
           type="text"
           disabled={skuDisabled}
           defaultValue={sku ?? undefined}
-          placeholder="Automatico"
-          className="h-9 rounded-[12px] bg-[#F4F4F4] px-3 text-xs font-circular-bold text-[var(--color-muted-foreground)] outline-none disabled:cursor-not-allowed font-circular-regular dark:bg-[var(--color-input-bg)] dark:text-[var(--color-input-text)]/70"
+          placeholder={skuDisabled ? "Automatico" : undefined}
+          className={cn(
+            "h-9 rounded-[12px] px-3 text-xs font-circular-bold outline-none font-circular-regular",
+            skuDisabled
+              ? "bg-[#F4F4F4] text-[var(--color-muted-foreground)] disabled:cursor-not-allowed dark:bg-[var(--color-input-bg)] dark:text-[var(--color-input-text)]/70"
+              : "bg-white text-[var(--color-input-text)] placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-primary)]/25 dark:bg-[var(--color-background)] dark:text-[var(--color-input-text)]",
+          )}
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -224,24 +275,31 @@ function AutoCodeInputs({
           type="text"
           disabled={barcodeDisabled}
           defaultValue={codigoBarras ?? undefined}
-          placeholder="Automatico"
-          className="h-9 rounded-[12px] bg-[#F4F4F4] px-3 text-xs font-circular-bold text-[var(--color-muted-foreground)] outline-none disabled:cursor-not-allowed font-circular-regular dark:bg-[var(--color-input-bg)] dark:text-[var(--color-input-text)]/70"
+          placeholder={barcodeDisabled ? "Automatico" : undefined}
+          className={cn(
+            "h-9 rounded-[12px] px-3 text-xs font-circular-bold outline-none font-circular-regular",
+            barcodeDisabled
+              ? "bg-[#F4F4F4] text-[var(--color-muted-foreground)] disabled:cursor-not-allowed dark:bg-[var(--color-input-bg)] dark:text-[var(--color-input-text)]/70"
+              : "bg-white text-[var(--color-input-text)] placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-primary)]/25 dark:bg-[var(--color-background)] dark:text-[var(--color-input-text)]",
+          )}
         />
       </label>
     </div>
   );
 }
 
-function PriceInput({
+export function PriceInput({
   name,
   label,
   required,
   initialValue,
+  surface = "card",
 }: {
   name: string;
   label: string;
   required?: boolean;
   initialValue?: string | null;
+  surface?: "card" | "page";
 }) {
   return (
     <label className="flex flex-col gap-1">
@@ -260,7 +318,12 @@ function PriceInput({
           required={required}
           defaultValue={initialValue ?? undefined}
           placeholder="0.00"
-          className="font-circular-regular h-9 w-full min-w-0 rounded-[12px] bg-white pr-2 pl-8 text-base font-circular-bold leading-none text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-primary)]/25 dark:bg-[var(--color-background)] dark:text-[var(--color-input-text)]"
+          className={cn(
+            "font-circular-regular h-9 w-full min-w-0 rounded-[12px] pr-2 pl-8 text-base font-circular-bold leading-none text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-primary)]/25 dark:text-[var(--color-input-text)]",
+            surface === "page"
+              ? "bg-[var(--color-input-bg)]"
+              : "bg-white dark:bg-[var(--color-background)]",
+          )}
         />
       </div>
     </label>

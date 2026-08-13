@@ -77,7 +77,7 @@ export function ProductColorImagesCarousel({
             className={
               simple
                 ? "mx-auto grid w-full max-w-md grid-cols-1"
-                : "grid grid-cols-4 gap-2"
+                : "grid grid-cols-2 gap-2 sm:grid-cols-4"
             }
           >
             {visibleColors.map((color, index) => {

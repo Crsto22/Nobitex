@@ -27,7 +27,7 @@ export function CategoryFilter({
         "TODOS";
 
   return (
-    <div className="relative w-[180px]">
+    <div className="relative w-full sm:w-[180px]">
       <button
         type="button"
         onClick={() => onOpenChange(!isOpen)}

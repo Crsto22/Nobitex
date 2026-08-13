@@ -1,14 +1,26 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Nuvex",
+  description: "Gestiona ventas, inventario y facturacion desde Nuvex.",
+  applicationName: "Nuvex",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Nuvex",
+  },
   icons: {
     icon: "/Logo/Nuvex.ico",
     shortcut: "/Logo/Nuvex.ico",
-    apple: "/Logo/Nuvex.ico",
+    apple: "/icons/apple-touch-icon.png",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#101D69",
 };
 
 const sidebarStateScript = `

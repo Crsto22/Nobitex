@@ -198,7 +198,7 @@ export default function EditPlanPage() {
 
             {tab === "pricing" ? (
               <PricingForm
-                key={plan.pricingUpdatedAt}
+                key={`${plan.code}-${plan.priceMonthly}-${plan.monthlyDiscountPercent}-${plan.annualDiscountPercent}`}
                 plan={plan}
                 saving={saving}
                 onSubmit={updatePricing}
@@ -261,12 +261,6 @@ function PricingForm({
   const [annualDiscount, setAnnualDiscount] = useState(
     plan.annualDiscountPercent,
   );
-
-  useEffect(() => {
-    setMonthlyPrice(plan.priceMonthly);
-    setMonthlyDiscount(plan.monthlyDiscountPercent);
-    setAnnualDiscount(plan.annualDiscountPercent);
-  }, [plan.priceMonthly, plan.monthlyDiscountPercent, plan.annualDiscountPercent]);
 
   const monthly = Number(monthlyPrice);
   const monthlyDiscountValue = Number(monthlyDiscount);
@@ -597,5 +591,4 @@ function getErrorMessage(error: unknown) {
     ? error.message
     : "No se pudo completar la solicitud.";
 }
-
 
