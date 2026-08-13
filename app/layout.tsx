@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
@@ -22,6 +23,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#101D69",
 };
+
+const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+const umamiScriptUrl =
+  process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL ?? "https://cloud.umami.is/script.js";
 
 const sidebarStateScript = `
   (function () {
@@ -51,6 +56,13 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: sidebarStateScript }} />
+        {umamiWebsiteId && (
+          <Script
+            src={umamiScriptUrl}
+            data-website-id={umamiWebsiteId}
+            strategy="afterInteractive"
+          />
+        )}
       </head>
       <body>
         <AppProviders>{children}</AppProviders>
