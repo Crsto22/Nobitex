@@ -258,7 +258,7 @@ export const guiaRemisionApi = {
     });
   },
 
-  findAll(query: GuiasRemisionQuery = {}) {
+  findAll(query: GuiasRemisionQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
 
     if (query.page) params.set("page", String(query.page));
@@ -271,6 +271,7 @@ export const guiaRemisionApi = {
     const queryString = params.toString();
     return authFetch<GuiasRemisionResponse>(
       queryString ? `/guia-remision?${queryString}` : "/guia-remision",
+      options,
     );
   },
 
@@ -305,12 +306,13 @@ export const guiaRemisionApi = {
 };
 
 export const guiaRemisionCatalogosApi = {
-  findParticipantes(query: GuiaCatalogosQuery = {}) {
+  findParticipantes(query: GuiaCatalogosQuery = {}, options: RequestInit = {}) {
     const queryString = buildCatalogosQuery(query);
     return authFetch<GuiaCatalogoParticipantesResponse>(
       queryString
         ? `/guia-remision/catalogos/participantes?${queryString}`
         : "/guia-remision/catalogos/participantes",
+      options,
     );
   },
 
@@ -344,12 +346,13 @@ export const guiaRemisionCatalogosApi = {
     );
   },
 
-  findVehiculos(query: GuiaCatalogosQuery = {}) {
+  findVehiculos(query: GuiaCatalogosQuery = {}, options: RequestInit = {}) {
     const queryString = buildCatalogosQuery(query);
     return authFetch<GuiaCatalogoVehiculosResponse>(
       queryString
         ? `/guia-remision/catalogos/vehiculos?${queryString}`
         : "/guia-remision/catalogos/vehiculos",
+      options,
     );
   },
 

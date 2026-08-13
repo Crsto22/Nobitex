@@ -42,6 +42,13 @@ type HeaderProps = {
   onLogout?: () => Promise<void> | void;
 };
 
+const notificationsRefreshCooldownMs = positiveNumber(
+  process.env.NEXT_PUBLIC_NOTIFICATIONS_REFRESH_COOLDOWN_MS,
+  60_000,
+);
+
+type NotificationLoadOptions = RequestInit & { force?: boolean };
+
 export function Header({
   title = "Punto de Venta",
   className,
@@ -67,17 +74,38 @@ export function Header({
   );
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const lastNotificationsLoadedAt = useRef(0);
+  const notificationsRequestRef =
+    useRef<Promise<NotificationsResponse> | null>(null);
 
-  const loadNotifications = useCallback(async () => {
+  const loadNotifications = useCallback(async (options: NotificationLoadOptions = {}) => {
     if (!user) return;
+    const now = Date.now();
+    if (
+      !options.force &&
+      lastNotificationsLoadedAt.current &&
+      now - lastNotificationsLoadedAt.current < notificationsRefreshCooldownMs
+    ) {
+      return;
+    }
+
     setIsLoadingNotifications(true);
     setNotificationsError(null);
     try {
-      setNotifications(await notificationsApi.findMine());
+      notificationsRequestRef.current ??= notificationsApi.findMine(
+        5,
+        1,
+        { signal: options.signal },
+      );
+      const response = await notificationsRequestRef.current;
+      lastNotificationsLoadedAt.current = Date.now();
+      setNotifications(response);
     } catch {
+      if (options.signal?.aborted) return;
       setNotificationsError("No se pudieron cargar las notificaciones.");
     } finally {
-      setIsLoadingNotifications(false);
+      notificationsRequestRef.current = null;
+      if (!options.signal?.aborted) setIsLoadingNotifications(false);
     }
   }, [user]);
 
@@ -107,20 +135,12 @@ export function Header({
 
   useEffect(() => {
     if (!user) return;
-    let active = true;
-    void notificationsApi
-      .findMine()
-      .then((response) => {
-        if (active) setNotifications(response);
-      })
-      .catch(() => {
-        if (active)
-          setNotificationsError("No se pudieron cargar las notificaciones.");
-      });
+    const controller = new AbortController();
+    void loadNotifications({ force: true, signal: controller.signal });
     return () => {
-      active = false;
+      controller.abort();
     };
-  }, [user]);
+  }, [loadNotifications, user]);
 
   const toggleTheme = () => {
     const newIsDark = !isDark;
@@ -140,8 +160,11 @@ export function Header({
 
   const openNotifications = () => {
     setIsUserMenuOpen(false);
-    setIsNotificationsOpen((open) => !open);
-    void loadNotifications();
+    setIsNotificationsOpen((open) => {
+      const nextOpen = !open;
+      if (nextOpen) void loadNotifications();
+      return nextOpen;
+    });
   };
 
   const selectNotification = (notification: AppNotification) => {
@@ -157,7 +180,7 @@ export function Header({
       }));
       void notificationsApi
         .markRead(notification.id)
-        .catch(() => loadNotifications());
+        .catch(() => loadNotifications({ force: true }));
     }
     setIsNotificationsOpen(false);
     if (notification.link) router.push(notification.link);
@@ -175,7 +198,7 @@ export function Header({
     try {
       await notificationsApi.markAllRead();
     } catch {
-      void loadNotifications();
+      void loadNotifications({ force: true });
     }
   };
 
@@ -202,7 +225,7 @@ export function Header({
         >
           <SidebarIcon size={18} />
         </button>
-        <div className="min-w-0 truncate text-sm font-circular-regular whitespace-nowrap text-[var(--color-text)]/70">
+        <div className="min-w-0 text-sm font-circular-regular whitespace-nowrap text-[var(--color-text)]/70">
           {title}
         </div>
       </div>
@@ -423,4 +446,9 @@ function relativeDate(value: string) {
   const hours = Math.round(minutes / 60);
   if (Math.abs(hours) < 24) return relativeTimeFormatter.format(hours, "hour");
   return relativeTimeFormatter.format(Math.round(hours / 24), "day");
+}
+
+function positiveNumber(raw: string | undefined, fallback: number) {
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
 }

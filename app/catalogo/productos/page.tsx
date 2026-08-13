@@ -150,8 +150,8 @@ export default function CatalogoProductosPage() {
             activeBranches[0];
 
           setBranches(activeBranches);
-          setSelectedBranch((currentBranch) =>
-            currentBranch || principalBranch?.id || "",
+          setSelectedBranch(
+            (currentBranch) => currentBranch || principalBranch?.id || "",
           );
           setHasLoadedBranches(true);
         })
@@ -207,20 +207,25 @@ export default function CatalogoProductosPage() {
     }
 
     let isMounted = true;
+    const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
       setIsLoadingProducts(true);
       setProductsError(null);
 
       productsApi
-        .findAll({
-          page,
-          limit: defaultPageSize,
-          search: debouncedSearchTerm,
-          categoriaId: selectedCategory === "todos" ? undefined : selectedCategory,
-          colorId: selectedColor === "todos" ? undefined : selectedColor,
-          tallaId: selectedSize === "todos" ? undefined : selectedSize,
-          sucursalId: selectedBranch || undefined,
-        })
+        .findAll(
+          {
+            page,
+            limit: defaultPageSize,
+            search: debouncedSearchTerm,
+            categoriaId:
+              selectedCategory === "todos" ? undefined : selectedCategory,
+            colorId: selectedColor === "todos" ? undefined : selectedColor,
+            tallaId: selectedSize === "todos" ? undefined : selectedSize,
+            sucursalId: selectedBranch || undefined,
+          },
+          { signal: controller.signal },
+        )
         .then((response) => {
           if (!isMounted) {
             return;
@@ -229,8 +234,11 @@ export default function CatalogoProductosPage() {
           setProducts(response.data);
           setProductsMeta(response.meta);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (!isMounted) {
+            return;
+          }
+          if (error instanceof DOMException && error.name === "AbortError") {
             return;
           }
 
@@ -247,6 +255,7 @@ export default function CatalogoProductosPage() {
 
     return () => {
       isMounted = false;
+      controller.abort();
       window.clearTimeout(timeoutId);
     };
   }, [
@@ -264,7 +273,9 @@ export default function CatalogoProductosPage() {
     [products],
   );
   const totalProducts = productsMeta.total;
-  const inStockCount = catalogProducts.filter((product) => product.stock > 0).length;
+  const inStockCount = catalogProducts.filter(
+    (product) => product.stock > 0,
+  ).length;
   const outOfStockCount = catalogProducts.filter(
     (product) => product.stock === 0,
   ).length;
@@ -307,8 +318,7 @@ export default function CatalogoProductosPage() {
     try {
       await productsApi.remove(deleteProduct.publicId);
 
-      const targetPage =
-        products.length === 1 && page > 1 ? page - 1 : page;
+      const targetPage = products.length === 1 && page > 1 ? page - 1 : page;
 
       setPage(targetPage);
       await refreshProducts(targetPage);
@@ -476,7 +486,9 @@ export default function CatalogoProductosPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+              onClick={() =>
+                setPage((currentPage) => Math.max(1, currentPage - 1))
+              }
               className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
               disabled={isLoadingProducts || productsMeta.page <= 1}
             >
@@ -494,7 +506,8 @@ export default function CatalogoProductosPage() {
               }
               className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
               disabled={
-                isLoadingProducts || productsMeta.page >= productsMeta.totalPages
+                isLoadingProducts ||
+                productsMeta.page >= productsMeta.totalPages
               }
             >
               Siguiente
@@ -597,67 +610,72 @@ function EmptyProducts({ message }: { message: string }) {
 
 function toProductCatalogItem(product: ProductResponse): ProductCatalogItem {
   const firstVariant = product.variantes[0];
-  const colors = product.tipo === "normal" ? [] : product.colores.map((productColor) => {
-    const colorVariants = product.variantes.filter(
-      (variant) => variant.color.id === productColor.color.id,
-    );
-    const firstColorVariant = colorVariants[0];
-    const colorStock = colorVariants.reduce((variantSum, variant) => {
-      return (
-        variantSum +
-        (variant.stockSucursal ??
-          variant.stockTotal ??
-          variant.inventarios.reduce(
-            (stockSum, inventory) => stockSum + inventory.stockActual,
-            0,
-          ))
-      );
-    }, 0);
-    const colorMinPrice = colorVariants.reduce<number | null>(
-      (minValue, variant) => {
-        const price = Number(variant.precioVenta);
+  const colors =
+    product.tipo === "normal"
+      ? []
+      : product.colores.map((productColor) => {
+          const colorVariants = product.variantes.filter(
+            (variant) => variant.color.id === productColor.color.id,
+          );
+          const firstColorVariant = colorVariants[0];
+          const colorStock = colorVariants.reduce((variantSum, variant) => {
+            return (
+              variantSum +
+              (variant.stockSucursal ??
+                variant.stockTotal ??
+                variant.inventarios.reduce(
+                  (stockSum, inventory) => stockSum + inventory.stockActual,
+                  0,
+                ))
+            );
+          }, 0);
+          const colorMinPrice = colorVariants.reduce<number | null>(
+            (minValue, variant) => {
+              const price = Number(variant.precioVenta);
 
-        if (!Number.isFinite(price)) {
-          return minValue;
-        }
+              if (!Number.isFinite(price)) {
+                return minValue;
+              }
 
-        return minValue === null ? price : Math.min(minValue, price);
-      },
-      null,
-    );
-    const image = getColorImage(productColor.imagenes);
-    const sizes = colorVariants.map((variant) => ({
-      id: variant.talla.id,
-      name: variant.talla.nombre,
-      stock:
-        variant.stockSucursal ??
-        variant.stockTotal ??
-        variant.inventarios.reduce(
-          (stockSum, inventory) => stockSum + inventory.stockActual,
-          0,
-        ),
-      price: formatCurrency(Number(variant.precioVenta)),
-      sku: variant.sku ?? variant.codigoBarras ?? `PROD-${product.id}`,
-    }));
+              return minValue === null ? price : Math.min(minValue, price);
+            },
+            null,
+          );
+          const image = getColorImage(productColor.imagenes);
+          const sizes = colorVariants.map((variant) => ({
+            id: variant.talla.id,
+            name: variant.talla.nombre,
+            stock:
+              variant.stockSucursal ??
+              variant.stockTotal ??
+              variant.inventarios.reduce(
+                (stockSum, inventory) => stockSum + inventory.stockActual,
+                0,
+              ),
+            price: formatCurrency(Number(variant.precioVenta)),
+            sku: variant.sku ?? variant.codigoBarras ?? `PROD-${product.id}`,
+          }));
 
-    return {
-      id: productColor.color.id,
-      name: productColor.color.nombre,
-      hex: productColor.color.hex,
-      image,
-      stock: colorStock,
-      price: formatCurrency(colorMinPrice ?? 0),
-      sku:
-        firstColorVariant?.sku ??
-        firstColorVariant?.codigoBarras ??
-        `PROD-${product.id}`,
-      size: firstColorVariant?.talla.nombre ?? "-",
-      sizes,
-    };
-  });
+          return {
+            id: productColor.color.id,
+            name: productColor.color.nombre,
+            hex: productColor.color.hex,
+            image,
+            stock: colorStock,
+            price: formatCurrency(colorMinPrice ?? 0),
+            sku:
+              firstColorVariant?.sku ??
+              firstColorVariant?.codigoBarras ??
+              `PROD-${product.id}`,
+            size: firstColorVariant?.talla.nombre ?? "-",
+            sizes,
+          };
+        });
   const principalImage =
     colors.find((color) => color.image)?.image ??
-    getColorImage(product.colores.flatMap((productColor) => productColor.imagenes));
+    getColorImage(
+      product.colores.flatMap((productColor) => productColor.imagenes),
+    );
   const firstColor = product.colores[0]?.color ?? firstVariant?.color;
   const stock =
     product.stockSucursal ??
@@ -671,35 +689,36 @@ function toProductCatalogItem(product: ProductResponse): ProductCatalogItem {
         )
       );
     }, 0);
-  const minPrice = product.variantes.reduce<number | null>((minValue, variant) => {
-    const price = Number(variant.precioVenta);
+  const minPrice = product.variantes.reduce<number | null>(
+    (minValue, variant) => {
+      const price = Number(variant.precioVenta);
 
-    if (!Number.isFinite(price)) {
-      return minValue;
-    }
+      if (!Number.isFinite(price)) {
+        return minValue;
+      }
 
-    return minValue === null ? price : Math.min(minValue, price);
-  }, null);
+      return minValue === null ? price : Math.min(minValue, price);
+    },
+    null,
+  );
 
   return {
     id: product.id,
     publicId: product.publicId,
     name: product.nombre,
     tipo: product.tipo,
-    sku: firstVariant?.sku ?? firstVariant?.codigoBarras ?? `PROD-${product.id}`,
+    sku:
+      firstVariant?.sku ?? firstVariant?.codigoBarras ?? `PROD-${product.id}`,
     price: formatCurrency(minPrice ?? 0),
     stock,
-    image:
-      principalImage,
+    image: principalImage,
     colorHex: firstColor?.hex ?? "#94A3B8",
     size: firstVariant?.talla.nombre ?? "-",
     colors,
   };
 }
 
-function getColorImage(
-  images: ProductResponse["colores"][number]["imagenes"],
-) {
+function getColorImage(images: ProductResponse["colores"][number]["imagenes"]) {
   const image = images.find((item) => item.esPrincipal) ?? images[0];
 
   return image?.urlThumbnail ?? image?.urlWebp ?? image?.urlOriginal ?? null;
@@ -715,7 +734,10 @@ function formatCurrency(value: number) {
   return currencyFormatter.format(value);
 }
 
-function mergeById<T extends { id: string }>(primaryItems: T[], secondaryItems: T[]) {
+function mergeById<T extends { id: string }>(
+  primaryItems: T[],
+  secondaryItems: T[],
+) {
   const itemsById = new Map<string, T>();
 
   [...primaryItems, ...secondaryItems].forEach((item) => {

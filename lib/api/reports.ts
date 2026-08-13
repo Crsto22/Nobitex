@@ -129,23 +129,31 @@ function buildQuery(query: ReportQuery) {
 }
 
 export const reportsApi = {
-  sales(query: ReportQuery = {}) {
-    return authFetch<SalesReportResponse>(`/reports/sales${buildQuery(query)}`);
+  sales(query: ReportQuery = {}, options: RequestInit = {}) {
+    return authFetch<SalesReportResponse>(
+      `/reports/sales${buildQuery(query)}`,
+      options,
+    );
   },
 
-  products(query: ReportQuery = {}) {
+  products(query: ReportQuery = {}, options: RequestInit = {}) {
     return authFetch<ProductReportResponse>(
       `/reports/products${buildQuery(query)}`,
+      options,
     );
   },
 
-  clients(query: ReportQuery = {}) {
+  clients(query: ReportQuery = {}, options: RequestInit = {}) {
     return authFetch<ClientReportResponse>(
       `/reports/clients${buildQuery(query)}`,
+      options,
     );
   },
 
-  users(query: ReportQuery = {}) {
-    return authFetch<UserReportResponse>(`/reports/users${buildQuery(query)}`);
+  users(query: ReportQuery = {}, options: RequestInit = {}) {
+    return authFetch<UserReportResponse>(
+      `/reports/users${buildQuery(query)}`,
+      options,
+    );
   },
 };

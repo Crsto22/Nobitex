@@ -152,9 +152,10 @@ function queryString(query: Record<string, string | number | undefined>) {
 }
 
 export const creditNotesApi = {
-  findAll(query: CreditNotesQuery = {}) {
+  findAll(query: CreditNotesQuery = {}, options: RequestInit = {}) {
     return authFetch<CreditNotesResponse>(
       `/credit-notes${queryString(query)}`,
+      options,
     );
   },
   findOne(publicId: string) {

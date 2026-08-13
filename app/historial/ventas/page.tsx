@@ -296,7 +296,7 @@ export default function HistorialVentasPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const loadVentas = useCallback(() => {
+  const loadVentas = useCallback((options: RequestInit = {}) => {
     setIsLoading(true);
 
     salesApi
@@ -307,23 +307,32 @@ export default function HistorialVentasPage() {
         search: debouncedSearchTerm || undefined,
         estado: selectedStatus === "todos" ? undefined : selectedStatus,
         tipoComprobante: selectedType === "todos" ? undefined : selectedType,
-      })
+      }, options)
       .then((response) => {
         setVentas(response.data);
         setMeta(response.meta);
       })
       .catch(() => {
+        if (options.signal?.aborted) return;
         setVentas([]);
         setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
       })
       .finally(() => {
+        if (options.signal?.aborted) return;
         setIsLoading(false);
       });
   }, [page, debouncedSearchTerm, selectedStatus, selectedType, historyPeriod]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(loadVentas, 0);
-    return () => window.clearTimeout(timeoutId);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => loadVentas({ signal: controller.signal }),
+      0,
+    );
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, [loadVentas]);
 
   const handleAnnulSuccess = () => {

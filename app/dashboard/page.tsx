@@ -65,7 +65,7 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const loadDashboard = useCallback(() => {
+  const loadDashboard = useCallback((options: RequestInit = {}) => {
     if (!selectedBranch) {
       return;
     }
@@ -77,11 +77,12 @@ export default function DashboardPage() {
       .find({
         sucursalId: selectedBranch === "all" ? undefined : selectedBranch,
         dateFilter: selectedFilter,
-      })
+      }, options)
       .then((response) => {
         setDashboard(response);
       })
       .catch((error: unknown) => {
+        if (options.signal?.aborted) return;
         setDashboard(null);
         setDashboardError(
           error instanceof Error
@@ -90,14 +91,17 @@ export default function DashboardPage() {
         );
       })
       .finally(() => {
+        if (options.signal?.aborted) return;
         setIsLoadingDashboard(false);
       });
   }, [selectedBranch, selectedFilter]);
 
   useEffect(() => {
+    const controller = new AbortController();
     // Data is intentionally synchronized with the selected dashboard filters.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadDashboard();
+    loadDashboard({ signal: controller.signal });
+    return () => controller.abort();
   }, [loadDashboard]);
 
   return (

@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -13,14 +14,8 @@ import {
 import { authApi, type LoginPayload, type LoginResponse } from "@/lib/api/auth";
 import { accountApi } from "@/lib/api/account";
 import { sessionExpiredEventName } from "@/lib/api/auth-fetch";
-import {
-  companyApi,
-  type CompanySetupStatus,
-} from "@/lib/api/company";
-import {
-  plansApi,
-  type CurrentPlanResponse,
-} from "@/lib/api/plans";
+import { companyApi, type CompanySetupStatus } from "@/lib/api/company";
+import { plansApi, type CurrentPlanResponse } from "@/lib/api/plans";
 import {
   clearSession,
   getStoredCompanyInfo,
@@ -31,7 +26,10 @@ import {
   type CompanyInfo,
   type SessionUser,
 } from "@/lib/auth/session";
-import { publishAuthEvent, subscribeAuthEvents } from "@/lib/auth/multi-tab-sync";
+import {
+  publishAuthEvent,
+  subscribeAuthEvents,
+} from "@/lib/auth/multi-tab-sync";
 
 type AuthContextValue = {
   user: SessionUser | null;
@@ -51,30 +49,75 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const visibilityRefreshCooldownMs = positiveNumber(
+  process.env.NEXT_PUBLIC_AUTH_VISIBILITY_REFRESH_COOLDOWN_MS,
+  60_000,
+);
+const authDataRefreshCooldownMs = positiveNumber(
+  process.env.NEXT_PUBLIC_AUTH_DATA_REFRESH_COOLDOWN_MS,
+  60_000,
+);
+
+type RefreshOptions = { force?: boolean };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
-  const [currentPlan, setCurrentPlan] =
-    useState<CurrentPlanResponse | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<CurrentPlanResponse | null>(
+    null,
+  );
   const [setupStatus, setSetupStatus] = useState<CompanySetupStatus | null>(
     null,
   );
   const [isSetupLoading, setIsSetupLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const lastVisibilityRefreshAt = useRef(0);
+  const currentPlanRef = useRef<CurrentPlanResponse | null>(null);
+  const setupStatusRef = useRef<CompanySetupStatus | null>(null);
+  const refreshPlanPromiseRef = useRef<Promise<CurrentPlanResponse | null> | null>(
+    null,
+  );
+  const refreshSetupPromiseRef =
+    useRef<Promise<CompanySetupStatus | null> | null>(null);
+  const lastPlanRefreshAt = useRef(0);
+  const lastSetupRefreshAt = useRef(0);
 
-  const refreshPlan = useCallback(async () => {
+  useEffect(() => {
+    currentPlanRef.current = currentPlan;
+  }, [currentPlan]);
+
+  useEffect(() => {
+    setupStatusRef.current = setupStatus;
+  }, [setupStatus]);
+
+  const refreshPlan = useCallback(async (options: RefreshOptions = {}) => {
     const sessionUser = getSessionUser();
     if (!sessionUser?.empresaId) {
       setCurrentPlan(null);
+      currentPlanRef.current = null;
       return null;
     }
 
-    try {
+    const now = Date.now();
+    if (
+      !options.force &&
+      currentPlanRef.current &&
+      now - lastPlanRefreshAt.current < authDataRefreshCooldownMs
+    ) {
+      return currentPlanRef.current;
+    }
+
+    if (refreshPlanPromiseRef.current) {
+      return refreshPlanPromiseRef.current;
+    }
+
+    refreshPlanPromiseRef.current = (async () => {
       const [plan, profile] = await Promise.all([
         plansApi.current(),
         accountApi.me(),
       ]);
+      lastPlanRefreshAt.current = Date.now();
+      currentPlanRef.current = plan;
       setCurrentPlan(plan);
       setUser((current) =>
         current
@@ -92,45 +135,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : current,
       );
       return plan;
+    })();
+
+    try {
+      return await refreshPlanPromiseRef.current;
     } catch {
       return null;
+    } finally {
+      refreshPlanPromiseRef.current = null;
     }
   }, []);
 
-  const refreshSetupStatus = useCallback(async () => {
+  const refreshSetupStatus = useCallback(async (options: RefreshOptions = {}) => {
     const sessionUser = getSessionUser();
     if (!sessionUser?.empresaId || sessionUser.roles.includes("SUPERADMIN")) {
       setSetupStatus(null);
+      setupStatusRef.current = null;
       setIsSetupLoading(false);
       return null;
     }
 
+    const now = Date.now();
+    if (
+      !options.force &&
+      setupStatusRef.current &&
+      now - lastSetupRefreshAt.current < authDataRefreshCooldownMs
+    ) {
+      return setupStatusRef.current;
+    }
+
+    if (refreshSetupPromiseRef.current) {
+      return refreshSetupPromiseRef.current;
+    }
+
     setIsSetupLoading(true);
-    try {
+    refreshSetupPromiseRef.current = (async () => {
       const status = await companyApi.getSetupStatus();
+      lastSetupRefreshAt.current = Date.now();
+      setupStatusRef.current = status;
       setSetupStatus(status);
       return status;
+    })();
+
+    try {
+      return await refreshSetupPromiseRef.current;
     } catch {
       setSetupStatus(null);
+      setupStatusRef.current = null;
       return null;
     } finally {
+      refreshSetupPromiseRef.current = null;
       setIsSetupLoading(false);
     }
   }, []);
 
-  const completeAuth = useCallback((payload: AuthSessionPayload) => {
-    const sessionUser = saveAuthSession(payload);
-    setUser(sessionUser);
-    void refreshPlan();
-    void refreshSetupStatus();
-  }, [refreshPlan, refreshSetupStatus]);
+  const completeAuth = useCallback(
+    (payload: AuthSessionPayload) => {
+      const sessionUser = saveAuthSession(payload);
+      setUser(sessionUser);
+      void refreshPlan({ force: true });
+      void refreshSetupStatus({ force: true });
+    },
+    [refreshPlan, refreshSetupStatus],
+  );
 
   const refreshSession = useCallback(async () => {
     try {
       const response = await authApi.refresh();
       const sessionUser = saveAuthSession(response);
       setUser(sessionUser);
-      await Promise.all([refreshPlan(), refreshSetupStatus()]);
+      await Promise.all([
+        refreshPlan({ force: true }),
+        refreshSetupStatus({ force: true }),
+      ]);
       return response.accessToken ?? response.token ?? null;
     } catch {
       const currentUser = getSessionUser();
@@ -151,10 +228,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const sessionUser = saveAuthSession(response);
       setUser(sessionUser);
-      await Promise.all([refreshPlan(), refreshSetupStatus()]);
+      await Promise.all([
+        refreshPlan({ force: true }),
+        refreshSetupStatus({ force: true }),
+      ]);
       return response;
     },
-    [refreshPlan, refreshSetupStatus]
+    [refreshPlan, refreshSetupStatus],
   );
 
   const logout = useCallback(async () => {
@@ -239,6 +319,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const currentUser = getSessionUser();
       if (currentUser) {
+        const now = Date.now();
+        if (
+          now - lastVisibilityRefreshAt.current <
+          visibilityRefreshCooldownMs
+        ) {
+          return;
+        }
+        lastVisibilityRefreshAt.current = now;
         void refreshPlan();
         return;
       }
@@ -283,7 +371,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateCompanyInfo,
       user,
       setupStatus,
-    ]
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -297,4 +385,9 @@ export function useAuth() {
   }
 
   return context;
+}
+
+function positiveNumber(raw: string | undefined, fallback: number) {
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
 }

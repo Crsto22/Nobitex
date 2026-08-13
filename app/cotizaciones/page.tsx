@@ -266,6 +266,7 @@ export default function CotizacionesPage() {
   const clientSearchRef = useRef<HTMLInputElement>(null);
   const discountInputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null);
+  const saveRequestIdRef = useRef<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [priceItemId, setPriceItemId] = useState<string | null>(null);
   const toast = useSystemToast();
@@ -330,15 +331,18 @@ export default function CotizacionesPage() {
   }, []);
 
   const loadClients = useCallback(
-    async (targetPage = 1, append = false) => {
+    async (targetPage = 1, append = false, signal?: AbortSignal) => {
       setIsLoadingClients(true);
       try {
-        const response = await clientsApi.findAll({
-          page: targetPage,
-          limit: filterPageSize,
-          search: clientSearch.trim() || undefined,
-          estado: "activo",
-        });
+        const response = await clientsApi.findAll(
+          {
+            page: targetPage,
+            limit: filterPageSize,
+            search: clientSearch.trim() || undefined,
+            estado: "activo",
+          },
+          { signal },
+        );
         setClients((current) =>
           append
             ? [
@@ -352,7 +356,9 @@ export default function CotizacionesPage() {
         setClientPage(response.meta.page);
         setClientTotalPages(response.meta.totalPages);
       } finally {
-        setIsLoadingClients(false);
+        if (!signal?.aborted) {
+          setIsLoadingClients(false);
+        }
       }
     },
     [clientSearch],
@@ -424,21 +430,25 @@ export default function CotizacionesPage() {
     }
 
     let isMounted = true;
+    const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
       setIsLoadingProducts(true);
       setProductsError(null);
 
       salesApi
-        .findProducts({
-          page: productPage,
-          limit: defaultPageSize,
-          search: debouncedSearchTerm,
-          sucursalId: selectedBranch,
-          categoriaId:
-            selectedCategory === "todos" ? undefined : selectedCategory,
-          colorId: selectedColor === "todos" ? undefined : selectedColor,
-          tallaId: selectedSize === "todos" ? undefined : selectedSize,
-        })
+        .findProducts(
+          {
+            page: productPage,
+            limit: defaultPageSize,
+            search: debouncedSearchTerm,
+            sucursalId: selectedBranch,
+            categoriaId:
+              selectedCategory === "todos" ? undefined : selectedCategory,
+            colorId: selectedColor === "todos" ? undefined : selectedColor,
+            tallaId: selectedSize === "todos" ? undefined : selectedSize,
+          },
+          { signal: controller.signal },
+        )
         .then((response) => {
           if (!isMounted) {
             return;
@@ -447,8 +457,11 @@ export default function CotizacionesPage() {
           setProducts(response.data);
           setProductsMeta(response.meta);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (!isMounted) {
+            return;
+          }
+          if (error instanceof DOMException && error.name === "AbortError") {
             return;
           }
 
@@ -465,6 +478,7 @@ export default function CotizacionesPage() {
 
     return () => {
       isMounted = false;
+      controller.abort();
       window.clearTimeout(timeoutId);
     };
   }, [
@@ -477,10 +491,14 @@ export default function CotizacionesPage() {
   ]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
-      void loadClients(1, false);
+      void loadClients(1, false, controller.signal);
     }, 0);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, [loadClients]);
 
   useEffect(() => {
@@ -767,7 +785,9 @@ export default function CotizacionesPage() {
     });
 
     try {
+      saveRequestIdRef.current ??= crypto.randomUUID();
       const quotation = await quotationsApi.create({
+        requestId: saveRequestIdRef.current,
         sucursalId: selectedBranch || undefined,
         clienteId: selectedClient?.id || undefined,
         descuentoTipo: hasDiscountApplied ? discountType : undefined,
@@ -799,6 +819,7 @@ export default function CotizacionesPage() {
       setValidUntil("");
       setIsDiscountEditorOpen(false);
       setIsNoteEditorOpen(false);
+      saveRequestIdRef.current = null;
       refreshProducts();
     } catch (error: unknown) {
       const message =
@@ -1027,41 +1048,44 @@ export default function CotizacionesPage() {
           </div>
 
           {availableProducts.length > 0 ? (
-          <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3">
-            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-              Mostrando {availableProducts.length} de {productsMeta.total} productos
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setProductPage((currentPage) => Math.max(1, currentPage - 1))
-                }
-                disabled={isLoadingProducts || productsMeta.page <= 1}
-                className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Anterior
-              </button>
-              <span className="flex h-8 min-w-8 items-center justify-center rounded-[10px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
-                {productsMeta.page}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setProductPage((currentPage) =>
-                    Math.min(productsMeta.totalPages, currentPage + 1),
-                  )
-                }
-                disabled={
-                  isLoadingProducts ||
-                  productsMeta.page >= productsMeta.totalPages
-                }
-                className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Siguiente
-              </button>
+            <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3">
+              <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+                Mostrando {availableProducts.length} de {productsMeta.total}{" "}
+                productos
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProductPage((currentPage) =>
+                      Math.max(1, currentPage - 1),
+                    )
+                  }
+                  disabled={isLoadingProducts || productsMeta.page <= 1}
+                  className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+                <span className="flex h-8 min-w-8 items-center justify-center rounded-[10px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
+                  {productsMeta.page}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProductPage((currentPage) =>
+                      Math.min(productsMeta.totalPages, currentPage + 1),
+                    )
+                  }
+                  disabled={
+                    isLoadingProducts ||
+                    productsMeta.page >= productsMeta.totalPages
+                  }
+                  className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
-          </div>
           ) : null}
         </section>
 

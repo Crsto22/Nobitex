@@ -23,6 +23,7 @@ export type CotizacionEstado =
   | "anulada";
 
 export type CreateQuotationPayload = {
+  requestId?: string;
   sucursalId?: string;
   clienteId?: string;
   estado?: CotizacionEstado;
@@ -36,6 +37,7 @@ export type CreateQuotationPayload = {
 export type UpdateQuotationPayload = Partial<CreateQuotationPayload>;
 
 export type ConvertQuotationPayload = {
+  requestId?: string;
   tipoComprobante: VentaTipoComprobante;
   clienteId?: string | null;
   pagos: CreateSalePago[];
@@ -107,7 +109,7 @@ export const quotationsApi = {
     });
   },
 
-  findAll(query: QuotationsQuery = {}) {
+  findAll(query: QuotationsQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
     appendHistoryPeriod(params, query);
 
@@ -146,6 +148,7 @@ export const quotationsApi = {
     const queryString = params.toString();
     return authFetch<QuotationsResponse>(
       queryString ? `/quotations?${queryString}` : "/quotations",
+      options,
     );
   },
 

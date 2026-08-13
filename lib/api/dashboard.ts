@@ -77,7 +77,7 @@ export type DashboardQuery = {
 };
 
 export const dashboardApi = {
-  find(query: DashboardQuery = {}) {
+  find(query: DashboardQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
 
     if (query.sucursalId && query.sucursalId !== "all") {
@@ -91,6 +91,7 @@ export const dashboardApi = {
     const queryString = params.toString();
     return authFetch<DashboardResponse>(
       queryString ? `/dashboard?${queryString}` : "/dashboard",
+      options,
     );
   },
 };

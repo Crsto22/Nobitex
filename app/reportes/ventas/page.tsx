@@ -52,7 +52,7 @@ export default function SalesReportPage() {
     };
   }, [user?.sucursalId]);
 
-  const loadReport = useCallback(() => {
+  const loadReport = useCallback((options: RequestInit = {}) => {
     if (!selectedBranch) return;
 
     setIsLoading(true);
@@ -62,22 +62,27 @@ export default function SalesReportPage() {
       .sales({
         sucursalId: selectedBranch === "all" ? undefined : selectedBranch,
         dateFilter: selectedFilter,
-      })
+      }, options)
       .then(setReport)
       .catch((loadError: unknown) => {
+        if (options.signal?.aborted) return;
         setError(
           loadError instanceof Error
             ? loadError.message
             : "No se pudo cargar el reporte de ventas",
         );
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!options.signal?.aborted) setIsLoading(false);
+      });
   }, [selectedBranch, selectedFilter]);
 
   useEffect(() => {
+    const controller = new AbortController();
     // The report always reflects the active branch and date filters.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadReport();
+    loadReport({ signal: controller.signal });
+    return () => controller.abort();
   }, [loadReport]);
 
   return (

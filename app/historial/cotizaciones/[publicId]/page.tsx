@@ -304,6 +304,7 @@ export default function CotizacionDetallePage() {
     }
 
     const result = await quotationsApi.convertToSale(quotation.publicId, {
+      requestId: payload.requestId ?? crypto.randomUUID(),
       tipoComprobante: payload.tipoComprobante,
       clienteId: convertClient?.id ?? null,
       pagos: payload.pagos,
@@ -368,7 +369,10 @@ export default function CotizacionDetallePage() {
   return (
     <DashboardShell
       headerTitle={
-        <nav className="flex min-w-0 items-center gap-2" aria-label="Ruta actual">
+        <nav
+          className="flex min-w-0 items-center gap-2"
+          aria-label="Ruta actual"
+        >
           <Link
             href="/historial/cotizaciones"
             className="truncate text-sm font-circular-regular text-[var(--color-text)]/70 transition-colors hover:text-[var(--color-primary)]"
@@ -545,16 +549,18 @@ export default function CotizacionDetallePage() {
                       {pv.producto.nombre}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-[var(--color-muted-foreground)]">
-                      {pv.producto.tipo === "variantes" ? <>
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: pv.color.hex }}
-                        />
-                        {pv.color.nombre}
-                      </span>
-                      <span>Talla: {pv.talla.nombre}</span>
-                      </> : null}
+                      {pv.producto.tipo === "variantes" ? (
+                        <>
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: pv.color.hex }}
+                            />
+                            {pv.color.nombre}
+                          </span>
+                          <span>Talla: {pv.talla.nombre}</span>
+                        </>
+                      ) : null}
                       {pv.sku ? <span>SKU: {pv.sku}</span> : null}
                     </div>
                   </div>
@@ -800,7 +806,9 @@ export default function CotizacionDetallePage() {
           }}
           cartItems={quoteToCartItems(quotation)}
           subtotal={Number(quotation.subtotal)}
-          discountType={quotation.descuentoTipo as "porcentaje" | "monto" | null}
+          discountType={
+            quotation.descuentoTipo as "porcentaje" | "monto" | null
+          }
           discountValue={quotation.descuentoValor ?? ""}
           discountAmount={Number(quotation.descuentoMonto)}
           taxSummary={emptyTaxSummary(Number(quotation.total))}

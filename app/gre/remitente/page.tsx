@@ -287,7 +287,7 @@ export default function GuiasRemisionPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const loadGuias = useCallback(() => {
+  const loadGuias = useCallback((options: RequestInit = {}) => {
     setIsLoading(true);
 
     guiaRemisionApi
@@ -297,12 +297,13 @@ export default function GuiasRemisionPage() {
         q: debouncedSearchTerm || undefined,
         estado: selectedEstado === "todos" ? undefined : selectedEstado,
         sunatEstado: selectedSunat === "todos" ? undefined : selectedSunat,
-      })
+      }, options)
       .then((response) => {
         setGuias(response.data);
         setMeta(response.meta);
       })
       .catch((error: unknown) => {
+        if (options.signal?.aborted) return;
         setGuias([]);
         setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
         toast.showToast({
@@ -311,12 +312,21 @@ export default function GuiasRemisionPage() {
           variant: "error",
         });
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!options.signal?.aborted) setIsLoading(false);
+      });
   }, [debouncedSearchTerm, page, selectedEstado, selectedSunat, toast]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(loadGuias, 0);
-    return () => window.clearTimeout(timeoutId);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => loadGuias({ signal: controller.signal }),
+      0,
+    );
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, [loadGuias]);
 
   useEffect(() => {

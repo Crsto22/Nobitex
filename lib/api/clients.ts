@@ -83,7 +83,7 @@ export type ConsultaRucResponse = {
 };
 
 export const clientsApi = {
-  findAll(query: ClientsQuery = {}) {
+  findAll(query: ClientsQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
 
     if (query.page) {
@@ -109,6 +109,7 @@ export const clientsApi = {
     const queryString = params.toString();
     return authFetch<ClientsResponse>(
       queryString ? `/clients?${queryString}` : "/clients",
+      options,
     );
   },
 

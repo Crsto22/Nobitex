@@ -212,7 +212,7 @@ export default function ComprobantesPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const loadComprobantes = useCallback(() => {
+  const loadComprobantes = useCallback((options: RequestInit = {}) => {
     setIsLoading(true);
 
     salesApi
@@ -223,13 +223,14 @@ export default function ComprobantesPage() {
         search: debouncedSearchTerm || undefined,
         tipoComprobante: selectedType === "todos" ? undefined : selectedType,
         sunatEstado: selectedStatus === "todos" ? undefined : selectedStatus,
-      })
+      }, options)
       .then((response) => {
         setComprobantes(response.data);
         setMeta(response.meta);
         setSummary(response.summary);
       })
       .catch((error: unknown) => {
+        if (options.signal?.aborted) return;
         setComprobantes([]);
         setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
         setSummary(defaultSummary);
@@ -239,7 +240,9 @@ export default function ComprobantesPage() {
           variant: "error",
         });
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!options.signal?.aborted) setIsLoading(false);
+      });
   }, [
     debouncedSearchTerm,
     page,
@@ -250,8 +253,15 @@ export default function ComprobantesPage() {
   ]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(loadComprobantes, 0);
-    return () => window.clearTimeout(timeoutId);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => loadComprobantes({ signal: controller.signal }),
+      0,
+    );
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, [loadComprobantes]);
 
   useEffect(() => {

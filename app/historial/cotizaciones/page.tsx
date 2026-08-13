@@ -224,7 +224,7 @@ export default function HistorialCotizacionesPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const loadQuotations = useCallback(() => {
+  const loadQuotations = useCallback((options: RequestInit = {}) => {
     const estado =
       selectedStatus !== "todos"
         ? selectedStatus
@@ -241,7 +241,7 @@ export default function HistorialCotizacionesPage() {
         ...historyPeriod,
         search: debouncedSearchTerm || undefined,
         estado,
-      })
+      }, options)
       .then((response) => {
         setQuotations(
           selectedType === "cotizacion"
@@ -251,18 +251,22 @@ export default function HistorialCotizacionesPage() {
         setMeta(response.meta);
       })
       .catch(() => {
+        if (options.signal?.aborted) return;
         setQuotations([]);
         setMeta(emptyMeta);
       })
       .finally(() => {
+        if (options.signal?.aborted) return;
         setIsLoading(false);
       });
   }, [debouncedSearchTerm, page, selectedStatus, selectedType, historyPeriod]);
 
   useEffect(() => {
+    const controller = new AbortController();
     // Data is intentionally synchronized with pagination and filter state.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadQuotations();
+    loadQuotations({ signal: controller.signal });
+    return () => controller.abort();
   }, [loadQuotations]);
 
   useEffect(() => {
@@ -371,6 +375,7 @@ export default function HistorialCotizacionesPage() {
     const result = await quotationsApi.convertToSale(
       convertModal.quote.publicId,
       {
+        requestId: payload.requestId ?? crypto.randomUUID(),
         tipoComprobante: payload.tipoComprobante,
         clienteId: convertClient?.id ?? null,
         pagos: payload.pagos,
@@ -506,95 +511,101 @@ export default function HistorialCotizacionesPage() {
           </div>
 
           <div className="flex gap-2 sm:gap-3">
-            <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={statusRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsStatusOpen(!isStatusOpen);
-                setIsTypeOpen(false);
-              }}
-              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            <div
+              className="relative flex-1 sm:w-[160px] sm:flex-none"
+              ref={statusRef}
             >
-              <span className="truncate">
-                {selectedStatus === "todos"
-                  ? "Todos"
-                  : statusConfig[selectedStatus].label}
-              </span>
-              <CaretDownIcon
-                size={16}
-                className="shrink-0 text-[var(--color-muted-foreground)]"
-              />
-            </button>
-            {isStatusOpen && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setSelectedStatus(option.value);
-                      setPage(1);
-                      setIsStatusOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
-                      selectedStatus === option.value
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStatusOpen(!isStatusOpen);
+                  setIsTypeOpen(false);
+                }}
+                className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <span className="truncate">
+                  {selectedStatus === "todos"
+                    ? "Todos"
+                    : statusConfig[selectedStatus].label}
+                </span>
+                <CaretDownIcon
+                  size={16}
+                  className="shrink-0 text-[var(--color-muted-foreground)]"
+                />
+              </button>
+              {isStatusOpen && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStatus(option.value);
+                        setPage(1);
+                        setIsStatusOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
+                        selectedStatus === option.value
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={typeRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsTypeOpen(!isTypeOpen);
-                setIsStatusOpen(false);
-              }}
-              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            <div
+              className="relative flex-1 sm:w-[160px] sm:flex-none"
+              ref={typeRef}
             >
-              <span className="truncate">
-                {selectedType === "todos"
-                  ? "Tipo"
-                  : selectedType === "cotizacion"
-                    ? "Cotizacion"
-                    : "Borrador"}
-              </span>
-              <CaretDownIcon
-                size={16}
-                className="shrink-0 text-[var(--color-muted-foreground)]"
-              />
-            </button>
-            {isTypeOpen && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                {typeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setSelectedType(option.value);
-                      setPage(1);
-                      setIsTypeOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
-                      selectedType === option.value
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTypeOpen(!isTypeOpen);
+                  setIsStatusOpen(false);
+                }}
+                className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <span className="truncate">
+                  {selectedType === "todos"
+                    ? "Tipo"
+                    : selectedType === "cotizacion"
+                      ? "Cotizacion"
+                      : "Borrador"}
+                </span>
+                <CaretDownIcon
+                  size={16}
+                  className="shrink-0 text-[var(--color-muted-foreground)]"
+                />
+              </button>
+              {isTypeOpen && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                  {typeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedType(option.value);
+                        setPage(1);
+                        setIsTypeOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
+                        selectedType === option.value
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

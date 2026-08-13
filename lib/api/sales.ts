@@ -124,6 +124,7 @@ export type CreateSalePago = {
 };
 
 export type CreateSalePayload = {
+  requestId?: string;
   tipoComprobante: VentaTipoComprobante;
   sucursalId?: string;
   clienteId?: string;
@@ -388,7 +389,7 @@ export type UpdateSeriePayload = {
 };
 
 export const salesApi = {
-  findProducts(query: SaleProductsQuery = {}) {
+  findProducts(query: SaleProductsQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
 
     if (query.page) {
@@ -430,6 +431,7 @@ export const salesApi = {
     const queryString = params.toString();
     return authFetch<SaleProductsResponse>(
       queryString ? `/sales/products?${queryString}` : "/sales/products",
+      options,
     );
   },
 
@@ -440,7 +442,7 @@ export const salesApi = {
     });
   },
 
-  findAll(query: VentasQuery = {}) {
+  findAll(query: VentasQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
     appendHistoryPeriod(params, query);
 
@@ -475,10 +477,11 @@ export const salesApi = {
     const queryString = params.toString();
     return authFetch<VentasResponse>(
       queryString ? `/sales?${queryString}` : "/sales",
+      options,
     );
   },
 
-  findComprobantes(query: ComprobantesQuery = {}) {
+  findComprobantes(query: ComprobantesQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
     appendHistoryPeriod(params, query);
 
@@ -507,6 +510,7 @@ export const salesApi = {
       queryString
         ? `/sales/comprobantes?${queryString}`
         : "/sales/comprobantes",
+      options,
     );
   },
 

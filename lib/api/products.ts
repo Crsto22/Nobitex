@@ -89,7 +89,7 @@ export type DeletedProductResponse = {
 };
 
 export const productsApi = {
-  findAll(query: ProductsQuery = {}) {
+  findAll(query: ProductsQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
 
     if (query.page) {
@@ -130,7 +130,8 @@ export const productsApi = {
 
     const queryString = params.toString();
     return authFetch<ProductsResponse>(
-      queryString ? `/products?${queryString}` : "/products"
+      queryString ? `/products?${queryString}` : "/products",
+      options,
     );
   },
 

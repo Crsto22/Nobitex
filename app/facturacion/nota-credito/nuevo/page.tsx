@@ -72,7 +72,7 @@ export default function NuevaNotaCreditoPage() {
       ? "nota_credito_factura"
       : "nota_credito_boleta";
 
-  const loadSales = useCallback(() => {
+  const loadSales = useCallback((options: RequestInit = {}) => {
     setIsLoadingSales(true);
     salesApi
       .findComprobantes({
@@ -80,21 +80,31 @@ export default function NuevaNotaCreditoPage() {
         limit: 10,
         ...historyPeriod,
         search: search.trim() || undefined,
-      })
+      }, options)
       .then((response) => setSales(response.data))
-      .catch((error) =>
+      .catch((error) => {
+        if (options.signal?.aborted) return;
         toast.showToast({
           title: "No se pudieron cargar comprobantes",
           description: getErrorMessage(error),
           variant: "error",
-        }),
-      )
-      .finally(() => setIsLoadingSales(false));
+        });
+      })
+      .finally(() => {
+        if (!options.signal?.aborted) setIsLoadingSales(false);
+      });
   }, [historyPeriod, search, toast]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(loadSales, 300);
-    return () => window.clearTimeout(timeout);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => loadSales({ signal: controller.signal }),
+      300,
+    );
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
   }, [loadSales]);
 
   useEffect(() => {

@@ -36,25 +36,33 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options: RequestInit = {}) => {
     setLoading(true);
     setError(null);
     try {
-      setResult(await notificationsApi.findMine(pageSize, page));
+      setResult(await notificationsApi.findMine(pageSize, page, options));
     } catch (requestError) {
+      if (options.signal?.aborted) return;
       setError(
         requestError instanceof Error
           ? requestError.message
           : "No se pudieron cargar las notificaciones.",
       );
     } finally {
-      setLoading(false);
+      if (!options.signal?.aborted) setLoading(false);
     }
   }, [page]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    const controller = new AbortController();
+    const timer = window.setTimeout(
+      () => void load({ signal: controller.signal }),
+      0,
+    );
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
   }, [load]);
 
   const openNotification = async (notification: AppNotification) => {
@@ -371,4 +379,3 @@ function categoryLabel(category: AppNotification["category"]) {
     empresa: "Empresa",
   }[category];
 }
-

@@ -1,4 +1,11 @@
-import { API_BASE_URL, ApiError, apiRequest } from "@/lib/api/client";
+import {
+  API_BASE_URL,
+  ApiError,
+  apiRequest,
+  clearApiCache,
+  getBlobTimeoutMs,
+  withTimeoutSignal,
+} from "@/lib/api/client";
 import { getAccessToken, setAccessToken } from "@/lib/auth/token-store";
 import { publishAuthEvent } from "@/lib/auth/multi-tab-sync";
 import {
@@ -86,10 +93,24 @@ async function requestBlobWithAuth(
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...withAuthorization(options),
-    credentials: options.credentials ?? "include",
-  });
+  const authorizedOptions = withAuthorization(options);
+  const timeout = withTimeoutSignal(options.signal, getBlobTimeoutMs());
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...authorizedOptions,
+      credentials: options.credentials ?? "include",
+      signal: timeout.signal,
+    });
+  } catch (error) {
+    if (timeout.timedOut()) {
+      throw new ApiError("La descarga tardo demasiado.", 408, null);
+    }
+    throw error;
+  } finally {
+    timeout.cleanup();
+  }
 
   if (response.status === 401 && canRefresh) {
     try {
@@ -130,6 +151,7 @@ async function ensureFreshToken(): Promise<void> {
     }
 
     setAccessToken(token);
+    clearApiCache();
   })();
 
   try {
@@ -153,6 +175,7 @@ function withAuthorization(options: RequestInit) {
 }
 
 function dispatchSessionExpired() {
+  clearApiCache();
   markSessionExpired();
   publishAuthEvent("session-expired");
   window.dispatchEvent(new Event(sessionExpiredEventName));
@@ -163,8 +186,8 @@ function isPlanLimitReached(error: ApiError) {
     error.status === 409 &&
     Boolean(
       error.body &&
-        typeof error.body === "object" &&
-        (error.body as { code?: string }).code === "PLAN_LIMIT_REACHED",
+      typeof error.body === "object" &&
+      (error.body as { code?: string }).code === "PLAN_LIMIT_REACHED",
     )
   );
 }

@@ -59,9 +59,10 @@ export type PublishNotificationPayload = {
 };
 
 export const notificationsApi = {
-  async findMine(limit = 5, page = 1) {
+  async findMine(limit = 5, page = 1, options: RequestInit = {}) {
     const response = await authFetch<RawNotificationsResponse>(
       `/notifications?limit=${limit}&page=${page}`,
+      options,
     );
     return {
       ...response,

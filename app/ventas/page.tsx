@@ -542,21 +542,25 @@ export default function VentasPage() {
     }
 
     let isMounted = true;
+    const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
       setIsLoadingProducts(true);
       setProductsError(null);
 
       salesApi
-        .findProducts({
-          page: productPage,
-          limit: defaultPageSize,
-          search: debouncedSearchTerm,
-          sucursalId: selectedBranch,
-          categoriaId:
-            selectedCategory === "todos" ? undefined : selectedCategory,
-          colorId: selectedColor === "todos" ? undefined : selectedColor,
-          tallaId: selectedSize === "todos" ? undefined : selectedSize,
-        })
+        .findProducts(
+          {
+            page: productPage,
+            limit: defaultPageSize,
+            search: debouncedSearchTerm,
+            sucursalId: selectedBranch,
+            categoriaId:
+              selectedCategory === "todos" ? undefined : selectedCategory,
+            colorId: selectedColor === "todos" ? undefined : selectedColor,
+            tallaId: selectedSize === "todos" ? undefined : selectedSize,
+          },
+          { signal: controller.signal },
+        )
         .then((response) => {
           if (!isMounted) {
             return;
@@ -565,8 +569,11 @@ export default function VentasPage() {
           setProducts(response.data);
           setProductsMeta(response.meta);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (!isMounted) {
+            return;
+          }
+          if (error instanceof DOMException && error.name === "AbortError") {
             return;
           }
 
@@ -583,6 +590,7 @@ export default function VentasPage() {
 
     return () => {
       isMounted = false;
+      controller.abort();
       window.clearTimeout(timeoutId);
     };
   }, [
@@ -682,16 +690,19 @@ export default function VentasPage() {
   }, [isNoteEditorOpen]);
 
   const loadClients = useCallback(
-    async (targetPage = 1, append = false) => {
+    async (targetPage = 1, append = false, signal?: AbortSignal) => {
       setIsLoadingClients(true);
 
       try {
-        const response = await clientsApi.findAll({
-          page: targetPage,
-          limit: filterPageSize,
-          search: clientSearch.trim() || undefined,
-          estado: "activo",
-        });
+        const response = await clientsApi.findAll(
+          {
+            page: targetPage,
+            limit: filterPageSize,
+            search: clientSearch.trim() || undefined,
+            estado: "activo",
+          },
+          { signal },
+        );
 
         setClients((current) =>
           append ? mergeById(current, response.data) : response.data,
@@ -699,18 +710,24 @@ export default function VentasPage() {
         setClientPage(response.meta.page);
         setClientTotalPages(response.meta.totalPages);
       } finally {
-        setIsLoadingClients(false);
+        if (!signal?.aborted) {
+          setIsLoadingClients(false);
+        }
       }
     },
     [clientSearch],
   );
 
   useEffect(() => {
+    const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
-      void loadClients(1, false);
+      void loadClients(1, false, controller.signal);
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, [loadClients]);
 
   const subtotal = cartItems.reduce(
@@ -1357,41 +1374,44 @@ export default function VentasPage() {
           </div>
 
           {availableProducts.length > 0 ? (
-          <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3">
-            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-              Mostrando {availableProducts.length} de {productsMeta.total} productos
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setProductPage((currentPage) => Math.max(1, currentPage - 1))
-                }
-                disabled={isLoadingProducts || productsMeta.page <= 1}
-                className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Anterior
-              </button>
-              <span className="flex h-8 min-w-8 items-center justify-center rounded-[10px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
-                {productsMeta.page}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setProductPage((currentPage) =>
-                    Math.min(productsMeta.totalPages, currentPage + 1),
-                  )
-                }
-                disabled={
-                  isLoadingProducts ||
-                  productsMeta.page >= productsMeta.totalPages
-                }
-                className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Siguiente
-              </button>
+            <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3">
+              <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+                Mostrando {availableProducts.length} de {productsMeta.total}{" "}
+                productos
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProductPage((currentPage) =>
+                      Math.max(1, currentPage - 1),
+                    )
+                  }
+                  disabled={isLoadingProducts || productsMeta.page <= 1}
+                  className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+                <span className="flex h-8 min-w-8 items-center justify-center rounded-[10px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
+                  {productsMeta.page}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProductPage((currentPage) =>
+                      Math.min(productsMeta.totalPages, currentPage + 1),
+                    )
+                  }
+                  disabled={
+                    isLoadingProducts ||
+                    productsMeta.page >= productsMeta.totalPages
+                  }
+                  className="h-8 rounded-[10px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
-          </div>
           ) : null}
         </section>
 

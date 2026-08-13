@@ -188,6 +188,7 @@ export function ChargeModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
   const methodsLoadedRef = useRef(false);
+  const requestIdRef = useRef(crypto.randomUUID());
   const toast = useSystemToast();
 
   const loadPaymentMethods = useCallback(async () => {
@@ -377,10 +378,7 @@ export function ChargeModal({
   const handleSubmit = async () => {
     if (!canConfirm) return;
 
-    if (
-      selectedNoteType === "factura" &&
-      isInvoiceClientInvalid
-    ) {
+    if (selectedNoteType === "factura" && isInvoiceClientInvalid) {
       toast.showToast({
         title: "Cliente requerido",
         description:
@@ -421,6 +419,7 @@ export function ChargeModal({
         : [];
 
     const payload: CreateSalePayload = {
+      requestId: requestIdRef.current,
       tipoComprobante: noteTypeMap[selectedNoteType] ?? "nota_venta",
       sucursalId: selectedBranch || undefined,
       clienteId: selectedClient?.id || undefined,
@@ -456,6 +455,7 @@ export function ChargeModal({
         duration: 5000,
       });
       onSaleSuccess(venta);
+      requestIdRef.current = crypto.randomUUID();
       onClose();
     } catch (error: unknown) {
       const message =
@@ -689,7 +689,9 @@ export function ChargeModal({
                       <GenericClientAvatar size={40} />
                     )}
                     <div className="min-w-0 flex-1">
-                      <span className="block text-xs text-[var(--color-muted-foreground)]">Cliente</span>
+                      <span className="block text-xs text-[var(--color-muted-foreground)]">
+                        Cliente
+                      </span>
                       <span className="block truncate text-sm font-circular-bold text-[var(--color-text)]">
                         {selectedClient?.displayName ?? "Cliente generico"}
                       </span>
@@ -710,7 +712,8 @@ export function ChargeModal({
                   </div>
                   {isInvoiceClientInvalid ? (
                     <div className="mt-3 rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
-                      Para emitir factura selecciona un cliente con RUC de 11 digitos y razon social.
+                      Para emitir factura selecciona un cliente con RUC de 11
+                      digitos y razon social.
                       <button
                         type="button"
                         onClick={() => setIsClientPickerOpen(true)}
@@ -978,7 +981,7 @@ export function ChargeModal({
                                       event.target.value,
                                     )
                                   }
-                          placeholder="Referencia (opcional)"
+                                  placeholder="Referencia (opcional)"
                                   aria-label="Referencia (opcional)"
                                   className="h-8 w-full rounded-[9px] bg-[var(--color-input-bg)] px-2 text-xs text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                                 />
