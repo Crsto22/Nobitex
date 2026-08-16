@@ -77,6 +77,8 @@ export function Select({
 
   useEffect(() => {
     if (isOpen && searchable) {
+      if (!window.matchMedia("(min-width: 768px)").matches) return;
+
       const animationFrame = requestAnimationFrame(() => {
         searchInputRef.current?.focus();
       });

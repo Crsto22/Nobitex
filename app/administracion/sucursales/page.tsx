@@ -583,7 +583,7 @@ export default function SucursalesPage() {
                     )}
                   </div>
 
-                  <div className="relative flex items-center justify-end md:justify-end">
+                  <div className="relative col-span-2 flex items-center justify-end md:col-span-1 md:justify-end">
                     <button
                       type="button"
                       onClick={() =>
@@ -1030,6 +1030,8 @@ function UbigeoSelect({
 
   useEffect(() => {
     if (isOpen && !disabled) {
+      if (!window.matchMedia("(min-width: 768px)").matches) return;
+
       const animationFrame = requestAnimationFrame(() => {
         searchInputRef.current?.focus();
       });

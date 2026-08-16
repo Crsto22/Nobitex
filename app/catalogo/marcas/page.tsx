@@ -408,7 +408,7 @@ export default function CatalogoMarcasPage() {
                     </span>
                   </div>
 
-                  <div className="relative flex items-center justify-end md:justify-end">
+                  <div className="relative col-span-2 flex items-center justify-end md:col-span-1 md:justify-end">
                     <button
                       type="button"
                       onClick={() =>

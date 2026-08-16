@@ -915,7 +915,7 @@ function RowMenu(props: {
 }) {
   const isOpen = props.openMenuId === props.id;
   return (
-    <div className="relative flex items-center justify-end md:justify-end">
+    <div className="relative col-span-2 flex items-center justify-end md:col-span-1 md:justify-end">
       <button
         type="button"
         onClick={() => props.setOpenMenuId(isOpen ? null : props.id)}

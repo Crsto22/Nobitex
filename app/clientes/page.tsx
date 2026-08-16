@@ -570,7 +570,7 @@ export default function ClientesPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 justify-end md:justify-end">
+                  <div className="col-span-2 flex items-center gap-2 justify-end md:col-span-1 md:justify-end">
                     <QuickContactButtons client={client} />
                     <button
                       type="button"
@@ -1121,6 +1121,8 @@ function UbigeoSelect({
 
   useEffect(() => {
     if (isOpen && !disabled) {
+      if (!window.matchMedia("(min-width: 768px)").matches) return;
+
       const animationFrame = requestAnimationFrame(() => {
         searchInputRef.current?.focus();
       });

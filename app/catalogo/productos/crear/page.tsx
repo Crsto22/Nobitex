@@ -260,6 +260,8 @@ function CrearProductoPageContent() {
       return;
     }
 
+    if (!window.matchMedia("(min-width: 768px)").matches) return;
+
     const animationFrame = requestAnimationFrame(() => {
       sizeSearchInputRef.current?.focus();
     });
@@ -271,6 +273,8 @@ function CrearProductoPageContent() {
     if (!showColorSearch) {
       return;
     }
+
+    if (!window.matchMedia("(min-width: 768px)").matches) return;
 
     const animationFrame = requestAnimationFrame(() => {
       colorSearchInputRef.current?.focus();

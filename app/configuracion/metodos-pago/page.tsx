@@ -423,7 +423,7 @@ export default function PaymentMethodsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 justify-end md:justify-end">
+                  <div className="col-span-2 flex items-center gap-2 justify-end md:col-span-1 md:justify-end">
                     <button
                       type="button"
                       onClick={() =>

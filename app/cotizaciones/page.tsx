@@ -524,12 +524,14 @@ export default function CotizacionesPage() {
     };
     if (isClientDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      const animationFrame = requestAnimationFrame(() => {
-        clientSearchRef.current?.focus();
-      });
+      const animationFrame = window.matchMedia("(min-width: 768px)").matches
+        ? requestAnimationFrame(() => {
+            clientSearchRef.current?.focus();
+          })
+        : null;
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
-        cancelAnimationFrame(animationFrame);
+        if (animationFrame !== null) cancelAnimationFrame(animationFrame);
       };
     }
   }, [isClientDropdownOpen]);
