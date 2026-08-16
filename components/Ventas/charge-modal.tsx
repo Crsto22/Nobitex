@@ -493,10 +493,6 @@ export function ChargeModal({
             <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
               {title}
             </h2>
-            <p className="mt-1 text-sm font-medium text-[var(--color-muted-foreground)]">
-              Total:{" "}
-              <span className="font-circular-bold">{formatPrice(total)}</span>
-            </p>
           </div>
           <button
             type="button"

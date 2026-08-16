@@ -185,9 +185,6 @@ export default function CajaDetallePage() {
             <p className="truncate text-lg font-black text-[var(--color-text)] text-fixed-lg">
               {session.sucursal.nombre}
             </p>
-            <p className="truncate text-xs text-[var(--color-muted-foreground)]">
-              {session.publicId}
-            </p>
           </div>
           <span
             className={cn(

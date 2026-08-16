@@ -350,9 +350,6 @@ export default function CajaPage() {
                       <p className="truncate text-sm font-black text-[var(--color-text)]">
                         {session.sucursal.nombre}
                       </p>
-                      <p className="text-xs text-[var(--color-muted-foreground)]">
-                        {session.publicId}
-                      </p>
                     </div>
                   </div>
 
