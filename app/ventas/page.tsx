@@ -29,6 +29,8 @@ import {
   ReceiptIcon,
   SpinnerGapIcon,
   XCircleIcon,
+  BarcodeIcon,
+  SquaresFourIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -354,6 +356,7 @@ export default function VentasPage() {
   const clientSearchRef = useRef<HTMLInputElement>(null);
   const discountInputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null);
+  const cashMenuRef = useRef<HTMLDivElement>(null);
   const currentTime = useCurrentTime();
   const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
   const [currentCashRegister, setCurrentCashRegister] =
@@ -362,6 +365,8 @@ export default function VentasPage() {
   const [isOpenCashModalOpen, setIsOpenCashModalOpen] = useState(false);
   const [isCloseCashModalOpen, setIsCloseCashModalOpen] = useState(false);
   const [isCashMovementModalOpen, setIsCashMovementModalOpen] = useState(false);
+  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
+  const [isCashMenuOpen, setIsCashMenuOpen] = useState(false);
   const [igvPercent, setIgvPercent] = useState(18);
   const [timeValue, timePeriod] = currentTime.split(" ");
   const branchOptions = useMemo(
@@ -689,6 +694,49 @@ export default function VentasPage() {
     return () => cancelAnimationFrame(animationFrame);
   }, [isNoteEditorOpen]);
 
+  useEffect(() => {
+    if (!isProductDrawerOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsProductDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isProductDrawerOpen]);
+
+  useEffect(() => {
+    if (!isCashMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        cashMenuRef.current &&
+        !cashMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsCashMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCashMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCashMenuOpen]);
+
   const loadClients = useCallback(
     async (targetPage = 1, append = false, signal?: AbortSignal) => {
       setIsLoadingClients(true);
@@ -732,6 +780,10 @@ export default function VentasPage() {
 
   const subtotal = cartItems.reduce(
     (total, item) => total + item.priceValue * item.quantity,
+    0,
+  );
+  const cartTotalQuantity = cartItems.reduce(
+    (totalQuantity, item) => totalQuantity + item.quantity,
     0,
   );
   const rawDiscountValue = parseDecimalInput(discountValue);
@@ -1049,118 +1101,272 @@ export default function VentasPage() {
         Punto de venta
       </span>
       {selectedBranchInfo ? (
-        <div
-          className={cn(
-            "inline-flex h-8 shrink-0 items-center gap-2 rounded-full px-3 text-xs font-circular-regular",
-            isLoadingCashRegister
-              ? "bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
+        <>
+          <div
+            className={cn(
+              "hidden h-8 shrink-0 items-center gap-2 rounded-full px-3 text-xs font-circular-regular lg:inline-flex",
+              isLoadingCashRegister
+                ? "bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
+                : "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)]",
+            )}
+          >
+            {isLoadingCashRegister ? (
+              <SpinnerGapIcon size={15} weight="bold" className="animate-spin" />
+            ) : requiresCashRegister && currentCashRegister ? (
+              <ReceiptIcon size={15} weight="fill" />
+            ) : (
+              <LockKeyIcon size={15} weight="bold" />
+            )}
+            {isLoadingCashRegister
+              ? "Caja..."
               : requiresCashRegister && currentCashRegister
-                ? "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)]"
+                ? "Caja abierta"
                 : requiresCashRegister
-                  ? "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)]"
-                  : "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)]",
-          )}
-        >
-          {isLoadingCashRegister ? (
-            <SpinnerGapIcon size={15} weight="bold" className="animate-spin" />
-          ) : requiresCashRegister && currentCashRegister ? (
-            <ReceiptIcon size={15} weight="fill" />
-          ) : (
-            <LockKeyIcon size={15} weight="bold" />
-          )}
-          {isLoadingCashRegister
-            ? "Caja..."
-            : requiresCashRegister && currentCashRegister
-              ? "Caja abierta"
-              : requiresCashRegister
-                ? "Caja cerrada"
-                : "Caja no requerida"}
-          {requiresCashRegister && currentCashRegister ? (
-            <span className="ml-1 hidden items-center gap-1.5 border-l border-current/15 pl-2 xl:inline-flex">
-              {cashRegisterTotals.length > 0 ? (
-                cashRegisterTotals.map((item) => {
-                  const method = item.metodoPago;
-                  const icon =
-                    paymentMethodIconConfig[getPaymentMethodIconKey(method)];
+                  ? "Caja cerrada"
+                  : "Caja no requerida"}
+            {requiresCashRegister && currentCashRegister ? (
+              <span className="ml-1 hidden items-center gap-1.5 border-l border-current/15 pl-2 xl:inline-flex">
+                {cashRegisterTotals.length > 0 ? (
+                  cashRegisterTotals.map((item) => {
+                    const method = item.metodoPago;
+                    const icon =
+                      paymentMethodIconConfig[getPaymentMethodIconKey(method)];
 
-                  return (
-                    <span
-                      key={method?.id ?? item.monto}
-                      className="inline-flex h-6 items-center gap-1 rounded-full bg-[var(--color-background)] px-1.5 text-[10px] font-circular-bold text-[var(--color-text)]"
-                      title={method?.nombre ?? "Metodo de pago"}
+                    return (
+                      <span
+                        key={method?.id ?? item.monto}
+                        className="inline-flex h-6 items-center gap-1 rounded-full bg-[var(--color-background)] px-1.5 text-[10px] font-circular-bold text-[var(--color-text)]"
+                        title={method?.nombre ?? "Metodo de pago"}
+                      >
+                        {icon ? (
+                          <span
+                            className={cn(
+                              "flex h-4.5 w-4.5 items-center justify-center rounded-full",
+                              icon.bgColor,
+                            )}
+                          >
+                            <Image
+                              src={icon.src}
+                              width={18}
+                              height={18}
+                              alt={icon.label}
+                              className="h-3.5 w-3.5 object-contain"
+                            />
+                          </span>
+                        ) : (
+                          <ReceiptIcon size={12} weight="bold" />
+                        )}
+                        <span>{formatPrice(Number(item.monto))}</span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-background)] px-2 text-[10px] font-circular-bold text-[var(--color-text)]">
+                    S/0.00
+                  </span>
+                )}
+              </span>
+            ) : null}
+            {requiresCashRegister && !isLoadingCashRegister ? (
+              <span className="ml-1 inline-flex items-center gap-1 border-l border-current/15 pl-2">
+                {currentCashRegister ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsCashMovementModalOpen(true)}
+                      className="group relative flex h-6 items-center justify-center rounded-full bg-[var(--color-primary)] px-2.5 text-[10px] font-circular-bold text-white transition-colors duration-150 "
+                      aria-label="Registrar movimiento"
                     >
-                      {icon ? (
-                        <span
-                          className={cn(
-                            "flex h-4.5 w-4.5 items-center justify-center rounded-full",
-                            icon.bgColor,
-                          )}
-                        >
-                          <Image
-                            src={icon.src}
-                            width={18}
-                            height={18}
-                            alt={icon.label}
-                            className="h-3.5 w-3.5 object-contain"
-                          />
-                        </span>
-                      ) : (
-                        <ReceiptIcon size={12} weight="bold" />
-                      )}
-                      <span>{formatPrice(Number(item.monto))}</span>
+                      Agregar Movimiento
+                      <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg ">
+                        Movimiento
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCloseCashModalOpen(true)}
+                      className="group relative flex h-6 w-6 items-center justify-center rounded-full bg-[#ef4444] text-white "
+                      aria-label="Cerrar caja"
+                    >
+                      <XCircleIcon size={15} weight="bold" />
+                      <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg">
+                        Cerrar caja
+                      </span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsOpenCashModalOpen(true)}
+                    className="group relative flex h-6 w-6 items-center justify-center rounded-full bg-[#10b981] text-white transition-colors duration-150 hover:-translate-y-0.5 hover:scale-105 hover:bg-[#059669] hover:shadow-[0_6px_14px_rgba(16,185,129,0.28)]"
+                    aria-label="Abrir caja"
+                  >
+                    <LockOpenIcon size={15} weight="bold" />
+                    <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg transition-colors duration-150 group-hover:translate-y-0.5 group-hover:opacity-100">
+                      Abrir caja
                     </span>
-                  );
-                })
-              ) : (
-                <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-background)] px-2 text-[10px] font-circular-bold text-[var(--color-text)]">
-                  S/0.00
+                  </button>
+                )}
+              </span>
+            ) : null}
+          </div>
+          <div ref={cashMenuRef} className="relative shrink-0 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIsCashMenuOpen((isOpen) => !isOpen)}
+            aria-label="Estado de caja"
+            aria-expanded={isCashMenuOpen}
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+              isLoadingCashRegister
+                ? "bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
+                : requiresCashRegister && currentCashRegister
+                  ? "bg-[#10b981]/10 text-[#10b981] hover:bg-[#10b981]/15"
+                  : requiresCashRegister
+                    ? "bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/15"
+                    : "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]",
+            )}
+          >
+            {isLoadingCashRegister ? (
+              <SpinnerGapIcon size={17} weight="bold" className="animate-spin" />
+            ) : requiresCashRegister && currentCashRegister ? (
+              <ReceiptIcon size={17} weight="fill" />
+            ) : (
+              <LockKeyIcon size={17} weight="bold" />
+            )}
+          </button>
+          {isCashMenuOpen ? (
+            <div className="fixed left-3 right-3 top-16 z-[9999] overflow-hidden rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_12px_36px_rgba(21,25,34,0.24)] ring-1 ring-[var(--color-border)] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[300px]">
+              <div className="flex items-center justify-between px-1">
+                <span
+                  className={cn(
+                    "flex items-center gap-2 text-sm font-circular-bold",
+                    isLoadingCashRegister
+                      ? "text-[var(--color-muted-foreground)]"
+                      : requiresCashRegister && currentCashRegister
+                        ? "text-[#10b981]"
+                        : requiresCashRegister
+                          ? "text-[#ef4444]"
+                          : "text-[var(--color-muted-foreground)]",
+                  )}
+                >
+                  {isLoadingCashRegister ? (
+                    <SpinnerGapIcon
+                      size={16}
+                      weight="bold"
+                      className="animate-spin"
+                    />
+                  ) : requiresCashRegister && currentCashRegister ? (
+                    <ReceiptIcon size={16} weight="fill" />
+                  ) : (
+                    <LockKeyIcon size={16} weight="bold" />
+                  )}
+                  {isLoadingCashRegister
+                    ? "Caja..."
+                    : requiresCashRegister && currentCashRegister
+                      ? "Caja abierta"
+                      : requiresCashRegister
+                        ? "Caja cerrada"
+                        : "Caja no requerida"}
                 </span>
-              )}
-            </span>
-          ) : null}
-          {requiresCashRegister && !isLoadingCashRegister ? (
-            <span className="ml-1 inline-flex items-center gap-1 border-l border-current/15 pl-2">
-              {currentCashRegister ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsCashMovementModalOpen(true)}
-                    className="group relative flex h-6 items-center justify-center rounded-full bg-[var(--color-primary)] px-2.5 text-[10px] font-circular-bold text-white transition-colors duration-150 "
-                    aria-label="Registrar movimiento"
-                  >
-                    Agregar Movimiento
-                    <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg ">
-                      Movimiento
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCloseCashModalOpen(true)}
-                    className="group relative flex h-6 w-6 items-center justify-center rounded-full bg-[#ef4444] text-white "
-                    aria-label="Cerrar caja"
-                  >
-                    <XCircleIcon size={15} weight="bold" />
-                    <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg">
-                      Cerrar caja
-                    </span>
-                  </button>
-                </>
-              ) : (
                 <button
                   type="button"
-                  onClick={() => setIsOpenCashModalOpen(true)}
-                  className="group relative flex h-6 w-6 items-center justify-center rounded-full bg-[#10b981] text-white transition-colors duration-150 hover:-translate-y-0.5 hover:scale-105 hover:bg-[#059669] hover:shadow-[0_6px_14px_rgba(16,185,129,0.28)]"
-                  aria-label="Abrir caja"
+                  onClick={() => setIsCashMenuOpen(false)}
+                  aria-label="Cerrar"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
                 >
-                  <LockOpenIcon size={15} weight="bold" />
-                  <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-background)] opacity-0 shadow-lg transition-colors duration-150 group-hover:translate-y-0.5 group-hover:opacity-100">
-                    Abrir caja
-                  </span>
+                  <XIcon size={14} weight="bold" />
                 </button>
-              )}
-            </span>
+              </div>
+
+              {requiresCashRegister && currentCashRegister ? (
+                cashRegisterTotals.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {cashRegisterTotals.map((item) => {
+                      const method = item.metodoPago;
+                      const icon =
+                        paymentMethodIconConfig[getPaymentMethodIconKey(method)];
+
+                      return (
+                        <span
+                          key={method?.id ?? item.monto}
+                          className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[var(--color-input-bg)] px-2 text-[10px] font-circular-bold text-[var(--color-text)]"
+                          title={method?.nombre ?? "Metodo de pago"}
+                        >
+                          {icon ? (
+                            <span
+                              className={cn(
+                                "flex h-5 w-5 items-center justify-center rounded-full",
+                                icon.bgColor,
+                              )}
+                            >
+                              <Image
+                                src={icon.src}
+                                width={18}
+                                height={18}
+                                alt={icon.label}
+                                className="h-3.5 w-3.5 object-contain"
+                              />
+                            </span>
+                          ) : (
+                            <ReceiptIcon size={12} weight="bold" />
+                          )}
+                          <span>{formatPrice(Number(item.monto))}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <span className="mt-3 inline-flex h-7 items-center rounded-full bg-[var(--color-input-bg)] px-2 text-[10px] font-circular-bold text-[var(--color-text)]">
+                    S/0.00
+                  </span>
+                )
+              ) : null}
+
+              {requiresCashRegister && !isLoadingCashRegister ? (
+                currentCashRegister ? (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCashMenuOpen(false);
+                        setIsCashMovementModalOpen(true);
+                      }}
+                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-[var(--color-primary)] px-3 text-xs font-circular-bold text-white transition-colors hover:opacity-90"
+                    >
+                      <PlusIcon size={14} weight="bold" />
+                      Agregar Movimiento
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCashMenuOpen(false);
+                        setIsCloseCashModalOpen(true);
+                      }}
+                      aria-label="Cerrar caja"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ef4444] text-white transition-colors hover:bg-[#dc2626]"
+                    >
+                      <XCircleIcon size={16} weight="bold" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCashMenuOpen(false);
+                      setIsOpenCashModalOpen(true);
+                    }}
+                    className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-[12px] bg-[#10b981] px-3 text-xs font-circular-bold text-white transition-colors hover:bg-[#059669]"
+                  >
+                    <LockOpenIcon size={15} weight="bold" />
+                    Abrir caja
+                  </button>
+                )
+              ) : null}
+            </div>
           ) : null}
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );
@@ -1168,8 +1374,62 @@ export default function VentasPage() {
   return (
     <DashboardShell headerTitle={cashHeader}>
       <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-1 flex-col gap-4 overflow-hidden bg-[var(--color-background)] p-4 transition-colors duration-200 lg:flex-row lg:gap-6 lg:px-6">
-        <section className="hidden min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex">
-          <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px]">
+        <section
+          className={cn(
+            "min-h-0 min-w-0 flex-col",
+            isProductDrawerOpen
+              ? "fixed inset-0 z-[100] flex items-center justify-end"
+              : "hidden lg:flex lg:flex-1 lg:overflow-hidden",
+          )}
+        >
+          {isProductDrawerOpen ? (
+            <button
+              type="button"
+              aria-label="Cerrar panel de productos"
+              onClick={() => setIsProductDrawerOpen(false)}
+              className="absolute inset-0 bg-black/45 animate-in fade-in duration-200"
+            />
+          ) : null}
+          <div
+            className={cn(
+              "relative flex w-full flex-col overflow-hidden",
+              isProductDrawerOpen
+                ? "h-[88dvh] rounded-t-2xl bg-[var(--color-card)] p-4 pb-5 animate-in slide-in-from-bottom-2 duration-200"
+                : "h-full min-h-0 bg-transparent p-0",
+            )}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
+              <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
+                Productos
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsProductDrawerOpen(false)}
+                  aria-label="Ver carrito"
+                  className="relative flex h-9 items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] pl-3 pr-4 text-white transition-colors hover:opacity-90"
+                >
+                  <ShoppingCartSimpleIcon size={17} weight="bold" />
+                  <span className="text-xs font-circular-bold">
+                    {formatPrice(total)}
+                  </span>
+                  {cartTotalQuantity > 0 ? (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef4444] px-1 text-[9px] font-circular-bold text-white">
+                      {cartTotalQuantity}
+                    </span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsProductDrawerOpen(false)}
+                  aria-label="Cerrar"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+                >
+                  <XIcon size={16} weight="bold" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px]">
             <label className="relative">
               <MagnifyingGlassIcon
                 size={18}
@@ -1194,7 +1454,7 @@ export default function VentasPage() {
               }}
             />
 
-            <div className="flex h-11 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-black text-[var(--color-input-text)] font-circular-regular">
+            <div className="hidden h-11 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-black text-[var(--color-input-text)] font-circular-regular md:flex">
               <time
                 dateTime={currentTime}
                 className="flex items-baseline gap-1.5 tabular-nums"
@@ -1206,7 +1466,7 @@ export default function VentasPage() {
               </time>
             </div>
 
-            <div className="flex h-11 items-center justify-center">
+            <div className="hidden h-11 items-center justify-center md:flex">
               <WifiHighIcon
                 size={22}
                 weight="bold"
@@ -1216,24 +1476,29 @@ export default function VentasPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="mt-3 grid grid-cols-2 items-start justify-between gap-3 md:mt-6 md:flex md:items-center">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedColor("todos");
                   setProductPage(1);
                 }}
+                aria-label="Todos los colores"
+                title="Todos los colores"
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-circular-bold transition-colors",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors md:h-auto md:w-auto md:px-3 md:py-1",
                   selectedColor === "todos"
                     ? "bg-[var(--color-primary)] text-white"
                     : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
                 )}
               >
-                Todos
+                <SquaresFourIcon size={14} weight="bold" className="md:hidden" />
+                <span className="hidden text-xs font-circular-bold md:inline">
+                  Todos
+                </span>
               </button>
-              <div className="flex flex-wrap gap-2">
+              <div className="scrollbar-hidden flex min-w-0 flex-nowrap gap-2 overflow-x-auto">
                 {colors.map((color) => {
                   const isSelected = selectedColor === color.id;
 
@@ -1246,7 +1511,7 @@ export default function VentasPage() {
                         setProductPage(1);
                       }}
                       className={cn(
-                        "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors hover:scale-105",
+                        "h-6 w-6 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors hover:scale-105",
                         isSelected ? "scale-105" : "ring-transparent",
                       )}
                       style={
@@ -1267,7 +1532,7 @@ export default function VentasPage() {
                     type="button"
                     onClick={() => void loadColors(colorPage + 1, true)}
                     disabled={isLoadingColors}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Cargar mas colores"
                   >
                     <CaretDownIcon
@@ -1279,23 +1544,28 @@ export default function VentasPage() {
                 ) : null}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedSize("todos");
                   setProductPage(1);
                 }}
+                aria-label="Todas las tallas"
+                title="Todas las tallas"
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-circular-bold transition-colors",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors md:h-auto md:w-auto md:px-3 md:py-1",
                   selectedSize === "todos"
                     ? "bg-[var(--color-primary)] text-white"
                     : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
                 )}
               >
-                Todos
+                <SquaresFourIcon size={14} weight="bold" className="md:hidden" />
+                <span className="hidden text-xs font-circular-bold md:inline">
+                  Todos
+                </span>
               </button>
-              <div className="flex flex-wrap gap-2">
+              <div className="scrollbar-hidden flex min-w-0 flex-nowrap gap-2 overflow-x-auto">
                 {sizes.map((size) => (
                   <button
                     key={size.id}
@@ -1305,7 +1575,7 @@ export default function VentasPage() {
                       setProductPage(1);
                     }}
                     className={cn(
-                      "flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-[10px] font-circular-bold transition-colors",
+                      "flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full px-2 text-[10px] font-circular-bold transition-colors",
                       selectedSize === size.id
                         ? "bg-[var(--color-primary)] text-white"
                         : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
@@ -1320,7 +1590,7 @@ export default function VentasPage() {
                     type="button"
                     onClick={() => void loadSizes(sizePage + 1, true)}
                     disabled={isLoadingSizes}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Cargar mas tallas"
                   >
                     <CaretDownIcon
@@ -1334,7 +1604,7 @@ export default function VentasPage() {
             </div>
           </div>
 
-          <div className="scrollbar-hidden mt-6 grid min-h-0 flex-1 auto-rows-max content-start grid-cols-2 gap-4 overflow-y-auto pr-1 pb-2 sm:grid-cols-3 md:grid-cols-4 lg:mt-8 2xl:grid-cols-6">
+          <div className="scrollbar-hidden mt-3 grid min-h-0 flex-1 auto-rows-max content-start grid-cols-2 gap-3 overflow-y-auto pr-1 pb-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:mt-8 2xl:grid-cols-6">
             {productsError ? (
               <div className="col-span-full flex min-h-[220px] items-center justify-center rounded-[14px] bg-[var(--color-card)] text-sm font-circular-bold text-[var(--color-muted-foreground)]">
                 {productsError}
@@ -1413,6 +1683,7 @@ export default function VentasPage() {
               </div>
             </div>
           ) : null}
+          </div>
         </section>
 
         <aside className="flex h-full min-h-0 w-full shrink-0 flex-col lg:w-[360px]">
@@ -1651,6 +1922,24 @@ export default function VentasPage() {
             </div>
           </div>
 
+          <div className="mt-3 flex gap-3 px-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setIsProductDrawerOpen(true)}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-primary)] text-sm font-black text-white transition-colors hover:opacity-90"
+            >
+              <PlusIcon size={18} weight="bold" />
+              Agregar
+            </button>
+            <button
+              type="button"
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-input-bg)] text-sm font-black text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <BarcodeIcon size={18} weight="bold" />
+              Escanear
+            </button>
+          </div>
+
           <div className="scrollbar-hidden mt-5 min-h-0 flex-1 overflow-y-auto px-2">
             {cartItems.length === 0 ? (
               <div className="flex h-full min-h-0 flex-col items-center justify-center rounded-[14px] px-6 text-center">
@@ -1659,7 +1948,7 @@ export default function VentasPage() {
                   width={256}
                   height={256}
                   alt="No hay productos"
-                  className="h-auto w-[min(34%,70px)] max-h-[18dvh] object-contain opacity-90 sm:w-[min(38%,90px)] md:w-[min(42%,110px)] md:max-h-[24dvh] lg:w-[min(46%,120px)] lg:max-h-[26dvh] xl:w-[min(48%,130px)] xl:max-h-[28dvh]"
+                  className="hidden h-auto w-[min(34%,70px)] max-h-[18dvh] object-contain opacity-90 sm:w-[min(38%,90px)] md:w-[min(42%,110px)] md:max-h-[24dvh] lg:block lg:w-[min(46%,120px)] lg:max-h-[26dvh] xl:w-[min(48%,130px)] xl:max-h-[28dvh]"
                 />
                 <p className="mt-3 text-sm font-circular-regular text-[var(--color-text)]">
                   No hay productos

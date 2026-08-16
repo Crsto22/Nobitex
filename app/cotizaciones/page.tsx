@@ -23,6 +23,8 @@ import {
   XIcon,
   BuildingsIcon,
   WifiHighIcon,
+  BarcodeIcon,
+  SquaresFourIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -252,6 +254,7 @@ export default function CotizacionesPage() {
   const [isLoadingSizes, setIsLoadingSizes] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [isSavingQuotation, setIsSavingQuotation] = useState(false);
+  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   const [isClientCreateModalOpen, setIsClientCreateModalOpen] = useState(false);
@@ -549,8 +552,27 @@ export default function CotizacionesPage() {
     return () => cancelAnimationFrame(animationFrame);
   }, [isNoteEditorOpen]);
 
+  useEffect(() => {
+    if (!isProductDrawerOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsProductDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isProductDrawerOpen]);
+
   const subtotal = cartItems.reduce(
     (total, item) => total + item.priceValue * item.quantity,
+    0,
+  );
+  const cartTotalQuantity = cartItems.reduce(
+    (totalQuantity, item) => totalQuantity + item.quantity,
     0,
   );
   const rawDiscountValue = parseDecimalInput(discountValue);
@@ -842,8 +864,62 @@ export default function CotizacionesPage() {
   return (
     <DashboardShell headerTitle="Cotizaciones">
       <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-1 flex-col gap-4 overflow-hidden bg-[var(--color-background)] p-4 transition-colors duration-200 lg:flex-row lg:gap-6 lg:px-6">
-        <section className="hidden min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex">
-          <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px]">
+        <section
+          className={cn(
+            "min-h-0 min-w-0 flex-col",
+            isProductDrawerOpen
+              ? "fixed inset-0 z-[100] flex items-center justify-end"
+              : "hidden lg:flex lg:flex-1 lg:overflow-hidden",
+          )}
+        >
+          {isProductDrawerOpen ? (
+            <button
+              type="button"
+              aria-label="Cerrar panel de productos"
+              onClick={() => setIsProductDrawerOpen(false)}
+              className="absolute inset-0 bg-black/45 animate-in fade-in duration-200"
+            />
+          ) : null}
+          <div
+            className={cn(
+              "relative flex w-full flex-col overflow-hidden",
+              isProductDrawerOpen
+                ? "h-[88dvh] rounded-t-2xl bg-[var(--color-card)] p-4 pb-5 animate-in slide-in-from-bottom-2 duration-200"
+                : "h-full min-h-0 bg-transparent p-0",
+            )}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
+              <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
+                Productos
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsProductDrawerOpen(false)}
+                  aria-label="Ver carrito"
+                  className="relative flex h-9 items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] pl-3 pr-4 text-white transition-colors hover:opacity-90"
+                >
+                  <ShoppingCartSimpleIcon size={17} weight="bold" />
+                  <span className="text-xs font-circular-bold">
+                    {formatPrice(total)}
+                  </span>
+                  {cartTotalQuantity > 0 ? (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef4444] px-1 text-[9px] font-circular-bold text-white">
+                      {cartTotalQuantity}
+                    </span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsProductDrawerOpen(false)}
+                  aria-label="Cerrar"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+                >
+                  <XIcon size={16} weight="bold" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px]">
             <label className="relative">
               <MagnifyingGlassIcon
                 size={18}
@@ -868,7 +944,7 @@ export default function CotizacionesPage() {
               }}
             />
 
-            <div className="flex h-11 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-black text-[var(--color-input-text)] font-circular-regular">
+            <div className="hidden h-11 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-black text-[var(--color-input-text)] font-circular-regular md:flex">
               <time
                 dateTime={currentTime}
                 className="flex items-baseline gap-1.5 tabular-nums"
@@ -880,7 +956,7 @@ export default function CotizacionesPage() {
               </time>
             </div>
 
-            <div className="flex h-11 items-center justify-center">
+            <div className="hidden h-11 items-center justify-center md:flex">
               <WifiHighIcon
                 size={22}
                 weight="bold"
@@ -890,24 +966,29 @@ export default function CotizacionesPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="mt-3 grid grid-cols-2 items-start justify-between gap-3 md:mt-6 md:flex md:items-center">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedColor("todos");
                   setProductPage(1);
                 }}
+                aria-label="Todos los colores"
+                title="Todos los colores"
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-circular-bold transition-colors",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors md:h-auto md:w-auto md:px-3 md:py-1",
                   selectedColor === "todos"
                     ? "bg-[var(--color-primary)] text-white"
                     : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
                 )}
               >
-                Todos
+                <SquaresFourIcon size={14} weight="bold" className="md:hidden" />
+                <span className="hidden text-xs font-circular-bold md:inline">
+                  Todos
+                </span>
               </button>
-              <div className="flex flex-wrap gap-2">
+              <div className="scrollbar-hidden flex min-w-0 flex-nowrap gap-2 overflow-x-auto">
                 {colors.map((color) => {
                   const isSelected = selectedColor === color.id;
 
@@ -920,7 +1001,7 @@ export default function CotizacionesPage() {
                         setProductPage(1);
                       }}
                       className={cn(
-                        "h-6 w-6 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors hover:scale-105",
+                        "h-6 w-6 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-[var(--color-background)] transition-colors hover:scale-105",
                         isSelected ? "scale-105" : "ring-transparent",
                       )}
                       style={
@@ -941,7 +1022,7 @@ export default function CotizacionesPage() {
                     type="button"
                     onClick={() => void loadColors(colorPage + 1, true)}
                     disabled={isLoadingColors}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Cargar mas colores"
                   >
                     <CaretDownIcon
@@ -953,23 +1034,28 @@ export default function CotizacionesPage() {
                 ) : null}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedSize("todos");
                   setProductPage(1);
                 }}
+                aria-label="Todas las tallas"
+                title="Todas las tallas"
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-circular-bold transition-colors",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors md:h-auto md:w-auto md:px-3 md:py-1",
                   selectedSize === "todos"
                     ? "bg-[var(--color-primary)] text-white"
                     : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
                 )}
               >
-                Todos
+                <SquaresFourIcon size={14} weight="bold" className="md:hidden" />
+                <span className="hidden text-xs font-circular-bold md:inline">
+                  Todos
+                </span>
               </button>
-              <div className="flex flex-wrap gap-2">
+              <div className="scrollbar-hidden flex min-w-0 flex-nowrap gap-2 overflow-x-auto">
                 {sizes.map((size) => (
                   <button
                     key={size.id}
@@ -979,7 +1065,7 @@ export default function CotizacionesPage() {
                       setProductPage(1);
                     }}
                     className={cn(
-                      "flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-[10px] font-circular-bold transition-colors",
+                      "flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full px-2 text-[10px] font-circular-bold transition-colors",
                       selectedSize === size.id
                         ? "bg-[var(--color-primary)] text-white"
                         : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
@@ -994,7 +1080,7 @@ export default function CotizacionesPage() {
                     type="button"
                     onClick={() => void loadSizes(sizePage + 1, true)}
                     disabled={isLoadingSizes}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Cargar mas tallas"
                   >
                     <CaretDownIcon
@@ -1008,7 +1094,7 @@ export default function CotizacionesPage() {
             </div>
           </div>
 
-          <div className="scrollbar-hidden mt-6 grid min-h-0 flex-1 auto-rows-max content-start grid-cols-2 gap-4 overflow-y-auto pr-1 pb-2 sm:grid-cols-3 md:grid-cols-4 lg:mt-8 2xl:grid-cols-6">
+          <div className="scrollbar-hidden mt-3 grid min-h-0 flex-1 auto-rows-max content-start grid-cols-2 gap-3 overflow-y-auto pr-1 pb-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:mt-8 2xl:grid-cols-6">
             {productsError ? (
               <div className="col-span-full flex min-h-[220px] items-center justify-center rounded-[14px] bg-[var(--color-card)] text-sm font-circular-bold text-[var(--color-muted-foreground)]">
                 {productsError}
@@ -1087,6 +1173,7 @@ export default function CotizacionesPage() {
               </div>
             </div>
           ) : null}
+          </div>
         </section>
 
         <aside className="flex h-full min-h-0 w-full shrink-0 flex-col lg:w-[360px]">
@@ -1305,6 +1392,23 @@ export default function CotizacionesPage() {
                 </div>
               )}
             </div>
+            <div className="flex gap-3 lg:hidden">
+              <button
+                type="button"
+                onClick={() => setIsProductDrawerOpen(true)}
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-primary)] text-sm font-black text-white transition-colors hover:opacity-90"
+              >
+                <PlusIcon size={18} weight="bold" />
+                Agregar
+              </button>
+              <button
+                type="button"
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-input-bg)] text-sm font-black text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <BarcodeIcon size={18} weight="bold" />
+                Escanear
+              </button>
+            </div>
             <CalendarInput
               labelInline="Valida hasta"
               value={validUntil}
@@ -1322,7 +1426,7 @@ export default function CotizacionesPage() {
                   width={256}
                   height={256}
                   alt="No hay productos"
-                  className="h-auto w-[min(34%,70px)] max-h-[18dvh] object-contain opacity-90 sm:w-[min(38%,90px)] md:w-[min(42%,110px)] md:max-h-[24dvh] lg:w-[min(46%,120px)] lg:max-h-[26dvh] xl:w-[min(48%,130px)] xl:max-h-[28dvh]"
+                  className="hidden h-auto w-[min(34%,70px)] max-h-[18dvh] object-contain opacity-90 sm:w-[min(38%,90px)] md:w-[min(42%,110px)] md:max-h-[24dvh] lg:block lg:w-[min(46%,120px)] lg:max-h-[26dvh] xl:w-[min(48%,130px)] xl:max-h-[28dvh]"
                 />
                 <p className="mt-3 text-sm font-black text-[var(--color-text)]">
                   No hay productos
