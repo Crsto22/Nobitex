@@ -2135,31 +2135,31 @@ export default function VentasPage() {
             ) : null}
             {taxSummary.enabled ? (
               <div className="mt-2 space-y-2">
-                <div className="font-sora-extrabold flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                <div className="flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                   <span>Op. gravadas</span>
-                  <span className="text-[var(--color-text)]">
+                  <span className="font-circular-bold">
                     {formatPrice(taxSummary.opGravadas)}
                   </span>
                 </div>
                 {taxSummary.opExoneradas > 0 ? (
-                  <div className="font-sora-extrabold flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                  <div className="flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                     <span>Op. exoneradas</span>
-                    <span className="text-[var(--color-text)]">
+                    <span className="font-circular-bold">
                       {formatPrice(taxSummary.opExoneradas)}
                     </span>
                   </div>
                 ) : null}
                 {taxSummary.opInafectas > 0 ? (
-                  <div className="font-sora-extrabold flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                  <div className="flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                     <span>Op. inafectas</span>
-                    <span className="text-[var(--color-text)]">
+                    <span className="font-circular-bold">
                       {formatPrice(taxSummary.opInafectas)}
                     </span>
                   </div>
                 ) : null}
-                <div className="font-sora-extrabold flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                <div className="flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                   <span>IGV ({taxSummary.igvPercent.toFixed(2)}%)</span>
-                  <span className="text-[var(--color-text)]">
+                  <span className="font-circular-bold">
                     {formatPrice(taxSummary.igv)}
                   </span>
                 </div>
@@ -2379,6 +2379,7 @@ export default function VentasPage() {
           selectedBranch={selectedBranch}
           selectedNoteType={selectedNoteType}
           selectedClient={selectedClient}
+          onSelectedClientChange={(client) => setSelectedClient(client)}
           onSaleSuccess={handleSaleSuccess}
         />
       ) : null}

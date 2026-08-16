@@ -509,8 +509,58 @@ export function ChargeModal({
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-5 pb-5 pr-3">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-4">
+              {onSelectedClientChange ? (
+                <div className="rounded-[8px] bg-[var(--color-input-bg)] p-3">
+                  <div className="flex items-center gap-3">
+                    {selectedClient ? (
+                      <UserAvatar
+                        seed={selectedClient.id}
+                        name={selectedClient.displayName}
+                        size={40}
+                      />
+                    ) : (
+                      <GenericClientAvatar size={40} />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-xs text-[var(--color-muted-foreground)]">
+                        Cliente
+                      </span>
+                      <span className="block truncate text-sm font-circular-bold text-[var(--color-text)]">
+                        {selectedClient?.displayName ?? "Cliente generico"}
+                      </span>
+                      <span className="block text-xs uppercase text-[var(--color-muted-foreground)]">
+                        {selectedClient
+                          ? `${selectedClient.tipoDocumento}: ${selectedClient.numeroDocumento ?? "Sin documento"}`
+                          : "Sin documento"}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsClientPickerOpen(true)}
+                    className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-3 text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+                  >
+                    <NotePencilIcon size={16} weight="bold" />
+                    Cambiar o actualizar
+                  </button>
+                  {isInvoiceClientInvalid ? (
+                    <div className="mt-3 rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                      Para emitir factura selecciona un cliente con RUC de 11
+                      digitos y razon social.
+                      <button
+                        type="button"
+                        onClick={() => setIsClientPickerOpen(true)}
+                        className="mt-2 block font-circular-bold text-[var(--color-primary)]"
+                      >
+                        Seleccionar cliente con RUC
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="rounded-[14px] bg-[var(--color-input-bg)] p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <ReceiptIcon
@@ -596,31 +646,31 @@ export function ChargeModal({
                     ) : null}
                     {taxSummary.enabled ? (
                       <>
-                        <div className="font-sora-extrabold mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                        <div className="mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                           <span>Op. gravadas</span>
-                          <span className="text-[var(--color-text)]">
+                          <span className="font-circular-bold text-[var(--color-text)]">
                             {formatPrice(taxSummary.opGravadas)}
                           </span>
                         </div>
                         {taxSummary.opExoneradas > 0 ? (
-                          <div className="font-sora-extrabold mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                          <div className="mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                             <span>Op. exoneradas</span>
-                            <span className="text-[var(--color-text)]">
+                            <span className="font-circular-bold text-[var(--color-text)]">
                               {formatPrice(taxSummary.opExoneradas)}
                             </span>
                           </div>
                         ) : null}
                         {taxSummary.opInafectas > 0 ? (
-                          <div className="font-sora-extrabold mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                          <div className="mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                             <span>Op. inafectas</span>
-                            <span className="text-[var(--color-text)]">
+                            <span className="font-circular-bold text-[var(--color-text)]">
                               {formatPrice(taxSummary.opInafectas)}
                             </span>
                           </div>
                         ) : null}
-                        <div className="font-sora-extrabold mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
+                        <div className="mt-1 flex items-center justify-between text-sm text-[var(--color-muted-foreground)]">
                           <span>IGV ({taxSummary.igvPercent.toFixed(2)}%)</span>
-                          <span className="text-[var(--color-text)]">
+                          <span className="font-circular-bold text-[var(--color-text)]">
                             {formatPrice(taxSummary.igv)}
                           </span>
                         </div>
@@ -674,56 +724,6 @@ export function ChargeModal({
                     ))}
                   </NativeSelect>
                 </label>
-              ) : null}
-
-              {onSelectedClientChange ? (
-                <div className="rounded-[8px] bg-[var(--color-input-bg)] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    {selectedClient ? (
-                      <UserAvatar
-                        seed={selectedClient.id}
-                        name={selectedClient.displayName}
-                        size={40}
-                      />
-                    ) : (
-                      <GenericClientAvatar size={40} />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <span className="block text-xs text-[var(--color-muted-foreground)]">
-                        Cliente
-                      </span>
-                      <span className="block truncate text-sm font-circular-bold text-[var(--color-text)]">
-                        {selectedClient?.displayName ?? "Cliente generico"}
-                      </span>
-                      <span className="block text-xs uppercase text-[var(--color-muted-foreground)]">
-                        {selectedClient
-                          ? `${selectedClient.tipoDocumento}: ${selectedClient.numeroDocumento ?? "Sin documento"}`
-                          : "Sin documento"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsClientPickerOpen(true)}
-                      className="flex h-9 shrink-0 items-center gap-2 rounded-[8px] bg-white px-3 text-xs font-circular-bold text-[var(--color-primary)]"
-                    >
-                      <NotePencilIcon size={16} weight="bold" />
-                      Cambiar o actualizar
-                    </button>
-                  </div>
-                  {isInvoiceClientInvalid ? (
-                    <div className="mt-3 rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
-                      Para emitir factura selecciona un cliente con RUC de 11
-                      digitos y razon social.
-                      <button
-                        type="button"
-                        onClick={() => setIsClientPickerOpen(true)}
-                        className="mt-2 block font-circular-bold text-[var(--color-primary)]"
-                      >
-                        Seleccionar cliente con RUC
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
               ) : null}
 
               <div>
@@ -886,7 +886,7 @@ export function ChargeModal({
                           key={entry.uid}
                           className="rounded-[12px] bg-[var(--color-background)]"
                         >
-                          <div className="grid grid-cols-[minmax(104px,1fr)_30px_minmax(74px,96px)_26px_26px] items-center gap-1 overflow-hidden rounded-[12px]">
+                          <div className="grid grid-cols-[minmax(150px,1.4fr)_26px_minmax(58px,74px)_26px_26px] items-center gap-1 overflow-hidden rounded-[12px]">
                             <div className="flex min-w-0 items-center gap-1.5 border-l border-[var(--color-border)]/60 px-2">
                               {config ? (
                                 <Image
@@ -905,6 +905,7 @@ export function ChargeModal({
                               )}
                               <NativeSelect
                                 aria-label="Metodo de pago"
+                                fixedMenu
                                 value={entry.method.id}
                                 onChange={(event) =>
                                   updateEntryMethod(

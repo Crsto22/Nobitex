@@ -267,6 +267,7 @@ type NativeSelectProps = Omit<
 > & {
   children: ReactNode;
   onChange?: (event: { target: { value: string } }) => void;
+  fixedMenu?: boolean;
 };
 
 function readNativeOptions(children: ReactNode): SelectOption[] {
@@ -301,6 +302,7 @@ export function NativeSelect({
   className,
   disabled,
   required,
+  fixedMenu = false,
   "aria-label": ariaLabel,
 }: NativeSelectProps) {
   const options = readNativeOptions(children);
@@ -312,10 +314,11 @@ export function NativeSelect({
       onChange={(nextValue) => onChange?.({ target: { value: nextValue } })}
       ariaLabel={ariaLabel}
       placeholder={options[0]?.label ?? "Seleccionar"}
-      className="min-w-0"
+      className="min-w-0 flex-1"
       buttonClassName={className}
       disabled={disabled}
       required={required}
+      fixedMenu={fixedMenu}
     />
   );
 }
