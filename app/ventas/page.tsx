@@ -68,6 +68,11 @@ import {
   OpenCashRegisterModal,
 } from "@/components/CashRegister/cash-register-modals";
 import {
+  BarcodeScannerDrawer,
+  type ScannerRecentItem,
+} from "@/components/Ventas/barcode-scanner-drawer";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
+import {
   cashRegisterApi,
   type CashRegisterSession,
 } from "@/lib/api/cash-register";
@@ -311,6 +316,7 @@ function DropdownButton({
 
 export default function VentasPage() {
   const { user } = useAuth();
+  const { showToast } = useSystemToast();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -366,6 +372,10 @@ export default function VentasPage() {
   const [isCloseCashModalOpen, setIsCloseCashModalOpen] = useState(false);
   const [isCashMovementModalOpen, setIsCashMovementModalOpen] = useState(false);
   const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
+  const [isScannerDrawerOpen, setIsScannerDrawerOpen] = useState(false);
+  const [scannerRecentItems, setScannerRecentItems] = useState<
+    ScannerRecentItem[]
+  >([]);
   const [isCashMenuOpen, setIsCashMenuOpen] = useState(false);
   const [igvPercent, setIgvPercent] = useState(18);
   const [timeValue, timePeriod] = currentTime.split(" ");
@@ -881,7 +891,7 @@ export default function VentasPage() {
     total,
   ]);
 
-  const addVariantToCart = (
+  const addVariantToCart = useCallback((
     product: SaleProduct,
     variant: SaleProductVariant,
   ) => {
@@ -939,7 +949,7 @@ export default function VentasPage() {
         },
       ];
     });
-  };
+  }, []);
 
   const increaseQuantity = (productId: string) => {
     setCartItems((currentItems) =>
@@ -1079,6 +1089,90 @@ export default function VentasPage() {
     selectedColor,
     selectedSize,
   ]);
+
+  const handleScannedCode = useCallback(
+    async (rawCode: string) => {
+      const code = rawCode.trim();
+      const normalizedCode = code.toLowerCase();
+
+      if (!selectedBranch) {
+        showToast({
+          title: "Selecciona una sucursal",
+          description: "El escaner necesita una sucursal para validar stock.",
+          variant: "warning",
+        });
+        return;
+      }
+
+      try {
+        const response = await salesApi.findProducts({
+          page: 1,
+          limit: defaultPageSize,
+          search: code,
+          sucursalId: selectedBranch,
+        });
+        const match = response.data
+          .flatMap((product) =>
+            product.variantes.map((variant) => ({ product, variant })),
+          )
+          .find(({ variant }) =>
+            [variant.sku, variant.codigoBarras].some(
+              (value) => value?.trim().toLowerCase() === normalizedCode,
+            ),
+          );
+
+        if (!match) {
+          showToast({
+            title: "Producto no encontrado",
+            description: `Codigo: ${code}`,
+            variant: "warning",
+          });
+          return;
+        }
+
+        const stock = match.variant.stockSucursal ?? match.variant.stockTotal;
+        const quantityInCart =
+          cartItems.find((item) => item.id === match.variant.varianteId)
+            ?.quantity ?? 0;
+
+        if (stock - quantityInCart <= 0) {
+          showToast({
+            title: "Sin stock disponible",
+            description: match.product.nombre,
+            variant: "warning",
+          });
+          return;
+        }
+
+        addVariantToCart(match.product, match.variant);
+        setScannerRecentItems((current) => [
+          {
+            id: `${match.variant.varianteId}-${Date.now()}`,
+            name: match.product.nombre,
+            code,
+            price: formatPrice(Number(match.variant.precioVenta)),
+            image:
+              match.variant.imagen?.urlThumbnail ??
+              match.variant.imagen?.urlWebp ??
+              match.variant.imagen?.urlOriginal ??
+              null,
+            colorHex: match.variant.color.hex,
+            colorName: match.variant.color.nombre,
+            size: match.variant.talla.nombre,
+          },
+          ...current,
+        ].slice(0, 5));
+      } catch (error: unknown) {
+        showToast({
+          title: "No se pudo buscar el producto",
+          description:
+            error instanceof Error ? error.message : "Intenta escanear otra vez.",
+          variant: "error",
+        });
+      }
+    },
+    [addVariantToCart, cartItems, selectedBranch, showToast],
+  );
 
   const handleSaleSuccess = () => {
     setCartItems([]);
@@ -1933,6 +2027,7 @@ export default function VentasPage() {
             </button>
             <button
               type="button"
+              onClick={() => setIsScannerDrawerOpen(true)}
               className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-input-bg)] text-sm font-black text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
             >
               <BarcodeIcon size={18} weight="bold" />
@@ -2383,6 +2478,15 @@ export default function VentasPage() {
           onSaleSuccess={handleSaleSuccess}
         />
       ) : null}
+
+      <BarcodeScannerDrawer
+        isOpen={isScannerDrawerOpen}
+        onClose={() => setIsScannerDrawerOpen(false)}
+        total={formatPrice(total)}
+        cartTotalQuantity={cartTotalQuantity}
+        recentItems={scannerRecentItems}
+        onDetected={handleScannedCode}
+      />
 
       <ClientCreateModal
         isOpen={isClientCreateModalOpen}
