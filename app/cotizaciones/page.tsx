@@ -812,7 +812,7 @@ export default function CotizacionesPage() {
           description: "El escaner necesita una sucursal para validar stock.",
           variant: "warning",
         });
-        return;
+        return false;
       }
 
       try {
@@ -838,7 +838,7 @@ export default function CotizacionesPage() {
             description: `Codigo: ${code}`,
             variant: "warning",
           });
-          return;
+          return false;
         }
 
         const stock = match.variant.stockSucursal ?? match.variant.stockTotal;
@@ -852,7 +852,7 @@ export default function CotizacionesPage() {
             description: match.product.nombre,
             variant: "warning",
           });
-          return;
+          return false;
         }
 
         addVariantToCart(match.product, match.variant);
@@ -873,6 +873,12 @@ export default function CotizacionesPage() {
           },
           ...current,
         ].slice(0, 5));
+        toast.showToast({
+          title: "Producto agregado",
+          description: match.product.nombre,
+          variant: "success",
+        });
+        return true;
       } catch (error: unknown) {
         toast.showToast({
           title: "No se pudo buscar el producto",
@@ -880,6 +886,7 @@ export default function CotizacionesPage() {
             error instanceof Error ? error.message : "Intenta escanear otra vez.",
           variant: "error",
         });
+        return false;
       }
     },
     [addVariantToCart, cartItems, selectedBranch, toast],

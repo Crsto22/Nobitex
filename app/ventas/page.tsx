@@ -1101,7 +1101,7 @@ export default function VentasPage() {
           description: "El escaner necesita una sucursal para validar stock.",
           variant: "warning",
         });
-        return;
+        return false;
       }
 
       try {
@@ -1127,7 +1127,7 @@ export default function VentasPage() {
             description: `Codigo: ${code}`,
             variant: "warning",
           });
-          return;
+          return false;
         }
 
         const stock = match.variant.stockSucursal ?? match.variant.stockTotal;
@@ -1141,7 +1141,7 @@ export default function VentasPage() {
             description: match.product.nombre,
             variant: "warning",
           });
-          return;
+          return false;
         }
 
         addVariantToCart(match.product, match.variant);
@@ -1162,6 +1162,12 @@ export default function VentasPage() {
           },
           ...current,
         ].slice(0, 5));
+        showToast({
+          title: "Producto agregado",
+          description: match.product.nombre,
+          variant: "success",
+        });
+        return true;
       } catch (error: unknown) {
         showToast({
           title: "No se pudo buscar el producto",
@@ -1169,6 +1175,7 @@ export default function VentasPage() {
             error instanceof Error ? error.message : "Intenta escanear otra vez.",
           variant: "error",
         });
+        return false;
       }
     },
     [addVariantToCart, cartItems, selectedBranch, showToast],

@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   BarcodeIcon,
   CameraIcon,
+  CheckCircleIcon,
   ShoppingCartSimpleIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
@@ -13,6 +15,8 @@ import {
 } from "@zxing/browser";
 
 import { cn } from "@/lib/utils";
+
+const productPlaceholderImage = "/Logo/Nuvex.png";
 
 export type ScannerRecentItem = {
   id: string;
@@ -31,7 +35,7 @@ type BarcodeScannerDrawerProps = {
   total: string;
   cartTotalQuantity: number;
   recentItems: ScannerRecentItem[];
-  onDetected: (code: string) => Promise<void> | void;
+  onDetected: (code: string) => Promise<boolean | void> | boolean | void;
 };
 
 function playScanBeep() {
@@ -43,20 +47,25 @@ function playScanBeep() {
   if (!AudioContextClass) return;
 
   const audioContext = new AudioContextClass();
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
+  const playTone = (startAt: number) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
 
-  oscillator.type = "sine";
-  oscillator.frequency.value = 880;
-  gain.gain.setValueAtTime(0.001, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.12);
+    oscillator.type = "square";
+    oscillator.frequency.value = 1040;
+    gain.gain.setValueAtTime(0.001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.12, startAt + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.07);
 
-  oscillator.connect(gain);
-  gain.connect(audioContext.destination);
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + 0.13);
-  window.setTimeout(() => void audioContext.close(), 180);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + 0.075);
+  };
+
+  playTone(audioContext.currentTime);
+  playTone(audioContext.currentTime + 0.105);
+  window.setTimeout(() => void audioContext.close(), 260);
 }
 
 function scannerErrorMessage(error: unknown) {
@@ -88,6 +97,7 @@ export function BarcodeScannerDrawer({
   const [error, setError] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [lastCode, setLastCode] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     onDetectedRef.current = onDetected;
@@ -100,6 +110,7 @@ export function BarcodeScannerDrawer({
       queueMicrotask(() => {
         setError("");
         setIsStarting(false);
+        setShowSuccess(false);
       });
       return;
     }
@@ -134,7 +145,12 @@ export function BarcodeScannerDrawer({
           lastScanAtRef.current = now;
           setLastCode(code);
           playScanBeep();
-          void onDetectedRef.current(code);
+          void Promise.resolve(onDetectedRef.current(code)).then((wasAdded) => {
+            if (wasAdded === false) return;
+
+            setShowSuccess(true);
+            window.setTimeout(() => setShowSuccess(false), 700);
+          });
         },
       )
       .then((controls) => {
@@ -203,7 +219,7 @@ export function BarcodeScannerDrawer({
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-[16px] bg-black aspect-[4/3]">
+        <div className="relative h-[230px] overflow-hidden rounded-[16px] bg-black sm:h-[270px]">
           <video
             ref={videoRef}
             muted
@@ -228,6 +244,13 @@ export function BarcodeScannerDrawer({
               </p>
             </div>
           ) : null}
+          {showSuccess ? (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/20">
+              <div className="grid h-20 w-20 place-items-center rounded-full bg-[#10b981] text-white shadow-[0_12px_30px_rgba(16,185,129,0.35)] animate-in zoom-in-75 fade-in duration-150">
+                <CheckCircleIcon size={54} weight="fill" />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-3 flex h-10 items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)]">
@@ -250,8 +273,21 @@ export function BarcodeScannerDrawer({
               recentItems.map((item) => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[14px] bg-[var(--color-input-bg)] p-3"
+                  className="grid grid-cols-[48px_1fr_auto] items-center gap-3 rounded-[14px] bg-[var(--color-input-bg)] p-3"
                 >
+                  <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-[12px] bg-[var(--color-card)]">
+                    <Image
+                      src={item.image ?? productPlaceholderImage}
+                      alt={item.name}
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className={cn(
+                        "h-full w-full object-contain",
+                        !item.image && "p-1.5 opacity-45 grayscale",
+                      )}
+                    />
+                  </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black text-[var(--color-text)]">
                       {item.name}
