@@ -69,6 +69,7 @@ import {
 } from "@/components/CashRegister/cash-register-modals";
 import {
   BarcodeScannerDrawer,
+  type ScannerResult,
   type ScannerRecentItem,
 } from "@/components/Ventas/barcode-scanner-drawer";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -1091,7 +1092,7 @@ export default function VentasPage() {
   ]);
 
   const handleScannedCode = useCallback(
-    async (rawCode: string) => {
+    async (rawCode: string): Promise<ScannerResult> => {
       const code = rawCode.trim();
       const normalizedCode = code.toLowerCase();
 
@@ -1127,7 +1128,7 @@ export default function VentasPage() {
             description: `Codigo: ${code}`,
             variant: "warning",
           });
-          return false;
+          return "not_found";
         }
 
         const stock = match.variant.stockSucursal ?? match.variant.stockTotal;
@@ -1141,13 +1142,13 @@ export default function VentasPage() {
             description: match.product.nombre,
             variant: "warning",
           });
-          return false;
+          return "out_of_stock";
         }
 
         addVariantToCart(match.product, match.variant);
-        setScannerRecentItems((current) => [
-          {
-            id: `${match.variant.varianteId}-${Date.now()}`,
+        setScannerRecentItems((current) => {
+          const scannedItem = {
+            id: match.variant.varianteId,
             name: match.product.nombre,
             code,
             price: formatPrice(Number(match.variant.precioVenta)),
@@ -1159,15 +1160,19 @@ export default function VentasPage() {
             colorHex: match.variant.color.hex,
             colorName: match.variant.color.nombre,
             size: match.variant.talla.nombre,
-          },
-          ...current,
-        ].slice(0, 5));
+          };
+
+          return [
+            scannedItem,
+            ...current.filter((item) => item.id !== scannedItem.id),
+          ].slice(0, 5);
+        });
         showToast({
           title: "Producto agregado",
           description: match.product.nombre,
           variant: "success",
         });
-        return true;
+        return "success";
       } catch (error: unknown) {
         showToast({
           title: "No se pudo buscar el producto",

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   BarcodeIcon,
   CameraIcon,
   CheckCircleIcon,
   ShoppingCartSimpleIcon,
+  WarningCircleIcon,
   XIcon,
+  XCircleIcon,
 } from "@phosphor-icons/react/ssr";
 import {
   BrowserMultiFormatReader,
@@ -29,13 +31,15 @@ export type ScannerRecentItem = {
   size?: string;
 };
 
+export type ScannerResult = "success" | "not_found" | "out_of_stock" | false | void;
+
 type BarcodeScannerDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
   total: string;
   cartTotalQuantity: number;
   recentItems: ScannerRecentItem[];
-  onDetected: (code: string) => Promise<boolean | void> | boolean | void;
+  onDetected: (code: string) => Promise<ScannerResult> | ScannerResult;
 };
 
 function playScanBeep() {
@@ -97,7 +101,22 @@ export function BarcodeScannerDrawer({
   const [error, setError] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [lastCode, setLastCode] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [scanFeedback, setScanFeedback] = useState<
+    "success" | "not_found" | "out_of_stock" | null
+  >(null);
+
+  const flashFeedback = useCallback((feedback: typeof scanFeedback) => {
+    setScanFeedback(feedback);
+    window.setTimeout(() => setScanFeedback(null), 700);
+  }, []);
+
+  const addRecentItem = useCallback((code: string) => {
+    void Promise.resolve(onDetectedRef.current(code)).then((result) => {
+      if (result === false) return;
+
+      flashFeedback(result ?? "success");
+    });
+  }, [flashFeedback]);
 
   useEffect(() => {
     onDetectedRef.current = onDetected;
@@ -110,7 +129,7 @@ export function BarcodeScannerDrawer({
       queueMicrotask(() => {
         setError("");
         setIsStarting(false);
-        setShowSuccess(false);
+        setScanFeedback(null);
       });
       return;
     }
@@ -145,12 +164,7 @@ export function BarcodeScannerDrawer({
           lastScanAtRef.current = now;
           setLastCode(code);
           playScanBeep();
-          void Promise.resolve(onDetectedRef.current(code)).then((wasAdded) => {
-            if (wasAdded === false) return;
-
-            setShowSuccess(true);
-            window.setTimeout(() => setShowSuccess(false), 700);
-          });
+          addRecentItem(code);
         },
       )
       .then((controls) => {
@@ -176,7 +190,7 @@ export function BarcodeScannerDrawer({
       controlsRef.current?.stop();
       controlsRef.current = null;
     };
-  }, [isOpen]);
+  }, [addRecentItem, isOpen]);
 
   if (!isOpen) return null;
 
@@ -244,10 +258,23 @@ export function BarcodeScannerDrawer({
               </p>
             </div>
           ) : null}
-          {showSuccess ? (
+          {scanFeedback ? (
             <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/20">
-              <div className="grid h-20 w-20 place-items-center rounded-full bg-[#10b981] text-white shadow-[0_12px_30px_rgba(16,185,129,0.35)] animate-in zoom-in-75 fade-in duration-150">
-                <CheckCircleIcon size={54} weight="fill" />
+              <div
+                className={cn(
+                  "grid h-20 w-20 place-items-center rounded-full text-white shadow-[0_12px_30px_rgba(16,185,129,0.35)] animate-in zoom-in-75 fade-in duration-150",
+                  scanFeedback === "success" && "bg-[#10b981]",
+                  scanFeedback === "not_found" && "bg-[#ef4444]",
+                  scanFeedback === "out_of_stock" && "bg-[#ff7417]",
+                )}
+              >
+                {scanFeedback === "success" ? (
+                  <CheckCircleIcon size={54} weight="fill" />
+                ) : scanFeedback === "out_of_stock" ? (
+                  <WarningCircleIcon size={54} weight="fill" />
+                ) : (
+                  <XCircleIcon size={54} weight="fill" />
+                )}
               </div>
             </div>
           ) : null}
@@ -308,6 +335,14 @@ export function BarcodeScannerDrawer({
                   <span className="text-sm font-circular-bold text-[var(--color-muted-foreground)]">
                     {item.price}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => addRecentItem(item.code)}
+                    className="col-span-full mt-1 flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] text-sm font-circular-bold text-white transition-colors hover:opacity-90"
+                  >
+                    <ShoppingCartSimpleIcon size={17} weight="bold" />
+                    Agregar producto
+                  </button>
                 </div>
               ))
             )}
