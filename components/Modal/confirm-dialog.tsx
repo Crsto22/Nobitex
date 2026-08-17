@@ -13,6 +13,7 @@ type ConfirmDialogProps = {
   title?: string;
   description?: string;
   itemName?: string;
+  confirmLabel?: string;
 };
 
 export function ConfirmDialog({
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   title = "Eliminar elemento",
   description = "Esta accion no se puede deshacer.",
   itemName,
+  confirmLabel,
 }: ConfirmDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,7 +73,11 @@ export function ConfirmDialog({
             disabled={isSubmitting}
             className="h-11 flex-1 rounded-[14px] bg-[#ef4444] text-sm font-circular-bold text-white hover:opacity-90"
           >
-            {isSubmitting ? "Eliminando..." : "Eliminar"}
+            {isSubmitting
+              ? confirmLabel
+                ? "Procesando..."
+                : "Eliminando..."
+              : (confirmLabel ?? "Eliminar")}
           </Button>
         </div>
       </div>

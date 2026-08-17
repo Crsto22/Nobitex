@@ -12,19 +12,21 @@ export type StockScopeOption = {
 
 type StockScopeSelectorProps = {
   scopes: StockScopeOption[];
-  selectedScope: string;
+  selectedScopes: string[];
   isLoading: boolean;
   hasBranches: boolean;
-  onScopeChange: (scope: string) => void;
+  onToggleScope: (scope: string) => void;
 };
 
 export function StockScopeSelector({
   scopes,
-  selectedScope,
+  selectedScopes,
   isLoading,
   hasBranches,
-  onScopeChange,
+  onToggleScope,
 }: StockScopeSelectorProps) {
+  const selectedScopeSet = new Set(selectedScopes);
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
@@ -33,13 +35,17 @@ export function StockScopeSelector({
       <div className="flex flex-wrap gap-2">
         {scopes.map((scope) => {
           const Icon = scope.icon;
-          const isSelected = selectedScope === scope.value;
+          const isSelected =
+            scope.value === "all"
+              ? selectedScopes.length === 0
+              : selectedScopeSet.has(scope.value);
 
           return (
             <button
               key={scope.value}
               type="button"
-              onClick={() => onScopeChange(scope.value)}
+              onClick={() => onToggleScope(scope.value)}
+              aria-pressed={isSelected}
               className={cn(
                 "flex h-11 min-w-0 cursor-pointer items-center gap-2 rounded-[16px] bg-[#F4F4F4] px-3 text-left text-xs font-circular-bold shadow-sm transition-colors dark:bg-[var(--color-input-bg)]",
                 isSelected

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { CaretRightIcon, PackageIcon } from "@phosphor-icons/react/ssr";
+import { CaretRightIcon, PackageIcon, ProhibitIcon } from "@phosphor-icons/react/ssr";
 
 import type { Branch } from "@/lib/api/branches";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ type VariantCardProps = {
   simple?: boolean;
   allowPriceEdit?: boolean;
   defaultPriceEditorOpen?: boolean;
+  isUnavailable?: boolean;
+  onToggleUnavailable?: () => void;
   initialValues?: VariantInitialValues;
 };
 
@@ -44,6 +46,8 @@ export function VariantCard({
   simple = false,
   allowPriceEdit = false,
   defaultPriceEditorOpen = false,
+  isUnavailable = false,
+  onToggleUnavailable,
   initialValues,
 }: VariantCardProps) {
   const [isEditingPrices, setIsEditingPrices] = useState(
@@ -53,12 +57,20 @@ export function VariantCard({
   return (
     <div
       className={cn(
-        "rounded-[18px] bg-[#F4F4F4] p-3 shadow-sm transition-colors duration-300 ease-out will-change-transform motion-reduce:transition-none dark:bg-[var(--color-input-bg)]",
+        "relative rounded-[18px] bg-[#F4F4F4] p-3 shadow-sm transition-colors duration-300 ease-out will-change-transform motion-reduce:transition-none dark:bg-[var(--color-input-bg)]",
         motionState === "enter" && "translate-y-3 scale-[0.98] opacity-0",
         motionState === "visible" && "translate-y-0 scale-100 opacity-100",
         motionState === "exit" && "-translate-y-2 scale-[0.97] opacity-0",
+        isUnavailable &&
+          "border-2 border-dashed border-[#3b82f6]/60 bg-white dark:bg-[var(--color-background)]",
       )}
     >
+      <input
+        type="hidden"
+        name={`disponible-${variant.id}`}
+        value={isUnavailable ? "false" : "true"}
+      />
+      <div className={cn(isUnavailable && "hidden")}>
       <div
         className={cn(
           "mb-3 flex min-w-0 items-center gap-2",
@@ -92,13 +104,38 @@ export function VariantCard({
         ) : null}
         </div>
         {allowPriceEdit ? (
-          <button
-            type="button"
-            onClick={() => setIsEditingPrices((current) => !current)}
-            className="ml-auto h-8 shrink-0 rounded-[12px] bg-white px-3 text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-background)]"
-          >
-            {isEditingPrices ? "Usar global" : "Editar precio"}
-          </button>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onToggleUnavailable}
+              aria-label={
+                isUnavailable
+                  ? "Marcar como disponible"
+                  : "Marcar como no disponible"
+              }
+              title={
+                isUnavailable
+                  ? "Marcar como disponible"
+                  : "Marcar como no disponible"
+              }
+              aria-pressed={isUnavailable}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-[12px] transition-colors",
+                isUnavailable
+                  ? "bg-[#ef4444] text-white"
+                  : "bg-white text-[var(--color-muted-foreground)] hover:bg-[#ef4444]/10 hover:text-[#ef4444] dark:bg-[var(--color-background)]",
+              )}
+            >
+              <ProhibitIcon size={15} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditingPrices((current) => !current)}
+              className="h-8 shrink-0 rounded-[12px] bg-white px-3 text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:bg-[var(--color-background)]"
+            >
+              {isEditingPrices ? "Usar global" : "Editar precio"}
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -184,8 +221,7 @@ export function VariantCard({
                       name={`stock-${variant.id}-${branch.id}`}
                       type="number"
                       min="0"
-                      placeholder="0"
-                      defaultValue={initialValues?.stocks[branch.id] ?? 0}
+                      defaultValue={initialValues?.stocks[branch.id] ?? undefined}
                       className="font-circular-regular h-9 w-full min-w-0 rounded-[12px] bg-white pr-3 pl-8 text-base font-circular-bold leading-none text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-primary)]/25 dark:bg-[var(--color-background)] dark:text-[var(--color-input-text)]"
                     />
                   </div>
@@ -228,6 +264,21 @@ export function VariantCard({
             />
           </div>
         </>
+      ) : null}
+      </div>
+      {isUnavailable ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
+          <p className="px-4 text-center text-sm font-circular-bold text-[var(--color-text)]">
+            Talla {variant.size.nombre} · {variant.color.label}
+          </p>
+          <button
+            type="button"
+            onClick={onToggleUnavailable}
+            className="flex h-9 items-center justify-center rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white shadow-md transition-colors hover:opacity-90"
+          >
+            Activar
+          </button>
+        </div>
       ) : null}
     </div>
   );

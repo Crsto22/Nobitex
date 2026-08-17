@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CatalogSelector } from "@/components/ProductCreate/catalog-selector";
 import { ColorButton } from "@/components/ProductCreate/color-button";
 import { ImagePreviewModal } from "@/components/ProductCreate/image-preview-modal";
@@ -129,7 +130,9 @@ function CrearProductoPageContent() {
   const [newColorHex, setNewColorHex] = useState("#111827");
   const [autoSku, setAutoSku] = useState(true);
   const [autoBarcode, setAutoBarcode] = useState(true);
-  const [stockScope, setStockScope] = useState("all");
+  const [selectedStockBranches, setSelectedStockBranches] = useState<string[]>(
+    [],
+  );
   const [colorImages, setColorImages] = useState<
     Record<string, ProductColorImage>
   >({});
@@ -137,6 +140,20 @@ function CrearProductoPageContent() {
     useState<PendingColorImage | null>(null);
   const [colorImagePage, setColorImagePage] = useState(0);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [pendingVariantRemoval, setPendingVariantRemoval] = useState<{
+    type: "size" | "color";
+    id: string;
+    name: string;
+    stock: number;
+  } | null>(null);
+  const [unavailableVariants, setUnavailableVariants] = useState<
+    Record<string, boolean>
+  >({});
+  const [pendingUnavailable, setPendingUnavailable] = useState<{
+    id: string;
+    name: string;
+    stock: number;
+  } | null>(null);
   const [renderedVariants, setRenderedVariants] = useState<ProductVariant[]>(
     [],
   );
@@ -153,6 +170,7 @@ function CrearProductoPageContent() {
         precioVenta: string;
         precioMayorista: string | null;
         stocks: Record<string, number>;
+        activo: boolean;
       }
     >
   >({});
@@ -237,12 +255,21 @@ function CrearProductoPageContent() {
       });
 
       setCatalogBranches(response.data);
-      setStockScope((currentScope) =>
-        currentScope === "all" ||
-        response.data.some((branch) => branch.id === currentScope)
-          ? currentScope
-          : "all",
-      );
+      setSelectedStockBranches((current) => {
+        if (current.length === 0) {
+          return current;
+        }
+
+        const valid = current.filter((id) =>
+          response.data.some((branch) => branch.id === id),
+        );
+
+        if (valid.length === 0 || valid.length >= response.data.length) {
+          return [];
+        }
+
+        return valid;
+      });
     } catch (error) {
       showToast({
         title: "No se pudieron cargar sucursales",
@@ -410,6 +437,7 @@ function CrearProductoPageContent() {
               precioVenta: string;
               precioMayorista: string | null;
               stocks: Record<string, number>;
+              activo: boolean;
             }
           > = {};
           for (const variant of product.variantes) {
@@ -427,9 +455,18 @@ function CrearProductoPageContent() {
               precioVenta: variant.precioVenta,
               precioMayorista: variant.precioMayorista,
               stocks,
+              activo: variant.activo,
             };
           }
           setLoadedVariantData(variantDataMap);
+
+          const unavailableMap: Record<string, boolean> = {};
+          for (const [key, data] of Object.entries(variantDataMap)) {
+            if (!data.activo) {
+              unavailableMap[key] = true;
+            }
+          }
+          setUnavailableVariants(unavailableMap);
         })
         .catch(() => {
           if (!isMounted) {
@@ -516,13 +553,60 @@ function CrearProductoPageContent() {
     ],
     [catalogBranches],
   );
-  const stockBranches = useMemo(
-    () =>
-      stockScope === "all"
-        ? catalogBranches
-        : catalogBranches.filter((branch) => branch.id === stockScope),
-    [catalogBranches, stockScope],
-  );
+  const stockBranches = useMemo(() => {
+    if (selectedStockBranches.length === 0) {
+      return catalogBranches;
+    }
+
+    const selectedSet = new Set(selectedStockBranches);
+    return catalogBranches.filter((branch) => selectedSet.has(branch.id));
+  }, [catalogBranches, selectedStockBranches]);
+  const toggleStockScope = (value: string) => {
+    if (value === "all") {
+      setSelectedStockBranches([]);
+      return;
+    }
+
+    setSelectedStockBranches((current) => {
+      const next = current.includes(value)
+        ? current.filter((id) => id !== value)
+        : [...current, value];
+
+      if (next.length >= catalogBranches.length) {
+        return [];
+      }
+
+      return next;
+    });
+  };
+
+  const handleToggleUnavailable = (variant: ProductVariant) => {
+    if (unavailableVariants[variant.id]) {
+      setUnavailableVariants((current) => {
+        const next = { ...current };
+        delete next[variant.id];
+        return next;
+      });
+      return;
+    }
+
+    const data = loadedVariantData[variant.id];
+    const stock = data
+      ? Object.values(data.stocks).reduce(
+          (stockSum, value) => stockSum + Number(value || 0),
+          0,
+        )
+      : 0;
+
+    setPendingUnavailable({
+      id: variant.id,
+      name:
+        variant.size.id === "normal"
+          ? "Producto normal"
+          : `Talla ${variant.size.nombre} · ${variant.color.label}`,
+      stock,
+    });
+  };
   const shouldCollapseAutoCodes = autoSku && autoBarcode;
   const renderedVariantSizeGroups = useMemo(() => {
     const groupsBySize = new Map<
@@ -676,7 +760,45 @@ function CrearProductoPageContent() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const computeVariantStockFor = useCallback(
+    (type: "size" | "color", id: string) =>
+      Object.entries(loadedVariantData).reduce((total, [key, data]) => {
+        const matches =
+          type === "size" ? key.startsWith(`${id}-`) : key.endsWith(`-${id}`);
+
+        if (!matches) {
+          return total;
+        }
+
+        return (
+          total +
+          Object.values(data.stocks).reduce(
+            (stockSum, stock) => stockSum + Number(stock || 0),
+            0,
+          )
+        );
+      }, 0),
+    [loadedVariantData],
+  );
+
   const toggleSize = (sizeId: string) => {
+    const isRemoving = selectedSizeIds.includes(sizeId);
+
+    if (isRemoving && isEditMode) {
+      const stock = computeVariantStockFor("size", sizeId);
+
+      if (stock > 0) {
+        const size = catalogSizes.find((item) => item.id === sizeId);
+        setPendingVariantRemoval({
+          type: "size",
+          id: sizeId,
+          name: size?.nombre ?? "la talla",
+          stock,
+        });
+        return;
+      }
+    }
+
     setSelectedSizeIds((currentSizes) =>
       currentSizes.includes(sizeId)
         ? currentSizes.filter((item) => item !== sizeId)
@@ -685,6 +807,23 @@ function CrearProductoPageContent() {
   };
 
   const toggleColor = (colorId: string) => {
+    const isRemoving = selectedColorIds.includes(colorId);
+
+    if (isRemoving && isEditMode) {
+      const stock = computeVariantStockFor("color", colorId);
+
+      if (stock > 0) {
+        const color = catalogColors.find((item) => item.id === colorId);
+        setPendingVariantRemoval({
+          type: "color",
+          id: colorId,
+          name: color?.nombre ?? "el color",
+          stock,
+        });
+        return;
+      }
+    }
+
     setSelectedColorIds((currentColors) =>
       currentColors.includes(colorId)
         ? currentColors.filter((item) => item !== colorId)
@@ -712,6 +851,8 @@ function CrearProductoPageContent() {
       return;
     }
 
+    const preview = URL.createObjectURL(file);
+
     setPendingColorImage((currentPendingImage) => {
       if (currentPendingImage) {
         URL.revokeObjectURL(currentPendingImage.preview);
@@ -722,7 +863,7 @@ function CrearProductoPageContent() {
         colorLabel: color.label,
         colorHex: color.hex,
         file,
-        preview: URL.createObjectURL(file),
+        preview,
       };
     });
   };
@@ -961,7 +1102,9 @@ function CrearProductoPageContent() {
               ) ?? "0",
             stockMinimo: 0,
           })),
-          activo: true,
+          activo:
+            getOptionalFormString(submitForm, `disponible-${variant.id}`) !==
+            "false",
         };
       });
     } catch (error) {
@@ -1372,10 +1515,10 @@ function CrearProductoPageContent() {
             <aside className="flex flex-col gap-4">
               <StockScopeSelector
                 scopes={stockScopes}
-                selectedScope={stockScope}
+                selectedScopes={selectedStockBranches}
                 isLoading={isLoadingBranches}
                 hasBranches={catalogBranches.length > 0}
-                onScopeChange={setStockScope}
+                onToggleScope={toggleStockScope}
               />
 
               <div className="flex flex-col gap-3">
@@ -1397,6 +1540,12 @@ function CrearProductoPageContent() {
                     autoBarcode={autoBarcode}
                     simple
                     initialValues={loadedVariantData[normalVariant.id]}
+                    isUnavailable={
+                      unavailableVariants[normalVariant.id] ?? false
+                    }
+                    onToggleUnavailable={() =>
+                      handleToggleUnavailable(normalVariant)
+                    }
                   />
                 ) : renderedVariants.length > 0 ? (
                   <div className="flex flex-col gap-5">
@@ -1447,6 +1596,12 @@ function CrearProductoPageContent() {
                                 allowPriceEdit
                                 defaultPriceEditorOpen={hasCustomPrices}
                                 initialValues={initialValues}
+                                isUnavailable={
+                                  unavailableVariants[variant.id] ?? false
+                                }
+                                onToggleUnavailable={() =>
+                                  handleToggleUnavailable(variant)
+                                }
                               />
                             );
                           })}
@@ -1507,6 +1662,52 @@ function CrearProductoPageContent() {
         pendingImage={pendingColorImage}
         onCancel={cancelPendingColorImage}
         onAccept={acceptPendingColorImage}
+      />
+      <ConfirmDialog
+        isOpen={pendingVariantRemoval !== null}
+        onClose={() => setPendingVariantRemoval(null)}
+        onConfirm={() => {
+          if (!pendingVariantRemoval) {
+            return;
+          }
+
+          const pending = pendingVariantRemoval;
+          setPendingVariantRemoval(null);
+
+          if (pending.type === "size") {
+            setSelectedSizeIds((current) =>
+              current.filter((item) => item !== pending.id),
+            );
+          } else {
+            setSelectedColorIds((current) =>
+              current.filter((item) => item !== pending.id),
+            );
+          }
+        }}
+        title="¿Quitar esta variante con stock?"
+        description={`Lo que estás quitando tiene ${pendingVariantRemoval?.stock ?? 0} unidades de stock. Si continúas, ese stock se pierde y tendrás que recargarlo.`}
+        itemName={pendingVariantRemoval?.name}
+        confirmLabel="Continuar"
+      />
+      <ConfirmDialog
+        isOpen={pendingUnavailable !== null}
+        onClose={() => setPendingUnavailable(null)}
+        onConfirm={() => {
+          if (!pendingUnavailable) {
+            return;
+          }
+
+          const pending = pendingUnavailable;
+          setPendingUnavailable(null);
+          setUnavailableVariants((current) => ({
+            ...current,
+            [pending.id]: true,
+          }));
+        }}
+        title="¿Marcar como no disponible?"
+        description={`Lo que estás marcando tiene ${pendingUnavailable?.stock ?? 0} unidades de stock. Si continúas, la variante no estará disponible para la venta.`}
+        itemName={pendingUnavailable?.name}
+        confirmLabel="Continuar"
       />
     </DashboardShell>
   );

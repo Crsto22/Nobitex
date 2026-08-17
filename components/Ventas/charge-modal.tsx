@@ -188,7 +188,7 @@ export function ChargeModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
   const methodsLoadedRef = useRef(false);
-  const requestIdRef = useRef(crypto.randomUUID());
+  const requestIdRef = useRef<string | null>(null);
   const toast = useSystemToast();
 
   const loadPaymentMethods = useCallback(async () => {
@@ -418,6 +418,8 @@ export function ChargeModal({
           ]
         : [];
 
+    requestIdRef.current ??= crypto.randomUUID();
+
     const payload: CreateSalePayload = {
       requestId: requestIdRef.current,
       tipoComprobante: noteTypeMap[selectedNoteType] ?? "nota_venta",
@@ -455,7 +457,7 @@ export function ChargeModal({
         duration: 5000,
       });
       onSaleSuccess(venta);
-      requestIdRef.current = crypto.randomUUID();
+      requestIdRef.current = null;
       onClose();
     } catch (error: unknown) {
       const message =
