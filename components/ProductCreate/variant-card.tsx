@@ -267,8 +267,8 @@ export function VariantCard({
       ) : null}
       </div>
       {isUnavailable ? (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
-          <p className="px-4 text-center text-sm font-circular-bold text-[var(--color-text)]">
+        <div className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 px-4">
+          <p className="text-center text-sm font-circular-bold text-[var(--color-text)]">
             Talla {variant.size.nombre} · {variant.color.label}
           </p>
           <button

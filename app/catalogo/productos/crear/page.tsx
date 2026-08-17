@@ -154,6 +154,11 @@ function CrearProductoPageContent() {
     name: string;
     stock: number;
   } | null>(null);
+  const [pendingBranchRemoval, setPendingBranchRemoval] = useState<{
+    branchId: string;
+    name: string;
+    stock: number;
+  } | null>(null);
   const [renderedVariants, setRenderedVariants] = useState<ProductVariant[]>(
     [],
   );
@@ -181,6 +186,7 @@ function CrearProductoPageContent() {
   >({});
   const colorImagesRef = useRef<Record<string, ProductColorImage>>({});
   const pendingColorImageRef = useRef<PendingColorImage | null>(null);
+  const stockSelectionInitializedRef = useRef(false);
 
   const loadSizes = useCallback(
     async (targetPage = 1, append = false) => {
@@ -492,6 +498,51 @@ function CrearProductoPageContent() {
     };
   }, [productId, showToast]);
 
+  useEffect(() => {
+    if (
+      !isEditMode ||
+      stockSelectionInitializedRef.current ||
+      catalogBranches.length === 0 ||
+      Object.keys(loadedVariantData).length === 0
+    ) {
+      return;
+    }
+
+    stockSelectionInitializedRef.current = true;
+
+    const branchesWithStock = new Set<string>();
+    for (const data of Object.values(loadedVariantData)) {
+      for (const [branchId, stock] of Object.entries(data.stocks)) {
+        if (Number(stock) > 0) {
+          branchesWithStock.add(branchId);
+        }
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (branchesWithStock.size === 0) {
+        return;
+      }
+
+      const validIds = [...branchesWithStock].filter((id) =>
+        catalogBranches.some((branch) => branch.id === id),
+      );
+
+      if (validIds.length === 0) {
+        return;
+      }
+
+      if (validIds.length >= catalogBranches.length) {
+        setSelectedStockBranches([]);
+        return;
+      }
+
+      setSelectedStockBranches(validIds);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isEditMode, catalogBranches, loadedVariantData]);
+
   const selectedSizeItems = useMemo(
     () =>
       selectedSizeIds
@@ -565,6 +616,25 @@ function CrearProductoPageContent() {
     if (value === "all") {
       setSelectedStockBranches([]);
       return;
+    }
+
+    const isRemoving = selectedStockBranches.includes(value);
+
+    if (isRemoving && isEditMode) {
+      const stock = Object.values(loadedVariantData).reduce(
+        (stockSum, data) => stockSum + Number(data.stocks[value] || 0),
+        0,
+      );
+
+      if (stock > 0) {
+        const branch = catalogBranches.find((item) => item.id === value);
+        setPendingBranchRemoval({
+          branchId: value,
+          name: branch?.nombre ?? "la sucursal",
+          stock,
+        });
+        return;
+      }
     }
 
     setSelectedStockBranches((current) => {
@@ -1707,6 +1777,25 @@ function CrearProductoPageContent() {
         title="¿Marcar como no disponible?"
         description={`Lo que estás marcando tiene ${pendingUnavailable?.stock ?? 0} unidades de stock. Si continúas, la variante no estará disponible para la venta.`}
         itemName={pendingUnavailable?.name}
+        confirmLabel="Continuar"
+      />
+      <ConfirmDialog
+        isOpen={pendingBranchRemoval !== null}
+        onClose={() => setPendingBranchRemoval(null)}
+        onConfirm={() => {
+          if (!pendingBranchRemoval) {
+            return;
+          }
+
+          const pending = pendingBranchRemoval;
+          setPendingBranchRemoval(null);
+          setSelectedStockBranches((current) =>
+            current.filter((id) => id !== pending.branchId),
+          );
+        }}
+        title="¿Quitar sucursal?"
+        description={`Esta sucursal tiene ${pendingBranchRemoval?.stock ?? 0} unidades de stock. Si continúas, ese stock se eliminará y tendrás que recargarlo.`}
+        itemName={pendingBranchRemoval?.name}
         confirmLabel="Continuar"
       />
     </DashboardShell>
