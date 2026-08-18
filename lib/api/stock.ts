@@ -15,6 +15,7 @@ export type StockMovementType =
 
 export type StockProduct = {
   productoVarianteId: string;
+  productoVariantePublicId: string;
   productoId: string;
   productoPublicId: string;
   nombre: string;
@@ -23,6 +24,31 @@ export type StockProduct = {
   codigoBarras: string | null;
   color: { nombre: string; hex: string } | null;
   talla: string | null;
+};
+
+export type StockKardexVariant = {
+  id: string;
+  variantPublicId: string;
+  productoId: string;
+  productoPublicId: string;
+  nombre: string;
+  tipo: "normal" | "variantes";
+  sku: string | null;
+  codigoBarras: string | null;
+  precioCompra: string | null;
+  precioVenta: string;
+  activo: boolean;
+  marca: { id: string; nombre: string } | null;
+  categoria: { id: string; nombre: string } | null;
+  color: { id: string; nombre: string; hex: string } | null;
+  talla: { id: string; nombre: string } | null;
+  imageUrl: string | null;
+  stockTotal: number;
+  stockSucursal: number | null;
+  inventarios: Array<{
+    sucursal: { id: string; nombre: string; tipo: "tienda" | "almacen" };
+    stockActual: number;
+  }>;
 };
 
 export type StockMovement = {
@@ -138,7 +164,7 @@ export const stockApi = {
   },
 
   kardex(query: {
-    productoVarianteId: string;
+    productoVarianteId?: string;
     page?: number;
     limit?: number;
     sucursalId?: string;
@@ -146,6 +172,39 @@ export const stockApi = {
     to?: string;
   }) {
     return authFetch<StockKardex>(`/stock/kardex${queryString(query)}`);
+  },
+
+  kardexVariants(
+    query: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      categoriaId?: string;
+      colorId?: string;
+      tallaId?: string;
+      sucursalId?: string;
+    } = {},
+    options: RequestInit = {},
+  ) {
+    return authFetch<{ data: StockKardexVariant[]; meta: PageMeta }>(
+      `/stock/kardex/variants${queryString(query)}`,
+      options,
+    );
+  },
+
+  kardexByVariantPublicId(
+    variantPublicId: string,
+    query: {
+      page?: number;
+      limit?: number;
+      sucursalId?: string;
+      from?: string;
+      to?: string;
+    } = {},
+  ) {
+    return authFetch<StockKardex>(
+      `/stock/kardex/${variantPublicId}${queryString(query)}`,
+    );
   },
 
   transfers(

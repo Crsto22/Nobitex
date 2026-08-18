@@ -1,420 +1,440 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChartLineUpIcon,
+  ArrowRightIcon,
   MagnifyingGlassIcon,
   PackageIcon,
 } from "@phosphor-icons/react/ssr";
-import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
-import { CalendarInput } from "@/components/ui/calendar-input";
-import { Select } from "@/components/ui/select";
-import { useSystemToast } from "@/components/SystemToast/system-toast";
-import { productsApi, type ProductResponse } from "@/lib/api/products";
-import { stockApi, stockProductLabel, type StockKardex } from "@/lib/api/stock";
 
-type Location = Awaited<ReturnType<typeof stockApi.locations>>[number];
-type VariantOption = {
-  id: string;
-  label: string;
-  sku: string | null;
-  stockTotal: number;
+import { BranchFilter } from "@/components/ProductCatalog/branch-filter";
+import { CategoryFilter } from "@/components/ProductCatalog/category-filter";
+import { ColorFilter } from "@/components/ProductCatalog/color-filter";
+import { SizeFilter } from "@/components/ProductCatalog/size-filter";
+import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { branchesApi, type Branch } from "@/lib/api/branches";
+import { categoriesApi, type Category } from "@/lib/api/categories";
+import { colorsApi, type Color } from "@/lib/api/colors";
+import { sizesApi, type Size } from "@/lib/api/sizes";
+import { stockApi, type StockKardexVariant } from "@/lib/api/stock";
+import { defaultPageSize } from "@/lib/pagination";
+
+const filterPageSize = Math.min(defaultPageSize, 12);
+const pageSize = 18;
+
+type VariantsMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
-const movementLabels: Record<string, string> = {
-  saldo_apertura: "Saldo de apertura",
-  stock_inicial: "Stock inicial",
-  entrada_manual: "Entrada manual",
-  salida_manual: "Salida manual",
-  ajuste_producto: "Ajuste de producto",
-  venta: "Venta",
-  anulacion_venta: "Anulacion de venta",
-  nota_credito: "Nota de credito",
-  traspaso_entrada: "Traspaso recibido",
-  traspaso_salida: "Traspaso enviado",
+const emptyMeta: VariantsMeta = {
+  page: 1,
+  limit: pageSize,
+  total: 0,
+  totalPages: 1,
 };
 
 export default function StockKardexPage() {
-  const { showToast } = useSystemToast();
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [products, setProducts] = useState<ProductResponse[]>([]);
-  const [search, setSearch] = useState("");
-  const [optionsOpen, setOptionsOpen] = useState(false);
-  const [variantId, setVariantId] = useState("");
-  const [branchId, setBranchId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("todos");
+  const [selectedColor, setSelectedColor] = useState("todos");
+  const [selectedSize, setSelectedSize] = useState("todos");
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isBranchOpen, setIsBranchOpen] = useState(false);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
+  const [sizes, setSizes] = useState<Size[]>([]);
+  const [variants, setVariants] = useState<StockKardexVariant[]>([]);
+  const [meta, setMeta] = useState(emptyMeta);
   const [page, setPage] = useState(1);
-  const [kardex, setKardex] = useState<StockKardex | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [colorPage, setColorPage] = useState(1);
+  const [sizePage, setSizePage] = useState(1);
+  const [colorTotalPages, setColorTotalPages] = useState(1);
+  const [sizeTotalPages, setSizeTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingColors, setIsLoadingColors] = useState(false);
+  const [isLoadingSizes, setIsLoadingSizes] = useState(false);
+  const [hasLoadedBranches, setHasLoadedBranches] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    stockApi
-      .locations()
-      .then(setLocations)
-      .catch(() => setLocations([]));
+  const loadColors = useCallback(async (targetPage = 1, append = false) => {
+    setIsLoadingColors(true);
+    try {
+      const response = await colorsApi.findAll({
+        page: targetPage,
+        limit: filterPageSize,
+        status: "active",
+      });
+      setColors((current) =>
+        append ? mergeById(current, response.data) : response.data,
+      );
+      setColorPage(response.meta.page);
+      setColorTotalPages(response.meta.totalPages);
+    } catch {
+      if (!append) setColors([]);
+    } finally {
+      setIsLoadingColors(false);
+    }
+  }, []);
+
+  const loadSizes = useCallback(async (targetPage = 1, append = false) => {
+    setIsLoadingSizes(true);
+    try {
+      const response = await sizesApi.findAll({
+        page: targetPage,
+        limit: filterPageSize,
+        status: "active",
+      });
+      setSizes((current) =>
+        append ? mergeById(current, response.data) : response.data,
+      );
+      setSizePage(response.meta.page);
+      setSizeTotalPages(response.meta.totalPages);
+    } catch {
+      if (!append) setSizes([]);
+    } finally {
+      setIsLoadingSizes(false);
+    }
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(async () => {
-      try {
-        const result = await productsApi.findAll({
-          page: 1,
-          limit: 30,
-          search: search.trim() || undefined,
-          status: "active",
-        });
-        setProducts(result.data);
-      } catch {
-        setProducts([]);
-      }
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [search]);
-
-  const variants = useMemo<VariantOption[]>(
-    () =>
-      products.flatMap((product) =>
-        product.variantes
-          .filter((variant) => variant.activo)
-          .map((variant) => ({
-            id: variant.id,
-            label:
-              product.tipo === "normal"
-                ? product.nombre
-                : [product.nombre, variant.color.nombre, variant.talla.nombre]
-                    .filter(Boolean)
-                    .join(" / "),
-            sku: variant.sku,
-            stockTotal: variant.stockTotal,
-          })),
-      ),
-    [products],
-  );
-
-  const load = useCallback(async () => {
-    if (!variantId) {
-      setKardex(null);
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await stockApi.kardex({
-        productoVarianteId: variantId,
-        sucursalId: branchId || undefined,
-        from: from || undefined,
-        to: to || undefined,
-        page,
-        limit: 25,
-      });
-      setKardex(result);
-    } catch (error) {
-      showToast({
-        title: "No se pudo cargar el Kardex",
-        description:
-          error instanceof Error ? error.message : "Intenta nuevamente.",
-        variant: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [branchId, from, page, showToast, to, variantId]);
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 250);
-    return () => window.clearTimeout(timer);
-  }, [load]);
+    branchesApi
+      .findAll({ limit: 100, estado: "activo" })
+      .then((response) => {
+        const activeBranches = response.data;
+        const principalBranch =
+          activeBranches.find((branch) => branch.esPrincipal) ??
+          activeBranches[0];
+        setBranches(activeBranches);
+        setSelectedBranch((current) => current || principalBranch?.id || "");
+      })
+      .catch(() => {})
+      .finally(() => setHasLoadedBranches(true));
+  }, []);
 
-  const selectedLabel = kardex?.producto
-    ? stockProductLabel(kardex.producto)
-    : "Selecciona un producto";
+  useEffect(() => {
+    categoriesApi
+      .findAll({ limit: 100, status: "active" })
+      .then((response) => setCategories(response.data))
+      .catch(() => setCategories([]));
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadColors();
+      void loadSizes();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [loadColors, loadSizes]);
+
+  useEffect(() => {
+    if (!hasLoadedBranches) return;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      setIsLoading(true);
+      setError(null);
+
+      stockApi
+        .kardexVariants(
+          {
+            page,
+            limit: pageSize,
+            search: debouncedSearchTerm,
+            categoriaId:
+              selectedCategory === "todos" ? undefined : selectedCategory,
+            colorId: selectedColor === "todos" ? undefined : selectedColor,
+            tallaId: selectedSize === "todos" ? undefined : selectedSize,
+            sucursalId: selectedBranch || undefined,
+          },
+          { signal: controller.signal },
+        )
+        .then((response) => {
+          setVariants(response.data);
+          setMeta(response.meta);
+        })
+        .catch((loadError: unknown) => {
+          if (
+            loadError instanceof DOMException &&
+            loadError.name === "AbortError"
+          ) {
+            return;
+          }
+          setVariants([]);
+          setMeta(emptyMeta);
+          setError("No se pudieron cargar las variantes");
+        })
+        .finally(() => setIsLoading(false));
+    }, 0);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    debouncedSearchTerm,
+    hasLoadedBranches,
+    page,
+    selectedBranch,
+    selectedCategory,
+    selectedColor,
+    selectedSize,
+  ]);
+
+  const totalStock = useMemo(
+    () => variants.reduce((sum, variant) => sum + variant.stockTotal, 0),
+    [variants],
+  );
 
   return (
-    <DashboardShell headerTitle="Kardex de stock">
-      <div className="min-h-full space-y-3 bg-[var(--color-background)] p-3 sm:space-y-4 sm:p-4 lg:p-6">
-        <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_0.8fr_0.8fr_auto]">
-            <div className="relative">
-              <MagnifyingGlassIcon
-                size={17}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-              />
-              <input
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setVariantId("");
-                  setOptionsOpen(true);
-                  setPage(1);
-                }}
-                onFocus={() => setOptionsOpen(true)}
-                placeholder="Buscar producto, SKU o codigo"
-                className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-              />
-              {optionsOpen && search.trim() ? (
-                <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-[14px] bg-[var(--color-card)] p-2 shadow-lg">
-                  {variants.map((variant) => (
-                    <button
-                      key={variant.id}
-                      type="button"
-                      onClick={() => {
-                        setVariantId(variant.id);
-                        setSearch(variant.label);
-                        setOptionsOpen(false);
-                        setPage(1);
-                      }}
-                      className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left hover:bg-[var(--color-input-bg)]"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-circular-bold text-[var(--color-text)]">
-                          {variant.label}
-                        </span>
-                        <span className="text-xs text-[var(--color-muted-foreground)]">
-                          {variant.sku || "Sin SKU"} · Stock{" "}
-                          {variant.stockTotal}
-                        </span>
-                      </span>
-                      <PackageIcon
-                        size={18}
-                        className="shrink-0 text-[var(--color-primary)]"
-                      />
-                    </button>
-                  ))}
-                  {!variants.length ? (
-                    <p className="p-4 text-center text-sm text-[var(--color-muted-foreground)]">
-                      Sin productos
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-            <Select
-              value={branchId}
-              onChange={(value) => {
-                setBranchId(value);
-                setPage(1);
-              }}
-              placeholder="Todas las ubicaciones"
-              options={[
-                { value: "", label: "Todas las ubicaciones" },
-                ...locations.map((location) => ({
-                  value: location.id,
-                  label: location.nombre,
-                })),
-              ]}
-            />
-            <CalendarInput
-              value={from}
-              onChange={(value) => {
-                setFrom(value);
-                setPage(1);
-              }}
-              labelInline="Desde"
-              clearable
-            />
-            <CalendarInput
-              value={to}
-              onChange={(value) => {
-                setTo(value);
-                setPage(1);
-              }}
-              labelInline="Hasta"
-              clearable
-            />
-            <button
-              onClick={() => void load()}
-              className="h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white"
-            >
-              Actualizar
-            </button>
-          </div>
-        </section>
-
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <Metric
-            icon={<PackageIcon size={19} />}
-            label="Saldo inicial"
-            value={kardex?.resumen.saldoInicial ?? 0}
+    <DashboardShell
+      headerTitle={
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="shrink-0 text-sm font-circular-regular text-[var(--color-text)]/70">
+            Kardex
+          </span>
+          <BranchFilter
+            branches={branches}
+            selectedBranchId={selectedBranch}
+            isOpen={isBranchOpen}
+            className="w-[170px] sm:w-[220px]"
+            compactOnMobile
+            onOpenChange={setIsBranchOpen}
+            onBranchChange={(branchId) => {
+              setSelectedBranch(branchId);
+              setPage(1);
+            }}
           />
-          <Metric
-            icon={<ArrowDownIcon size={19} />}
-            label="Entradas"
-            value={kardex?.resumen.entradas ?? 0}
-            tone="success"
-          />
-          <Metric
-            icon={<ArrowUpIcon size={19} />}
-            label="Salidas"
-            value={kardex?.resumen.salidas ?? 0}
-            tone="warning"
-          />
-          <Metric
-            icon={<PackageIcon size={19} />}
-            label="Saldo final"
-            value={kardex?.resumen.saldoFinal ?? 0}
-          />
-          <Metric
-            icon={<ChartLineUpIcon size={19} />}
-            label="Valor final"
-            value={money(kardex?.resumen.valorFinal)}
-            money
+        </div>
+      }
+    >
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid shrink-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          <MetricCard label="Variantes" value={meta.total} />
+          <MetricCard label="Stock visible" value={totalStock} />
+          <MetricCard
+            label="Pagina"
+            value={`${meta.page} / ${meta.totalPages}`}
           />
         </div>
 
-        <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs text-[var(--color-muted-foreground)]">
-                Producto
-              </p>
-              <h2 className="truncate text-base font-circular-bold text-[var(--color-text)]">
-                {selectedLabel}
-              </h2>
+        <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <label className="relative flex-1">
+              <MagnifyingGlassIcon
+                size={18}
+                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
+              />
+              <input
+                type="text"
+                placeholder="Buscar por producto, SKU, codigo, color o talla..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+            </label>
+
+            <CategoryFilter
+              categories={categories}
+              selectedCategoryId={selectedCategory}
+              isOpen={isCategoryOpen}
+              onOpenChange={setIsCategoryOpen}
+              onCategoryChange={(categoryId) => {
+                setSelectedCategory(categoryId);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <ColorFilter
+              colors={colors}
+              selectedColorId={selectedColor}
+              canLoadMore={colorPage < colorTotalPages}
+              isLoading={isLoadingColors}
+              onColorChange={(colorId) => {
+                setSelectedColor(colorId);
+                setPage(1);
+              }}
+              onLoadMore={() => void loadColors(colorPage + 1, true)}
+            />
+            <SizeFilter
+              sizes={sizes}
+              selectedSizeId={selectedSize}
+              canLoadMore={sizePage < sizeTotalPages}
+              isLoading={isLoadingSizes}
+              onSizeChange={(sizeId) => {
+                setSelectedSize(sizeId);
+                setPage(1);
+              }}
+              onLoadMore={() => void loadSizes(sizePage + 1, true)}
+            />
+          </div>
+        </div>
+
+        <div className="pb-2">
+          {error ? (
+            <EmptyState message={error} />
+          ) : isLoading ? (
+            <VariantGridSkeleton />
+          ) : variants.length === 0 ? (
+            <EmptyState message="Intenta con otros filtros de busqueda" />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {variants.map((variant) => (
+                <VariantCard key={variant.variantPublicId} variant={variant} />
+              ))}
             </div>
-            <p className="text-xs text-[var(--color-muted-foreground)]">
-              {kardex?.meta.total ?? 0} movimientos
-            </p>
-          </div>
+          )}
+        </div>
 
-          <div className="space-y-2">
-            {kardex?.data.map((row) => (
-              <article
-                key={row.id}
-                className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-background)] p-3 md:grid-cols-[1fr_0.8fr_0.8fr_0.9fr_1fr] md:items-center"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-                    {movementLabels[row.tipo]}
-                  </p>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    {new Date(row.createdAt).toLocaleString("es-PE")} ·{" "}
-                    {row.sucursal.nombre}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Cantidad
-                  </p>
-                  <p
-                    className={`font-circular-bold ${row.direccion === "entrada" ? "text-[#059669]" : "text-[#ea580c]"}`}
-                  >
-                    {row.direccion === "entrada" ? "+" : "-"}
-                    {row.cantidad}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Saldo
-                  </p>
-                  <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                    {row.stockAnterior} → {row.stockPosterior}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Costo prom.
-                  </p>
-                  <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                    {money(row.costoPromedioPosterior)}
-                  </p>
-                </div>
-                <div className="min-w-0 md:text-right">
-                  <p className="truncate text-sm text-[var(--color-text)]">
-                    {row.motivo || "Sin motivo"}
-                  </p>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Valor mov. {money(row.valorMovimiento)}
-                  </p>
-                </div>
-              </article>
-            ))}
-            {!variantId ? (
-              <div className="rounded-[14px] bg-[var(--color-background)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">
-                Selecciona un producto para ver su Kardex
-              </div>
-            ) : null}
-            {variantId && !kardex?.data.length && !loading ? (
-              <div className="rounded-[14px] bg-[var(--color-background)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">
-                Sin movimientos para los filtros seleccionados
-              </div>
-            ) : null}
-            {loading ? (
-              <p className="py-3 text-center text-sm text-[var(--color-muted-foreground)]">
-                Actualizando...
-              </p>
-            ) : null}
-          </div>
-        </section>
-
-        {kardex && kardex.meta.totalPages > 1 ? (
-          <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Mostrando {variants.length} de {meta.total} variantes
+          </p>
+          <div className="flex items-center gap-2">
             <button
-              disabled={page <= 1}
-              onClick={() => setPage((current) => current - 1)}
-              className="h-9 rounded-xl bg-[var(--color-card)] px-4 text-sm disabled:opacity-40"
+              type="button"
+              onClick={() =>
+                setPage((currentPage) => Math.max(1, currentPage - 1))
+              }
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isLoading || meta.page <= 1}
             >
               Anterior
             </button>
-            <span className="text-sm text-[var(--color-muted-foreground)]">
-              {page} / {kardex.meta.totalPages}
+            <span className="flex h-8 min-w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
+              {meta.page}
             </span>
             <button
-              disabled={page >= kardex.meta.totalPages}
-              onClick={() => setPage((current) => current + 1)}
-              className="h-9 rounded-xl bg-[var(--color-card)] px-4 text-sm disabled:opacity-40"
+              type="button"
+              onClick={() =>
+                setPage((currentPage) =>
+                  Math.min(meta.totalPages, currentPage + 1),
+                )
+              }
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isLoading || meta.page >= meta.totalPages}
             >
               Siguiente
             </button>
           </div>
-        ) : null}
+        </div>
       </div>
     </DashboardShell>
   );
 }
 
-function money(value?: string | null) {
-  const amount = Number(value ?? 0);
-  return amount.toLocaleString("es-PE", { style: "currency", currency: "PEN" });
-}
+function VariantCard({ variant }: { variant: StockKardexVariant }) {
+  const variantName =
+    variant.tipo === "normal"
+      ? "Producto normal"
+      : [variant.color?.nombre, variant.talla?.nombre]
+          .filter(Boolean)
+          .join(" / ");
+  const stock = variant.stockSucursal ?? variant.stockTotal;
 
-function Metric({
-  icon,
-  label,
-  value,
-  tone = "primary",
-  money = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  tone?: "primary" | "success" | "warning";
-  money?: boolean;
-}) {
-  const colors =
-    tone === "success"
-      ? "bg-[#10b981]/10 text-[#059669]"
-      : tone === "warning"
-        ? "bg-[#f97316]/10 text-[#ea580c]"
-        : "bg-[#3b82f6]/10 text-[#2563eb]";
   return (
-    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm">
-      <div className="flex items-center gap-3">
+    <Link
+      href={`/stock/kardex/${variant.variantPublicId}`}
+      className="group flex min-h-[172px] flex-col justify-between rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm ring-1 ring-transparent transition hover:-translate-y-0.5 hover:ring-[var(--color-primary)]/20"
+    >
+      <div className="flex gap-3">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${colors}`}
+          className="h-14 w-14 shrink-0 rounded-[12px] bg-[var(--color-input-bg)] bg-cover bg-center"
+          style={
+            variant.imageUrl
+              ? { backgroundImage: `url(${variant.imageUrl})` }
+              : undefined
+          }
         >
-          {icon}
+          {!variant.imageUrl ? (
+            <div className="flex h-full w-full items-center justify-center text-[var(--color-primary)]">
+              <PackageIcon size={24} weight="fill" />
+            </div>
+          ) : null}
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm text-[var(--color-muted-foreground)]">
-            {label}
+        <div className="min-w-0 flex-1">
+          <h2 className="line-clamp-2 text-sm font-circular-bold text-[var(--color-text)]">
+            {variant.nombre}
+          </h2>
+          <p className="mt-1 truncate text-xs text-[var(--color-muted-foreground)]">
+            {variantName || "Sin variante"}
           </p>
-          <p className="truncate text-xl font-circular-bold leading-none text-[var(--color-text)]">
-            {money ? value : Number(value).toLocaleString("es-PE")}
+          <p className="mt-1 truncate text-xs text-[var(--color-muted-foreground)]">
+            {variant.sku || variant.codigoBarras || "Sin SKU"}
           </p>
         </div>
       </div>
+
+      <div className="mt-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-xs text-[var(--color-muted-foreground)]">Stock</p>
+          <p className="text-xl font-circular-bold text-[var(--color-text)]">
+            {stock.toLocaleString("es-PE")}
+          </p>
+        </div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--color-primary)] text-white transition group-hover:translate-x-0.5">
+          <ArrowRightIcon size={18} weight="bold" />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="rounded-[14px] bg-[var(--color-sidebar-bg)] p-4 shadow-sm">
+      <p className="text-sm text-[var(--color-muted-foreground)]">{label}</p>
+      <p className="mt-2 truncate text-2xl font-circular-bold text-[var(--color-text)]">
+        {typeof value === "number" ? value.toLocaleString("es-PE") : value}
+      </p>
     </div>
   );
+}
+
+function VariantGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-[172px] animate-pulse rounded-[14px] bg-[var(--color-card)]"
+        />
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">
+      {message}
+    </div>
+  );
+}
+
+function mergeById<T extends { id: string }>(current: T[], next: T[]) {
+  const map = new Map(current.map((item) => [item.id, item]));
+  next.forEach((item) => map.set(item.id, item));
+  return Array.from(map.values());
 }
