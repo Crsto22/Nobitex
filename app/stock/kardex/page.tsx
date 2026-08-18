@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRightIcon,
+  ChartLineUpIcon,
   MagnifyingGlassIcon,
   PackageIcon,
+  WifiHighIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { BranchFilter } from "@/components/ProductCatalog/branch-filter";
@@ -19,6 +21,7 @@ import { colorsApi, type Color } from "@/lib/api/colors";
 import { sizesApi, type Size } from "@/lib/api/sizes";
 import { stockApi, type StockKardexVariant } from "@/lib/api/stock";
 import { defaultPageSize } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
 
 const filterPageSize = Math.min(defaultPageSize, 12);
 const pageSize = 18;
@@ -211,6 +214,7 @@ export default function StockKardexPage() {
             selectedBranchId={selectedBranch}
             isOpen={isBranchOpen}
             className="w-[170px] sm:w-[220px]"
+            compactOnMobile
             onOpenChange={setIsBranchOpen}
             onBranchChange={(branchId) => {
               setSelectedBranch(branchId);
@@ -222,17 +226,29 @@ export default function StockKardexPage() {
     >
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-4 sm:p-4 lg:px-6">
         <div className="grid shrink-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          <MetricCard label="Variantes" value={meta.total} />
-          <MetricCard label="Stock visible" value={totalStock} />
           <MetricCard
+            icon={<PackageIcon size={22} weight="fill" />}
+            label="Variantes"
+            value={meta.total}
+            tone="primary"
+          />
+          <MetricCard
+            icon={<WifiHighIcon size={22} weight="fill" />}
+            label="Stock visible"
+            value={totalStock}
+            tone="success"
+          />
+          <MetricCard
+            icon={<ChartLineUpIcon size={22} weight="fill" />}
             label="Pagina"
             value={`${meta.page} / ${meta.totalPages}`}
+            tone="info"
           />
         </div>
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <label className="relative flex-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_140px] gap-3 lg:flex lg:items-center lg:justify-between">
+            <label className="relative lg:flex-1">
               <MagnifyingGlassIcon
                 size={18}
                 className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
@@ -292,7 +308,7 @@ export default function StockKardexPage() {
           ) : variants.length === 0 ? (
             <EmptyState message="Intenta con otros filtros de busqueda" />
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
               {variants.map((variant) => (
                 <VariantCard key={variant.variantPublicId} variant={variant} />
               ))}
@@ -338,56 +354,76 @@ export default function StockKardexPage() {
 }
 
 function VariantCard({ variant }: { variant: StockKardexVariant }) {
-  const variantName =
-    variant.tipo === "normal"
-      ? "Producto normal"
-      : [variant.color?.nombre, variant.talla?.nombre]
-          .filter(Boolean)
-          .join(" / ");
   const stock = variant.stockSucursal ?? variant.stockTotal;
 
   return (
     <Link
       href={`/stock/kardex/${variant.variantPublicId}`}
-      className="group flex min-h-[172px] flex-col justify-between rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm ring-1 ring-transparent transition hover:-translate-y-0.5 hover:ring-[var(--color-primary)]/20"
+      className="group flex min-h-[150px] gap-3 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm ring-1 ring-transparent transition hover:-translate-y-0.5 hover:ring-[var(--color-primary)]/20"
     >
-      <div className="flex gap-3">
-        <div
-          className="h-14 w-14 shrink-0 rounded-[12px] bg-[var(--color-input-bg)] bg-cover bg-center"
-          style={
-            variant.imageUrl
-              ? { backgroundImage: `url(${variant.imageUrl})` }
-              : undefined
-          }
-        >
-          {!variant.imageUrl ? (
-            <div className="flex h-full w-full items-center justify-center text-[var(--color-primary)]">
-              <PackageIcon size={24} weight="fill" />
-            </div>
-          ) : null}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-sm font-circular-bold text-[var(--color-text)]">
-            {variant.nombre}
-          </h2>
-          <p className="mt-1 truncate text-xs text-[var(--color-muted-foreground)]">
-            {variantName || "Sin variante"}
-          </p>
-          <p className="mt-1 truncate text-xs text-[var(--color-muted-foreground)]">
-            {variant.sku || variant.codigoBarras || "Sin SKU"}
-          </p>
-        </div>
+      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-input-bg)]">
+        {variant.imageUrl ? (
+          <Image
+            src={variant.imageUrl}
+            width={80}
+            height={80}
+            unoptimized
+            alt={variant.nombre}
+            className="h-full w-full object-contain p-1.5"
+          />
+        ) : (
+          <Image
+            src="/Logo/Nuvex.png"
+            width={56}
+            height={56}
+            alt="Sin imagen"
+            className="h-14 w-14 object-contain grayscale opacity-35"
+          />
+        )}
       </div>
 
-      <div className="mt-4 flex items-end justify-between gap-3">
-        <div>
-          <p className="text-xs text-[var(--color-muted-foreground)]">Stock</p>
-          <p className="text-xl font-circular-bold text-[var(--color-text)]">
-            {stock.toLocaleString("es-PE")}
-          </p>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-1.5">
+          {variant.color ? (
+            <span
+              className="h-5 w-5 shrink-0 rounded-full border border-white shadow-sm ring-1 ring-black/10"
+              style={{ backgroundColor: variant.color.hex }}
+              title={variant.color.nombre}
+            />
+          ) : null}
+          {variant.talla ? (
+            <span
+              className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--color-input-bg)] px-2 text-xs font-circular-bold text-[var(--color-text)]"
+              title={`Talla: ${variant.talla.nombre}`}
+            >
+              {variant.talla.nombre}
+            </span>
+          ) : (
+            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--color-input-bg)] px-2 text-xs font-circular-bold text-[var(--color-text)]">
+              Normal
+            </span>
+          )}
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--color-primary)] text-white transition group-hover:translate-x-0.5">
-          <ArrowRightIcon size={18} weight="bold" />
+
+        <p className="mt-1.5 line-clamp-2 text-sm font-black text-[var(--color-text)]">
+          {variant.nombre}
+        </p>
+        <p className="text-[10px] font-circular-regular text-[var(--color-muted-foreground)]">
+          {variant.sku || variant.codigoBarras || "Sin SKU"}
+        </p>
+
+        <div className="mt-auto flex items-end justify-end pt-2">
+          <span
+            className={cn(
+              "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
+              stock >= 3
+                ? "bg-[var(--color-sidebar-active)]"
+                : "bg-[#ef4444]",
+            )}
+          >
+            <PackageIcon size={14} weight="bold" />
+            {stock}
+          </span>
         </div>
       </div>
     </Link>
@@ -395,29 +431,51 @@ function VariantCard({ variant }: { variant: StockKardexVariant }) {
 }
 
 function MetricCard({
+  icon,
   label,
   value,
+  tone,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: number | string;
+  tone: "primary" | "success" | "danger" | "info";
 }) {
+  const toneClassName = {
+    primary: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
+    success: "bg-[#10b981]/10 text-[#10b981]",
+    danger: "bg-[#ef4444]/10 text-[#ef4444]",
+    info: "bg-[#3b82f6]/10 text-[#3b82f6]",
+  }[tone];
+
   return (
-    <div className="rounded-[14px] bg-[var(--color-sidebar-bg)] p-4 shadow-sm">
-      <p className="text-sm text-[var(--color-muted-foreground)]">{label}</p>
-      <p className="mt-2 truncate text-2xl font-circular-bold text-[var(--color-text)]">
-        {typeof value === "number" ? value.toLocaleString("es-PE") : value}
-      </p>
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-3 shadow-sm sm:p-5">
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneClassName}`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+            {label}
+          </p>
+          <p className="truncate text-xl font-circular-bold leading-none text-[var(--color-text)] sm:text-2xl">
+            {typeof value === "number" ? value.toLocaleString("es-PE") : value}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
 function VariantGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
         <div
           key={index}
-          className="h-[172px] animate-pulse rounded-[14px] bg-[var(--color-card)]"
+          className="h-[150px] animate-pulse rounded-[14px] bg-[var(--color-card)]"
         />
       ))}
     </div>

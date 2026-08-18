@@ -87,23 +87,13 @@ export function ProductCard({
   const displaySku = selectedSize?.sku ?? selectedColor.sku;
   const displayPrice = selectedSize?.price ?? selectedColor.price;
   const displaySize = selectedSize?.name ?? selectedColor.size;
-  const isUnavailable = displayStock <= 0;
 
   return (
     <div
       className={cn(
-        "group relative flex min-h-[220px] flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors duration-200 hover:-translate-y-0.5 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
-        isUnavailable && "opacity-60",
+        "group relative isolate flex min-h-[220px] flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors duration-200 hover:-translate-y-0.5 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
       )}
     >
-      {isUnavailable ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-black/10">
-          <span className="rounded-lg bg-[#ef4444] px-3 py-1 text-xs font-circular-bold text-white">
-            Agotado
-          </span>
-        </div>
-      ) : null}
-
       <div className="relative flex h-28 items-center justify-center">
         <div className="absolute top-1 right-1 z-20 flex gap-1">
           <button

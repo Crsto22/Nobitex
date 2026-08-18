@@ -356,6 +356,7 @@ export default function CatalogoProductosPage() {
             selectedBranchId={selectedBranch}
             isOpen={isBranchOpen}
             className="w-[170px] sm:w-[220px]"
+            compactOnMobile
             onOpenChange={setIsBranchOpen}
             onBranchChange={(branchId) => {
               setSelectedBranch(branchId);
@@ -395,8 +396,8 @@ export default function CatalogoProductosPage() {
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-              <label className="relative flex-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_140px] gap-3 sm:flex sm:flex-1 sm:flex-row sm:items-center">
+              <label className="relative sm:flex-1">
                 <MagnifyingGlassIcon
                   size={18}
                   className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
@@ -410,7 +411,7 @@ export default function CatalogoProductosPage() {
                 />
               </label>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex sm:flex-row sm:items-center">
                 <CategoryFilter
                   categories={catalogCategories}
                   selectedCategoryId={selectedCategory}

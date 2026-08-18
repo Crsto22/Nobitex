@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowDownIcon,
-  ArrowLeftIcon,
   ArrowUpIcon,
   ChartLineUpIcon,
   PackageIcon,
@@ -88,25 +86,65 @@ export default function StockKardexDetailPage() {
 
   return (
     <DashboardShell
-      headerTitle={
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/stock/kardex"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-input-bg)] text-[var(--color-text)]"
-            aria-label="Volver"
-          >
-            <ArrowLeftIcon size={18} weight="bold" />
-          </Link>
-          <span className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-            {selectedLabel}
-          </span>
-        </div>
-      }
+      headerParent={{ label: "Kardex", href: "/stock/kardex" }}
+      headerTitle={selectedLabel}
     >
       <div className="min-h-full space-y-3 bg-[var(--color-background)] p-3 sm:space-y-4 sm:p-4 lg:p-6">
-        <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr_0.8fr_0.8fr_auto]">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Metric
+            icon={<PackageIcon size={22} weight="fill" />}
+            label="Saldo inicial"
+            value={kardex?.resumen.saldoInicial ?? 0}
+          />
+          <Metric
+            icon={<ArrowDownIcon size={22} weight="fill" />}
+            label="Entradas"
+            value={kardex?.resumen.entradas ?? 0}
+            tone="success"
+          />
+          <Metric
+            icon={<ArrowUpIcon size={22} weight="fill" />}
+            label="Salidas"
+            value={kardex?.resumen.salidas ?? 0}
+            tone="danger"
+          />
+          <Metric
+            icon={<PackageIcon size={22} weight="fill" />}
+            label="Saldo final"
+            value={kardex?.resumen.saldoFinal ?? 0}
+          />
+          <Metric
+            icon={<ChartLineUpIcon size={22} weight="fill" />}
+            label="Valor inicial"
+            value={money(kardex?.resumen.valorInicial)}
+            money
+          />
+          <Metric
+            icon={<ArrowDownIcon size={22} weight="fill" />}
+            label="Valor entradas"
+            value={money(kardex?.resumen.valorEntradas)}
+            tone="success"
+            money
+          />
+          <Metric
+            icon={<ArrowUpIcon size={22} weight="fill" />}
+            label="Valor salidas"
+            value={money(kardex?.resumen.valorSalidas)}
+            tone="danger"
+            money
+          />
+          <Metric
+            icon={<ChartLineUpIcon size={22} weight="fill" />}
+            label="Valor final"
+            value={money(kardex?.resumen.valorFinal)}
+            money
+          />
+        </div>
+
+        <section>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-[1fr_0.8fr_0.8fr_auto]">
             <Select
+              className="order-2 md:order-1"
               value={branchId}
               onChange={(value) => {
                 setBranchId(value);
@@ -122,6 +160,7 @@ export default function StockKardexDetailPage() {
               ]}
             />
             <CalendarInput
+              className="order-1 md:order-2"
               value={from}
               onChange={(value) => {
                 setFrom(value);
@@ -131,6 +170,7 @@ export default function StockKardexDetailPage() {
               clearable
             />
             <CalendarInput
+              className="order-1 md:order-3"
               value={to}
               onChange={(value) => {
                 setTo(value);
@@ -141,63 +181,12 @@ export default function StockKardexDetailPage() {
             />
             <button
               onClick={() => void load()}
-              className="h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white"
+              className="order-3 h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white md:order-4"
             >
               Actualizar
             </button>
           </div>
         </section>
-
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Metric
-            icon={<PackageIcon size={19} />}
-            label="Saldo inicial"
-            value={kardex?.resumen.saldoInicial ?? 0}
-          />
-          <Metric
-            icon={<ArrowDownIcon size={19} />}
-            label="Entradas"
-            value={kardex?.resumen.entradas ?? 0}
-            tone="success"
-          />
-          <Metric
-            icon={<ArrowUpIcon size={19} />}
-            label="Salidas"
-            value={kardex?.resumen.salidas ?? 0}
-            tone="warning"
-          />
-          <Metric
-            icon={<PackageIcon size={19} />}
-            label="Saldo final"
-            value={kardex?.resumen.saldoFinal ?? 0}
-          />
-          <Metric
-            icon={<ChartLineUpIcon size={19} />}
-            label="Valor inicial"
-            value={money(kardex?.resumen.valorInicial)}
-            money
-          />
-          <Metric
-            icon={<ArrowDownIcon size={19} />}
-            label="Valor entradas"
-            value={money(kardex?.resumen.valorEntradas)}
-            tone="success"
-            money
-          />
-          <Metric
-            icon={<ArrowUpIcon size={19} />}
-            label="Valor salidas"
-            value={money(kardex?.resumen.valorSalidas)}
-            tone="warning"
-            money
-          />
-          <Metric
-            icon={<ChartLineUpIcon size={19} />}
-            label="Valor final"
-            value={money(kardex?.resumen.valorFinal)}
-            money
-          />
-        </div>
 
         <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
           <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -225,7 +214,7 @@ export default function StockKardexDetailPage() {
                     {movementLabels[row.tipo]}
                   </p>
                   <p className="text-xs text-[var(--color-muted-foreground)]">
-                    {new Date(row.createdAt).toLocaleString("es-PE")} ·{" "}
+                    {formatDateTime(row.createdAt)} ·{" "}
                     {row.sucursal.nombre}
                   </p>
                 </div>
@@ -310,6 +299,19 @@ function money(value?: string | null) {
   return amount.toLocaleString("es-PE", { style: "currency", currency: "PEN" });
 }
 
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const period = hours >= 12 ? "p. m." : "a. m.";
+  const displayHours = hours % 12 || 12;
+
+  return `${day}/${month}/${year}, ${displayHours}:${minutes} ${period}`;
+}
+
 function Metric({
   icon,
   label,
@@ -320,28 +322,29 @@ function Metric({
   icon: React.ReactNode;
   label: string;
   value: number | string;
-  tone?: "primary" | "success" | "warning";
+  tone?: "primary" | "success" | "danger" | "info";
   money?: boolean;
 }) {
-  const colors =
-    tone === "success"
-      ? "bg-[#10b981]/10 text-[#059669]"
-      : tone === "warning"
-        ? "bg-[#f97316]/10 text-[#ea580c]"
-        : "bg-[#3b82f6]/10 text-[#2563eb]";
+  const toneClassName = {
+    primary: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
+    success: "bg-[#10b981]/10 text-[#10b981]",
+    danger: "bg-[#ef4444]/10 text-[#ef4444]",
+    info: "bg-[#3b82f6]/10 text-[#3b82f6]",
+  }[tone];
+
   return (
-    <div className="rounded-[14px] bg-[var(--color-sidebar-bg)] p-4 shadow-sm">
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-3 shadow-sm sm:p-5">
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${colors}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneClassName}`}
         >
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
             {label}
           </p>
-          <p className="truncate text-xl font-circular-bold leading-none text-[var(--color-text)]">
+          <p className="truncate text-xl font-circular-bold leading-none text-[var(--color-text)] sm:text-2xl">
             {money ? value : Number(value).toLocaleString("es-PE")}
           </p>
         </div>
