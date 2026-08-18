@@ -112,7 +112,13 @@ export function Sidebar({
   const navRef = useRef<HTMLElement | null>(null);
   const syncedPathnameRef = useRef<string | null>(null);
   const { user, currentPlan } = useAuth();
-  const allowedModuleKeys = user?.moduleKeys;
+  const allowedModuleKeys = useMemo(
+    () => [
+      ...(user?.moduleKeys ?? []),
+      ...(currentPlan?.effectiveModuleKeys ?? []),
+    ],
+    [currentPlan?.effectiveModuleKeys, user?.moduleKeys],
+  );
   const isOwner = user?.roles.includes("OWNER") ?? false;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
   const isExpired =
@@ -245,12 +251,7 @@ export function Sidebar({
     );
     syncExpandedSectionsAttribute(newSections);
     window.dispatchEvent(new Event(SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT));
-  }, [
-    expandedSections,
-    isSectionActive,
-    pathname,
-    visibleSections,
-  ]);
+  }, [expandedSections, isSectionActive, pathname, visibleSections]);
 
   useEffect(() => {
     const savedPosition = sessionStorage.getItem(
@@ -378,9 +379,7 @@ export function Sidebar({
                         type="button"
                         onClick={() => navigateToSection(section)}
                         className="sidebar-section-button flex min-w-0 flex-1 items-center gap-2 rounded-[10px] px-3 py-2 text-left"
-                        aria-expanded={
-                          section.direct ? undefined : isExpanded
-                        }
+                        aria-expanded={section.direct ? undefined : isExpanded}
                       >
                         <SectionIcon
                           size={18}

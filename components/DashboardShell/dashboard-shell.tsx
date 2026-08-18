@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -170,6 +171,13 @@ export function DashboardShell({
     )
     .sort((a, b) => b.route.length - a.route.length)[0];
   const isOwner = user?.roles.includes("OWNER") ?? false;
+  const allowedModuleKeys = useMemo(
+    () => [
+      ...(user?.moduleKeys ?? []),
+      ...(currentPlan?.effectiveModuleKeys ?? []),
+    ],
+    [currentPlan?.effectiveModuleKeys, user?.moduleKeys],
+  );
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
   const isPlatformRoute =
@@ -182,7 +190,7 @@ export function DashboardShell({
     !currentModule ||
     currentModule.key === "mi-cuenta" ||
     (currentModule.key === "plan" && isOwner) ||
-    (!isExpired && Boolean(user?.moduleKeys?.includes(currentModule.key)));
+    (!isExpired && allowedModuleKeys.includes(currentModule.key));
   const canAccessCurrentRoute = mustCompleteSetup
     ? isOnboardingRoute
     : isNotificationsRoute ||
@@ -201,7 +209,7 @@ export function DashboardShell({
       return;
     }
 
-    const allowedKeys = new Set(user?.moduleKeys ?? []);
+    const allowedKeys = new Set(allowedModuleKeys);
     const fallback = isSuperAdmin
       ? "/superadmin"
       : mustCompleteSetup
@@ -227,7 +235,7 @@ export function DashboardShell({
     isSuperAdmin,
     mustCompleteSetup,
     router,
-    user?.moduleKeys,
+    allowedModuleKeys,
   ]);
 
   useEffect(() => {

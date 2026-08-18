@@ -32,6 +32,12 @@ export type StockMovement = {
   cantidad: number;
   stockAnterior: number;
   stockPosterior: number;
+  costoUnitario: string | null;
+  costoPromedioAnterior: string | null;
+  costoPromedioPosterior: string | null;
+  valorMovimiento: string | null;
+  valorStockAnterior: string | null;
+  valorStockPosterior: string | null;
   motivo: string | null;
   referenciaTipo: string | null;
   referenciaId: string | null;
@@ -52,6 +58,23 @@ export type StockTransfer = {
   items: Array<{ id: string; cantidad: number; producto: StockProduct }>;
   cantidadTotal: number;
   createdAt: string;
+};
+
+export type StockKardex = {
+  producto: StockProduct;
+  sucursalId: string | null;
+  resumen: {
+    saldoInicial: number;
+    entradas: number;
+    salidas: number;
+    saldoFinal: number;
+    valorInicial: string;
+    valorEntradas: string;
+    valorSalidas: string;
+    valorFinal: string;
+  };
+  data: StockMovement[];
+  meta: PageMeta;
 };
 
 type PageMeta = {
@@ -82,15 +105,17 @@ export const stockApi = {
     >("/stock/locations");
   },
 
-  movements(query: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    sucursalId?: string;
-    tipo?: StockMovementType;
-    from?: string;
-    to?: string;
-  } = {}) {
+  movements(
+    query: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      sucursalId?: string;
+      tipo?: StockMovementType;
+      from?: string;
+      to?: string;
+    } = {},
+  ) {
     return authFetch<{ data: StockMovement[]; meta: PageMeta }>(
       `/stock/movements${queryString(query)}`,
     );
@@ -100,7 +125,11 @@ export const stockApi = {
     direccion: StockDirection;
     sucursalId: string;
     motivo: string;
-    items: Array<{ productoVarianteId: string; cantidad: number }>;
+    items: Array<{
+      productoVarianteId: string;
+      cantidad: number;
+      costoUnitario?: number;
+    }>;
   }) {
     return authFetch<{ data: StockMovement[] }>("/stock/movements", {
       method: "POST",
@@ -108,15 +137,28 @@ export const stockApi = {
     });
   },
 
-  transfers(query: {
+  kardex(query: {
+    productoVarianteId: string;
     page?: number;
     limit?: number;
-    search?: string;
-    origenSucursalId?: string;
-    destinoSucursalId?: string;
+    sucursalId?: string;
     from?: string;
     to?: string;
-  } = {}) {
+  }) {
+    return authFetch<StockKardex>(`/stock/kardex${queryString(query)}`);
+  },
+
+  transfers(
+    query: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      origenSucursalId?: string;
+      destinoSucursalId?: string;
+      from?: string;
+      to?: string;
+    } = {},
+  ) {
     return authFetch<{ data: StockTransfer[]; meta: PageMeta }>(
       `/stock/transfers${queryString(query)}`,
     );

@@ -389,34 +389,36 @@ function PlansTab({
 
       <div className="-mx-3 px-3 sm:mx-0 sm:px-0 md:contents">
         <div className="flex gap-4 overflow-x-auto scrollbar-hidden pb-2 sm:gap-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-5">
-        {loading && plans.length === 0
-          ? Array.from({ length: 5 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-[340px] w-[280px] shrink-0 animate-pulse rounded-[14px] bg-[var(--color-card)] sm:w-[300px] md:w-auto"
-              />
-            ))
-          : plans.map((plan, index) => (
-              <PlanCard
-                key={plan.code}
-                plan={plan}
-                current={plan.code === currentCode}
-                monthlyDiscountEligible={monthlyDiscountEligible}
-                period={period}
-                color={
-                  ["#2563eb", "#06b6d4", "#10b981", "#f59e0b", "#8b5cf6"][index]
-                }
-                whatsappUrl={buildWhatsAppUrl({
-                  plan,
-                  period,
-                  companyName,
-                  customerName,
-                  customerEmail,
-                  monthlyDiscountEligible,
-                })}
-              />
-            ))}
-      </div>
+          {loading && plans.length === 0
+            ? Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[340px] w-[280px] shrink-0 animate-pulse rounded-[14px] bg-[var(--color-card)] sm:w-[300px] md:w-auto"
+                />
+              ))
+            : plans.map((plan, index) => (
+                <PlanCard
+                  key={plan.code}
+                  plan={plan}
+                  current={plan.code === currentCode}
+                  monthlyDiscountEligible={monthlyDiscountEligible}
+                  period={period}
+                  color={
+                    ["#2563eb", "#06b6d4", "#10b981", "#f59e0b", "#8b5cf6"][
+                      index
+                    ]
+                  }
+                  whatsappUrl={buildWhatsAppUrl({
+                    plan,
+                    period,
+                    companyName,
+                    customerName,
+                    customerEmail,
+                    monthlyDiscountEligible,
+                  })}
+                />
+              ))}
+        </div>
       </div>
     </section>
   );
@@ -481,7 +483,7 @@ function PlanCard({
     ["Ventas POS", "ventas-pos"],
     ["Caja", "caja"],
     ["Cotizaciones y clientes", "cotizaciones"],
-    ["Catálogo y stock", "stock-movimientos"],
+    ["Catálogo, stock y Kardex", "stock-kardex"],
     ["Administración de usuarios", "usuarios"],
     ["Reportes de ventas y productos", "reportes-ventas"],
     ["Reporte de clientes", "reportes-clientes"],

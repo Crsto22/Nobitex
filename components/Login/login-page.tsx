@@ -50,12 +50,11 @@ export function LoginPage() {
   const [passwordValue, setPasswordValue] = useState("");
   const shouldShowPasswordToggle =
     isPasswordFocused || passwordValue.length > 0;
-  const whatsappMessage = encodeURIComponent(
-    "Hola, necesito ayuda con Nuvex.",
+  const whatsappMessage = encodeURIComponent("Hola, necesito ayuda con Nuvex.");
+  const whatsappPhone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+    /\D/g,
+    "",
   );
-  const whatsappPhone = (
-    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? ""
-  ).replace(/\D/g, "");
   const whatsappUrl = whatsappPhone
     ? `https://wa.me/${whatsappPhone}?text=${whatsappMessage}`
     : `https://api.whatsapp.com/send?text=${whatsappMessage}`;
@@ -75,6 +74,16 @@ export function LoginPage() {
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
+
+    if (requiresTurnstile && !turnstileToken) {
+      setIsLoading(false);
+      showToast({
+        title: "No se pudo iniciar sesion",
+        description: "Completa la verificacion de seguridad para continuar.",
+        variant: "error",
+      });
+      return;
+    }
 
     try {
       const response = await login({

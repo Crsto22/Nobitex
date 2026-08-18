@@ -198,6 +198,12 @@ export const sidebarSections: SidebarSection[] = [
         icon: TruckIcon,
         route: "/stock/traspasos",
       },
+      {
+        key: "stock-kardex",
+        label: "Kardex",
+        icon: ListBulletsIcon,
+        route: "/stock/kardex",
+      },
     ],
   },
   {
@@ -452,6 +458,7 @@ export const warehouseAssignableModuleKeys = new Set([
   "colores",
   "stock-movimientos",
   "stock-traspasos",
+  "stock-kardex",
   "sucursales",
   "gre-remitente",
   "conductores",
