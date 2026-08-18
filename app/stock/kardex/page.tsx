@@ -211,7 +211,6 @@ export default function StockKardexPage() {
             selectedBranchId={selectedBranch}
             isOpen={isBranchOpen}
             className="w-[170px] sm:w-[220px]"
-            compactOnMobile
             onOpenChange={setIsBranchOpen}
             onBranchChange={(branchId) => {
               setSelectedBranch(branchId);
