@@ -187,6 +187,8 @@ export function ChargeModal({
   const [isLoadingMethods, setIsLoadingMethods] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
+  const [pickupLater, setPickupLater] = useState(false);
+  const [pickupUntil, setPickupUntil] = useState("");
   const methodsLoadedRef = useRef(false);
   const requestIdRef = useRef<string | null>(null);
   const toast = useSystemToast();
@@ -254,12 +256,22 @@ export function ChargeModal({
     (selectedClient?.tipoDocumento !== "ruc" ||
       selectedClient.numeroDocumento?.length !== 11 ||
       !selectedClient.razonSocial?.trim());
+  const isPickupClientInvalid =
+    pickupLater &&
+    (!selectedClient ||
+      !(
+        (selectedClient.tipoDocumento === "dni" &&
+          selectedClient.numeroDocumento?.length === 8) ||
+        (selectedClient.tipoDocumento === "ruc" &&
+          selectedClient.numeroDocumento?.length === 11)
+      ));
   const canConfirm =
     ((hasEntries && Math.abs(remaining) < 0.005) ||
       (!hasEntries && !!selectedMethod)) &&
     !hasInvalidEntryChange &&
     !hasInvalidSelectedChange &&
-    !isInvoiceClientInvalid;
+    !isInvoiceClientInvalid &&
+    !isPickupClientInvalid;
   const isOverpaying = remaining < -0.005;
 
   const addPayment = (method: PaymentMethod) => {
@@ -389,6 +401,17 @@ export function ChargeModal({
       return;
     }
 
+    if (isPickupClientInvalid) {
+      toast.showToast({
+        title: "Cliente requerido",
+        description:
+          "Para recoger despues selecciona un cliente con DNI o RUC valido.",
+        variant: "error",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const loadingId = toast.showToast({
@@ -425,6 +448,8 @@ export function ChargeModal({
       tipoComprobante: noteTypeMap[selectedNoteType] ?? "nota_venta",
       sucursalId: selectedBranch || undefined,
       clienteId: selectedClient?.id || undefined,
+      recogerDespues: pickupLater,
+      recojoHasta: pickupLater && pickupUntil ? pickupUntil : undefined,
       descuentoTipo: discountType ?? undefined,
       descuentoValor:
         discountType && discountValue.trim()
@@ -458,6 +483,8 @@ export function ChargeModal({
       });
       onSaleSuccess(venta);
       requestIdRef.current = null;
+      setPickupLater(false);
+      setPickupUntil("");
       onClose();
     } catch (error: unknown) {
       const message =
@@ -476,6 +503,8 @@ export function ChargeModal({
 
   const handleClose = () => {
     if (isSubmitting) return;
+    setPickupLater(false);
+    setPickupUntil("");
     onClose();
   };
 
@@ -558,6 +587,48 @@ export function ChargeModal({
                   ) : null}
                 </div>
               ) : null}
+
+              <div className="rounded-[8px] bg-[var(--color-input-bg)] p-3">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={pickupLater}
+                    onChange={(event) => setPickupLater(event.target.checked)}
+                    className="mt-1 h-4 w-4 accent-[var(--color-primary)]"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-circular-bold text-[var(--color-text)]">
+                      Recogera despues
+                    </span>
+                    <span className="block text-xs text-[var(--color-muted-foreground)]">
+                      La venta quedara en entregas pendientes.
+                    </span>
+                  </span>
+                </label>
+
+                {pickupLater ? (
+                  <div className="mt-3 space-y-3">
+                    <label>
+                      <span className="mb-1 block text-xs font-circular-bold text-[var(--color-muted-foreground)]">
+                        Recoger hasta
+                      </span>
+                      <input
+                        type="date"
+                        value={pickupUntil}
+                        onChange={(event) => setPickupUntil(event.target.value)}
+                        className="h-10 w-full rounded-[10px] bg-white px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                      />
+                    </label>
+
+                    {isPickupClientInvalid ? (
+                      <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                        Selecciona un cliente con DNI o RUC valido. No se
+                        permite cliente generico para recojo posterior.
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
 
               <div className="rounded-[14px] bg-[var(--color-input-bg)] p-4">
                 <div className="mb-3 flex items-center gap-2">

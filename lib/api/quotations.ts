@@ -42,6 +42,8 @@ export type ConvertQuotationPayload = {
   clienteId?: string | null;
   pagos: CreateSalePago[];
   observaciones?: string;
+  recogerDespues?: boolean;
+  recojoHasta?: string;
 };
 
 export type ConvertQuotationResponse = {

@@ -74,6 +74,12 @@ export const sidebarSections: SidebarSection[] = [
         route: "/cotizaciones",
       },
       {
+        key: "entregas-pendientes",
+        label: "Entregas pendientes",
+        icon: TruckIcon,
+        route: "/entregas-pendientes",
+      },
+      {
         key: "clientes",
         label: "Clientes",
         icon: UsersThreeIcon,

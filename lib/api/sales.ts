@@ -128,6 +128,8 @@ export type CreateSalePayload = {
   tipoComprobante: VentaTipoComprobante;
   sucursalId?: string;
   clienteId?: string;
+  recogerDespues?: boolean;
+  recojoHasta?: string;
   descuentoTipo?: VentaDescuentoTipo;
   descuentoValor?: string;
   detalles: CreateSaleDetalle[];
@@ -139,6 +141,7 @@ export type VentaDetalleResponse = {
   id: string;
   descripcion: string | null;
   cantidad: number;
+  cantidadEntregada: number;
   unidadMedidaCodigo: string;
   tipoAfectacionIgvCodigo: string;
   precioUnitario: string;
@@ -197,11 +200,15 @@ export type VentaPagoResponse = {
 
 export type VentaResponse = {
   publicId: string;
+  codigoInterno: string;
   tipoComprobante: VentaTipoComprobante;
   serie: string;
   numero: number;
   correlativo: string;
   estado: VentaEstado;
+  recojoPosterior: boolean;
+  recojoHasta: string | null;
+  estadoEntrega: "pendiente" | "parcial" | "entregada";
   moneda: string;
   formaPago: string;
   subtotal: string;
@@ -312,6 +319,20 @@ export type VentasResponse = {
     total: number;
     totalPages: number;
   };
+};
+
+export type DeliveryStatusQuery = "pendiente" | "entregada";
+
+export type DeliverSalePayload = {
+  detalles: Array<{ ventaDetalleId: string; cantidad: number }>;
+  retiranteDni?: string;
+  retiranteNombre?: string;
+  notas?: string;
+};
+
+export type DeliverSaleResponse = {
+  entrega: { publicId: string };
+  venta: VentaResponse;
 };
 
 export type ComprobanteSunatEstado =
@@ -437,6 +458,23 @@ export const salesApi = {
 
   create(payload: CreateSalePayload) {
     return authFetch<VentaResponse>("/sales", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  findDeliveries(
+    estado: DeliveryStatusQuery = "pendiente",
+    options: RequestInit = {},
+  ) {
+    return authFetch<{ data: VentaResponse[] }>(
+      `/sales/deliveries?estado=${estado}`,
+      options,
+    );
+  },
+
+  deliver(publicId: string, payload: DeliverSalePayload) {
+    return authFetch<DeliverSaleResponse>(`/sales/${publicId}/deliver`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
