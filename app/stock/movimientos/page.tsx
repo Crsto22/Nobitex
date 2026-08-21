@@ -27,6 +27,7 @@ const movementLabels: Record<StockMovementType, string> = {
   entrada_manual: "Entrada manual",
   salida_manual: "Salida manual",
   ajuste_producto: "Ajuste de producto",
+  compra: "Compra",
   venta: "Venta",
   anulacion_venta: "Anulacion de venta",
   nota_credito: "Nota de credito",

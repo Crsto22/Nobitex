@@ -7,6 +7,7 @@ export type StockMovementType =
   | "entrada_manual"
   | "salida_manual"
   | "ajuste_producto"
+  | "compra"
   | "venta"
   | "anulacion_venta"
   | "nota_credito"

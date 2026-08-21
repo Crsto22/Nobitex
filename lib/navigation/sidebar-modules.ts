@@ -213,6 +213,25 @@ export const sidebarSections: SidebarSection[] = [
     ],
   },
   {
+    key: "compras",
+    label: "Compras",
+    icon: ShoppingCartIcon,
+    children: [
+      {
+        key: "compras-ordenes",
+        label: "Ordenes",
+        icon: ReceiptIcon,
+        route: "/compras/ordenes",
+      },
+      {
+        key: "compras-proveedores",
+        label: "Proveedores",
+        icon: UsersThreeIcon,
+        route: "/compras/proveedores",
+      },
+    ],
+  },
+  {
     key: "administracion",
     label: "Administracion",
     icon: IdentificationBadgeIcon,
@@ -465,6 +484,8 @@ export const warehouseAssignableModuleKeys = new Set([
   "stock-movimientos",
   "stock-traspasos",
   "stock-kardex",
+  "compras-ordenes",
+  "compras-proveedores",
   "sucursales",
   "gre-remitente",
   "conductores",
