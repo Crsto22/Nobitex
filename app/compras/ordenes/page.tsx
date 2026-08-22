@@ -87,9 +87,9 @@ export default function PurchaseOrdersPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Metric icon={<ShoppingCartIcon size={19} />} label="Ordenes" value={meta.total} />
-          <Metric icon={<PackageIcon size={19} />} label="Unidades en pagina" value={pageUnits} tone="success" />
-          <Metric icon={<ReceiptIcon size={19} />} label="Total en pagina" value={pageTotal} money />
+          <Metric icon={<ShoppingCartIcon size={22} weight="fill" />} label="Ordenes" value={meta.total} />
+          <Metric icon={<PackageIcon size={22} weight="fill" />} label="Unidades en pagina" value={pageUnits} tone="success" />
+          <Metric icon={<ReceiptIcon size={22} weight="fill" />} label="Total en pagina" value={pageTotal} money />
         </div>
 
         <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
@@ -106,11 +106,18 @@ export default function PurchaseOrdersPage() {
         </section>
 
         <section className="space-y-2">
-          {rows.map((row) => (
+          {loading ? (
+            <OrdersSkeleton />
+          ) : rows.map((row) => (
             <article key={row.id} className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.2fr_0.8fr_0.7fr_0.65fr_0.75fr_0.3fr] md:items-center md:gap-4 md:gap-y-0">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{row.proveedor.displayName}</p>
-                <p className="truncate text-xs text-[var(--color-muted-foreground)]">RUC {row.proveedor.ruc}</p>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                  <ReceiptIcon size={20} weight="fill" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{row.proveedor.displayName}</p>
+                  <p className="truncate text-xs text-[var(--color-muted-foreground)]">RUC {row.proveedor.ruc}</p>
+                </div>
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm text-[var(--color-text)]">{row.destino.nombre}</p>
@@ -153,7 +160,6 @@ export default function PurchaseOrdersPage() {
             </article>
           ))}
           {!rows.length && !loading ? <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">Sin ordenes registradas</div> : null}
-          {loading ? <p className="py-3 text-center text-sm text-[var(--color-muted-foreground)]">Actualizando...</p> : null}
         </section>
 
         {meta.totalPages > 1 ? (
@@ -165,6 +171,47 @@ export default function PurchaseOrdersPage() {
         ) : null}
       </div>
     </DashboardShell>
+  );
+}
+
+function OrdersSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="grid animate-pulse grid-cols-2 gap-x-3 gap-y-3 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.2fr_0.8fr_0.7fr_0.65fr_0.75fr_0.3fr] md:items-center md:gap-4"
+        >
+          <SkeletonBlock />
+          <SkeletonBlock />
+          <SkeletonBlock compact />
+          <SkeletonBlock compact />
+          <SkeletonBlock alignRight />
+          <div className="flex justify-end">
+            <div className="h-9 w-9 rounded-full bg-[var(--color-input-bg)]" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function SkeletonBlock({
+  compact = false,
+  alignRight = false,
+}: {
+  compact?: boolean;
+  alignRight?: boolean;
+}) {
+  return (
+    <div className={alignRight ? "space-y-2 md:items-end" : "space-y-2"}>
+      <div
+        className={`h-3 rounded-full bg-[var(--color-input-bg)] ${compact ? "w-16" : "w-24"} ${alignRight ? "ml-auto" : ""}`}
+      />
+      <div
+        className={`h-4 rounded-full bg-[var(--color-input-bg)] ${compact ? "w-20" : "w-36"} ${alignRight ? "ml-auto" : ""}`}
+      />
+    </div>
   );
 }
 

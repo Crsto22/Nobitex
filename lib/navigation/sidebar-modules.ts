@@ -13,6 +13,7 @@ import {
   PresentationChartIcon,
   ReceiptIcon,
   RulerIcon,
+  ShoppingBagOpenIcon,
   ShoppingCartIcon,
   SquaresFourIcon,
   TagIcon,
@@ -215,7 +216,7 @@ export const sidebarSections: SidebarSection[] = [
   {
     key: "compras",
     label: "Compras",
-    icon: ShoppingCartIcon,
+    icon: ShoppingBagOpenIcon,
     children: [
       {
         key: "compras-ordenes",

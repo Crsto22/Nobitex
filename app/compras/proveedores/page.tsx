@@ -18,6 +18,7 @@ import {
   PhoneIcon,
   PlusIcon,
   TrashIcon,
+  UserIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react/ssr";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
@@ -204,9 +205,9 @@ export default function SuppliersPage() {
     <DashboardShell headerTitle="Proveedores">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-4 sm:p-4 lg:px-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Metric icon={<UsersThreeIcon size={20} />} label="Proveedores" value={meta.total} />
-          <Metric icon={<IdentificationCardIcon size={20} />} label="Activos" value={meta.activeTotal} tone="success" />
-          <Metric icon={<TrashIcon size={20} />} label="Inactivos" value={meta.inactiveTotal} tone="muted" />
+          <Metric icon={<UsersThreeIcon size={22} weight="fill" />} label="Proveedores" value={meta.total} />
+          <Metric icon={<IdentificationCardIcon size={22} weight="fill" />} label="Activos" value={meta.activeTotal} tone="success" />
+          <Metric icon={<TrashIcon size={22} weight="fill" />} label="Inactivos" value={meta.inactiveTotal} tone="muted" />
         </div>
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 sm:flex-row sm:items-center lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
@@ -233,11 +234,18 @@ export default function SuppliersPage() {
         </div>
 
         <section className="space-y-2">
-          {rows.map((supplier) => (
+          {loading ? (
+            <SuppliersSkeleton />
+          ) : rows.map((supplier) => (
             <article key={supplier.id} className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.2fr_0.7fr_1fr_1fr_0.4fr] md:items-center md:gap-4 md:gap-y-0">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{supplier.displayName}</p>
-                <p className="truncate text-xs text-[var(--color-muted-foreground)]">{supplier.razonSocial}</p>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                  <UserIcon size={20} weight="fill" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{supplier.displayName}</p>
+                  <p className="truncate text-xs text-[var(--color-muted-foreground)]">{supplier.razonSocial}</p>
+                </div>
               </div>
               <div>
                 <span className="inline-flex rounded-lg bg-[#f59e0b]/10 px-3 py-1.5 text-xs font-circular-bold text-[#d97706]">RUC {supplier.ruc}</span>
@@ -264,7 +272,6 @@ export default function SuppliersPage() {
           {!rows.length && !loading ? (
             <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">Sin proveedores registrados</div>
           ) : null}
-          {loading ? <p className="py-4 text-center text-sm text-[var(--color-muted-foreground)]">Cargando...</p> : null}
         </section>
       </div>
 
@@ -307,6 +314,40 @@ export default function SuppliersPage() {
         itemName={deleteSupplier?.displayName}
       />
     </DashboardShell>
+  );
+}
+
+function SuppliersSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="grid animate-pulse grid-cols-2 gap-x-3 gap-y-3 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.2fr_0.7fr_1fr_1fr_0.4fr] md:items-center md:gap-4"
+        >
+          <SkeletonBlock />
+          <div className="h-8 w-28 rounded-lg bg-[var(--color-input-bg)]" />
+          <SkeletonBlock compact />
+          <SkeletonBlock />
+          <div className="flex justify-end">
+            <div className="h-9 w-9 rounded-full bg-[var(--color-input-bg)]" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function SkeletonBlock({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="space-y-2">
+      <div
+        className={`h-3 rounded-full bg-[var(--color-input-bg)] ${compact ? "w-20" : "w-36"}`}
+      />
+      <div
+        className={`h-4 rounded-full bg-[var(--color-input-bg)] ${compact ? "w-28" : "w-44"}`}
+      />
+    </div>
   );
 }
 
