@@ -9,6 +9,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  DotsThreeVerticalIcon,
+  EyeIcon,
   MagnifyingGlassIcon,
   PackageIcon,
   PlusIcon,
@@ -37,6 +39,7 @@ export default function PurchaseOrdersPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     branchesApi.findAll({ page: 1, limit: 100, estado: "activo" }).then((result) => setBranches(result.data)).catch(() => setBranches([]));
@@ -104,7 +107,7 @@ export default function PurchaseOrdersPage() {
 
         <section className="space-y-2">
           {rows.map((row) => (
-            <article key={row.id} className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.25fr_0.85fr_0.75fr_0.7fr_0.7fr] md:items-center md:gap-4 md:gap-y-0">
+            <article key={row.id} className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-sm sm:p-4 md:grid-cols-[1.2fr_0.8fr_0.7fr_0.65fr_0.75fr_0.3fr] md:items-center md:gap-4 md:gap-y-0">
               <div className="min-w-0">
                 <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">{row.proveedor.displayName}</p>
                 <p className="truncate text-xs text-[var(--color-muted-foreground)]">RUC {row.proveedor.ruc}</p>
@@ -124,6 +127,28 @@ export default function PurchaseOrdersPage() {
               <div className="min-w-0 md:text-right">
                 <p className="truncate text-sm text-[var(--color-text)]">{documentLabel(row)}</p>
                 <p className="text-xs text-[var(--color-muted-foreground)]">{new Date(row.createdAt).toLocaleDateString("es-PE")}</p>
+              </div>
+              <div className="relative flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[var(--color-button-hover)]"
+                  aria-label="Opciones"
+                >
+                  <DotsThreeVerticalIcon size={20} weight="bold" />
+                </button>
+                {openMenuId === row.id ? (
+                  <div className="absolute right-0 top-10 z-20 w-48 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/compras/ordenes/${row.publicId}`)}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-button-hover)]"
+                    >
+                      <EyeIcon size={16} />
+                      Ver mas detalle
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}

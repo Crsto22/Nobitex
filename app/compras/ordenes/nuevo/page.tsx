@@ -142,9 +142,6 @@ export default function NewPurchaseOrderPage() {
           <h1 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
             Registrar orden de compra
           </h1>
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            Al guardar, el stock se agregara al destino seleccionado.
-          </p>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[0.72fr_1.28fr]">
@@ -214,9 +211,6 @@ export default function NewPurchaseOrderPage() {
               <h2 className="text-base font-circular-bold text-[var(--color-text)]">
                 Productos, cantidades y costo
               </h2>
-              <p className="text-sm text-[var(--color-muted-foreground)]">
-                Busca productos y coloca cantidad comprada y costo unitario.
-              </p>
             </div>
             <StockItemPicker
               sucursalId={destinationId}

@@ -107,6 +107,10 @@ export const purchasesApi = {
     );
   },
 
+  order(publicId: string) {
+    return authFetch<PurchaseOrder>(`/purchases/orders/${publicId}`);
+  },
+
   createOrder(payload: {
     proveedorId: string;
     destinoSucursalId: string;
