@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     title: "Nuvex",
   },
   icons: {
-    icon: "/Logo/logopwa.png",
-    shortcut: "/Logo/logopwa.png",
+    icon: "/Logo/Nuvex.ico",
+    shortcut: "/Logo/Nuvex.ico",
     apple: "/Logo/logopwa.png",
   },
 };
