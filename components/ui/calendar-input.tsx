@@ -23,6 +23,7 @@ type CalendarInputProps = {
   className?: string;
   mode?: "date" | "month";
   popoverAlign?: "left" | "right";
+  popoverFixed?: boolean;
 };
 
 const weekdayLabels = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
@@ -99,9 +100,15 @@ export function CalendarInput({
   className,
   mode = "date",
   popoverAlign = "right",
+  popoverFixed = false,
 }: CalendarInputProps) {
   const selectedDate = parseDateOnly(value, mode);
   const [isOpen, setIsOpen] = useState(false);
+  const [fixedPosition, setFixedPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const controlId = useId();
   const [viewDate, setViewDate] = useState(selectedDate ?? new Date());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,6 +134,35 @@ export function CalendarInput({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !popoverFixed) {
+      return;
+    }
+
+    const updatePosition = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const width = Math.min(304, window.innerWidth - 32);
+      const alignedLeft =
+        popoverAlign === "left" ? rect.left : rect.right - width;
+
+      setFixedPosition({
+        top: rect.bottom + 8,
+        left: Math.max(16, Math.min(alignedLeft, window.innerWidth - width - 16)),
+        width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen, popoverAlign, popoverFixed]);
 
   const goToMonth = (amount: number) => {
     setViewDate((current) => {
@@ -210,9 +246,13 @@ export function CalendarInput({
 
       {isOpen && !disabled ? (
         <div
+          style={popoverFixed && fixedPosition ? fixedPosition : undefined}
           className={cn(
-            "absolute top-full z-[100] mt-2 w-[min(19rem,calc(100vw-2rem))] rounded-[20px] bg-[var(--color-card)] p-3 shadow-[0_18px_48px_rgba(15,23,42,0.2)] ring-1 ring-[var(--color-border)] animate-in fade-in zoom-in-95 duration-200",
-            popoverAlign === "left" ? "left-0" : "right-0",
+            "w-[min(19rem,calc(100vw-2rem))] rounded-[20px] bg-[var(--color-card)] p-3 shadow-[0_18px_48px_rgba(15,23,42,0.2)] ring-1 ring-[var(--color-border)] animate-in fade-in zoom-in-95 duration-200",
+            popoverFixed
+              ? "fixed z-[10000]"
+              : "absolute top-full z-[100] mt-2",
+            !popoverFixed && (popoverAlign === "left" ? "left-0" : "right-0"),
           )}
         >
           <div className="mb-3 flex items-center justify-between gap-2">

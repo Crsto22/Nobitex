@@ -10,7 +10,6 @@ import {
   CalendarIcon,
   ClockIcon,
   EyeIcon,
-  PrinterIcon,
   DownloadSimpleIcon,
   DotsThreeVerticalIcon,
   ReceiptIcon,
@@ -834,14 +833,6 @@ export default function HistorialCotizacionesPage() {
                             Anular
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => setOpenMenuId(null)}
-                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-                        >
-                          <PrinterIcon size={16} weight="bold" />
-                          Imprimir
-                        </button>
                         <button
                           type="button"
                           onClick={() => {

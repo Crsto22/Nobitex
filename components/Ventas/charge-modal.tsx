@@ -1,6 +1,7 @@
 "use client";
 
 import { NativeSelect } from "@/components/ui/select";
+import { CalendarInput } from "@/components/ui/calendar-input";
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -34,6 +35,7 @@ import {
   GenericClientAvatar,
   UserAvatar,
 } from "@/components/UserAvatar/user-avatar";
+import { ToggleButton } from "@/components/ProductCreate/toggle-button";
 
 type CartItem = {
   id: string;
@@ -588,48 +590,6 @@ export function ChargeModal({
                 </div>
               ) : null}
 
-              <div className="rounded-[8px] bg-[var(--color-input-bg)] p-3">
-                <label className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={pickupLater}
-                    onChange={(event) => setPickupLater(event.target.checked)}
-                    className="mt-1 h-4 w-4 accent-[var(--color-primary)]"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-circular-bold text-[var(--color-text)]">
-                      Recogera despues
-                    </span>
-                    <span className="block text-xs text-[var(--color-muted-foreground)]">
-                      La venta quedara en entregas pendientes.
-                    </span>
-                  </span>
-                </label>
-
-                {pickupLater ? (
-                  <div className="mt-3 space-y-3">
-                    <label>
-                      <span className="mb-1 block text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                        Recoger hasta
-                      </span>
-                      <input
-                        type="date"
-                        value={pickupUntil}
-                        onChange={(event) => setPickupUntil(event.target.value)}
-                        className="h-10 w-full rounded-[10px] bg-white px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                      />
-                    </label>
-
-                    {isPickupClientInvalid ? (
-                      <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
-                        Selecciona un cliente con DNI o RUC valido. No se
-                        permite cliente generico para recojo posterior.
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-
               <div className="rounded-[14px] bg-[var(--color-input-bg)] p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <ReceiptIcon
@@ -775,25 +735,62 @@ export function ChargeModal({
 
             <div className="flex flex-col gap-4">
               {noteTypeOptions?.length ? (
-                <label>
+                <div>
                   <span className="mb-2 block text-sm font-black text-[var(--color-text)]">
                     Comprobante
                   </span>
-                  <NativeSelect
-                    value={selectedNoteType}
-                    onChange={(event) =>
-                      onSelectedNoteTypeChange?.(event.target.value)
-                    }
-                    className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                  >
+                  <div className="grid grid-cols-3 gap-2">
                     {noteTypeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => onSelectedNoteTypeChange?.(option.value)}
+                        className={cn(
+                          "h-11 rounded-[16px] text-xs font-circular-bold font-circular-regular transition-colors",
+                          selectedNoteType === option.value
+                            ? "bg-[var(--color-primary)] text-white"
+                            : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                        )}
+                      >
+                        {option.value === "nota_venta"
+                          ? "N. VENTA"
+                          : option.label.toUpperCase()}
+                      </button>
                     ))}
-                  </NativeSelect>
-                </label>
+                  </div>
+                </div>
               ) : null}
+
+              <div>
+                <ToggleButton
+                  active={pickupLater}
+                  onClick={() => setPickupLater((current) => !current)}
+                >
+                  <span className="min-w-0 text-left">
+                    <span className="block text-sm font-circular-bold text-[var(--color-text)]">
+                      Recogera despues
+                    </span>
+                  </span>
+                </ToggleButton>
+
+                {pickupLater ? (
+                  <div className="mt-3 space-y-3">
+                    <CalendarInput
+                      label="Recoger hasta (opcional)"
+                      value={pickupUntil}
+                      onChange={setPickupUntil}
+                      popoverAlign="left"
+                      popoverFixed
+                    />
+
+                    {isPickupClientInvalid ? (
+                      <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                        Selecciona un cliente con DNI o RUC valido.
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
 
               <div>
                 <div className="mb-3 flex items-center gap-2">

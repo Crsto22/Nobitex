@@ -208,6 +208,7 @@ export type VentaResponse = {
   estado: VentaEstado;
   recojoPosterior: boolean;
   recojoHasta: string | null;
+  fechaEntrega: string | null;
   estadoEntrega: "pendiente" | "parcial" | "entregada";
   moneda: string;
   formaPago: string;

@@ -2476,6 +2476,7 @@ export default function VentasPage() {
       {isChargeModalOpen ? (
         <ChargeModal
           isOpen={isChargeModalOpen}
+          wide
           onClose={() => setIsChargeModalOpen(false)}
           cartItems={cartItems}
           subtotal={subtotal}
