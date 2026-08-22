@@ -100,49 +100,49 @@ export function SalesReportSummary({
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       {cards.map(
         ({ label, value, icon: Icon, color, background, featured }) => (
-        <div
-          key={label}
-          className={`rounded-2xl p-5 shadow-sm ${
-            featured
-              ? featured
-              : "bg-[var(--color-sidebar-bg)] ring-1 ring-[var(--color-border)]/60"
-          }`}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p
-                className={`text-sm font-circular-regular ${
-                  featured
-                    ? "text-white/70"
-                    : "text-[var(--color-muted-foreground)]"
+          <div
+            key={label}
+            className={`rounded-2xl p-4 shadow-sm sm:p-5 ${
+              featured
+                ? featured
+                : "bg-[var(--color-sidebar-bg)] ring-1 ring-[var(--color-border)]/60"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p
+                  className={`text-sm font-circular-regular leading-snug ${
+                    featured
+                      ? "text-white/70"
+                      : "text-[var(--color-muted-foreground)]"
+                  }`}
+                >
+                  {label}
+                </p>
+                <p
+                  className={`mt-3 break-words text-2xl font-circular-bold leading-tight text-fixed-2xl ${
+                    featured ? "text-white" : "text-[var(--color-text)]"
+                  }`}
+                >
+                  {value}
+                </p>
+              </div>
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  featured ? "bg-white/20" : background
                 }`}
               >
-                {label}
-              </p>
-              <p
-                className={`mt-3 text-2xl font-circular-bold ${
-                  featured ? "text-white" : "text-[var(--color-text)]"
-                }`}
-              >
-                {value}
-              </p>
-            </div>
-            <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                featured ? "bg-white/20" : background
-              }`}
-            >
-              <Icon
-                size={20}
-                weight="bold"
-                className={featured ? "text-white" : color}
-              />
+                <Icon
+                  size={20}
+                  weight="bold"
+                  className={featured ? "text-white" : color}
+                />
+              </div>
             </div>
           </div>
-        </div>
         ),
       )}
     </div>

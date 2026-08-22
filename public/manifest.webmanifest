@@ -10,14 +10,14 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
+      "src": "/Logo/logopwa.png",
+      "sizes": "2000x2000",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
+      "src": "/Logo/logopwa.png",
+      "sizes": "2000x2000",
       "type": "image/png",
       "purpose": "any maskable"
     }
@@ -27,13 +27,13 @@
       "name": "Ventas",
       "short_name": "Ventas",
       "url": "/ventas",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/Logo/logopwa.png", "sizes": "2000x2000" }]
     },
     {
       "name": "Productos",
       "short_name": "Productos",
       "url": "/catalogo/productos",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/Logo/logopwa.png", "sizes": "2000x2000" }]
     }
   ]
 }

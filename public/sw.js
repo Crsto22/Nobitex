@@ -1,11 +1,8 @@
-const CACHE_NAME = "nuvex-pwa-v1";
+const CACHE_NAME = "nuvex-pwa-v2";
 const STATIC_ASSETS = [
   "/",
   "/manifest.webmanifest",
-  "/Logo/Nuvex.ico",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/apple-touch-icon.png"
+  "/Logo/logopwa.png"
 ];
 
 self.addEventListener("install", (event) => {

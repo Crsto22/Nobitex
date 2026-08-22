@@ -111,21 +111,21 @@ export function ProductReportSummary({
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       {summaryCards.map(
         ({ label, value, icon: Icon, color, background, featured }) => (
           <div
             key={label}
-            className={`rounded-2xl p-5 shadow-sm ${
+            className={`rounded-2xl p-4 shadow-sm sm:p-5 ${
               featured
                 ? featured
                 : "bg-[var(--color-sidebar-bg)] ring-1 ring-[var(--color-border)]/60"
             }`}
           >
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <p
-                  className={`text-sm font-circular-regular ${
+                  className={`text-sm font-circular-regular leading-snug ${
                     featured
                       ? "text-white/70"
                       : "text-[var(--color-muted-foreground)]"
@@ -134,7 +134,7 @@ export function ProductReportSummary({
                   {label}
                 </p>
                 <p
-                  className={`mt-3 text-2xl font-circular-bold ${
+                  className={`mt-3 break-words text-2xl font-circular-bold leading-tight text-fixed-2xl ${
                     featured ? "text-white" : "text-[var(--color-text)]"
                   }`}
                 >
