@@ -14,8 +14,11 @@ import { MinusCircleIcon, PlusCircleIcon } from "@phosphor-icons/react/ssr";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/auth-provider";
 import {
+  attendanceSidebarSections,
   sidebarSections,
+  workspaceOptions,
   superAdminSidebarSections,
+  type SidebarWorkspace,
   type SidebarChild,
   type SidebarSection,
 } from "@/lib/navigation/sidebar-modules";
@@ -24,7 +27,12 @@ const SIDEBAR_EXPANDED_SECTIONS_STORAGE_KEY = "sidebar-expanded-sections:v1";
 const SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT =
   "sidebar-expanded-sections-change";
 const SIDEBAR_SCROLL_STORAGE_KEY = "sidebar-scroll-position:v1";
-const allSidebarSections = [...sidebarSections, ...superAdminSidebarSections];
+const SIDEBAR_WORKSPACE_STORAGE_KEY = "sidebar-workspace:v1";
+const allSidebarSections = [
+  ...sidebarSections,
+  ...attendanceSidebarSections,
+  ...superAdminSidebarSections,
+];
 const defaultExpandedSections = allSidebarSections.map(
   (section) => section.label,
 );
@@ -79,6 +87,10 @@ function getServerExpandedSectionsSnapshot() {
   return defaultExpandedSectionsSnapshot;
 }
 
+function getPathWorkspace(pathname: string): SidebarWorkspace {
+  return pathname.startsWith("/asistencias") ? "asistencias" : "ventas";
+}
+
 function subscribeToExpandedSections(onStoreChange: () => void) {
   const handleChange = () => {
     syncExpandedSectionsAttribute(
@@ -112,6 +124,7 @@ export function Sidebar({
   const navRef = useRef<HTMLElement | null>(null);
   const syncedPathnameRef = useRef<string | null>(null);
   const { user, currentPlan } = useAuth();
+  const workspace = getPathWorkspace(pathname);
   const allowedModuleKeys = useMemo(
     () => [
       ...(user?.moduleKeys ?? []),
@@ -123,6 +136,8 @@ export function Sidebar({
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
+  const activeSidebarSections =
+    workspace === "asistencias" ? attendanceSidebarSections : sidebarSections;
   const visibleSections = useMemo(() => {
     if (isSuperAdmin) {
       return superAdminSidebarSections;
@@ -130,7 +145,7 @@ export function Sidebar({
 
     const allowed = new Set(allowedModuleKeys ?? []);
 
-    return sidebarSections
+    return activeSidebarSections
       .map((section) => {
         if (section.direct) {
           return !isExpired && allowed.has(section.key) ? section : null;
@@ -144,7 +159,13 @@ export function Sidebar({
         return children.length ? { ...section, children } : null;
       })
       .filter((section): section is SidebarSection => Boolean(section));
-  }, [allowedModuleKeys, isExpired, isOwner, isSuperAdmin]);
+  }, [
+    activeSidebarSections,
+    allowedModuleKeys,
+    isExpired,
+    isOwner,
+    isSuperAdmin,
+  ]);
   const expandedSectionsSnapshot = useSyncExternalStore(
     subscribeToExpandedSections,
     getExpandedSectionsSnapshot,
@@ -179,6 +200,13 @@ export function Sidebar({
     }
 
     router.push(route);
+  };
+
+  const switchWorkspace = (nextWorkspace: SidebarWorkspace) => {
+    localStorage.setItem(SIDEBAR_WORKSPACE_STORAGE_KEY, nextWorkspace);
+    const route = workspaceOptions.find((option) => option.key === nextWorkspace)
+      ?.route;
+    navigateTo(route);
   };
 
   const navigateToSection = (section: SidebarSection) => {
@@ -228,6 +256,15 @@ export function Sidebar({
     },
     [activeChildRoute],
   );
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      return;
+    }
+
+    const routeWorkspace = getPathWorkspace(pathname);
+    localStorage.setItem(SIDEBAR_WORKSPACE_STORAGE_KEY, routeWorkspace);
+  }, [isSuperAdmin, pathname]);
 
   useEffect(() => {
     if (syncedPathnameRef.current === pathname) {
@@ -307,6 +344,48 @@ export function Sidebar({
           <p className="sidebar-brand-name font-circular-bold mt-2 text-center text-sm leading-none dark:text-[#f6f8ff] text-[#0f2239]">
             {isSuperAdmin ? "Nuvex Admin" : companyName || "Mi Empresa"}
           </p>
+        ) : null}
+        {!isSuperAdmin ? (
+          <div
+            className={cn(
+              "mt-4 grid w-full rounded-[12px] bg-[var(--color-input-bg)] p-1",
+              collapsed ? "grid-cols-1 gap-1" : "grid-cols-2 gap-1",
+            )}
+          >
+            {workspaceOptions.map((option) => {
+              const Icon = option.icon;
+              const isActive = workspace === option.key;
+
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => switchWorkspace(option.key)}
+                  className={cn(
+                    "flex items-center justify-center rounded-[10px] transition-colors",
+                    collapsed
+                      ? "h-10 w-full"
+                      : "min-h-[58px] flex-col gap-1 px-2 py-2",
+                    isActive
+                      ? "bg-[var(--color-card)] text-[var(--color-primary)] shadow-sm"
+                      : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-sidebar-hover)]",
+                  )}
+                  aria-label={option.label}
+                  title={option.label}
+                >
+                  <Icon
+                    size={collapsed ? 20 : 32}
+                    weight={isActive ? "fill" : "regular"}
+                  />
+                  {!collapsed ? (
+                    <span className="text-[10px] font-circular-bold uppercase leading-none tracking-[0.04em]">
+                      {option.label}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
         ) : null}
       </div>
 

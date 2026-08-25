@@ -2,6 +2,9 @@ import type { Icon } from "@phosphor-icons/react";
 import {
   ChartBarIcon,
   BellIcon,
+  CalendarBlankIcon,
+  CashRegisterIcon,
+  ClockUserIcon,
   CreditCardIcon,
   CubeIcon,
   FileTextIcon,
@@ -22,6 +25,7 @@ import {
   UserCircleIcon,
   UsersThreeIcon,
   WrenchIcon,
+  QrCodeIcon,
 } from "@phosphor-icons/react/ssr";
 
 export type SidebarModule = {
@@ -318,6 +322,65 @@ export const sidebarSections: SidebarSection[] = [
   },
 ];
 
+export const attendanceSidebarSections: SidebarSection[] = [
+  {
+    key: "asistencias-dashboard",
+    label: "Dashboard",
+    icon: SquaresFourIcon,
+    direct: true,
+    route: "/asistencias/dashboard",
+    children: [],
+  },
+  {
+    key: "asistencias-personal",
+    label: "Personal",
+    icon: UsersThreeIcon,
+    direct: true,
+    route: "/asistencias/personal",
+    children: [],
+  },
+  {
+    key: "asistencias-marcajes",
+    label: "Asistencias",
+    icon: ClockUserIcon,
+    direct: true,
+    route: "/asistencias/marcajes",
+    children: [],
+  },
+  {
+    key: "asistencias-turnos",
+    label: "Turnos",
+    icon: CalendarBlankIcon,
+    direct: true,
+    route: "/asistencias/turnos",
+    children: [],
+  },
+  {
+    key: "asistencias-puntos-qr",
+    label: "Puntos QR",
+    icon: QrCodeIcon,
+    direct: true,
+    route: "/asistencias/puntos-qr",
+    children: [],
+  },
+  {
+    key: "asistencias-reportes",
+    label: "Reportes",
+    icon: PresentationChartIcon,
+    direct: true,
+    route: "/asistencias/reportes",
+    children: [],
+  },
+  {
+    key: "asistencias-configuracion",
+    label: "Configuración",
+    icon: GearSixIcon,
+    direct: true,
+    route: "/asistencias/configuracion",
+    children: [],
+  },
+];
+
 export const superAdminSidebarSections: SidebarSection[] = [
   {
     key: "superadmin-dashboard",
@@ -461,7 +524,29 @@ export const superAdminSidebarSections: SidebarSection[] = [
   },
 ];
 
-export const sidebarModules: SidebarModule[] = sidebarSections.flatMap(
+export const workspaceOptions = [
+  {
+    key: "ventas",
+    label: "Ventas",
+    icon: CashRegisterIcon,
+    route: "/dashboard",
+  },
+  {
+    key: "asistencias",
+    label: "Asistencias",
+    icon: ClockUserIcon,
+    route: "/asistencias/dashboard",
+  },
+] as const;
+
+export type SidebarWorkspace = (typeof workspaceOptions)[number]["key"];
+
+export const tenantSidebarSections = [
+  ...sidebarSections,
+  ...attendanceSidebarSections,
+];
+
+export const sidebarModules: SidebarModule[] = tenantSidebarSections.flatMap(
   (section) =>
     section.direct && section.route
       ? [
@@ -473,10 +558,6 @@ export const sidebarModules: SidebarModule[] = sidebarSections.flatMap(
           },
         ]
       : section.children,
-);
-
-const sidebarModuleMap = new Map(
-  sidebarModules.map((module) => [module.key, module]),
 );
 
 export const assignableSidebarModules = sidebarModules.filter(

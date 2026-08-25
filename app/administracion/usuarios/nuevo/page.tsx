@@ -26,7 +26,7 @@ import { branchesApi, type Branch } from "@/lib/api/branches";
 import { useAuth } from "@/lib/auth/auth-provider";
 import {
   assignableSidebarModules,
-  sidebarSections,
+  tenantSidebarSections,
   warehouseAssignableModuleKeys,
 } from "@/lib/navigation/sidebar-modules";
 import { cn } from "@/lib/utils";
@@ -384,7 +384,7 @@ export default function NuevoUsuarioPage() {
             </div>
 
             <div className="space-y-3">
-              {sidebarSections.map((section) => {
+              {tenantSidebarSections.map((section) => {
                 const modules =
                   section.direct && section.route
                     ? [
