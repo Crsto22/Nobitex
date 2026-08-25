@@ -192,15 +192,15 @@ export type PlatformSunatCompany = {
   state: PlatformCompanyState;
   planCode: PlatformPlanCode;
   planName: string;
+};
+
+export type PlatformSunatCompanyDetail = PlatformSunatCompany & {
   sunat: PlatformCompanySunatConfig;
   readiness: {
     ready: boolean;
     checks: PlatformSunatReadinessCheck[];
     missing: string[];
   };
-};
-
-export type PlatformSunatCompanyDetail = PlatformSunatCompany & {
   fiscal: {
     nombreComercial: string;
     razonSocial: string | null;
