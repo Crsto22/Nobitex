@@ -523,8 +523,13 @@ export default function VentaDetallePage() {
             weight="bold"
             className="shrink-0 text-[var(--color-muted-foreground)]"
           />
-          <span className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-            {venta.correlativo}
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-circular-bold text-[var(--color-text)]">
+              {venta.correlativo}
+            </span>
+            <span className="block truncate text-[10px] font-circular-regular text-gray-400">
+              {venta.codigoInterno}
+            </span>
           </span>
         </nav>
       }

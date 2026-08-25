@@ -699,6 +699,9 @@ export default function HistorialVentasPage() {
                       <p className="text-[10px] font-circular-regular text-[var(--color-muted-foreground)]">
                         {typeLabel}
                       </p>
+                      <p className="text-[10px] font-circular-regular text-gray-400">
+                        {venta.codigoInterno}
+                      </p>
                     </div>
                   </div>
 
