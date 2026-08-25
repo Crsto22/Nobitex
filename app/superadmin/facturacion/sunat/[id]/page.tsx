@@ -1,7 +1,6 @@
 "use client";
 
 import { NativeSelect } from "@/components/ui/select";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   useCallback,
@@ -12,7 +11,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ArrowLeftIcon,
   BuildingsIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
@@ -197,16 +195,14 @@ export default function PlatformCompanySunatDetailPage() {
   };
 
   return (
-    <DashboardShell headerTitle="Configurar SUNAT">
+    <DashboardShell
+      headerTitle={
+        detail
+          ? `SUNAT por empresa / ${detail.name}`
+          : "SUNAT por empresa / Configuracion"
+      }
+    >
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6 lg:py-5">
-        <Link
-          href="/superadmin/facturacion/sunat"
-          className="flex w-fit items-center gap-2 rounded-xl bg-[var(--color-card)] px-3 py-2 text-sm font-circular-bold text-[var(--color-text)] shadow-sm"
-        >
-          <ArrowLeftIcon size={16} weight="bold" />
-          Volver a empresas
-        </Link>
-
         {error ? (
           <p className="rounded-xl bg-[#ef4444]/10 px-4 py-3 text-sm text-[#dc2626]">
             {error}

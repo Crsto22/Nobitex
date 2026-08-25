@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
   ArrowClockwiseIcon,
+  BuildingsIcon,
+  CheckCircleIcon,
   GearSixIcon,
   MagnifyingGlassIcon,
+  ShieldCheckIcon,
+  StorefrontIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
@@ -17,6 +19,11 @@ import {
   type PlatformSunatCompany,
 } from "@/lib/api/platform-admin";
 import { cn } from "@/lib/utils";
+import {
+  CompanyPagination,
+  CompanyStateBadge,
+  PlanBadge,
+} from "../../empresas/company-controls";
 
 const defaultMeta: PlatformPaginationMeta = {
   page: 1,
@@ -29,7 +36,6 @@ export default function PlatformSunatCompaniesPage() {
   const [companies, setCompanies] = useState<PlatformSunatCompany[]>([]);
   const [meta, setMeta] = useState(defaultMeta);
   const [search, setSearch] = useState("");
-  const [submittedSearch, setSubmittedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +47,7 @@ export default function PlatformSunatCompaniesPage() {
       const response = await platformAdminApi.findSunatCompanies({
         page,
         limit: meta.limit,
-        search: submittedSearch,
+        search,
       });
       setCompanies(response.data);
       setMeta(response.meta);
@@ -54,154 +60,219 @@ export default function PlatformSunatCompaniesPage() {
     } finally {
       setLoading(false);
     }
-  }, [meta.limit, page, submittedSearch]);
+  }, [meta.limit, page, search]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
+    const timer = window.setTimeout(() => void load(), 250);
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmittedSearch(search.trim());
+  const changeSearch = (value: string) => {
+    setSearch(value);
     setPage(1);
   };
 
   return (
     <DashboardShell headerTitle="SUNAT por empresa">
-      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6 lg:py-5">
-        <section className="flex flex-col gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-          <form onSubmit={submit} className="flex min-w-0 flex-1 gap-2">
-            <div className="relative min-w-0 flex-1 md:max-w-lg">
-              <MagnifyingGlassIcon
-                size={17}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por empresa, RUC, DNI o email"
-                className="h-11 w-full rounded-xl bg-[var(--color-input-bg)] pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white disabled:opacity-60"
-            >
-              <MagnifyingGlassIcon size={16} weight="bold" />
-              Buscar
-            </button>
-          </form>
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-5 sm:p-4 lg:px-6 lg:py-5">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+          <MetricCard
+            icon={<BuildingsIcon size={20} weight="bold" />}
+            label="Empresas encontradas"
+            value={meta.total}
+            tone="dark"
+          />
+          <MetricCard
+            icon={<StorefrontIcon size={20} weight="bold" />}
+            label="Mostrando"
+            value={companies.length}
+            tone="primary"
+          />
+          <MetricCard
+            icon={<ShieldCheckIcon size={20} weight="bold" />}
+            label="Modulo SUNAT"
+            value={1}
+            tone="info"
+          />
+          <MetricCard
+            icon={<CheckCircleIcon size={20} weight="bold" />}
+            label="Pagina actual"
+            value={meta.page}
+            tone="info"
+          />
+        </section>
 
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <label className="relative min-w-0 flex-1">
+            <MagnifyingGlassIcon
+              size={18}
+              className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => changeSearch(event.target.value)}
+              placeholder="Buscar empresa, documento o correo..."
+              className="h-11 w-full rounded-xl bg-[var(--color-sidebar-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            />
+          </label>
           <button
             type="button"
             onClick={() => void load()}
             disabled={loading}
-            aria-label="Actualizar"
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-input-bg)] text-[var(--color-text)] disabled:opacity-60"
+            className={cn(
+              "flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-sidebar-active)] px-5 text-sm font-circular-bold text-white shadow-md dark:bg-[var(--color-secondary)]",
+              loading && "cursor-not-allowed opacity-70",
+            )}
           >
             <ArrowClockwiseIcon
-              size={17}
+              size={16}
               weight="bold"
               className={cn(loading && "animate-spin")}
             />
+            Actualizar
           </button>
-        </section>
+        </div>
 
         {error ? (
-          <p className="rounded-xl bg-[#ef4444]/10 px-4 py-3 text-sm text-[#dc2626]">
+          <div className="rounded-2xl bg-[#ef4444]/10 px-4 py-3 text-sm text-[#ef4444]">
             {error}
-          </p>
+          </div>
         ) : null}
 
-        <section className="overflow-hidden rounded-[14px] bg-[var(--color-card)] shadow-sm">
-          <div className="grid grid-cols-[1.3fr_130px_1fr_120px_88px] gap-3 border-b border-[var(--color-border)] px-4 py-3 text-xs font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-            <span>Empresa</span>
-            <span>Documento</span>
-            <span>Email</span>
-            <span>Plan</span>
-            <span className="text-right">Accion</span>
-          </div>
-
+        <section className="space-y-3 pb-2 pr-1">
           {loading && companies.length === 0 ? (
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-12 animate-pulse rounded-xl bg-[var(--color-input-bg)]"
-                />
-              ))}
+            <LoadingRows />
+          ) : companies.length === 0 ? (
+            <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] px-6 text-center shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+              <BuildingsIcon
+                size={48}
+                weight="light"
+                className="text-[var(--color-muted-foreground)]"
+              />
+              <p className="mt-3 font-circular-bold text-[var(--color-text)]">
+                No se encontraron empresas
+              </p>
+              <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+                Ajusta la busqueda.
+              </p>
             </div>
           ) : (
-            <div className="divide-y divide-[var(--color-border)]">
-              {companies.map((company) => (
-                <article
-                  key={company.id}
-                  className="grid grid-cols-1 gap-2 px-4 py-3 text-sm text-[var(--color-text)] md:grid-cols-[1.3fr_130px_1fr_120px_88px] md:items-center md:gap-3"
-                >
+            companies.map((company) => (
+              <article
+                key={company.id}
+                className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.45fr)_minmax(190px,1.2fr)_minmax(120px,0.8fr)_minmax(120px,0.75fr)_minmax(70px,0.35fr)] md:items-center"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-white">
+                    <StorefrontIcon size={21} weight="fill" />
+                  </span>
                   <div className="min-w-0">
-                    <p className="truncate font-circular-bold">{company.name}</p>
+                    <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+                      {company.name}
+                    </p>
                     <p className="truncate text-xs text-[var(--color-muted-foreground)]">
-                      {company.legalName ?? "Sin razon social"}
+                      {company.document ?? "Sin documento"}
                     </p>
                   </div>
-                  <p className="truncate">{company.document ?? "Sin documento"}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+                    {company.legalName ?? "Sin razon social"}
+                  </p>
                   <p className="truncate text-[var(--color-muted-foreground)]">
                     {company.email ?? "Sin email"}
                   </p>
-                  <p className="truncate">{company.planName}</p>
-                  <div className="flex justify-start md:justify-end">
-                    <Link
-                      href={`/superadmin/facturacion/sunat/${company.id}`}
-                      aria-label={`Configurar SUNAT de ${company.name}`}
-                      title="Configurar SUNAT"
-                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white"
-                    >
-                      <GearSixIcon size={18} weight="bold" />
-                    </Link>
-                  </div>
-                </article>
-              ))}
-
-              {!loading && companies.length === 0 ? (
-                <div className="px-4 py-10 text-center text-sm text-[var(--color-muted-foreground)]">
-                  No hay empresas para mostrar.
                 </div>
-              ) : null}
-            </div>
+                <PlanBadge code={company.planCode} name={company.planName} />
+                <CompanyStateBadge state={company.state} />
+                <div className="flex justify-start md:justify-end">
+                  <Link
+                    href={`/superadmin/facturacion/sunat/${company.id}`}
+                    aria-label={`Configurar SUNAT de ${company.name}`}
+                    title="Configurar SUNAT"
+                    className="grid size-10 place-items-center rounded-xl bg-[var(--color-primary)] text-white shadow-sm"
+                  >
+                    <GearSixIcon size={18} weight="bold" />
+                  </Link>
+                </div>
+              </article>
+            ))
           )}
         </section>
 
-        <footer className="flex flex-col gap-3 rounded-[14px] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-muted-foreground)] shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            Página {meta.page} de {meta.totalPages} ·{" "}
-            {meta.total.toLocaleString("es-PE")} empresas
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={loading || page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-3 font-circular-bold text-[var(--color-text)] disabled:opacity-50"
-            >
-              <ArrowLeftIcon size={15} weight="bold" />
-              Anterior
-            </button>
-            <button
-              type="button"
-              disabled={loading || page >= meta.totalPages}
-              onClick={() =>
-                setPage((current) => Math.min(meta.totalPages, current + 1))
-              }
-              className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-3 font-circular-bold text-[var(--color-text)] disabled:opacity-50"
-            >
-              Siguiente
-              <ArrowRightIcon size={15} weight="bold" />
-            </button>
-          </div>
-        </footer>
+        <CompanyPagination
+          page={meta.page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          visible={companies.length}
+          isLoading={loading}
+          onPageChange={setPage}
+        />
       </div>
     </DashboardShell>
+  );
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+  tone: "dark" | "primary" | "info";
+}) {
+  const active = tone === "dark" || tone === "primary";
+  const colors = {
+    dark: "bg-[var(--color-sidebar-active)] text-white",
+    primary: "bg-[var(--color-primary)] text-white",
+    info: "bg-[var(--color-sidebar-bg)] text-[var(--color-text)]",
+  }[tone];
+  const iconColors = {
+    dark: "bg-white/20 text-white",
+    primary: "bg-white/20 text-white",
+    info: "bg-[#eff6ff] text-[#3b82f6]",
+  }[tone];
+
+  return (
+    <article
+      className={cn("flex flex-col gap-4 rounded-2xl p-5 shadow-sm", colors)}
+    >
+      <span
+        className={cn(
+          "flex h-11 w-11 items-center justify-center rounded-xl",
+          iconColors,
+        )}
+      >
+        {icon}
+      </span>
+      <div>
+        <p
+          className={cn(
+            "text-sm font-medium",
+            active ? "text-white/70" : "text-[var(--color-muted-foreground)]",
+          )}
+        >
+          {label}
+        </p>
+        <p className="mt-1 text-2xl leading-none font-circular-bold">{value}</p>
+      </div>
+    </article>
+  );
+}
+
+function LoadingRows() {
+  return (
+    <div className="space-y-3 p-5">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-16 animate-pulse rounded-xl bg-[var(--color-input-bg)]"
+        />
+      ))}
+    </div>
   );
 }
