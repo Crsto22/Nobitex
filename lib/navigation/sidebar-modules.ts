@@ -13,6 +13,7 @@ import {
   PresentationChartIcon,
   ReceiptIcon,
   RulerIcon,
+  ShieldCheckIcon,
   ShoppingBagOpenIcon,
   ShoppingCartIcon,
   SquaresFourIcon,
@@ -386,6 +387,12 @@ export const superAdminSidebarSections: SidebarSection[] = [
         label: "Configuracion del emisor",
         icon: GearSixIcon,
         route: "/superadmin/facturacion/emisor",
+      },
+      {
+        key: "superadmin-sunat-empresas",
+        label: "SUNAT por empresa",
+        icon: ShieldCheckIcon,
+        route: "/superadmin/facturacion/sunat",
       },
       {
         key: "superadmin-series",

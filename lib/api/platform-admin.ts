@@ -20,6 +20,10 @@ export type PlatformAuditAction =
   | "company_limits_updated"
   | "overage_closed"
   | "overage_paid"
+  | "company_fiscal_data_updated"
+  | "sunat_config_updated"
+  | "sunat_certificate_uploaded"
+  | "sunat_certificate_deleted"
   | "platform_billing_config_updated"
   | "platform_receipt_issued"
   | "platform_receipt_retried"
@@ -152,6 +156,80 @@ export type PlatformOveragePricing = {
   includesIgv: true;
   updatedAt: string;
   updatedBy: { id: string; name: string; email: string } | null;
+};
+
+export type PlatformSunatReadinessCheck = {
+  key: string;
+  label: string;
+  ok: boolean;
+};
+
+export type PlatformCompanySunatConfig = {
+  ambiente: "BETA" | "PRODUCCION";
+  igvPorcentaje: string;
+  activo: boolean;
+  usuarioSolConfigurado: boolean;
+  claveSolConfigurada: boolean;
+  clientIdConfigurado: boolean;
+  clientSecretConfigurado: boolean;
+  certificadoConfigurado: boolean;
+  certificadoPasswordConfigurado: boolean;
+  certificado: {
+    nombre: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+    uploadedAt: string | null;
+  } | null;
+  updatedAt: string | null;
+};
+
+export type PlatformSunatCompany = {
+  id: string;
+  name: string;
+  legalName: string | null;
+  document: string | null;
+  email: string | null;
+  state: PlatformCompanyState;
+  planCode: PlatformPlanCode;
+  planName: string;
+  sunat: PlatformCompanySunatConfig;
+  readiness: {
+    ready: boolean;
+    checks: PlatformSunatReadinessCheck[];
+    missing: string[];
+  };
+};
+
+export type PlatformSunatCompanyDetail = PlatformSunatCompany & {
+  fiscal: {
+    nombreComercial: string;
+    razonSocial: string | null;
+    ruc: string | null;
+    dni: string | null;
+    direccion: string | null;
+  };
+};
+
+export type PlatformSunatCompaniesResponse = {
+  data: PlatformSunatCompany[];
+  meta: PlatformPaginationMeta;
+};
+
+export type UpdatePlatformSunatFiscalPayload = {
+  nombreComercial?: string;
+  razonSocial?: string;
+  ruc?: string;
+  direccion?: string;
+};
+
+export type UpdatePlatformSunatConfigPayload = {
+  ambiente?: "BETA" | "PRODUCCION";
+  activo?: boolean;
+  igvPorcentaje?: string;
+  usuarioSol?: string;
+  claveSol?: string;
+  clientId?: string;
+  clientSecret?: string;
 };
 
 export type PlatformOverageStatus = "open" | "ready" | "pendiente" | "pagado";
@@ -570,6 +648,59 @@ export const platformAdminApi = {
   getOveragePricing() {
     return authFetch<PlatformOveragePricing>(
       "/platform-admin/plans/overage-pricing",
+    );
+  },
+
+  findSunatCompanies(query: { page?: number; limit?: number; search?: string } = {}) {
+    const params = new URLSearchParams();
+    if (query.page) params.set("page", String(query.page));
+    if (query.limit) params.set("limit", String(query.limit));
+    if (query.search?.trim()) params.set("search", query.search.trim());
+
+    return authFetch<PlatformSunatCompaniesResponse>(
+      `/platform-admin/sunat/companies${params.size ? `?${params}` : ""}`,
+    );
+  },
+
+  getSunatCompany(id: string) {
+    return authFetch<PlatformSunatCompanyDetail>(
+      `/platform-admin/sunat/companies/${encodeURIComponent(id)}`,
+    );
+  },
+
+  updateSunatFiscal(id: string, payload: UpdatePlatformSunatFiscalPayload) {
+    return authFetch<PlatformSunatCompanyDetail>(
+      `/platform-admin/sunat/companies/${encodeURIComponent(id)}/fiscal`,
+      { method: "PATCH", body: JSON.stringify(payload) },
+    );
+  },
+
+  updateSunatConfig(id: string, payload: UpdatePlatformSunatConfigPayload) {
+    return authFetch<PlatformSunatCompanyDetail>(
+      `/platform-admin/sunat/companies/${encodeURIComponent(id)}/config`,
+      { method: "PATCH", body: JSON.stringify(payload) },
+    );
+  },
+
+  uploadSunatCertificate(
+    id: string,
+    file: File,
+    certificatePassword: string,
+  ) {
+    const body = new FormData();
+    body.append("certificate", file);
+    body.append("certificatePassword", certificatePassword);
+
+    return authFetch<PlatformSunatCompanyDetail>(
+      `/platform-admin/sunat/companies/${encodeURIComponent(id)}/certificate`,
+      { method: "POST", body },
+    );
+  },
+
+  deleteSunatCertificate(id: string) {
+    return authFetch<PlatformSunatCompanyDetail>(
+      `/platform-admin/sunat/companies/${encodeURIComponent(id)}/certificate`,
+      { method: "DELETE" },
     );
   },
 

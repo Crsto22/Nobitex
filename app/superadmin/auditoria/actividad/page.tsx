@@ -281,6 +281,10 @@ function getAuditTitle(action: string, category: string) {
     platform_extra_charge_created: "Cobro adicional registrado",
     overage_closed: "Excedente cerrado",
     overage_paid: "Excedente pagado",
+    company_fiscal_data_updated: "Datos fiscales actualizados",
+    sunat_config_updated: "SUNAT de empresa actualizado",
+    sunat_certificate_uploaded: "Certificado SUNAT subido",
+    sunat_certificate_deleted: "Certificado SUNAT eliminado",
     plan_pricing_updated: "Tarifa actualizada",
     plan_limits_updated: "Límites del plan actualizados",
     overage_pricing_updated: "Tarifa de excedente actualizada",
@@ -301,5 +305,4 @@ function getAuditTitle(action: string, category: string) {
           ? "Actividad de afiliados"
           : "Nueva empresa");
 }
-
 
