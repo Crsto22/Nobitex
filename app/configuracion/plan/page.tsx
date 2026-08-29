@@ -11,7 +11,6 @@ import {
   DatabaseIcon,
   DownloadSimpleIcon,
   FileTextIcon,
-  QrCodeIcon,
   ReceiptIcon,
   StorefrontIcon,
   TagIcon,
@@ -135,7 +134,7 @@ export default function PlanPage() {
     setError("");
     try {
       const [catalog] = await Promise.all([plansApi.findAll(), refreshPlan()]);
-      setPlans(catalog.filter((plan) => plan.code === "pos_basico"));
+      setPlans(catalog);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -706,56 +705,6 @@ function UsageTab({
           <p className="text-xl font-circular-bold text-[#d97706]">
             {formatCurrency(currentPlan.documentOverage.estimatedAmount)}
           </p>
-        </div>
-      ) : null}
-
-      {currentPlan.attendance?.effectiveActive ? (
-        <div className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                Complemento de Asistencias
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                {currentPlan.attendance.effectiveEmployeesLimit.toLocaleString("es-PE")}{" "}
-                trabajadores y{" "}
-                {currentPlan.attendance.effectiveQrPointsLimit.toLocaleString("es-PE")}{" "}
-                puntos QR {currentPlan.attendance.trial ? "de prueba." : "contratados."}
-              </p>
-            </div>
-            <p className="text-xl font-circular-bold text-[var(--color-text)]">
-              {formatCurrency(currentPlan.attendance.monthlyPrice)}
-              <span className="ml-1 text-xs font-normal text-[var(--color-muted-foreground)]">
-                / mes
-              </span>
-            </p>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <UsageCard
-              item={{
-                key: "attendanceEmployees",
-                label: "Trabajadores",
-                icon: UsersThreeIcon,
-                color: "#14b8a6",
-              }}
-              used={currentPlan.usage.attendanceEmployees}
-              limit={currentPlan.effectiveLimits.attendanceEmployees}
-              base={currentPlan.baseLimits.attendanceEmployees}
-              additional={currentPlan.additionalLimits.attendanceEmployees}
-            />
-            <UsageCard
-              item={{
-                key: "attendanceQrPoints",
-                label: "Puntos QR",
-                icon: QrCodeIcon,
-                color: "#22c55e",
-              }}
-              used={currentPlan.usage.attendanceQrPoints}
-              limit={currentPlan.effectiveLimits.attendanceQrPoints}
-              base={currentPlan.baseLimits.attendanceQrPoints}
-              additional={currentPlan.additionalLimits.attendanceQrPoints}
-            />
-          </div>
         </div>
       ) : null}
 
