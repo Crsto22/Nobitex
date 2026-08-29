@@ -30,8 +30,6 @@ import {
 } from "@/lib/api/platform-billing";
 import {
   plansApi,
-  type AttendanceAddon,
-  type AttendancePricing,
   type PlanDefinition,
   type PlanLimits,
 } from "@/lib/api/plans";
@@ -137,7 +135,7 @@ export default function PlanPage() {
     setError("");
     try {
       const [catalog] = await Promise.all([plansApi.findAll(), refreshPlan()]);
-      setPlans(catalog);
+      setPlans(catalog.filter((plan) => plan.code === "pos_basico"));
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -273,43 +271,6 @@ export default function PlanPage() {
           />
         </section>
 
-        {currentPlan?.attendance?.effectiveActive ? (
-          <section className="grid gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.08)] sm:grid-cols-[1.2fr_1fr_1fr_1fr] sm:items-center">
-            <div>
-              <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                Plan de Asistencias
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                {currentPlan.attendance.trial
-                  ? "Beneficio activo por prueba gratuita."
-                  : "Complemento contratado activo."}
-              </p>
-            </div>
-            <AttendanceMiniMetric
-              label="Trabajadores"
-              value={`${currentPlan.usage.attendanceEmployees.toLocaleString("es-PE")} / ${currentPlan.attendance.effectiveEmployeesLimit.toLocaleString("es-PE")}`}
-              icon={<UsersThreeIcon size={18} weight="fill" />}
-              color="#14b8a6"
-            />
-            <AttendanceMiniMetric
-              label="Puntos QR"
-              value={`${currentPlan.usage.attendanceQrPoints.toLocaleString("es-PE")} / ${currentPlan.attendance.effectiveQrPointsLimit.toLocaleString("es-PE")}`}
-              icon={<QrCodeIcon size={18} weight="fill" />}
-              color="#22c55e"
-            />
-            <AttendanceMiniMetric
-              label="Vence"
-              value={
-                currentPlan.attendance.endsAt
-                  ? formatDate(currentPlan.attendance.endsAt)
-                  : "Sin vencimiento"
-              }
-              icon={<CalendarBlankIcon size={18} weight="fill" />}
-              color="#2563eb"
-            />
-          </section>
-        ) : null}
-
         <nav
           className="grid grid-cols-3 gap-1.5 rounded-[14px] bg-[var(--color-input-bg)] p-1.5"
           aria-label="Secciones del plan"
@@ -359,8 +320,6 @@ export default function PlanPage() {
             }
             customerName={getUserDisplayName(user)}
             customerEmail={user?.email}
-            attendance={currentPlan?.attendance}
-            attendancePricing={currentPlan?.attendancePricing}
             loading={isLoading}
           />
         ) : null}
@@ -394,8 +353,6 @@ function PlansTab({
   companyName,
   customerName,
   customerEmail,
-  attendance,
-  attendancePricing,
   loading,
 }: {
   plans: PlanDefinition[];
@@ -406,8 +363,6 @@ function PlansTab({
   companyName: string;
   customerName: string;
   customerEmail?: string;
-  attendance?: AttendanceAddon;
-  attendancePricing?: AttendancePricing;
   loading: boolean;
 }) {
   return (
@@ -434,15 +389,6 @@ function PlansTab({
           ))}
         </div>
       </div>
-
-      <AttendanceQuoteCard
-        key={`${attendance?.active}-${attendance?.employeesLimit}-${attendance?.qrPointsLimit}`}
-        attendance={attendance}
-        attendancePricing={attendancePricing}
-        companyName={companyName}
-        customerName={customerName}
-        customerEmail={customerEmail}
-      />
 
       <div className="-mx-3 px-3 sm:mx-0 sm:px-0 md:contents">
         <div className="flex gap-4 overflow-x-auto scrollbar-hidden pb-2 sm:gap-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-5">
@@ -478,131 +424,6 @@ function PlansTab({
         </div>
       </div>
     </section>
-  );
-}
-
-function AttendanceQuoteCard({
-  attendance,
-  attendancePricing,
-  companyName,
-  customerName,
-  customerEmail,
-}: {
-  attendance?: AttendanceAddon;
-  attendancePricing?: AttendancePricing;
-  companyName: string;
-  customerName: string;
-  customerEmail?: string;
-}) {
-  const [employees, setEmployees] = useState(
-    String(attendance?.employeesLimit || 10),
-  );
-  const [qrPoints, setQrPoints] = useState(String(attendance?.qrPointsLimit || 1));
-
-  const employeeUnitPrice = Number(
-    attendancePricing?.employeeUnitPrice ?? 0,
-  );
-  const qrPointUnitPrice = Number(
-    attendancePricing?.qrPointUnitPrice ?? 0,
-  );
-  const safeEmployees = Math.max(0, Math.trunc(Number(employees) || 0));
-  const safeQrPoints = Math.max(0, Math.trunc(Number(qrPoints) || 0));
-  const monthlyTotal =
-    safeEmployees * employeeUnitPrice + safeQrPoints * qrPointUnitPrice;
-  const hasPrices = employeeUnitPrice > 0 || qrPointUnitPrice > 0;
-
-  return (
-    <article className="grid gap-4 rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)] lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-      <div>
-        <div className="flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-[12px] bg-[#14b8a6]/10 text-[#0f766e]">
-            <QrCodeIcon size={20} weight="fill" />
-          </span>
-          <div>
-            <h2 className="text-base font-bold text-[var(--color-text)]">
-              Asistencias
-            </h2>
-            <p className="text-xs text-[var(--color-muted-foreground)]">
-              {hasPrices
-                ? `${formatCurrency(String(employeeUnitPrice))} por trabajador · ${formatCurrency(String(qrPointUnitPrice))} por punto QR`
-                : "Precio según cotización"}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <NumberField
-            label="Trabajadores"
-            value={employees}
-            min={1}
-            onChange={setEmployees}
-          />
-          <NumberField
-            label="Puntos QR"
-            value={qrPoints}
-            min={0}
-            onChange={setQrPoints}
-          />
-        </div>
-      </div>
-
-      <div className="rounded-[12px] bg-[var(--color-input-bg)] p-4">
-        <p className="text-xs text-[var(--color-muted-foreground)]">
-          Total mensual
-        </p>
-        <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
-          {hasPrices ? formatCurrency(String(monthlyTotal)) : "A cotizar"}
-        </p>
-        <a
-          href={buildAttendanceWhatsAppUrl({
-            companyName,
-            customerName,
-            customerEmail,
-            employees: safeEmployees,
-            qrPoints: safeQrPoints,
-            monthlyTotal,
-            hasPrices,
-          })}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-4 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#25d366] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90"
-        >
-          <Image
-            src="/svg/redes-sociales/whatsapp.svg"
-            alt=""
-            width={18}
-            height={18}
-          />
-          Solicitar Asistencias
-        </a>
-      </div>
-    </article>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  min,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  min: number;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="grid gap-1 text-sm text-[var(--color-muted-foreground)]">
-      {label}
-      <input
-        type="number"
-        min={min}
-        step={1}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
-      />
-    </label>
   );
 }
 
@@ -1133,37 +954,6 @@ function MetricCard({
   );
 }
 
-function AttendanceMiniMetric({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: ReactNode;
-  color: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-[12px] bg-[var(--color-input-bg)] p-3">
-      <span
-        className="grid size-9 shrink-0 place-items-center rounded-[10px]"
-        style={{ backgroundColor: `${color}18`, color }}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-xs text-[var(--color-muted-foreground)]">
-          {label}
-        </p>
-        <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function UsageCard({
   item,
   used,
@@ -1291,44 +1081,6 @@ function buildWhatsAppUrl({
     `Plan: ${plan.name}`,
     `Periodo: ${annual ? "Anual (12 meses)" : "Mensual (1 mes)"}`,
     `Total: ${formatCurrency(total)}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
-    /\D/g,
-    "",
-  );
-  const text = encodeURIComponent(message);
-  return phone
-    ? `https://wa.me/${phone}?text=${text}`
-    : `https://api.whatsapp.com/send?text=${text}`;
-}
-
-function buildAttendanceWhatsAppUrl({
-  companyName,
-  customerName,
-  customerEmail,
-  employees,
-  qrPoints,
-  monthlyTotal,
-  hasPrices,
-}: {
-  companyName: string;
-  customerName: string;
-  customerEmail?: string;
-  employees: number;
-  qrPoints: number;
-  monthlyTotal: number;
-  hasPrices: boolean;
-}) {
-  const message = [
-    "Hola, deseo solicitar Asistencias para Nuvex.",
-    `Empresa: ${companyName}`,
-    `Cliente: ${customerName}`,
-    customerEmail ? `Correo: ${customerEmail}` : "",
-    `Trabajadores: ${employees.toLocaleString("es-PE")}`,
-    `Puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
-    hasPrices ? `Total mensual estimado: ${formatCurrency(String(monthlyTotal))}` : "",
   ]
     .filter(Boolean)
     .join("\n");

@@ -290,11 +290,11 @@ export const sidebarSections: SidebarSection[] = [
     ],
   },
   {
-    key: "plan",
+    key: "asistencias-plan",
     label: "Plan y facturacion",
     icon: CreditCardIcon,
     direct: true,
-    route: "/configuracion/plan",
+    route: "/asistencias/plan",
     children: [],
     assignable: false,
     ownerOnly: true,

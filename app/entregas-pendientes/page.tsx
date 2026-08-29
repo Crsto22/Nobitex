@@ -132,10 +132,6 @@ export default function PendingDeliveriesPage() {
   }, [searchTerm]);
 
   useEffect(() => {
-    setPage(1);
-  }, [activeTab]);
-
-  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void loadDeliveries();
     }, 0);

@@ -189,7 +189,9 @@ export function DashboardShell({
   const canAccessTenantRoute =
     !currentModule ||
     currentModule.key === "mi-cuenta" ||
-    (currentModule.key === "plan" && isOwner) ||
+    ((currentModule.key === "plan" ||
+      currentModule.key === "asistencias-plan") &&
+      isOwner) ||
     (!isExpired && allowedModuleKeys.includes(currentModule.key));
   const canAccessCurrentRoute = mustCompleteSetup
     ? isOnboardingRoute
