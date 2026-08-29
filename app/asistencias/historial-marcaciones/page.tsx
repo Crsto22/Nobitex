@@ -102,8 +102,8 @@ export default function HistorialMarcacionesPage() {
   return (
     <DashboardShell headerTitle="Historial">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <div className="sticky -top-4 z-30 -mx-4 grid gap-3 bg-white px-4 py-2 sm:grid-cols-2 lg:-mx-6 lg:grid-cols-[1fr_auto_auto_auto] lg:px-6 dark:bg-[var(--color-background)]">
-          <label className="relative">
+        <div className="sticky -top-4 z-30 -mx-4 grid grid-cols-2 gap-3 bg-white px-4 py-2 lg:-mx-6 lg:grid-cols-[1fr_auto_auto_auto] lg:px-6 dark:bg-[var(--color-background)]">
+          <label className="relative col-span-2 lg:col-span-1">
             <MagnifyingGlassIcon
               size={18}
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-placeholder)]"
@@ -127,7 +127,7 @@ export default function HistorialMarcacionesPage() {
               resetPage();
             }}
             options={entryTypeOptions}
-            className="w-[155px]"
+            className="min-w-0 lg:w-[155px]"
           />
           <Select
             value={selectedMethod}
@@ -136,7 +136,7 @@ export default function HistorialMarcacionesPage() {
               resetPage();
             }}
             options={methodOptions}
-            className="w-[165px]"
+            className="min-w-0 lg:w-[165px]"
           />
           <Select
             value={selectedBranch}
@@ -153,7 +153,7 @@ export default function HistorialMarcacionesPage() {
                 value: branch.id,
               })),
             ]}
-            className="w-[180px]"
+            className="min-w-0 lg:w-[180px]"
           />
         </div>
 

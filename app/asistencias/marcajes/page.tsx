@@ -220,8 +220,8 @@ export default function AsistenciasMarcajesPage() {
           />
         </div>
 
-        <div className="sticky -top-4 z-30 -mx-4 grid gap-3 bg-white px-4 py-2 sm:grid-cols-2 lg:-mx-6 lg:grid-cols-[1fr_auto_auto_auto_auto] lg:px-6 dark:bg-[var(--color-background)]">
-          <label className="relative">
+        <div className="sticky -top-4 z-30 -mx-4 grid grid-cols-2 gap-3 bg-white px-4 py-2 lg:-mx-6 lg:grid-cols-[1fr_auto_auto_auto_auto] lg:px-6 dark:bg-[var(--color-background)]">
+          <label className="relative col-span-2 lg:col-span-1">
             <MagnifyingGlassIcon
               size={18}
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-placeholder)]"
@@ -239,13 +239,13 @@ export default function AsistenciasMarcajesPage() {
             value={range}
             onChange={(value) => setRange(value as AttendanceTimeEntryRange)}
             options={rangeOptions.map((o) => ({ label: o.label, value: o.value }))}
-            className="w-[140px]"
+            className="min-w-0 lg:w-[140px]"
           />
           <Select
             value={status}
             onChange={(value) => setStatus(value as AttendanceTimeEntryStatusFilter)}
             options={statusOptions.map((o) => ({ label: o.label, value: o.value }))}
-            className="w-[150px]"
+            className="min-w-0 lg:w-[150px]"
           />
           <Select
             value={selectedShift}
@@ -256,7 +256,7 @@ export default function AsistenciasMarcajesPage() {
               { label: "Todos los turnos", value: "todos" },
               ...shifts.map((shift) => ({ label: shift.nombre, value: shift.id })),
             ]}
-            className="w-[180px]"
+            className="min-w-0 lg:w-[180px]"
           />
           <Select
             value={selectedBranch}
@@ -267,7 +267,7 @@ export default function AsistenciasMarcajesPage() {
               { label: "Todas las sucursales", value: "todos" },
               ...branches.map((branch) => ({ label: branch.nombre, value: branch.id })),
             ]}
-            className="w-[180px]"
+            className="min-w-0 lg:w-[180px]"
           />
         </div>
 
@@ -382,7 +382,7 @@ function ManualEntryModal({
               value: employee.id,
             }))}
           />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <Select
               label="Tipo"
               value={type}

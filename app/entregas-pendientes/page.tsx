@@ -5,6 +5,7 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   ClockIcon,
+  MagnifyingGlassIcon,
   PackageIcon,
   ReceiptIcon,
   SpinnerGapIcon,
@@ -29,6 +30,7 @@ const tabConfig: Array<{ label: string; value: DeliveryStatusQuery }> = [
   { label: "Ventas pendientes", value: "pendiente" },
   { label: "Ventas entregadas", value: "entregada" },
 ];
+const pageSize = 10;
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -68,7 +70,16 @@ function customerName(sale: VentaResponse) {
 export default function PendingDeliveriesPage() {
   const [activeTab, setActiveTab] = useState<DeliveryStatusQuery>("pendiente");
   const [sales, setSales] = useState<VentaResponse[]>([]);
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    totalPages: 1,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedSale, setSelectedSale] = useState<VentaResponse | null>(null);
   const toast = useSystemToast();
 
@@ -84,8 +95,14 @@ export default function PendingDeliveriesPage() {
   const loadDeliveries = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await salesApi.findDeliveries(activeTab);
+      const response = await salesApi.findDeliveries({
+        estado: activeTab,
+        page,
+        limit: pageSize,
+        search: debouncedSearchTerm || undefined,
+      });
       setSales(response.data);
+      setMeta(response.meta);
     } catch (error: unknown) {
       toast.showToast({
         title: "No se pudieron cargar entregas",
@@ -96,7 +113,20 @@ export default function PendingDeliveriesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, toast]);
+  }, [activeTab, debouncedSearchTerm, page, toast]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+      setPage(1);
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -120,7 +150,7 @@ export default function PendingDeliveriesPage() {
                   {activeTab === "pendiente" ? "Por entregar" : "Entregadas"}
                 </p>
                 <p className="text-2xl font-circular-bold leading-none text-[var(--color-text)] font-circular-regular">
-                  {sales.length}
+                  {meta.total}
                 </p>
               </div>
             </div>
@@ -163,13 +193,16 @@ export default function PendingDeliveriesPage() {
           </div>
         </div>
 
-        <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 sm:flex-row sm:items-center sm:justify-between lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
+        <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
           <div className="flex w-full rounded-[16px] bg-[var(--color-input-bg)] p-1 sm:max-w-md">
             {tabConfig.map((tab) => (
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => {
+                  setActiveTab(tab.value);
+                  setPage(1);
+                }}
                 className={cn(
                   "h-10 flex-1 rounded-[14px] px-3 text-sm font-circular-bold transition-colors",
                   activeTab === tab.value
@@ -181,18 +214,34 @@ export default function PendingDeliveriesPage() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => void loadDeliveries()}
-            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-          >
-            <SpinnerGapIcon
-              size={16}
-              weight="bold"
-              className={cn(isLoading && "animate-spin")}
-            />
-            Actualizar
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="relative w-full sm:max-w-md">
+              <MagnifyingGlassIcon
+                size={18}
+                weight="bold"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+              />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar venta, DNI o cliente"
+                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none transition-colors focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void loadDeliveries()}
+              className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <SpinnerGapIcon
+                size={16}
+                weight="bold"
+                className={cn(isLoading && "animate-spin")}
+              />
+              Actualizar
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3 pr-1 pb-2">
@@ -224,7 +273,7 @@ export default function PendingDeliveriesPage() {
                   No hay ventas en este estado
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                  Cambia de pestaña o actualiza la lista
+                  Cambia de pestaña, busca otro dato o actualiza la lista
                 </p>
               </div>
             </div>
@@ -359,6 +408,35 @@ export default function PendingDeliveriesPage() {
               );
             })
           )}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Mostrando {sales.length} de {meta.total} ventas
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={isLoading || page <= 1}
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <span className="flex h-8 min-w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
+              {meta.page} / {meta.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setPage((current) => Math.min(meta.totalPages, current + 1))
+              }
+              disabled={isLoading || page >= meta.totalPages}
+              className="flex h-8 items-center justify-center rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </div>
 

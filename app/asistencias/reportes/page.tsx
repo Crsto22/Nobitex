@@ -8,11 +8,12 @@ import {
   PresentationChartIcon,
   UsersThreeIcon,
   WarningCircleIcon,
+  BuildingsIcon,
+  CaretDownIcon,
 } from "@phosphor-icons/react/ssr";
 import type { TooltipContentProps } from "recharts";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
-import { FilterBar } from "@/components/DashboardShell/filter-bar";
 import {
   Bar,
   BarChart,
@@ -27,6 +28,7 @@ import {
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   attendanceDashboardApi,
+  type AttendanceDashboardDateFilter,
   type AttendanceDashboardResponse,
   type AttendanceDashboardStatusItem,
   type AttendanceDashboardTrendItem,
@@ -36,7 +38,7 @@ import {
   type AttendanceTimeEntryHistoryItem,
 } from "@/lib/api/attendance-time-entries";
 import { branchesApi, type Branch } from "@/lib/api/branches";
-import type { DashboardDateFilter } from "@/lib/api/dashboard";
+import { cn } from "@/lib/utils";
 
 const emptyReport: AttendanceDashboardResponse = {
   filters: {
@@ -75,7 +77,9 @@ export default function AsistenciasReportesPage() {
   const [report, setReport] = useState<AttendanceDashboardResponse | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedDateFilter, setSelectedDateFilter] =
-    useState<DashboardDateFilter>("30days");
+    useState<AttendanceDashboardDateFilter>("month");
+  const [fromDate, setFromDate] = useState(() => dateInputValue(new Date()));
+  const [toDate, setToDate] = useState(() => dateInputValue(new Date()));
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -87,9 +91,11 @@ export default function AsistenciasReportesPage() {
     const response = await attendanceDashboardApi.find({
       dateFilter: selectedDateFilter,
       sucursalId: selectedBranch,
+      desde: selectedDateFilter === "custom" ? fromDate : undefined,
+      hasta: selectedDateFilter === "custom" ? toDate : undefined,
     });
     setReport(response);
-  }, [selectedBranch, selectedDateFilter]);
+  }, [fromDate, selectedBranch, selectedDateFilter, toDate]);
 
   useEffect(() => {
     let mounted = true;
@@ -152,12 +158,23 @@ export default function AsistenciasReportesPage() {
     try {
       const rows = await attendanceTimeEntriesApi.findHistory({
         page: 1,
-        limit: 1000,
+        limit: 100,
         sucursalId: selectedBranch,
         desde: current.filters.range.start,
         hasta: current.filters.range.end,
       });
-      const fileRows = rows.data.map(toExportRow);
+      let allRows = rows.data;
+      for (let page = 2; page <= rows.meta.totalPages; page += 1) {
+        const next = await attendanceTimeEntriesApi.findHistory({
+          page,
+          limit: 100,
+          sucursalId: selectedBranch,
+          desde: current.filters.range.start,
+          hasta: current.filters.range.end,
+        });
+        allRows = allRows.concat(next.data);
+      }
+      const fileRows = allRows.map(toExportRow);
       downloadBlob(
         format === "csv"
           ? new Blob([toCsv(fileRows)], { type: "text/csv;charset=utf-8" })
@@ -206,11 +223,13 @@ export default function AsistenciasReportesPage() {
           </div>
         </header>
 
-        <FilterBar
+        <ReportFilters
           selectedDateFilter={selectedDateFilter}
-          onDateFilterChange={(value) =>
-            setSelectedDateFilter(value as DashboardDateFilter)
-          }
+          onDateFilterChange={setSelectedDateFilter}
+          fromDate={fromDate}
+          toDate={toDate}
+          onFromDateChange={setFromDate}
+          onToDateChange={setToDate}
           branches={branches}
           selectedBranch={selectedBranch}
           onBranchChange={setSelectedBranch}
@@ -295,7 +314,7 @@ function DownloadButton({
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+      className="flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[#107c41] px-4 text-sm font-circular-bold text-white shadow-sm transition-opacity hover:bg-[#0e6f3a] disabled:opacity-60"
     >
       <DownloadSimpleIcon
         size={17}
@@ -304,6 +323,136 @@ function DownloadButton({
       />
       {loading ? "Descargando..." : `Descargar ${label}`}
     </button>
+  );
+}
+
+const periodOptions: Array<{
+  label: string;
+  value: AttendanceDashboardDateFilter;
+}> = [
+  { label: "Semana", value: "week" },
+  { label: "Quincena", value: "fortnight" },
+  { label: "Mes", value: "month" },
+  { label: "Por fecha", value: "custom" },
+];
+
+function ReportFilters({
+  selectedDateFilter,
+  onDateFilterChange,
+  fromDate,
+  toDate,
+  onFromDateChange,
+  onToDateChange,
+  branches,
+  selectedBranch,
+  onBranchChange,
+  onRefresh,
+  isRefreshing,
+}: {
+  selectedDateFilter: AttendanceDashboardDateFilter;
+  onDateFilterChange: (value: AttendanceDashboardDateFilter) => void;
+  fromDate: string;
+  toDate: string;
+  onFromDateChange: (value: string) => void;
+  onToDateChange: (value: string) => void;
+  branches: Branch[];
+  selectedBranch: string;
+  onBranchChange: (value: string) => void;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const branchOptions = [
+    { label: "Todas", value: "all" },
+    ...branches.map((branch) => ({ label: branch.nombre, value: branch.id })),
+  ];
+  const currentBranch = branchOptions.find((branch) => branch.value === selectedBranch);
+
+  return (
+    <section className="rounded-[14px] border border-[#107c41]/15 bg-[#107c41]/5 p-3 sm:p-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hidden">
+          {periodOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onDateFilterChange(option.value)}
+              className={cn(
+                "h-10 shrink-0 rounded-[10px] px-4 text-sm font-circular-bold transition-colors",
+                selectedDateFilter === option.value
+                  ? "bg-[#107c41] text-white shadow-sm"
+                  : "bg-[var(--color-card)] text-[#107c41] hover:bg-[#107c41]/10",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          {selectedDateFilter === "custom" ? (
+            <div className="col-span-2 grid grid-cols-2 gap-2 sm:flex">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(event) => onFromDateChange(event.target.value)}
+                className="h-10 rounded-[10px] border border-[#107c41]/20 bg-[var(--color-card)] px-3 text-sm text-[var(--color-text)] outline-none"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(event) => onToDateChange(event.target.value)}
+                className="h-10 rounded-[10px] border border-[#107c41]/20 bg-[var(--color-card)] px-3 text-sm text-[var(--color-text)] outline-none"
+              />
+            </div>
+          ) : null}
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--color-card)] px-4 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[#107c41]/10 sm:w-auto"
+            >
+              <BuildingsIcon size={16} weight="bold" />
+              {currentBranch?.label ?? "Cargando..."}
+              <CaretDownIcon size={14} weight="bold" />
+            </button>
+            {isOpen ? (
+              <div className="absolute right-0 top-full z-10 mt-2 w-48 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                {branchOptions.map((branch) => (
+                  <button
+                    key={branch.value}
+                    type="button"
+                    onClick={() => {
+                      onBranchChange(branch.value);
+                      setIsOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-bold transition-colors",
+                      selectedBranch === branch.value
+                        ? "bg-[#107c41] text-white"
+                        : "text-[var(--color-text)] hover:bg-[#107c41]/10",
+                    )}
+                  >
+                    <BuildingsIcon size={16} weight="bold" />
+                    {branch.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="flex h-10 items-center justify-center rounded-[10px] bg-[#107c41] px-4 text-sm font-circular-bold text-white shadow-sm transition-opacity hover:bg-[#0e6f3a] disabled:opacity-60"
+          >
+            {isRefreshing ? "Actualizando..." : "Actualizar"}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -621,7 +770,15 @@ function toExcelHtml(rows: Array<Record<string, string>>) {
   const headers = Object.keys(rows[0]);
   return `
     <html>
-      <head><meta charset="utf-8" /></head>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          table { border-collapse: collapse; font-family: Arial, sans-serif; }
+          th { background: #107c41; color: #ffffff; font-weight: 700; }
+          th, td { border: 1px solid #b7dfc8; padding: 8px 10px; }
+          tr:nth-child(even) td { background: #eef8f2; }
+        </style>
+      </head>
       <body>
         <table>
           <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
@@ -652,6 +809,10 @@ function downloadBlob(blob: Blob, name: string) {
 
 function fileName(extension: "csv" | "xls") {
   return `reporte-asistencias-${new Date().toISOString().slice(0, 10)}.${extension}`;
+}
+
+function dateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function employeeName(employee: AttendanceTimeEntryHistoryItem["empleado"]) {

@@ -251,8 +251,8 @@ export default function AsistenciasTurnosPage() {
           />
         </div>
 
-        <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 sm:flex-row sm:items-center lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
-          <label className="relative flex-1">
+        <div className="sticky -top-4 z-30 -mx-4 grid grid-cols-2 gap-3 bg-white px-4 py-2 lg:-mx-6 lg:flex lg:items-center lg:px-6 dark:bg-[var(--color-background)]">
+          <label className="relative col-span-2 lg:flex-1">
             <MagnifyingGlassIcon
               size={18}
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-placeholder)]"
@@ -289,7 +289,7 @@ export default function AsistenciasTurnosPage() {
           <button
             type="button"
             onClick={openCreateForm}
-            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 sm:w-auto"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 lg:w-auto lg:px-5"
           >
             <PlusIcon size={16} weight="bold" />
             Nuevo turno
@@ -592,7 +592,7 @@ function ShiftFormModal({
           onChange={(value) => setField("nombre", value)}
         />
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           <InputField
             id="shift-start"
             label="Hora entrada"
@@ -1041,7 +1041,7 @@ function DropdownFilter({
   onSelect: (value: StatusFilter) => void;
 }) {
   return (
-    <div className="relative w-full sm:w-[160px]">
+    <div className="relative min-w-0 lg:w-[160px]">
       <button
         type="button"
         onClick={onToggle}

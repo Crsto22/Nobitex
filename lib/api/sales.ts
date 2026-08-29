@@ -329,6 +329,23 @@ export type VentasResponse = {
 
 export type DeliveryStatusQuery = "pendiente" | "entregada";
 
+export type DeliveriesQuery = {
+  estado?: DeliveryStatusQuery;
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export type DeliveriesResponse = {
+  data: VentaResponse[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export type DeliverSalePayload = {
   detalles: Array<{ ventaDetalleId: string; cantidad: number }>;
   retiranteDni?: string;
@@ -477,11 +494,29 @@ export const salesApi = {
   },
 
   findDeliveries(
-    estado: DeliveryStatusQuery = "pendiente",
+    query: DeliveriesQuery | DeliveryStatusQuery = "pendiente",
     options: RequestInit = {},
   ) {
-    return authFetch<{ data: VentaResponse[] }>(
-      `/sales/deliveries?estado=${estado}`,
+    const params = new URLSearchParams();
+    const normalizedQuery =
+      typeof query === "string" ? { estado: query } : query;
+
+    params.set("estado", normalizedQuery.estado ?? "pendiente");
+
+    if (normalizedQuery.page) {
+      params.set("page", String(normalizedQuery.page));
+    }
+
+    if (normalizedQuery.limit) {
+      params.set("limit", String(normalizedQuery.limit));
+    }
+
+    if (normalizedQuery.search?.trim()) {
+      params.set("search", normalizedQuery.search.trim());
+    }
+
+    return authFetch<DeliveriesResponse>(
+      `/sales/deliveries?${params.toString()}`,
       options,
     );
   },

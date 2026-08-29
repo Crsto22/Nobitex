@@ -1,5 +1,13 @@
 import { authFetch } from "@/lib/api/auth-fetch";
-import type { DashboardDateFilter } from "@/lib/api/dashboard";
+export type AttendanceDashboardDateFilter =
+  | "today"
+  | "week"
+  | "fortnight"
+  | "month"
+  | "7days"
+  | "14days"
+  | "30days"
+  | "custom";
 
 export type AttendanceDashboardSummary = {
   attendances: number;
@@ -50,7 +58,7 @@ export type AttendanceDashboardBranchItem = {
 export type AttendanceDashboardResponse = {
   filters: {
     sucursalId: string | null;
-    dateFilter: DashboardDateFilter;
+    dateFilter: AttendanceDashboardDateFilter;
     range: {
       start: string;
       end: string;
@@ -73,7 +81,9 @@ export type AttendanceDashboardResponse = {
 
 export type AttendanceDashboardQuery = {
   sucursalId?: string;
-  dateFilter?: DashboardDateFilter;
+  dateFilter?: AttendanceDashboardDateFilter;
+  desde?: string;
+  hasta?: string;
 };
 
 export const attendanceDashboardApi = {
@@ -87,6 +97,8 @@ export const attendanceDashboardApi = {
     if (query.dateFilter) {
       params.set("dateFilter", query.dateFilter);
     }
+    if (query.desde) params.set("desde", query.desde);
+    if (query.hasta) params.set("hasta", query.hasta);
 
     const queryString = params.toString();
     return authFetch<AttendanceDashboardResponse>(
