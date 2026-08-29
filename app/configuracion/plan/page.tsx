@@ -273,6 +273,43 @@ export default function PlanPage() {
           />
         </section>
 
+        {currentPlan?.attendance?.effectiveActive ? (
+          <section className="grid gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.08)] sm:grid-cols-[1.2fr_1fr_1fr_1fr] sm:items-center">
+            <div>
+              <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                Plan de Asistencias
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                {currentPlan.attendance.trial
+                  ? "Beneficio activo por prueba gratuita."
+                  : "Complemento contratado activo."}
+              </p>
+            </div>
+            <AttendanceMiniMetric
+              label="Trabajadores"
+              value={`${currentPlan.usage.attendanceEmployees.toLocaleString("es-PE")} / ${currentPlan.attendance.effectiveEmployeesLimit.toLocaleString("es-PE")}`}
+              icon={<UsersThreeIcon size={18} weight="fill" />}
+              color="#14b8a6"
+            />
+            <AttendanceMiniMetric
+              label="Puntos QR"
+              value={`${currentPlan.usage.attendanceQrPoints.toLocaleString("es-PE")} / ${currentPlan.attendance.effectiveQrPointsLimit.toLocaleString("es-PE")}`}
+              icon={<QrCodeIcon size={18} weight="fill" />}
+              color="#22c55e"
+            />
+            <AttendanceMiniMetric
+              label="Vence"
+              value={
+                currentPlan.attendance.endsAt
+                  ? formatDate(currentPlan.attendance.endsAt)
+                  : "Sin vencimiento"
+              }
+              icon={<CalendarBlankIcon size={18} weight="fill" />}
+              color="#2563eb"
+            />
+          </section>
+        ) : null}
+
         <nav
           className="grid grid-cols-3 gap-1.5 rounded-[14px] bg-[var(--color-input-bg)] p-1.5"
           aria-label="Secciones del plan"
@@ -1093,6 +1130,37 @@ function MetricCard({
       </p>
       <p className="mt-1 text-xl font-circular-bold">{value}</p>
     </article>
+  );
+}
+
+function AttendanceMiniMetric({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: ReactNode;
+  color: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[12px] bg-[var(--color-input-bg)] p-3">
+      <span
+        className="grid size-9 shrink-0 place-items-center rounded-[10px]"
+        style={{ backgroundColor: `${color}18`, color }}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+          {label}
+        </p>
+        <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }
 
