@@ -13,6 +13,7 @@ import {
   WarningCircleIcon,
   EyeIcon,
   DownloadSimpleIcon,
+  ArrowsClockwiseIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/api/sales";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { AnnulSaleModal } from "@/components/Ventas/annul-sale-modal";
+import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { HistoryPeriodFilter } from "@/components/History/history-period-filter";
 import { defaultHistoryPeriod } from "@/lib/history-period";
 import { documentFileName } from "@/lib/document-file-name";
@@ -255,6 +257,12 @@ function canAnnulLocally(venta: VentaResponse) {
   );
 }
 
+function canConvertSale(venta: VentaResponse) {
+  return (
+    venta.tipoComprobante === "nota_venta" && venta.estado === "completada"
+  );
+}
+
 export default function HistorialVentasPage() {
   const router = useRouter();
   const [ventas, setVentas] = useState<VentaResponse[]>([]);
@@ -283,6 +291,11 @@ export default function HistorialVentasPage() {
     venta: VentaResponse | null;
     mode: "annul" | "baja";
   }>({ open: false, venta: null, mode: "annul" });
+  const [convertModal, setConvertModal] = useState<{
+    open: boolean;
+    venta: VentaResponse | null;
+    type: "boleta" | "factura";
+  }>({ open: false, venta: null, type: "boleta" });
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
@@ -336,6 +349,10 @@ export default function HistorialVentasPage() {
   }, [loadVentas]);
 
   const handleAnnulSuccess = () => {
+    loadVentas();
+  };
+
+  const handleConvertSuccess = () => {
     loadVentas();
   };
 
@@ -675,6 +692,7 @@ export default function HistorialVentasPage() {
               const paymentIcons = getSalePaymentIcons(venta);
               const showAnnulAction = canAnnulLocally(venta);
               const showBajaAction = canRequestSunatBaja(venta);
+              const showConvertAction = canConvertSale(venta);
               const bajaStatus = sunatBajaStatusConfig[venta.sunatBaja.estado];
               const showBajaBadge = hasSunatBaja(venta);
 
@@ -865,6 +883,40 @@ export default function HistorialVentasPage() {
                             {showBajaAction ? "Dar de baja" : "Anular venta"}
                           </button>
                         )}
+                        {showConvertAction ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setConvertModal({
+                                  open: true,
+                                  venta,
+                                  type: "boleta",
+                                });
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                            >
+                              <ArrowsClockwiseIcon size={16} weight="bold" />
+                              Convertir a boleta
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setConvertModal({
+                                  open: true,
+                                  venta,
+                                  type: "factura",
+                                });
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                            >
+                              <ArrowsClockwiseIcon size={16} weight="bold" />
+                              Convertir a factura
+                            </button>
+                          </>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => {
@@ -938,6 +990,16 @@ export default function HistorialVentasPage() {
         publicId={annulModal.venta?.publicId || ""}
         mode={annulModal.mode}
         onAnnulSuccess={handleAnnulSuccess}
+      />
+      <ConvertSaleModal
+        key={`${convertModal.venta?.publicId ?? "sale"}-${convertModal.type}`}
+        isOpen={convertModal.open}
+        venta={convertModal.venta}
+        initialType={convertModal.type}
+        onClose={() =>
+          setConvertModal({ open: false, venta: null, type: "boleta" })
+        }
+        onConverted={handleConvertSuccess}
       />
     </DashboardShell>
   );

@@ -91,6 +91,27 @@ function getPathWorkspace(pathname: string): SidebarWorkspace {
   return pathname.startsWith("/asistencias") ? "asistencias" : "ventas";
 }
 
+function workspaceHasAllowedModules(
+  sections: SidebarSection[],
+  allowed: Set<string>,
+  isExpired: boolean,
+  isOwner: boolean,
+) {
+  return sections.some((section) => {
+    if (section.direct) {
+      if (section.key === "mi-cuenta" || section.key === "plan") return false;
+      if (section.ownerOnly && !isOwner) return false;
+      return !isExpired && allowed.has(section.key);
+    }
+
+    return section.children.some((child) => {
+      if (child.key === "mi-cuenta" || child.key === "plan") return false;
+      if (child.ownerOnly && !isOwner) return false;
+      return !isExpired && allowed.has(child.key);
+    });
+  });
+}
+
 function subscribeToExpandedSections(onStoreChange: () => void) {
   const handleChange = () => {
     syncExpandedSectionsAttribute(
@@ -124,7 +145,7 @@ export function Sidebar({
   const navRef = useRef<HTMLElement | null>(null);
   const syncedPathnameRef = useRef<string | null>(null);
   const { user, currentPlan } = useAuth();
-  const workspace = getPathWorkspace(pathname);
+  const pathWorkspace = getPathWorkspace(pathname);
   const allowedModuleKeys = useMemo(
     () => [
       ...(user?.moduleKeys ?? []),
@@ -136,6 +157,36 @@ export function Sidebar({
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
+  const allowedModules = useMemo(
+    () => new Set(allowedModuleKeys ?? []),
+    [allowedModuleKeys],
+  );
+  const hasPosWorkspace = useMemo(
+    () =>
+      workspaceHasAllowedModules(
+        sidebarSections,
+        allowedModules,
+        isExpired,
+        isOwner,
+      ),
+    [allowedModules, isExpired, isOwner],
+  );
+  const hasAttendanceWorkspace = useMemo(
+    () =>
+      workspaceHasAllowedModules(
+        attendanceSidebarSections,
+        allowedModules,
+        isExpired,
+        isOwner,
+      ),
+    [allowedModules, isExpired, isOwner],
+  );
+  const canSwitchWorkspace = hasPosWorkspace && hasAttendanceWorkspace;
+  const workspace: SidebarWorkspace = canSwitchWorkspace
+    ? pathWorkspace
+    : hasAttendanceWorkspace
+      ? "asistencias"
+      : "ventas";
   const activeSidebarSections =
     workspace === "asistencias" ? attendanceSidebarSections : sidebarSections;
   const visibleSections = useMemo(() => {
@@ -143,25 +194,25 @@ export function Sidebar({
       return superAdminSidebarSections;
     }
 
-    const allowed = new Set(allowedModuleKeys ?? []);
-
     return activeSidebarSections
       .map((section) => {
         if (section.direct) {
-          return !isExpired && allowed.has(section.key) ? section : null;
+          if (section.key === "mi-cuenta") return section;
+          if (section.ownerOnly) return isOwner ? section : null;
+          return !isExpired && allowedModules.has(section.key) ? section : null;
         }
 
         const children = section.children.filter((child) => {
           if (child.key === "mi-cuenta") return true;
           if (child.ownerOnly) return isOwner;
-          return !isExpired && allowed.has(child.key);
+          return !isExpired && allowedModules.has(child.key);
         });
         return children.length ? { ...section, children } : null;
       })
       .filter((section): section is SidebarSection => Boolean(section));
   }, [
     activeSidebarSections,
-    allowedModuleKeys,
+    allowedModules,
     isExpired,
     isOwner,
     isSuperAdmin,
@@ -262,9 +313,8 @@ export function Sidebar({
       return;
     }
 
-    const routeWorkspace = getPathWorkspace(pathname);
-    localStorage.setItem(SIDEBAR_WORKSPACE_STORAGE_KEY, routeWorkspace);
-  }, [isSuperAdmin, pathname]);
+    localStorage.setItem(SIDEBAR_WORKSPACE_STORAGE_KEY, workspace);
+  }, [isSuperAdmin, workspace]);
 
   useEffect(() => {
     if (syncedPathnameRef.current === pathname) {
@@ -345,7 +395,7 @@ export function Sidebar({
             {isSuperAdmin ? "Nuvex Admin" : companyName || "Mi Empresa"}
           </p>
         ) : null}
-        {!isSuperAdmin ? (
+        {!isSuperAdmin && canSwitchWorkspace ? (
           <div
             className={cn(
               "mt-4 grid w-full rounded-[12px] bg-[var(--color-input-bg)] p-1",

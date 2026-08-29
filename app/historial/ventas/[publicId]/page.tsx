@@ -17,6 +17,7 @@ import {
   PaperPlaneTiltIcon,
   ReceiptIcon,
   WarningCircleIcon,
+  ArrowsClockwiseIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ import {
   type VentaTipoComprobante,
 } from "@/lib/api/sales";
 import { AnnulSaleModal } from "@/components/Ventas/annul-sale-modal";
+import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { documentFileName } from "@/lib/document-file-name";
 
 const statusConfig: Record<
@@ -213,6 +215,12 @@ function canAnnulLocally(venta: VentaResponse) {
   );
 }
 
+function canConvertSale(venta: VentaResponse) {
+  return (
+    venta.tipoComprobante === "nota_venta" && venta.estado === "completada"
+  );
+}
+
 function hasSunatBaja(venta: VentaResponse) {
   return (
     isElectronicSaleType(venta.tipoComprobante) &&
@@ -290,6 +298,9 @@ export default function VentaDetallePage() {
   const [venta, setVenta] = useState<VentaResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [annulModal, setAnnulModal] = useState(false);
+  const [convertModalType, setConvertModalType] = useState<
+    "boleta" | "factura" | null
+  >(null);
   const [isSunatOpen, setIsSunatOpen] = useState(false);
   const [isSunatBajaOpen, setIsSunatBajaOpen] = useState(false);
   const [isRetryingSunat, setIsRetryingSunat] = useState(false);
@@ -501,6 +512,7 @@ export default function VentaDetallePage() {
     venta.sunat.estado !== "aceptado";
   const showBajaAction = canRequestSunatBaja(venta);
   const showAnnulAction = canAnnulLocally(venta);
+  const showConvertAction = canConvertSale(venta);
   const annulMode = showBajaAction ? "baja" : "annul";
   const showSunatBaja = hasSunatBaja(venta);
   const showConsultSunatBaja = showSunatBaja && canConsultSunatBaja(venta);
@@ -647,6 +659,26 @@ export default function VentaDetallePage() {
                 <WarningCircleIcon size={15} weight="bold" />
                 {showBajaAction ? "Dar de baja" : "Anular"}
               </button>
+            ) : null}
+            {showConvertAction ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConvertModalType("boleta")}
+                  className="flex h-9 items-center gap-2 rounded-[12px] bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                >
+                  <ArrowsClockwiseIcon size={15} weight="bold" />
+                  A boleta
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConvertModalType("factura")}
+                  className="flex h-9 items-center gap-2 rounded-[12px] bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                >
+                  <ArrowsClockwiseIcon size={15} weight="bold" />
+                  A factura
+                </button>
+              </>
             ) : null}
           </div>
           <span
@@ -1112,6 +1144,17 @@ export default function VentaDetallePage() {
         publicId={venta.publicId}
         mode={annulMode}
         onAnnulSuccess={handleAnnulSuccess}
+      />
+      <ConvertSaleModal
+        key={`${venta.publicId}-${convertModalType ?? "boleta"}`}
+        isOpen={convertModalType !== null}
+        venta={venta}
+        initialType={convertModalType ?? "boleta"}
+        onClose={() => setConvertModalType(null)}
+        onConverted={(converted) => {
+          setVenta(converted);
+          setConvertModalType(null);
+        }}
       />
     </DashboardShell>
   );

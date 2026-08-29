@@ -48,6 +48,8 @@ export type SidebarSection = {
   active?: boolean;
   direct?: boolean;
   route?: string;
+  assignable?: boolean;
+  ownerOnly?: boolean;
   children: SidebarChild[];
 };
 
@@ -288,6 +290,16 @@ export const sidebarSections: SidebarSection[] = [
     ],
   },
   {
+    key: "plan",
+    label: "Plan y facturacion",
+    icon: CreditCardIcon,
+    direct: true,
+    route: "/configuracion/plan",
+    children: [],
+    assignable: false,
+    ownerOnly: true,
+  },
+  {
     key: "configuracion",
     label: "Configuracion",
     icon: GearSixIcon,
@@ -303,14 +315,6 @@ export const sidebarSections: SidebarSection[] = [
         label: "Metodos de pago",
         icon: CreditCardIcon,
         route: "/configuracion/metodos-pago",
-      },
-      {
-        key: "plan",
-        label: "Plan y facturacion",
-        icon: CreditCardIcon,
-        route: "/configuracion/plan",
-        assignable: false,
-        ownerOnly: true,
       },
       {
         key: "mi-cuenta",
@@ -341,10 +345,18 @@ export const attendanceSidebarSections: SidebarSection[] = [
   },
   {
     key: "asistencias-marcajes",
-    label: "Asistencias",
+    label: "Marcaciones",
     icon: ClockUserIcon,
     direct: true,
     route: "/asistencias/marcajes",
+    children: [],
+  },
+  {
+    key: "asistencias-historial-marcaciones",
+    label: "Historial",
+    icon: ListBulletsIcon,
+    direct: true,
+    route: "/asistencias/historial-marcaciones",
     children: [],
   },
   {
@@ -370,6 +382,16 @@ export const attendanceSidebarSections: SidebarSection[] = [
     direct: true,
     route: "/asistencias/reportes",
     children: [],
+  },
+  {
+    key: "plan",
+    label: "Plan y facturacion",
+    icon: CreditCardIcon,
+    direct: true,
+    route: "/configuracion/plan",
+    children: [],
+    assignable: false,
+    ownerOnly: true,
   },
   {
     key: "asistencias-configuracion",
@@ -555,6 +577,8 @@ export const sidebarModules: SidebarModule[] = tenantSidebarSections.flatMap(
             label: section.label,
             icon: section.icon,
             route: section.route,
+            assignable: section.assignable,
+            ownerOnly: section.ownerOnly,
           },
         ]
       : section.children,

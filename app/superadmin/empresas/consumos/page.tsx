@@ -15,6 +15,7 @@ import {
   FileTextIcon,
   GaugeIcon,
   ImageIcon,
+  QrCodeIcon,
   StorefrontIcon,
   UsersThreeIcon,
   WarningCircleIcon,
@@ -58,6 +59,8 @@ const resources: {
   { key: "documents", label: "Comprobantes", icon: FileTextIcon },
   { key: "documentQueries", label: "Consultas DNI/RUC", icon: FileTextIcon },
   { key: "storageBytes", label: "Imágenes", icon: ImageIcon },
+  { key: "attendanceEmployees", label: "Trabajadores", icon: UsersThreeIcon },
+  { key: "attendanceQrPoints", label: "Puntos QR", icon: QrCodeIcon },
 ];
 
 export default function PlatformCompanyUsagePage() {
@@ -228,7 +231,10 @@ export default function PlatformCompanyUsagePage() {
                     />
                     <PlanStatusBadge status={company.planStatus} />
                     <CompanyStateBadge state={company.state} />
-                    <Link href={`/superadmin/empresas/consumos/${company.id}`} className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)]">
+                    <Link
+                      href={`/superadmin/empresas/consumos/${company.id}`}
+                      className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)]"
+                    >
                       <PencilSimpleIcon size={14} weight="bold" /> Personalizar
                     </Link>
                   </div>
@@ -312,7 +318,11 @@ function UsageItem({
           de {unlimited ? "Ilimitado" : formatter(safeLimit)}
         </span>
       </p>
-      {!unlimited && safeAdditional > 0 ? <p className="mt-1 text-[11px] text-[#059669]">Base {formatter(safeBase)} + bonificación {formatter(safeAdditional)}</p> : null}
+      {!unlimited && safeAdditional > 0 ? (
+        <p className="mt-1 text-[11px] text-[#059669]">
+          Base {formatter(safeBase)} + bonificación {formatter(safeAdditional)}
+        </p>
+      ) : null}
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-input-bg)]">
         <div
           className={cn(

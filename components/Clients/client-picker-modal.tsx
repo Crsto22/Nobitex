@@ -11,7 +11,11 @@ import {
 import { ClientCreateModal } from "@/components/Clients/client-create-modal";
 import { Modal } from "@/components/Modal/modal";
 import { Button } from "@/components/ui/button";
-import { clientsApi, type Client } from "@/lib/api/clients";
+import {
+  clientsApi,
+  type Client,
+  type ClientDocumentType,
+} from "@/lib/api/clients";
 import { cn } from "@/lib/utils";
 import {
   GenericClientAvatar,
@@ -23,6 +27,7 @@ type ClientPickerModalProps = {
   onClose: () => void;
   selectedClient: Client | null;
   requireRuc?: boolean;
+  requiredDocumentType?: Extract<ClientDocumentType, "dni" | "ruc">;
   onSelect: (client: Client | null) => void;
 };
 
@@ -31,6 +36,7 @@ export function ClientPickerModal({
   onClose,
   selectedClient,
   requireRuc = false,
+  requiredDocumentType,
   onSelect,
 }: ClientPickerModalProps) {
   const [clients, setClients] = useState<Client[]>([]);
@@ -43,6 +49,8 @@ export function ClientPickerModal({
     selectedClient && !clients.some((client) => client.id === selectedClient.id)
       ? [selectedClient, ...clients]
       : clients;
+  const requiredType = requiredDocumentType ?? (requireRuc ? "ruc" : undefined);
+  const requiredLabel = requiredType === "ruc" ? "RUC" : requiredType === "dni" ? "DNI" : "";
 
   const loadClients = useCallback(async () => {
     if (!isOpen) return;
@@ -54,7 +62,7 @@ export function ClientPickerModal({
         limit: 8,
         search,
         estado: "activo",
-        tipoDocumento: requireRuc ? "ruc" : undefined,
+        tipoDocumento: requiredType,
       });
       setClients(response.data);
       setTotalPages(response.meta.totalPages);
@@ -64,7 +72,7 @@ export function ClientPickerModal({
     } finally {
       setIsLoading(false);
     }
-  }, [isOpen, page, requireRuc, search]);
+  }, [isOpen, page, requiredType, search]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => void loadClients(), 250);
@@ -81,7 +89,7 @@ export function ClientPickerModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={requireRuc ? "Seleccionar cliente con RUC" : "Seleccionar cliente"}
+        title={requiredType ? `Seleccionar cliente con ${requiredLabel}` : "Seleccionar cliente"}
         size="lg"
       >
         <div className="space-y-4">
@@ -104,7 +112,7 @@ export function ClientPickerModal({
             </Button>
           </div>
 
-          {!requireRuc ? (
+          {!requiredType ? (
             <button
               type="button"
               onClick={() => chooseClient(null)}

@@ -2,7 +2,16 @@ import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
 import type { PlanDefinition } from "@/lib/api/plans";
 
 export type PlatformPlanCode =
-  "prueba" | "basico" | "emprendedor" | "crecimiento" | "empresarial";
+  | "prueba"
+  | "basico"
+  | "emprendedor"
+  | "crecimiento"
+  | "empresarial"
+  | "pos_basico"
+  | "asistencias_basico"
+  | "asistencias_pro"
+  | "completo_emprende"
+  | "completo_empresa";
 export type PlatformPlanStatus = "trial" | "active" | "expired";
 export type PlatformCompanyState = "activa" | "inactiva" | "suspendida";
 export type PlatformAuditCategory =
@@ -12,12 +21,19 @@ export type PlatformAuditAction =
   | "plan_changed"
   | "plan_pricing_updated"
   | "plan_limits_updated"
+  | "plan_modules_updated"
   | "platform_admin_created"
   | "platform_admin_status_changed"
   | "subscription_sold"
   | "subscription_sale_cancelled"
+  | "attendance_subscription_sold"
+  | "attendance_subscription_cancelled"
+  | "attendance_capacity_updated"
   | "overage_pricing_updated"
+  | "attendance_pricing_updated"
   | "company_limits_updated"
+  | "company_modules_updated"
+  | "company_attendance_addon_updated"
   | "overage_closed"
   | "overage_paid"
   | "company_fiscal_data_updated"
@@ -41,6 +57,11 @@ export type PlatformAdminUserStatus = "activo" | "inactivo" | "bloqueado";
 export type PlatformSubscriptionPaymentMethod =
   "yape" | "plin" | "transferencia" | "deposito" | "efectivo" | "otro";
 export type PlatformSubscriptionPaymentStatus = "pagado" | "anulado";
+export type PlatformAttendanceSubscriptionStatus =
+  | "activa"
+  | "cancelada"
+  | "vencida";
+export type PlatformAttendanceSubscriptionPeriod = "mensual" | "anual";
 export type PlatformDashboardDateFilter =
   "today" | "7days" | "14days" | "30days" | "month" | "year";
 
@@ -80,6 +101,16 @@ export type PlatformSubscriptionSalesQuery = {
   dateTo?: string;
 };
 
+export type PlatformAttendanceSubscriptionsQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  method?: PlatformSubscriptionPaymentMethod;
+  status?: Exclude<PlatformAttendanceSubscriptionStatus, "vencida">;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
 export type PlatformAffiliateQuery = {
   page?: number;
   limit?: number;
@@ -113,6 +144,7 @@ export type PlatformCompany = {
   owner: { name: string; email: string } | null;
   users: number;
   branches: number;
+  attendance?: PlatformAttendanceAddon;
   monthlyDiscountEligible?: boolean;
   affiliateEligible?: boolean;
   affiliate?: null | {
@@ -147,11 +179,56 @@ export type PlatformCompanyLimits = {
   baseLimits: PlatformPlanLimits;
   additionalLimits: PlatformPlanLimits;
   effectiveLimits: PlatformPlanLimits;
+  attendance?: PlatformAttendanceAddon;
+  updatedAt: string | null;
+};
+
+export type PlatformAttendanceAddon = {
+  company?: { id: string; name: string };
+  pricing?: PlatformAttendancePricing;
+  active: boolean;
+  effectiveActive: boolean;
+  trial: boolean;
+  employeesLimit: number;
+  qrPointsLimit: number;
+  effectiveEmployeesLimit: number;
+  effectiveQrPointsLimit: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  monthlyPrice: string;
+  currency: "PEN";
+  includesIgv: true;
+  usage?: { employees: number; qrPoints: number };
+};
+
+export type UpdatePlatformAttendanceAddonPayload = {
+  active: boolean;
+  employeesLimit: number;
+  qrPointsLimit: number;
+  startsAt?: string;
+  endsAt?: string;
+};
+
+export type PlatformCompanyModules = {
+  company: { id: string; name: string };
+  planCode: PlatformPlanCode;
+  baseModuleKeys: string[];
+  overrideModuleKeys: Array<{ moduleKey: string; enabled: boolean }>;
+  effectiveModuleKeys: string[];
   updatedAt: string | null;
 };
 
 export type PlatformOveragePricing = {
   unitPrice: string;
+  currency: "PEN";
+  includesIgv: true;
+  updatedAt: string;
+  updatedBy: { id: string; name: string; email: string } | null;
+};
+
+export type PlatformAttendancePricing = {
+  employeeUnitPrice: string;
+  qrPointUnitPrice: string;
   currency: "PEN";
   includesIgv: true;
   updatedAt: string;
@@ -266,6 +343,8 @@ export type PlatformPlanLimits = {
   documents: number;
   documentQueries: number;
   storageBytes: number;
+  attendanceEmployees: number;
+  attendanceQrPoints: number;
 };
 
 export type PlatformCompaniesResponse = {
@@ -368,6 +447,48 @@ export type PlatformSubscriptionSalesResponse = {
   };
 };
 
+export type PlatformAttendanceSubscription = {
+  id: string;
+  requestId: string;
+  company: { id: string; name: string; document: string | null };
+  employeesLimit: number;
+  qrPointsLimit: number;
+  employeeUnitPrice: string;
+  qrPointUnitPrice: string;
+  period: PlatformAttendanceSubscriptionPeriod;
+  monthlyAmount: string;
+  totalAmount: string;
+  affiliateCode: string | null;
+  affiliateDiscountPercent: string;
+  affiliateDiscountAmount: string;
+  affiliateCommissionBase: string;
+  affiliateCommissionPercent: string;
+  affiliateCommissionAmount: string;
+  currency: "PEN";
+  includesIgv: boolean;
+  paymentMethod: PlatformSubscriptionPaymentMethod;
+  paymentMethodOther: string | null;
+  status: PlatformAttendanceSubscriptionStatus;
+  coverageStartsAt: string;
+  coverageEndsAt: string;
+  usage: { employees: number; qrPoints: number };
+  registeredBy: { id: string; name: string; email: string } | null;
+  cancelledBy: { id: string; name: string; email: string } | null;
+  cancellationReason: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+};
+
+export type PlatformAttendanceSubscriptionsResponse = {
+  data: PlatformAttendanceSubscription[];
+  meta: PlatformPaginationMeta;
+  summary: {
+    active: number;
+    cancelledThisMonth: number;
+    collectedThisMonth: string;
+  };
+};
+
 export type CreatePlatformSubscriptionSalePayload = {
   requestId: string;
   empresaId: string;
@@ -378,6 +499,39 @@ export type CreatePlatformSubscriptionSalePayload = {
   paymentMethodOther?: string;
   receiptType: "nota_venta" | "boleta" | "factura";
   affiliateCode?: string;
+};
+
+export type CreatePlatformAttendanceSubscriptionPayload = {
+  requestId: string;
+  empresaId: string;
+  employeesLimit: number;
+  qrPointsLimit: number;
+  period: PlatformAttendanceSubscriptionPeriod;
+  startsAt?: string;
+  paymentMethod: PlatformSubscriptionPaymentMethod;
+  paymentMethodOther?: string;
+};
+
+export type CreatePlatformSubscriptionCheckoutPayload = {
+  requestId: string;
+  empresaId: string;
+  paymentMethod: PlatformSubscriptionPaymentMethod;
+  paymentMethodOther?: string;
+  receiptType: "nota_venta" | "boleta" | "factura";
+  affiliateCode?: string;
+  pos?: {
+    planCode: Exclude<PlatformPlanCode, "prueba">;
+    months: 1 | 3 | 6 | 12;
+    pricingUpdatedAt: string;
+    affiliateCode?: string;
+  };
+  attendance?: {
+    employeesLimit: number;
+    qrPointsLimit: number;
+    period: PlatformAttendanceSubscriptionPeriod;
+    months?: 1 | 3 | 6 | 12;
+    startsAt?: string;
+  };
 };
 
 export type PlatformAffiliate = {
@@ -493,6 +647,7 @@ export type PlatformPlanPricing = PlanDefinition & {
   updatedBy: { id: string; name: string; email: string } | null;
   limitsUpdatedAt: string;
   limitsUpdatedBy: { id: string; name: string; email: string } | null;
+  modulesUpdatedAt: string;
 };
 
 export type UpdatePlatformPlanPricingPayload = {
@@ -503,6 +658,11 @@ export type UpdatePlatformPlanPricingPayload = {
 };
 
 export type UpdatePlatformPlanLimitsPayload = PlatformPlanLimits & {
+  expectedUpdatedAt: string;
+};
+
+export type UpdatePlatformPlanModulesPayload = {
+  moduleKeys: string[];
   expectedUpdatedAt: string;
 };
 
@@ -586,6 +746,73 @@ export const platformAdminApi = {
     );
   },
 
+  getCompanyAttendanceAddon(id: string) {
+    return authFetch<PlatformAttendanceAddon>(
+      `/platform-admin/companies/${encodeURIComponent(id)}/attendance-addon`,
+    );
+  },
+
+  updateCompanyAttendanceAddon(
+    id: string,
+    payload: UpdatePlatformAttendanceAddonPayload,
+  ) {
+    return authFetch<PlatformAttendanceAddon>(
+      `/platform-admin/companies/${encodeURIComponent(id)}/attendance-addon`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  updateCompanyAttendanceCapacity(
+    id: string,
+    payload: { employeesLimit: number; qrPointsLimit: number },
+  ) {
+    return authFetch<PlatformAttendanceAddon>(
+      `/platform-admin/companies/${encodeURIComponent(id)}/attendance-capacity`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  getAttendancePricing() {
+    return authFetch<PlatformAttendancePricing>(
+      "/platform-admin/attendance-pricing",
+    );
+  },
+
+  updateAttendancePricing(payload: {
+    employeeUnitPrice: string;
+    qrPointUnitPrice: string;
+  }) {
+    return authFetch<PlatformAttendancePricing>(
+      "/platform-admin/attendance-pricing",
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  getCompanyModules(id: string) {
+    return authFetch<PlatformCompanyModules>(
+      `/platform-admin/companies/${encodeURIComponent(id)}/modules`,
+    );
+  },
+
+  updateCompanyModules(id: string, moduleKeys: string[]) {
+    return authFetch<PlatformCompanyModules>(
+      `/platform-admin/companies/${encodeURIComponent(id)}/modules`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ moduleKeys }),
+      },
+    );
+  },
+
   findUsers(query: PlatformAdminUsersQuery = {}) {
     return authFetch<PlatformAdminUsersResponse>(
       buildPlatformUsersPath("/platform-admin/users", query),
@@ -645,13 +872,28 @@ export const platformAdminApi = {
     );
   },
 
+  updatePlanModules(
+    code: PlatformPlanCode,
+    payload: UpdatePlatformPlanModulesPayload,
+  ) {
+    return authFetch<{ moduleKeys: string[]; modulesUpdatedAt: string }>(
+      `/platform-admin/plans/${encodeURIComponent(code)}/modules`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
   getOveragePricing() {
     return authFetch<PlatformOveragePricing>(
       "/platform-admin/plans/overage-pricing",
     );
   },
 
-  findSunatCompanies(query: { page?: number; limit?: number; search?: string } = {}) {
+  findSunatCompanies(
+    query: { page?: number; limit?: number; search?: string } = {},
+  ) {
     const params = new URLSearchParams();
     if (query.page) params.set("page", String(query.page));
     if (query.limit) params.set("limit", String(query.limit));
@@ -682,11 +924,7 @@ export const platformAdminApi = {
     );
   },
 
-  uploadSunatCertificate(
-    id: string,
-    file: File,
-    certificatePassword: string,
-  ) {
+  uploadSunatCertificate(id: string, file: File, certificatePassword: string) {
     const body = new FormData();
     body.append("certificate", file);
     body.append("certificatePassword", certificatePassword);
@@ -788,9 +1026,60 @@ export const platformAdminApi = {
     });
   },
 
+  createSubscriptionCheckout(payload: CreatePlatformSubscriptionCheckoutPayload) {
+    return authFetch<{
+      sale: PlatformSubscriptionSale | null;
+      attendance: PlatformAttendanceSubscription | null;
+      receipt: null | {
+        id: string;
+        type: "nota_venta" | "boleta" | "factura" | "nota_credito";
+        correlativo: string;
+        status: string;
+      };
+      idempotent: boolean;
+    }>("/platform-admin/subscriptions/checkout", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
   cancelSubscriptionSale(id: string, reason: string) {
     return authFetch<PlatformSubscriptionSale>(
       `/platform-admin/subscriptions/sales/${encodeURIComponent(id)}/cancel`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      },
+    );
+  },
+
+  findAttendanceSubscriptions(
+    query: PlatformAttendanceSubscriptionsQuery = {},
+  ) {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(
+      ([key, value]) => value && params.set(key, String(value)),
+    );
+    return authFetch<PlatformAttendanceSubscriptionsResponse>(
+      `/platform-admin/subscriptions/attendance${params.size ? `?${params}` : ""}`,
+    );
+  },
+
+  createAttendanceSubscription(
+    payload: CreatePlatformAttendanceSubscriptionPayload,
+  ) {
+    return authFetch<{
+      subscription: PlatformAttendanceSubscription;
+      idempotent: boolean;
+    }>("/platform-admin/subscriptions/attendance", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  cancelAttendanceSubscription(id: string, reason: string) {
+    return authFetch<PlatformAttendanceSubscription>(
+      `/platform-admin/subscriptions/attendance/${encodeURIComponent(id)}/cancel`,
       {
         method: "POST",
         body: JSON.stringify({ reason }),
@@ -913,6 +1202,8 @@ function normalizePlanLimits(limits: PlatformPlanLimits): PlatformPlanLimits {
     ...limits,
     warehouses: limits.warehouses === undefined ? 0 : limits.warehouses,
     documentQueries: limits.documentQueries ?? 0,
+    attendanceEmployees: limits.attendanceEmployees ?? 0,
+    attendanceQrPoints: limits.attendanceQrPoints ?? 0,
   };
 }
 

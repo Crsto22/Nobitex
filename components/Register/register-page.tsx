@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   CaretDownIcon,
-  ChartBarIcon,
   CheckCircleIcon,
   EnvelopeSimpleIcon,
   EyeIcon,
@@ -452,65 +451,20 @@ export function RegisterPage() {
         }`}
       >
         <div
-          className={`relative z-10 hidden min-h-dvh overflow-hidden bg-cover bg-center px-8 py-10 text-white transition-colors duration-500 ease-out lg:flex lg:items-center xl:px-12 ${
+          className={`relative z-10 hidden min-h-dvh items-center justify-center overflow-hidden bg-[#f3f5fb] px-8 py-10 transition-colors duration-500 ease-out lg:flex xl:px-12 ${
             isCompanyStep || isActivating
               ? "pointer-events-none -translate-x-full opacity-0"
               : "translate-x-0 opacity-100"
           }`}
-          style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&ixlib=rb-4.1.0&q=80&w=1800)",
-          }}
         >
-          <div className="absolute inset-0 bg-black/68" />
-          <div className="relative z-10 w-full max-w-[640px]">
-            <div className="mb-24 inline-flex rounded-[16px] border-2 border-white bg-white px-4 py-2 shadow-[0_14px_34px_rgba(16,29,105,0.18)]">
-              <Image
-                src="/Logo/logopng.webp"
-                alt="Nuvex"
-                width={180}
-                height={42}
-                className="h-auto w-[160px] xl:w-[180px]"
-                style={{ width: "auto", height: "auto" }}
-                priority
-              />
-            </div>
-            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl text-fixed-5xl">
-              Crea tu empresa y empieza a vender con control.
-            </h2>
-            <div className="mt-8 space-y-4 text-base font-circular-regular text-white/88">
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <PackageIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Productos con tallas y colores
-              </p>
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <ShoppingCartSimpleIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Ventas listas desde el primer dia
-              </p>
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <ChartBarIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Reportes para crecer
-              </p>
-            </div>
-          </div>
+          <Image
+            src="/Logo/nuvex_logo.svg"
+            alt="Nuvex"
+            width={330}
+            height={110}
+            className="h-auto w-[330px] max-w-[330px]"
+            priority
+          />
         </div>
 
         <div

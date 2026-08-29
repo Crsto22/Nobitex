@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import {
   BuildingsIcon,
   CheckCircleIcon,
@@ -198,7 +199,15 @@ export default function PlatformCompaniesPage() {
                     {company.branches} sucursales
                   </p>
                 </div>
-                <CompanyStateBadge state={company.state} />
+                <div className="flex flex-col gap-2">
+                  <CompanyStateBadge state={company.state} />
+                  <Link
+                    href={`/superadmin/empresas/modulos/${company.id}`}
+                    className="text-xs font-circular-bold text-[var(--color-primary)]"
+                  >
+                    Módulos
+                  </Link>
+                </div>
               </article>
             ))
           )}
@@ -281,5 +290,3 @@ function LoadingRows() {
     </div>
   );
 }
-
-

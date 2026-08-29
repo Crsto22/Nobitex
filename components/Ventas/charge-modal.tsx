@@ -258,6 +258,11 @@ export function ChargeModal({
     (selectedClient?.tipoDocumento !== "ruc" ||
       selectedClient.numeroDocumento?.length !== 11 ||
       !selectedClient.razonSocial?.trim());
+  const isHighValueReceiptClientInvalid =
+    selectedNoteType === "boleta" &&
+    total > 700 &&
+    (selectedClient?.tipoDocumento !== "dni" ||
+      selectedClient.numeroDocumento?.length !== 8);
   const isPickupClientInvalid =
     pickupLater &&
     (!selectedClient ||
@@ -273,6 +278,7 @@ export function ChargeModal({
     !hasInvalidEntryChange &&
     !hasInvalidSelectedChange &&
     !isInvoiceClientInvalid &&
+    !isHighValueReceiptClientInvalid &&
     !isPickupClientInvalid;
   const isOverpaying = remaining < -0.005;
 
@@ -397,6 +403,17 @@ export function ChargeModal({
         title: "Cliente requerido",
         description:
           "Para factura selecciona un cliente con RUC de 11 digitos y razon social.",
+        variant: "error",
+        duration: 5000,
+      });
+      return;
+    }
+
+    if (isHighValueReceiptClientInvalid) {
+      toast.showToast({
+        title: "DNI requerido",
+        description:
+          "Para boleta mayor a S/700 selecciona un cliente con DNI de 8 digitos.",
         variant: "error",
         duration: 5000,
       });
@@ -584,6 +601,19 @@ export function ChargeModal({
                         className="mt-2 block font-circular-bold text-[var(--color-primary)]"
                       >
                         Seleccionar cliente con RUC
+                      </button>
+                    </div>
+                  ) : null}
+                  {isHighValueReceiptClientInvalid ? (
+                    <div className="mt-3 rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                      Para boleta mayor a S/700 selecciona un cliente con DNI
+                      de 8 digitos.
+                      <button
+                        type="button"
+                        onClick={() => setIsClientPickerOpen(true)}
+                        className="mt-2 block font-circular-bold text-[var(--color-primary)]"
+                      >
+                        Seleccionar cliente con DNI
                       </button>
                     </div>
                   ) : null}
@@ -1281,7 +1311,13 @@ export function ChargeModal({
           isOpen={isClientPickerOpen}
           onClose={() => setIsClientPickerOpen(false)}
           selectedClient={selectedClient}
-          requireRuc={selectedNoteType === "factura"}
+          requiredDocumentType={
+            selectedNoteType === "factura"
+              ? "ruc"
+              : selectedNoteType === "boleta" && total > 700
+                ? "dni"
+                : undefined
+          }
           onSelect={onSelectedClientChange}
         />
       ) : null}

@@ -6,6 +6,7 @@ import {
   CheckCircleIcon,
   CurrencyCircleDollarIcon,
   GaugeIcon,
+  ListChecksIcon,
   MinusIcon,
   PlusIcon,
   WarningCircleIcon,
@@ -18,10 +19,12 @@ import {
   type PlatformPlanCode,
   type PlatformPlanPricing,
   type UpdatePlatformPlanLimitsPayload,
+  type UpdatePlatformPlanModulesPayload,
   type UpdatePlatformPlanPricingPayload,
 } from "@/lib/api/platform-admin";
 import { ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/intl";
+import { assignableSidebarModules } from "@/lib/navigation/sidebar-modules";
 import { cn } from "@/lib/utils";
 
 const planCodes: PlatformPlanCode[] = [
@@ -38,17 +41,80 @@ const planColors: Record<PlatformPlanCode, string> = {
   emprendedor: "bg-[#10b981]/10 text-[#059669]",
   crecimiento: "bg-[#f59e0b]/10 text-[#d97706]",
   empresarial: "bg-[#8b5cf6]/10 text-[#7c3aed]",
+  pos_basico: "bg-[#0ea5e9]/10 text-[#0284c7]",
+  asistencias_basico: "bg-[#14b8a6]/10 text-[#0f766e]",
+  asistencias_pro: "bg-[#22c55e]/10 text-[#15803d]",
+  completo_emprende: "bg-[#f97316]/10 text-[#ea580c]",
+  completo_empresa: "bg-[#7c3aed]/10 text-[#6d28d9]",
 };
 
 const inputClass =
   "h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]";
+
+const moduleGroups = [
+  {
+    label: "POS / Ventas",
+    keys: [
+      "dashboard",
+      "ventas-pos",
+      "caja",
+      "cotizaciones",
+      "entregas-pendientes",
+      "clientes",
+      "historial-ventas",
+      "historial-cotizaciones",
+      "comprobantes",
+      "nota-credito",
+      "series",
+    ],
+  },
+  {
+    label: "Inventario",
+    keys: [
+      "productos",
+      "categorias",
+      "marcas",
+      "tallas",
+      "colores",
+      "stock-movimientos",
+      "stock-traspasos",
+      "stock-kardex",
+    ],
+  },
+  {
+    label: "Compras / GRE",
+    keys: [
+      "compras-ordenes",
+      "compras-proveedores",
+      "gre-remitente",
+      "conductores",
+    ],
+  },
+  {
+    label: "Reportes",
+    keys: [
+      "reportes-ventas",
+      "reportes-productos",
+      "reportes-clientes",
+      "reportes-usuarios",
+    ],
+  },
+  {
+    label: "Configuración",
+    keys: ["sucursales", "usuarios", "empresa", "metodos-pago", "mi-cuenta"],
+  },
+];
+
+const moduleByKey = new Map(
+  assignableSidebarModules.map((moduleItem) => [moduleItem.key, moduleItem]),
+);
 
 export default function EditPlanPage() {
   const params = useParams<{ code: string }>();
   const { showToast } = useSystemToast();
   const code = params.code as PlatformPlanCode;
   const [plan, setPlan] = useState<PlatformPlanPricing | null>(null);
-  const [tab, setTab] = useState<"pricing" | "limits">("pricing");
+  const [tab, setTab] = useState<"pricing" | "limits" | "modules">("pricing");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +196,32 @@ export default function EditPlanPage() {
     }
   };
 
+  const updateModules = async (payload: UpdatePlatformPlanModulesPayload) => {
+    if (!plan) return;
+    setSaving(true);
+    try {
+      await platformAdminApi.updatePlanModules(plan.code, payload);
+      await load();
+      showToast({
+        title: "Módulos actualizados",
+        description: `Los módulos de ${plan.name} ya están vigentes.`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      const changed = isConflict(requestError, "PLAN_MODULES_CHANGED");
+      if (changed) await load();
+      showToast({
+        title: changed ? "Los módulos cambiaron" : "No se pudo actualizar",
+        description: changed
+          ? "Se recargaron los valores. Revisa y confirma nuevamente."
+          : getErrorMessage(requestError),
+        variant: changed ? "warning" : "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <DashboardShell
       headerTitle="Editar plan"
@@ -181,7 +273,7 @@ export default function EditPlanPage() {
               </div>
             </section>
 
-            <div className="grid grid-cols-2 rounded-[14px] bg-[var(--color-card)] p-1.5 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+            <div className="grid grid-cols-3 rounded-[14px] bg-[var(--color-card)] p-1.5 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
               <TabButton
                 active={tab === "pricing"}
                 icon={<CurrencyCircleDollarIcon size={17} />}
@@ -194,6 +286,12 @@ export default function EditPlanPage() {
                 label="Límites"
                 onClick={() => setTab("limits")}
               />
+              <TabButton
+                active={tab === "modules"}
+                icon={<ListChecksIcon size={17} />}
+                label="Módulos"
+                onClick={() => setTab("modules")}
+              />
             </div>
 
             {tab === "pricing" ? (
@@ -203,12 +301,19 @@ export default function EditPlanPage() {
                 saving={saving}
                 onSubmit={updatePricing}
               />
-            ) : (
+            ) : tab === "limits" ? (
               <LimitsForm
                 key={plan.limitsUpdatedAt}
                 plan={plan}
                 saving={saving}
                 onSubmit={updateLimits}
+              />
+            ) : (
+              <ModulesForm
+                key={plan.modulesUpdatedAt}
+                plan={plan}
+                saving={saving}
+                onSubmit={updateModules}
               />
             )}
           </div>
@@ -390,6 +495,8 @@ function LimitsForm({
     documents: String(plan.limits.documents),
     documentQueries: String(plan.limits.documentQueries),
     storageMb: String(plan.limits.storageBytes / (1024 * 1024)),
+    attendanceEmployees: String(plan.limits.attendanceEmployees),
+    attendanceQrPoints: String(plan.limits.attendanceQrPoints),
   });
   const [warehousesUnlimited, setWarehousesUnlimited] = useState(
     plan.limits.warehouses === null,
@@ -410,7 +517,9 @@ function LimitsForm({
   const valid = fields.every(
     ([key, , min, max]) =>
       (key === "warehouses" && warehousesUnlimited) ||
-      Number.isInteger(parsed[key]) && parsed[key] >= min && parsed[key] <= max,
+      (Number.isInteger(parsed[key]) &&
+        parsed[key] >= min &&
+        parsed[key] <= max),
   );
 
   const setFieldValue = (
@@ -437,6 +546,8 @@ function LimitsForm({
       documents: parsed.documents,
       documentQueries: parsed.documentQueries,
       storageBytes: parsed.storageMb * 1024 * 1024,
+      attendanceEmployees: parsed.attendanceEmployees,
+      attendanceQrPoints: parsed.attendanceQrPoints,
       expectedUpdatedAt: plan.limitsUpdatedAt,
     });
   };
@@ -551,6 +662,148 @@ function LimitsForm({
   );
 }
 
+function ModulesForm({
+  plan,
+  saving,
+  onSubmit,
+}: {
+  plan: PlatformPlanPricing;
+  saving: boolean;
+  onSubmit: (payload: UpdatePlatformPlanModulesPayload) => Promise<void>;
+}) {
+  const [selected, setSelected] = useState(() => new Set(plan.moduleKeys));
+  const enabledCount = selected.size;
+
+  const setGroup = (keys: string[], enabled: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      keys.forEach((key) => {
+        if (!moduleByKey.has(key)) return;
+        if (enabled) next.add(key);
+        else next.delete(key);
+      });
+      return next;
+    });
+  };
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void onSubmit({
+      moduleKeys: Array.from(selected),
+      expectedUpdatedAt: plan.modulesUpdatedAt,
+    });
+  };
+
+  return (
+    <form
+      onSubmit={submit}
+      className="space-y-4 rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.12)]"
+    >
+      <div className="flex flex-col gap-3 rounded-xl bg-[var(--color-input-bg)] p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-circular-bold text-[var(--color-text)]">
+            {enabledCount} módulos incluidos
+          </p>
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Estos módulos quedan disponibles para las empresas de este plan.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              setSelected(
+                new Set(assignableSidebarModules.map((item) => item.key)),
+              )
+            }
+            className="h-9 rounded-xl bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-primary)]"
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="h-9 rounded-xl bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-muted-foreground)]"
+          >
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {moduleGroups.map((group) => {
+          const modules = group.keys.flatMap((key) => {
+            const moduleItem = moduleByKey.get(key);
+            return moduleItem ? [moduleItem] : [];
+          });
+          const allSelected = modules.every((moduleItem) =>
+            selected.has(moduleItem.key),
+          );
+          return (
+            <section
+              key={group.label}
+              className="rounded-xl bg-[var(--color-input-bg)] p-3"
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-sm font-circular-bold text-[var(--color-text)]">
+                  {group.label}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGroup(
+                      modules.map((moduleItem) => moduleItem.key),
+                      !allSelected,
+                    )
+                  }
+                  className="h-8 rounded-lg bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-primary)]"
+                >
+                  {allSelected ? "Quitar" : "Agregar"}
+                </button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {modules.map((moduleItem) => (
+                  <label
+                    key={moduleItem.key}
+                    className="flex min-h-11 items-center gap-3 rounded-lg bg-[var(--color-card)] px-3 py-2 text-sm text-[var(--color-text)]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected.has(moduleItem.key)}
+                      onChange={(event) => {
+                        setSelected((current) => {
+                          const next = new Set(current);
+                          if (event.target.checked) next.add(moduleItem.key);
+                          else next.delete(moduleItem.key);
+                          return next;
+                        });
+                      }}
+                      className="size-4 accent-[var(--color-primary)]"
+                    />
+                    <span className="min-w-0 truncate">
+                      {moduleItem.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={saving}
+          className="h-10 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-60"
+        >
+          {saving ? "Guardando..." : "Guardar módulos"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function Amount({
   label,
   value,
@@ -591,4 +844,3 @@ function getErrorMessage(error: unknown) {
     ? error.message
     : "No se pudo completar la solicitud.";
 }
-

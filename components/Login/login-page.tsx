@@ -5,12 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ChartBarIcon,
   EyeIcon,
   EyeSlashIcon,
   KeyIcon,
-  PackageIcon,
-  ShoppingCartSimpleIcon,
   UserIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -294,61 +291,16 @@ export function LoginPage() {
           </div>
         </section>
 
-        <section
-          className="order-1 relative hidden h-full overflow-hidden bg-cover bg-center px-8 py-10 text-white lg:flex lg:items-center xl:px-12"
-          style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1647427017067-8f33ccbae493?auto=format&fit=crop&ixlib=rb-4.1.0&q=80&w=1800)",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/68" />
-          <div className="relative z-10 w-full max-w-[640px]">
-            <div className="mb-24 inline-flex rounded-[16px] border-2 border-white bg-white px-4 py-2 shadow-[0_14px_34px_rgba(16,29,105,0.18)]">
-              <Image
-                src="/Logo/logopng.webp"
-                alt="Nuvex"
-                width={180}
-                height={42}
-                className="h-auto w-[160px] xl:w-[180px]"
-                style={{ width: "auto", height: "auto" }}
-                priority
-              />
-            </div>
-            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl text-fixed-5xl">
-              Vende por tallas, colores y sucursales sin perder el control.
-            </h2>
-            <div className="mt-8 space-y-4 text-base font-circular-regular text-white/88">
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <PackageIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Catalogo con variantes
-              </p>
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <ShoppingCartSimpleIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Ventas, caja y cotizaciones
-              </p>
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <ChartBarIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Stock y reportes en tiempo real
-              </p>
-            </div>
+        <section className="order-1 hidden h-full items-center justify-center bg-[#f3f5fb] px-8 py-10 lg:flex xl:px-12">
+          <div className="flex max-w-[520px] flex-col items-center text-center">
+            <Image
+              src="/Logo/nuvex_logo.svg"
+              alt="Nuvex"
+              width={330}
+              height={110}
+              className="h-auto w-[330px] max-w-[330px]"
+              priority
+            />
           </div>
         </section>
       </div>

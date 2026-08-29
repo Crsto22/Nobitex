@@ -2,7 +2,16 @@ import { authFetch } from "@/lib/api/auth-fetch";
 import { apiRequest } from "@/lib/api/client";
 
 export type PlanCode =
-  "prueba" | "basico" | "emprendedor" | "crecimiento" | "empresarial";
+  | "prueba"
+  | "basico"
+  | "emprendedor"
+  | "crecimiento"
+  | "empresarial"
+  | "pos_basico"
+  | "asistencias_basico"
+  | "asistencias_pro"
+  | "completo_emprende"
+  | "completo_empresa";
 export type PlanStatus = "trial" | "active" | "expired";
 
 export type PlanLimits = {
@@ -14,6 +23,8 @@ export type PlanLimits = {
   documents: number;
   documentQueries: number;
   storageBytes: number;
+  attendanceEmployees: number;
+  attendanceQrPoints: number;
 };
 
 export type PlanDefinition = {
@@ -31,6 +42,30 @@ export type PlanDefinition = {
   limits: PlanLimits;
   moduleKeys: string[];
   highlights: string[];
+};
+
+export type AttendanceAddon = {
+  active: boolean;
+  effectiveActive: boolean;
+  trial: boolean;
+  employeesLimit: number;
+  qrPointsLimit: number;
+  effectiveEmployeesLimit: number;
+  effectiveQrPointsLimit: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  monthlyPrice: string;
+  currency: "PEN";
+  includesIgv: true;
+};
+
+export type AttendancePricing = {
+  employeeUnitPrice: string;
+  qrPointUnitPrice: string;
+  currency: "PEN";
+  includesIgv: true;
+  updatedAt: string;
+  updatedBy?: { id: string; name: string; email: string } | null;
 };
 
 export type CurrentPlanResponse = {
@@ -51,6 +86,8 @@ export type CurrentPlanResponse = {
   };
   monthlyDiscountEligible: boolean;
   effectiveModuleKeys: string[];
+  attendancePricing: AttendancePricing;
+  attendance?: AttendanceAddon;
 };
 
 export const plansApi = {
@@ -60,5 +97,9 @@ export const plansApi = {
 
   current() {
     return authFetch<CurrentPlanResponse>("/plans/current");
+  },
+
+  attendancePricing() {
+    return apiRequest<AttendancePricing>("/plans/attendance-pricing");
   },
 };

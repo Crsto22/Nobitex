@@ -137,6 +137,11 @@ export type CreateSalePayload = {
   observaciones?: string;
 };
 
+export type ConvertSalePayload = {
+  tipoComprobante: Extract<VentaTipoComprobante, "boleta" | "factura">;
+  clienteId?: string | null;
+};
+
 export type VentaDetalleResponse = {
   id: string;
   descripcion: string | null;
@@ -459,6 +464,13 @@ export const salesApi = {
 
   create(payload: CreateSalePayload) {
     return authFetch<VentaResponse>("/sales", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  convert(publicId: string, payload: ConvertSalePayload) {
+    return authFetch<VentaResponse>(`/sales/${publicId}/convert`, {
       method: "POST",
       body: JSON.stringify(payload),
     });

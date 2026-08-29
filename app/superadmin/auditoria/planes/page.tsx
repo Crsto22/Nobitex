@@ -12,7 +12,11 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
-import { formatCurrency, formatDateShort as formatDate, formatDateTime } from "@/lib/intl";
+import {
+  formatCurrency,
+  formatDateShort as formatDate,
+  formatDateTime,
+} from "@/lib/intl";
 import {
   platformAdminApi,
   type PlatformAuditResponse,
@@ -52,6 +56,11 @@ const planNames: Record<PlatformPlanCode, string> = {
   emprendedor: "Emprende",
   crecimiento: "Crece",
   empresarial: "Escala",
+  pos_basico: "POS Básico",
+  asistencias_basico: "Asistencias Básico",
+  asistencias_pro: "Asistencias Pro",
+  completo_emprende: "Completo Emprende",
+  completo_empresa: "Completo Empresa",
 };
 
 export default function PlatformPlanAuditPage() {
@@ -343,4 +352,3 @@ function formatPercent(value: string | null) {
     maximumFractionDigits: 2,
   })}%`;
 }
-

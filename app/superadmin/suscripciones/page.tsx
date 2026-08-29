@@ -24,11 +24,17 @@ import {
   ProhibitIcon,
   StorefrontIcon,
   ClockIcon,
+  QrCodeIcon,
+  UsersThreeIcon,
   WarningCircleIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
-import { formatCurrency, formatDateShort as formatDate, formatDateTime } from "@/lib/intl";
+import {
+  formatCurrency,
+  formatDateShort as formatDate,
+  formatDateTime,
+} from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -46,6 +52,10 @@ import {
   type PlatformOveragesResponse,
   type PlatformOverage,
   type PlatformOverageStatus,
+  type PlatformAttendancePricing,
+  type PlatformAttendanceSubscription,
+  type PlatformAttendanceSubscriptionsResponse,
+  type PlatformAttendanceSubscriptionStatus,
 } from "@/lib/api/platform-admin";
 import { platformBillingApi } from "@/lib/api/platform-billing";
 import { cn } from "@/lib/utils";
@@ -89,11 +99,20 @@ const emptySales: PlatformSubscriptionSalesResponse = {
     collectedThisMonth: "0.00",
   },
 };
+const emptyAttendanceSubscriptions: PlatformAttendanceSubscriptionsResponse = {
+  data: [],
+  meta: { page: 1, limit: pageSize, total: 0, totalPages: 1 },
+  summary: {
+    active: 0,
+    cancelledThisMonth: 0,
+    collectedThisMonth: "0.00",
+  },
+};
 
 export default function PlatformSubscriptionsPage() {
   const { showToast } = useSystemToast();
   const [activeTab, setActiveTab] = useState<
-    "subscriptions" | "history" | "overages"
+    "subscriptions" | "attendance" | "history" | "overages"
   >("subscriptions");
   const [companies, setCompanies] =
     useState<PlatformCompaniesResponse>(emptyCompanies);
@@ -101,6 +120,12 @@ export default function PlatformSubscriptionsPage() {
     useState<PlatformAdminDashboardResponse | null>(null);
   const [sales, setSales] =
     useState<PlatformSubscriptionSalesResponse>(emptySales);
+  const [attendanceSubscriptions, setAttendanceSubscriptions] =
+    useState<PlatformAttendanceSubscriptionsResponse>(
+      emptyAttendanceSubscriptions,
+    );
+  const [attendancePricing, setAttendancePricing] =
+    useState<PlatformAttendancePricing | null>(null);
 
   const [companyPage, setCompanyPage] = useState(1);
   const [companySearch, setCompanySearch] = useState("");
@@ -119,6 +144,11 @@ export default function PlatformSubscriptionsPage() {
   const [salesStatus, setSalesStatus] = useState<
     PlatformSubscriptionPaymentStatus | ""
   >("");
+  const [attendancePage, setAttendancePage] = useState(1);
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+  const [attendanceStatus, setAttendanceStatus] = useState<
+    Exclude<PlatformAttendanceSubscriptionStatus, "vencida"> | ""
+  >("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -126,13 +156,20 @@ export default function PlatformSubscriptionsPage() {
   const [isSalesLoading, setIsSalesLoading] = useState(true);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
   const [salesError, setSalesError] = useState<string | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
   const [saleToCancel, setSaleToCancel] =
     useState<PlatformSubscriptionSale | null>(null);
+  const [attendanceToCancel, setAttendanceToCancel] =
+    useState<PlatformAttendanceSubscription | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAttendanceLoading, setIsAttendanceLoading] = useState(true);
   const [openCompanyMenuId, setOpenCompanyMenuId] = useState<string | null>(
     null,
   );
   const [openSaleMenuId, setOpenSaleMenuId] = useState<string | null>(null);
+  const [openAttendanceMenuId, setOpenAttendanceMenuId] = useState<
+    string | null
+  >(null);
 
   const loadCompanies = useCallback(async () => {
     setIsCompaniesLoading(true);
@@ -189,6 +226,28 @@ export default function PlatformSubscriptionsPage() {
     salesStatus,
   ]);
 
+  const loadAttendance = useCallback(async () => {
+    setIsAttendanceLoading(true);
+    setAttendanceError(null);
+    try {
+      const [subscriptionsResponse, pricingResponse] = await Promise.all([
+        platformAdminApi.findAttendanceSubscriptions({
+          page: attendancePage,
+          limit: pageSize,
+          search: attendanceSearch,
+          status: attendanceStatus || undefined,
+        }),
+        platformAdminApi.getAttendancePricing(),
+      ]);
+      setAttendanceSubscriptions(subscriptionsResponse);
+      setAttendancePricing(pricingResponse);
+    } catch (requestError) {
+      setAttendanceError(getErrorMessage(requestError));
+    } finally {
+      setIsAttendanceLoading(false);
+    }
+  }, [attendancePage, attendanceSearch, attendanceStatus]);
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => void loadCompanies(), 250);
     return () => window.clearTimeout(timeoutId);
@@ -198,6 +257,11 @@ export default function PlatformSubscriptionsPage() {
     const timeoutId = window.setTimeout(() => void loadSales(), 250);
     return () => window.clearTimeout(timeoutId);
   }, [loadSales]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => void loadAttendance(), 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [loadAttendance]);
 
   const handleHistoricalReceipt = async (sale: PlatformSubscriptionSale) => {
     const selected = window.prompt(
@@ -238,6 +302,32 @@ export default function PlatformSubscriptionsPage() {
       });
       setSaleToCancel(null);
       await Promise.all([loadCompanies(), loadSales()]);
+    } catch (requestError) {
+      showToast({
+        title: "No se pudo anular",
+        description: getErrorMessage(requestError),
+        variant: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelAttendance = async (reason: string) => {
+    if (!attendanceToCancel) return;
+    setIsSubmitting(true);
+    try {
+      const cancelled = await platformAdminApi.cancelAttendanceSubscription(
+        attendanceToCancel.id,
+        reason,
+      );
+      showToast({
+        title: "Asistencias anulada",
+        description: `Se restauró la configuración anterior de ${cancelled.company.name}.`,
+        variant: "success",
+      });
+      setAttendanceToCancel(null);
+      await Promise.all([loadCompanies(), loadAttendance()]);
     } catch (requestError) {
       showToast({
         title: "No se pudo anular",
@@ -292,6 +382,12 @@ export default function PlatformSubscriptionsPage() {
             onClick={() => setActiveTab("history")}
           >
             Historial de ventas
+          </TabButton>
+          <TabButton
+            active={activeTab === "attendance"}
+            onClick={() => setActiveTab("attendance")}
+          >
+            Asistencias
           </TabButton>
           <TabButton
             active={activeTab === "overages"}
@@ -363,6 +459,30 @@ export default function PlatformSubscriptionsPage() {
               onPageChange={setCompanyPage}
             />
           </>
+        ) : activeTab === "attendance" ? (
+          <AttendanceSubscriptionsPanel
+            result={attendanceSubscriptions}
+            pricing={attendancePricing}
+            search={attendanceSearch}
+            status={attendanceStatus}
+            isLoading={isAttendanceLoading}
+            error={attendanceError}
+            openMenuId={openAttendanceMenuId}
+            onSearchChange={(value) => {
+              setAttendanceSearch(value);
+              setAttendancePage(1);
+            }}
+            onStatusChange={(value) => {
+              setAttendanceStatus(value);
+              setAttendancePage(1);
+            }}
+            onRefresh={loadAttendance}
+            onPageChange={setAttendancePage}
+            onToggleMenu={(id) =>
+              setOpenAttendanceMenuId(openAttendanceMenuId === id ? null : id)
+            }
+            onCancel={setAttendanceToCancel}
+          />
         ) : activeTab === "history" ? (
           <>
             <SalesControls
@@ -450,6 +570,14 @@ export default function PlatformSubscriptionsPage() {
           onSubmit={handleCancelSale}
         />
       ) : null}
+      {attendanceToCancel ? (
+        <CancelAttendanceModal
+          subscription={attendanceToCancel}
+          isSubmitting={isSubmitting}
+          onClose={() => setAttendanceToCancel(null)}
+          onSubmit={handleCancelAttendance}
+        />
+      ) : null}
     </DashboardShell>
   );
 }
@@ -517,12 +645,14 @@ function SubscriptionCompanyRow({
         {menuOpen ? (
           <div className="absolute right-0 top-9 z-20 w-44 rounded-xl bg-[var(--color-card)] p-1.5 shadow-xl ring-1 ring-[var(--color-border)]">
             {company.state === "activa" ? (
-              <Link
-                href={`/superadmin/suscripciones/${company.id}`}
-                className="flex h-9 items-center rounded-lg px-3 text-xs font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-input-bg)]"
-              >
-                Activar/Renovar
-              </Link>
+              <>
+                <Link
+                  href={`/superadmin/suscripciones/${company.id}`}
+                  className="flex h-9 items-center rounded-lg px-3 text-xs font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-input-bg)]"
+                >
+                  Activar/Renovar
+                </Link>
+              </>
             ) : (
               <span className="flex h-9 items-center px-3 text-xs text-[var(--color-muted-foreground)]">
                 Empresa no disponible
@@ -636,6 +766,250 @@ function SubscriptionSaleRow({
         ) : null}
       </div>
     </article>
+  );
+}
+
+function AttendanceSubscriptionsPanel({
+  result,
+  pricing,
+  search,
+  status,
+  isLoading,
+  error,
+  openMenuId,
+  onSearchChange,
+  onStatusChange,
+  onRefresh,
+  onPageChange,
+  onToggleMenu,
+  onCancel,
+}: {
+  result: PlatformAttendanceSubscriptionsResponse;
+  pricing: PlatformAttendancePricing | null;
+  search: string;
+  status: Exclude<PlatformAttendanceSubscriptionStatus, "vencida"> | "";
+  isLoading: boolean;
+  error: string | null;
+  openMenuId: string | null;
+  onSearchChange: (value: string) => void;
+  onStatusChange: (
+    value: Exclude<PlatformAttendanceSubscriptionStatus, "vencida"> | "",
+  ) => void;
+  onRefresh: () => void;
+  onPageChange: (page: number) => void;
+  onToggleMenu: (id: string) => void;
+  onCancel: (subscription: PlatformAttendanceSubscription) => void;
+}) {
+  return (
+    <>
+      <section className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          icon={<UsersThreeIcon size={20} weight="bold" />}
+          label="Asistencias vigentes"
+          value={formatNumber(result.summary.active)}
+          tone="primary"
+        />
+        <MetricCard
+          icon={<CurrencyCircleDollarIcon size={20} weight="bold" />}
+          label="Cobrado este mes"
+          value={formatCurrency(result.summary.collectedThisMonth)}
+          tone="warning"
+        />
+        <MetricCard
+          icon={<QrCodeIcon size={20} weight="bold" />}
+          label="Tarifa actual"
+          value={
+            pricing
+              ? `${formatCurrency(pricing.employeeUnitPrice)} / ${formatCurrency(pricing.qrPointUnitPrice)}`
+              : "-"
+          }
+          tone="dark"
+        />
+      </section>
+      <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_180px_44px]">
+        <label className="relative">
+          <MagnifyingGlassIcon
+            size={18}
+            className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
+          />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Buscar empresa..."
+            className="h-11 w-full rounded-xl bg-[var(--color-sidebar-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none"
+          />
+        </label>
+        <NativeSelect
+          value={status}
+          onChange={(event) =>
+            onStatusChange(
+              event.target.value as
+                | Exclude<PlatformAttendanceSubscriptionStatus, "vencida">
+                | "",
+            )
+          }
+          className={controlClassName}
+        >
+          <option value="">Todos los estados</option>
+          <option value="activa">Activas</option>
+          <option value="cancelada">Canceladas</option>
+        </NativeSelect>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          aria-label="Actualizar asistencias"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-sidebar-active)] text-white disabled:opacity-60"
+        >
+          <ArrowClockwiseIcon
+            size={17}
+            weight="bold"
+            className={cn(isLoading && "animate-spin")}
+          />
+        </button>
+      </div>
+      {error ? <ErrorBanner message={error} /> : null}
+      <section className="space-y-3 pb-2 pr-1">
+        {isLoading && result.data.length === 0 ? (
+          <LoadingRows />
+        ) : result.data.length === 0 ? (
+          <EmptyState
+            icon={<UsersThreeIcon size={48} weight="light" />}
+            title="No hay suscripciones de Asistencias"
+            description="Activa Asistencias desde el menú de una empresa."
+          />
+        ) : (
+          result.data.map((subscription) => (
+            <AttendanceSubscriptionRow
+              key={subscription.id}
+              subscription={subscription}
+              menuOpen={openMenuId === subscription.id}
+              onToggleMenu={() => onToggleMenu(subscription.id)}
+              onCancel={() => onCancel(subscription)}
+            />
+          ))
+        )}
+      </section>
+      <CompanyPagination
+        page={result.meta.page}
+        totalPages={result.meta.totalPages}
+        total={result.meta.total}
+        visible={result.data.length}
+        isLoading={isLoading}
+        onPageChange={onPageChange}
+      />
+    </>
+  );
+}
+
+function AttendanceSubscriptionRow({
+  subscription,
+  menuOpen,
+  onToggleMenu,
+  onCancel,
+}: {
+  subscription: PlatformAttendanceSubscription;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <article className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] md:grid-cols-[minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(150px,1fr)_120px_120px_32px] md:items-center">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#10b981]/10 text-[#059669]">
+          <UsersThreeIcon size={21} weight="fill" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+            {subscription.company.name}
+          </p>
+          <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+            {subscription.company.document ?? "Sin documento"}
+          </p>
+        </div>
+      </div>
+      <div>
+        <p className="text-sm font-circular-bold text-[var(--color-text)]">
+          {subscription.employeesLimit} trabajadores ·{" "}
+          {subscription.qrPointsLimit} QR
+        </p>
+        <p className="text-xs text-[var(--color-muted-foreground)]">
+          Uso {subscription.usage.employees}/{subscription.employeesLimit} ·{" "}
+          {subscription.usage.qrPoints}/{subscription.qrPointsLimit}
+        </p>
+      </div>
+      <div>
+        <p className="text-sm text-[var(--color-text)]">
+          {subscription.period === "anual" ? "Anual" : "Mensual"} ·{" "}
+          {getPaymentMethodLabel(
+            subscription.paymentMethod,
+            subscription.paymentMethodOther,
+          )}
+        </p>
+        <p className="text-xs text-[var(--color-muted-foreground)]">
+          {formatDate(subscription.coverageStartsAt)} -{" "}
+          {formatDate(subscription.coverageEndsAt)}
+        </p>
+      </div>
+      <AttendanceStatusBadge status={subscription.status} />
+      <div className="md:text-right">
+        <p className="text-xs text-[var(--color-muted-foreground)]">
+          {formatCurrency(subscription.monthlyAmount)} / mes
+        </p>
+        <p className="text-sm font-circular-bold text-[var(--color-text)]">
+          {formatCurrency(subscription.totalAmount)}
+        </p>
+      </div>
+      <div className="relative justify-self-end">
+        <button
+          type="button"
+          onClick={onToggleMenu}
+          aria-label="Acciones de Asistencias"
+          className="grid size-8 place-items-center rounded-lg text-[var(--color-muted-foreground)] hover:bg-[var(--color-input-bg)]"
+        >
+          <DotsThreeVerticalIcon size={20} weight="bold" />
+        </button>
+        {menuOpen ? (
+          <div className="absolute right-0 top-9 z-20 w-44 rounded-xl bg-[var(--color-card)] p-1.5 shadow-xl ring-1 ring-[var(--color-border)]">
+            <button
+              type="button"
+              disabled={subscription.status !== "activa"}
+              onClick={onCancel}
+              className="flex h-9 w-full items-center rounded-lg px-3 text-xs font-circular-bold text-[#dc2626] hover:bg-[#ef4444]/10 disabled:opacity-40"
+            >
+              {subscription.status === "activa" ? "Anular" : "Sin acciones"}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function AttendanceStatusBadge({
+  status,
+}: {
+  status: PlatformAttendanceSubscriptionStatus;
+}) {
+  const labels = {
+    activa: "Activa",
+    vencida: "Vencida",
+    cancelada: "Cancelada",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-circular-bold",
+        status === "activa"
+          ? "bg-[#10b981]/10 text-[#059669]"
+          : status === "vencida"
+            ? "bg-[#f59e0b]/10 text-[#d97706]"
+            : "bg-[#ef4444]/10 text-[#dc2626]",
+      )}
+    >
+      {labels[status]}
+    </span>
   );
 }
 
@@ -1005,6 +1379,70 @@ function PayOverageModal({
             className="h-10 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-50"
           >
             {isSubmitting ? "Registrando..." : "Confirmar pago"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function CancelAttendanceModal({
+  subscription,
+  isSubmitting,
+  onClose,
+  onSubmit,
+}: {
+  subscription: PlatformAttendanceSubscription;
+  isSubmitting: boolean;
+  onClose: () => void;
+  onSubmit: (reason: string) => Promise<void>;
+}) {
+  const [reason, setReason] = useState("");
+  return (
+    <ModalShell
+      title="Anular Asistencias"
+      description={`${subscription.company.name} · ${formatCurrency(subscription.totalAmount)}`}
+      onClose={onClose}
+      closeDisabled={isSubmitting}
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onSubmit(reason);
+        }}
+        className="grid gap-5"
+      >
+        <div className="rounded-xl bg-[#f59e0b]/10 p-4 text-sm text-[#a16207] dark:text-[#fbbf24]">
+          Se restaurará la configuración de Asistencias anterior a esta
+          suscripción.
+        </div>
+        <label className="grid gap-1.5 text-sm text-[var(--color-text)]">
+          <span className="font-circular-bold">Motivo de anulación</span>
+          <textarea
+            required
+            minLength={5}
+            maxLength={300}
+            rows={4}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            className="resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] p-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+          />
+        </label>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="h-10 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]"
+          >
+            Volver
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || reason.trim().length < 5}
+            className="h-10 rounded-xl bg-[#dc2626] px-5 text-sm font-circular-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? "Anulando..." : "Anular y restaurar"}
           </button>
         </div>
       </form>
@@ -1439,6 +1877,11 @@ function getPlanLabel(code: PlatformPlanCode) {
     emprendedor: "Emprende",
     crecimiento: "Crece",
     empresarial: "Escala",
+    pos_basico: "POS Básico",
+    asistencias_basico: "Asistencias Básico",
+    asistencias_pro: "Asistencias Pro",
+    completo_emprende: "Completo Emprende",
+    completo_empresa: "Completo Empresa",
   }[code];
 }
 

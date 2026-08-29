@@ -5,14 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChartBarIcon,
   CheckCircleIcon,
   EnvelopeSimpleIcon,
   EyeIcon,
   EyeSlashIcon,
   KeyIcon,
-  LockKeyIcon,
-  ShieldCheckIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -222,62 +219,15 @@ export function ForgotPasswordPage() {
   return (
     <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb]">
       <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-white lg:grid-cols-[minmax(0,1fr)_minmax(520px,620px)]">
-        <div
-          className="relative z-10 hidden min-h-dvh overflow-hidden bg-cover bg-center px-8 py-10 text-white lg:flex lg:items-center xl:px-12"
-          style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1556741533-6e6a62bd8b49?auto=format&fit=crop&ixlib=rb-4.1.0&q=80&w=1800)",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/68" />
-          <div className="relative z-10 w-full max-w-[640px]">
-            <div className="mb-24 inline-flex rounded-[16px] border-2 border-white bg-white px-4 py-2 shadow-[0_14px_34px_rgba(16,29,105,0.18)]">
-              <Image
-                src="/Logo/logopng.webp"
-                alt="Nuvex"
-                width={180}
-                height={42}
-                className="h-auto w-[160px] xl:w-[180px]"
-                style={{ width: "auto", height: "auto" }}
-                priority
-              />
-            </div>
-            <h2 className="max-w-[560px] text-5xl font-black leading-[1.08] xl:text-6xl text-fixed-5xl">
-              Recupera el acceso y vuelve a gestionar tu negocio.
-            </h2>
-            <div className="mt-8 space-y-4 text-base font-circular-regular text-white/88">
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <LockKeyIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Cambio de contrasena seguro
-              </p>
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <ShieldCheckIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Validacion por correo
-              </p>
-              <p className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white">
-                  <ChartBarIcon
-                    size={20}
-                    weight="fill"
-                    className="text-[var(--color-secondary)]"
-                  />
-                </span>
-                Tu operacion continua protegida
-              </p>
-            </div>
-          </div>
+        <div className="relative z-10 hidden min-h-dvh items-center justify-center overflow-hidden bg-[#f3f5fb] px-8 py-10 lg:flex xl:px-12">
+          <Image
+            src="/Logo/nuvex_logo.svg"
+            alt="Nuvex"
+            width={330}
+            height={110}
+            className="h-auto w-[330px] max-w-[330px]"
+            priority
+          />
         </div>
 
         <div className="relative z-10 flex min-h-dvh flex-col overflow-hidden px-5 py-6 sm:px-8 lg:px-14 lg:py-7 xl:px-20">

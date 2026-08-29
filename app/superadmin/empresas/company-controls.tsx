@@ -200,6 +200,11 @@ export function PlanBadge({
     emprendedor: "bg-[#10b981]/10 text-[#059669]",
     crecimiento: "bg-[#f59e0b]/10 text-[#d97706]",
     empresarial: "bg-[#8b5cf6]/10 text-[#7c3aed]",
+    pos_basico: "bg-[#0ea5e9]/10 text-[#0284c7]",
+    asistencias_basico: "bg-[#14b8a6]/10 text-[#0f766e]",
+    asistencias_pro: "bg-[#22c55e]/10 text-[#15803d]",
+    completo_emprende: "bg-[#f97316]/10 text-[#ea580c]",
+    completo_empresa: "bg-[#7c3aed]/10 text-[#6d28d9]",
   };
 
   return (

@@ -12,11 +12,14 @@ import {
 } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  CalendarBlankIcon,
   CheckCircleIcon,
   CreditCardIcon,
   FileTextIcon,
+  MinusIcon,
+  PlusIcon,
+  QrCodeIcon,
   StorefrontIcon,
+  UsersThreeIcon,
   WarningCircleIcon,
   TagIcon,
 } from "@phosphor-icons/react/ssr";
@@ -27,6 +30,7 @@ import {
   platformAdminApi,
   type PlatformCompany,
   type PlatformPlanCode,
+  type PlatformAttendancePricing,
   type PlatformSubscriptionPaymentMethod,
 } from "@/lib/api/platform-admin";
 import { plansApi, type PlanDefinition } from "@/lib/api/plans";
@@ -54,9 +58,17 @@ export default function RenewSubscriptionPage() {
   const { showToast } = useSystemToast();
   const [company, setCompany] = useState<PlatformCompany | null>(null);
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
+  const [attendancePricing, setAttendancePricing] =
+    useState<PlatformAttendancePricing | null>(null);
+  const [enablePos, setEnablePos] = useState(true);
+  const [enableAttendance, setEnableAttendance] = useState(false);
   const [planCode, setPlanCode] =
     useState<Exclude<PlatformPlanCode, "prueba">>("basico");
   const [months, setMonths] = useState<(typeof durations)[number]>(1);
+  const [attendanceEmployees, setAttendanceEmployees] = useState(3);
+  const [attendanceQrPoints, setAttendanceQrPoints] = useState(1);
+  const [attendanceMonths, setAttendanceMonths] =
+    useState<(typeof durations)[number]>(1);
   const [paymentMethod, setPaymentMethod] =
     useState<PlatformSubscriptionPaymentMethod>("yape");
   const [paymentMethodOther, setPaymentMethodOther] = useState("");
@@ -80,12 +92,21 @@ export default function RenewSubscriptionPage() {
     setLoading(true);
     setError(null);
     try {
-      const [companyResult, catalog] = await Promise.all([
-        platformAdminApi.getCompany(params.id),
-        plansApi.findAll(),
-      ]);
+      const [companyResult, catalog, attendancePricingResult] =
+        await Promise.all([
+          platformAdminApi.getCompany(params.id),
+          plansApi.findAll(),
+          platformAdminApi.getAttendancePricing(),
+        ]);
       const paid = catalog.filter((plan) => plan.code !== "prueba");
       setCompany(companyResult);
+      setAttendancePricing(attendancePricingResult);
+      setAttendanceEmployees(
+        Math.max(3, companyResult.attendance?.effectiveEmployeesLimit ?? 3),
+      );
+      setAttendanceQrPoints(
+        Math.max(1, companyResult.attendance?.effectiveQrPointsLimit ?? 1),
+      );
       setAffiliateCode(
         companyResult.affiliate?.status === "activa"
           ? companyResult.affiliate.code
@@ -125,6 +146,17 @@ export default function RenewSubscriptionPage() {
 
   const selectedPlan = plans.find((plan) => plan.code === planCode);
   const pricing = useMemo(() => {
+    if (!enablePos) {
+      return {
+        list: 0,
+        percent: 0,
+        discount: 0,
+        affiliatePercent: 0,
+        affiliateDiscount: 0,
+        total: 0,
+        commission: 0,
+      };
+    }
     const list = Number(selectedPlan?.priceMonthly ?? 0) * months;
     const percent =
       months === 1
@@ -135,51 +167,82 @@ export default function RenewSubscriptionPage() {
           ? Number(selectedPlan?.annualDiscountPercent ?? 0)
           : 0;
     const discount = Math.round(list * (percent / 100) * 100) / 100;
-    const subtotal = list - discount;
-    const affiliatePercent = affiliateInfo?.appliesDiscount
-      ? Number(affiliateInfo.discountPercent)
-      : 0;
-    const affiliateDiscount =
-      Math.round(subtotal * (affiliatePercent / 100) * 100) / 100;
-    const total = subtotal - affiliateDiscount;
-    const commission =
-      Math.round(
-        total * (Number(affiliateInfo?.commissionPercent ?? 0) / 100) * 100,
-      ) / 100;
+    const total = list - discount;
     return {
       list,
       percent,
       discount,
-      affiliatePercent,
-      affiliateDiscount,
+      affiliatePercent: 0,
+      affiliateDiscount: 0,
       total,
-      commission,
+      commission: 0,
     };
-  }, [affiliateInfo, company?.monthlyDiscountEligible, months, selectedPlan]);
-  const preview = company ? buildPreview(company, planCode, months) : null;
+  }, [company?.monthlyDiscountEligible, enablePos, months, selectedPlan]);
+  const attendancePricingPreview = useMemo(() => {
+    const monthly =
+      attendanceEmployees * Number(attendancePricing?.employeeUnitPrice ?? 0) +
+      attendanceQrPoints * Number(attendancePricing?.qrPointUnitPrice ?? 0);
+    return {
+      monthly,
+      total: monthly * attendanceMonths,
+      startsAt: new Date(),
+      endsAt: addMonthsClamped(new Date(), attendanceMonths),
+    };
+  }, [
+    attendanceEmployees,
+    attendanceMonths,
+    attendancePricing?.employeeUnitPrice,
+    attendancePricing?.qrPointUnitPrice,
+    attendanceQrPoints,
+  ]);
+  const preview =
+    company && enablePos ? buildPreview(company, planCode, months) : null;
+  const attendanceTotal = enableAttendance ? attendancePricingPreview.total : 0;
+  const checkoutSubtotal = pricing.total + attendanceTotal;
+  const checkoutAffiliatePercent = affiliateInfo?.appliesDiscount
+    ? Number(affiliateInfo.discountPercent)
+    : 0;
+  const checkoutAffiliateDiscount =
+    Math.round(checkoutSubtotal * (checkoutAffiliatePercent / 100) * 100) / 100;
+  const checkoutTotal = checkoutSubtotal - checkoutAffiliateDiscount;
+  const checkoutCommission =
+    Math.round(
+      checkoutTotal * (Number(affiliateInfo?.commissionPercent ?? 0) / 100) * 100,
+    ) / 100;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!company || !selectedPlan) return;
+    if (!company || (!enablePos && !enableAttendance)) return;
+    if (enablePos && !selectedPlan) return;
     setSaving(true);
     try {
-      await platformAdminApi.createSubscriptionSale({
+      await platformAdminApi.createSubscriptionCheckout({
         requestId: crypto.randomUUID(),
         empresaId: company.id,
-        planCode,
-        months,
-        pricingUpdatedAt: selectedPlan.pricingUpdatedAt,
         paymentMethod,
         paymentMethodOther:
           paymentMethod === "otro" ? paymentMethodOther : undefined,
         receiptType,
-        affiliateCode: affiliateInfo?.appliesDiscount
-          ? affiliateInfo.code
+        affiliateCode: affiliateInfo?.code,
+        pos: enablePos
+          ? {
+              planCode,
+              months,
+              pricingUpdatedAt: selectedPlan!.pricingUpdatedAt,
+            }
+          : undefined,
+        attendance: enableAttendance
+          ? {
+              employeesLimit: attendanceEmployees,
+              qrPointsLimit: attendanceQrPoints,
+              period: attendanceMonths === 12 ? "anual" : "mensual",
+              months: attendanceMonths,
+            }
           : undefined,
       });
       showToast({
-        title: "Plan activado",
-        description: `${company.name} tiene ${selectedPlan.name} hasta ${formatDate(preview!.resultingEndsAt)}.`,
+        title: "Suscripción activada",
+        description: `${company.name} tiene la suscripción registrada.`,
         variant: "success",
       });
       router.push("/superadmin/suscripciones");
@@ -191,7 +254,7 @@ export default function RenewSubscriptionPage() {
           "PLAN_PRICING_CHANGED";
       if (changed) await load();
       showToast({
-        title: changed ? "La tarifa cambio" : "No se pudo activar el plan",
+        title: changed ? "La tarifa cambio" : "No se pudo activar",
         description: changed
           ? "Se recargaron los precios. Revisa y confirma nuevamente."
           : requestError instanceof Error
@@ -229,7 +292,7 @@ export default function RenewSubscriptionPage() {
 
   return (
     <DashboardShell
-      headerTitle="Activar o renovar plan"
+      headerTitle="Activar suscripción"
       headerParent={{
         label: "Suscripciones",
         href: "/superadmin/suscripciones",
@@ -280,6 +343,34 @@ export default function RenewSubscriptionPage() {
                 ) : null}
               </section>
 
+              <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+                <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
+                  Productos
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ToggleCard
+                    icon={<CreditCardIcon size={18} />}
+                    title="POS"
+                    description="Plan de ventas, inventario y facturación."
+                    checked={enablePos}
+                    onChange={setEnablePos}
+                  />
+                  <ToggleCard
+                    icon={<UsersThreeIcon size={18} />}
+                    title="Asistencias"
+                    description="Trabajadores, marcaciones y puntos QR."
+                    checked={enableAttendance}
+                    onChange={setEnableAttendance}
+                  />
+                </div>
+                {!enablePos && !enableAttendance ? (
+                  <p className="mt-3 rounded-xl bg-red-500/10 p-3 text-xs text-red-600">
+                    Selecciona POS, Asistencias o ambos para continuar.
+                  </p>
+                ) : null}
+              </section>
+
+              {enablePos || enableAttendance ? (
               <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
                 <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
                   Afiliación
@@ -346,7 +437,9 @@ export default function RenewSubscriptionPage() {
                   </p>
                 )}
               </section>
+              ) : null}
 
+              {enablePos ? (
               <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
                 <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
                   Plan y duración
@@ -392,6 +485,51 @@ export default function RenewSubscriptionPage() {
                   </div>
                 ) : null}
               </section>
+              ) : null}
+
+              {enableAttendance ? (
+                <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+                  <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
+                    Asistencias
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <StepperField
+                      label="Trabajadores"
+                      value={attendanceEmployees}
+                      min={1}
+                      onChange={setAttendanceEmployees}
+                    />
+                    <StepperField
+                      label="Puntos QR"
+                      value={attendanceQrPoints}
+                      min={1}
+                      onChange={setAttendanceQrPoints}
+                    />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {durations.map((duration) => (
+                      <button
+                        key={duration}
+                        type="button"
+                        onClick={() => setAttendanceMonths(duration)}
+                        className={cn(
+                          "h-10 rounded-xl text-xs font-circular-bold",
+                          attendanceMonths === duration
+                            ? "bg-[var(--color-primary)] text-white"
+                            : "bg-[var(--color-input-bg)] text-[var(--color-text)]",
+                        )}
+                      >
+                        {duration} {duration === 1 ? "mes" : "meses"}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 rounded-xl bg-[var(--color-input-bg)] p-3 text-xs text-[var(--color-muted-foreground)]">
+                    S/ {attendancePricing?.employeeUnitPrice ?? "0.00"} por
+                    trabajador · S/ {attendancePricing?.qrPointUnitPrice ?? "0.00"}{" "}
+                    por punto QR · vence {formatDate(attendancePricingPreview.endsAt)}
+                  </div>
+                </section>
+              ) : null}
 
               <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
                 <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
@@ -455,20 +593,20 @@ export default function RenewSubscriptionPage() {
                 Resumen
               </p>
               <div className="mt-4 space-y-3">
-                <Summary
-                  icon={<CreditCardIcon size={17} />}
-                  label="Plan"
-                  value={selectedPlan?.name ?? "-"}
-                />
-                <Summary
-                  icon={<CalendarBlankIcon size={17} />}
-                  label="Cobertura"
-                  value={
-                    preview
-                      ? `${formatDate(preview.coverageStartsAt)} - ${formatDate(preview.coverageEndsAt)}`
-                      : "-"
-                  }
-                />
+                {enablePos ? (
+                  <Summary
+                    icon={<CreditCardIcon size={17} />}
+                    label="POS"
+                    value={`${selectedPlan?.name ?? "-"} · S/ ${pricing.total.toFixed(2)}`}
+                  />
+                ) : null}
+                {enableAttendance ? (
+                  <Summary
+                    icon={<QrCodeIcon size={17} />}
+                    label="Asistencias"
+                    value={`${attendanceEmployees} trabajadores · ${attendanceQrPoints} QR · S/ ${attendancePricingPreview.total.toFixed(2)}`}
+                  />
+                ) : null}
                 <Summary
                   icon={<FileTextIcon size={17} />}
                   label="Comprobante"
@@ -490,31 +628,53 @@ export default function RenewSubscriptionPage() {
                   />
                 </div>
               ) : null}
-              <div className="my-4 rounded-xl bg-[var(--color-input-bg)] p-3 text-sm">
+              <div className="mt-4 space-y-2 rounded-xl bg-[var(--color-input-bg)] p-3 text-xs">
+                {enablePos ? (
+                  <CoverageRow
+                    label="Cobertura POS"
+                    value={
+                      preview
+                        ? `${formatDate(preview.coverageStartsAt)} - ${formatDate(preview.coverageEndsAt)}`
+                        : "-"
+                    }
+                  />
+                ) : null}
+                {enableAttendance ? (
+                  <CoverageRow
+                    label="Cobertura Asistencias"
+                    value={`${formatDate(attendancePricingPreview.startsAt)} - ${formatDate(attendancePricingPreview.endsAt)}`}
+                  />
+                ) : null}
+              </div>
+              <div className="my-4 space-y-2 rounded-xl bg-[var(--color-input-bg)] p-3 text-sm">
                 <p className="flex justify-between text-[var(--color-muted-foreground)]">
-                  <span>Precio</span>
-                  <span>S/ {pricing.list.toFixed(2)}</span>
+                  <span>Subtotal POS</span>
+                  <span>S/ {pricing.total.toFixed(2)}</span>
                 </p>
                 {pricing.discount > 0 ? (
-                  <p className="mt-2 flex justify-between text-[#059669]">
-                    <span>Descuento</span>
+                  <p className="flex justify-between text-[#059669]">
+                    <span>Descuento POS</span>
                     <span>- S/ {pricing.discount.toFixed(2)}</span>
                   </p>
                 ) : null}
-                {pricing.affiliateDiscount > 0 ? (
-                  <p className="mt-2 flex justify-between text-[#059669]">
+                {checkoutAffiliateDiscount > 0 ? (
+                  <p className="flex justify-between text-[#059669]">
                     <span>Descuento afiliado</span>
-                    <span>- S/ {pricing.affiliateDiscount.toFixed(2)}</span>
+                    <span>- S/ {checkoutAffiliateDiscount.toFixed(2)}</span>
                   </p>
                 ) : null}
-                <p className="mt-3 flex justify-between font-circular-bold text-[var(--color-text)]">
+                <p className="flex justify-between text-[var(--color-muted-foreground)]">
+                  <span>Subtotal Asistencias</span>
+                  <span>S/ {attendanceTotal.toFixed(2)}</span>
+                </p>
+                <p className="mt-3 flex justify-between border-t border-[var(--color-border)] pt-3 font-circular-bold text-[var(--color-text)]">
                   <span>Total con IGV</span>
-                  <span>S/ {pricing.total.toFixed(2)}</span>
+                  <span>S/ {checkoutTotal.toFixed(2)}</span>
                 </p>
                 {affiliateInfo ? (
                   <p className="mt-2 flex justify-between text-xs text-[var(--color-muted-foreground)]">
                     <span>Comisión generada</span>
-                    <span>S/ {pricing.commission.toFixed(2)}</span>
+                    <span>S/ {checkoutCommission.toFixed(2)}</span>
                   </p>
                 ) : null}
               </div>
@@ -523,8 +683,10 @@ export default function RenewSubscriptionPage() {
                 disabled={
                   saving ||
                   company.state !== "activa" ||
-                  !selectedPlan ||
+                  (!enablePos && !enableAttendance) ||
+                  (enablePos && !selectedPlan) ||
                   Boolean(
+                    enablePos &&
                     affiliateCode.trim() &&
                     company.affiliateEligible &&
                     !affiliateInfo,
@@ -560,6 +722,111 @@ function Summary({
         <p className="font-circular-bold">{value}</p>
       </div>
     </div>
+  );
+}
+
+function CoverageRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[var(--color-muted-foreground)]">{label}</span>
+      <span className="text-right font-circular-bold text-[var(--color-text)]">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function StepperField({
+  label,
+  value,
+  min,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  onChange: (value: number) => void;
+}) {
+  const setSafeValue = (next: number) =>
+    onChange(Math.max(min, Math.trunc(next || min)));
+
+  return (
+    <label className="grid gap-1.5 text-xs text-[var(--color-muted-foreground)]">
+      {label}
+      <div className="flex h-11 overflow-hidden rounded-xl bg-[var(--color-input-bg)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+        <button
+          type="button"
+          onClick={() => setSafeValue(value - 1)}
+          disabled={value <= min}
+          className="grid w-11 shrink-0 place-items-center text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-sidebar-hover)] disabled:opacity-40"
+          aria-label={`Reducir ${label.toLowerCase()}`}
+        >
+          <MinusIcon size={16} />
+        </button>
+        <input
+          type="number"
+          min={min}
+          step="1"
+          value={value}
+          onChange={(event) => setSafeValue(Number(event.target.value))}
+          className="min-w-0 flex-1 bg-transparent px-2 text-center text-sm font-circular-bold text-[var(--color-text)] outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => setSafeValue(value + 1)}
+          className="grid w-11 shrink-0 place-items-center text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-sidebar-hover)]"
+          aria-label={`Aumentar ${label.toLowerCase()}`}
+        >
+          <PlusIcon size={16} />
+        </button>
+      </div>
+    </label>
+  );
+}
+
+function ToggleCard({
+  icon,
+  title,
+  description,
+  checked,
+  onChange,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "flex min-h-24 items-start gap-3 rounded-xl border p-4 text-left transition-colors",
+        checked
+          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10"
+          : "border-[var(--color-border)] bg-[var(--color-input-bg)]",
+      )}
+    >
+      <span
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-lg",
+          checked
+            ? "bg-[var(--color-primary)] text-white"
+            : "bg-[var(--color-card)] text-[var(--color-muted-foreground)]",
+        )}
+      >
+        {icon}
+      </span>
+      <span>
+        <span className="block text-sm font-circular-bold text-[var(--color-text)]">
+          {title}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-muted-foreground)]">
+          {description}
+        </span>
+      </span>
+    </button>
   );
 }
 

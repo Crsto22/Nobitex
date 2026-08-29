@@ -16,6 +16,7 @@ import {
   CurrencyCircleDollarIcon,
   FileTextIcon,
   PencilSimpleIcon,
+  QrCodeIcon,
   StackIcon,
   StorefrontIcon,
   WarningCircleIcon,
@@ -36,6 +37,7 @@ import {
   type PlatformPlanCode,
   type PlatformPlanPricing,
   type PlatformOveragePricing,
+  type PlatformAttendancePricing,
   type UpdatePlatformPlanPricingPayload,
   type UpdatePlatformPlanLimitsPayload,
 } from "@/lib/api/platform-admin";
@@ -71,6 +73,31 @@ const planColors: Record<
     soft: "bg-[#8b5cf6]/10",
     solid: "bg-[#8b5cf6]",
   },
+  pos_basico: {
+    text: "text-[#0284c7]",
+    soft: "bg-[#0ea5e9]/10",
+    solid: "bg-[#0ea5e9]",
+  },
+  asistencias_basico: {
+    text: "text-[#0f766e]",
+    soft: "bg-[#14b8a6]/10",
+    solid: "bg-[#14b8a6]",
+  },
+  asistencias_pro: {
+    text: "text-[#15803d]",
+    soft: "bg-[#22c55e]/10",
+    solid: "bg-[#22c55e]",
+  },
+  completo_emprende: {
+    text: "text-[#ea580c]",
+    soft: "bg-[#f97316]/10",
+    solid: "bg-[#f97316]",
+  },
+  completo_empresa: {
+    text: "text-[#6d28d9]",
+    soft: "bg-[#7c3aed]/10",
+    solid: "bg-[#7c3aed]",
+  },
 };
 
 export default function PlatformPlansPage() {
@@ -88,21 +115,27 @@ export default function PlatformPlansPage() {
     useState<PlatformPlanPricing | null>(null);
   const [overagePricing, setOveragePricing] =
     useState<PlatformOveragePricing | null>(null);
+  const [attendancePricing, setAttendancePricing] =
+    useState<PlatformAttendancePricing | null>(null);
   const [editingOverage, setEditingOverage] = useState(false);
+  const [editingAttendance, setEditingAttendance] = useState(false);
 
   const loadPlans = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const [catalog, dashboardResponse, overageResponse] = await Promise.all([
+      const [catalog, dashboardResponse, overageResponse, attendanceResponse] =
+        await Promise.all([
         platformAdminApi.findPlanPricing(),
         platformAdminApi.getDashboard(),
         platformAdminApi.getOveragePricing(),
+        platformAdminApi.getAttendancePricing(),
       ]);
       setPlans(catalog);
       setDashboard(dashboardResponse);
       setOveragePricing(overageResponse);
+      setAttendancePricing(attendanceResponse);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -273,8 +306,9 @@ export default function PlatformPlansPage() {
           />
         </section>
 
+        <section className="grid gap-4 xl:grid-cols-2">
         {overagePricing ? (
-          <section className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f59e0b]/10 text-[#d97706]">
                 <FileTextIcon size={21} weight="fill" />
@@ -296,8 +330,34 @@ export default function PlatformPlansPage() {
             >
               <PencilSimpleIcon size={16} weight="bold" /> Editar tarifa
             </button>
-          </section>
+          </div>
         ) : null}
+        {attendancePricing ? (
+          <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#14b8a6]/10 text-[#0f766e]">
+                <QrCodeIcon size={21} weight="fill" />
+              </span>
+              <div>
+                <p className="font-circular-bold text-[var(--color-text)]">
+                  Asistencias
+                </p>
+                <p className="text-sm text-[var(--color-muted-foreground)]">
+                  {formatCurrency(attendancePricing.employeeUnitPrice)} por trabajador ·{" "}
+                  {formatCurrency(attendancePricing.qrPointUnitPrice)} por punto QR
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditingAttendance(true)}
+              className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]"
+            >
+              <PencilSimpleIcon size={16} weight="bold" /> Editar tarifa
+            </button>
+          </div>
+        ) : null}
+        </section>
 
         {error ? (
           <div className="rounded-2xl bg-[#ef4444]/10 px-4 py-3 text-sm text-[#ef4444]">
@@ -361,6 +421,37 @@ export default function PlatformPlansPage() {
                   title: "Tarifa actualizada",
                   description:
                     "El nuevo precio se aplicará solo a comprobantes futuros.",
+                  variant: "success",
+                });
+              } catch (requestError) {
+                showToast({
+                  title: "No se pudo actualizar",
+                  description:
+                    requestError instanceof Error
+                      ? requestError.message
+                      : "Revisa los datos.",
+                  variant: "error",
+                });
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+          />
+        ) : null}
+        {editingAttendance && attendancePricing ? (
+          <AttendancePricingModal
+            pricing={attendancePricing}
+            isSaving={isSaving}
+            onClose={() => setEditingAttendance(false)}
+            onSubmit={async (payload) => {
+              setIsSaving(true);
+              try {
+                await platformAdminApi.updateAttendancePricing(payload);
+                setEditingAttendance(false);
+                await loadPlans();
+                showToast({
+                  title: "Tarifa actualizada",
+                  description: "El cotizador de Asistencias ya usa los nuevos precios.",
                   variant: "success",
                 });
               } catch (requestError) {
@@ -467,6 +558,127 @@ function OveragePricingModal({
         </div>
       </form>
     </div>
+  );
+}
+
+function AttendancePricingModal({
+  pricing,
+  isSaving,
+  onClose,
+  onSubmit,
+}: {
+  pricing: PlatformAttendancePricing;
+  isSaving: boolean;
+  onClose: () => void;
+  onSubmit: (payload: {
+    employeeUnitPrice: string;
+    qrPointUnitPrice: string;
+  }) => Promise<void>;
+}) {
+  const [employeeUnitPrice, setEmployeeUnitPrice] = useState(
+    pricing.employeeUnitPrice,
+  );
+  const [qrPointUnitPrice, setQrPointUnitPrice] = useState(
+    pricing.qrPointUnitPrice,
+  );
+  const valid = [employeeUnitPrice, qrPointUnitPrice].every((value) => {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 && number <= 999999999.99;
+  });
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Editar tarifa de asistencias"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 animate-in fade-in duration-200 sm:items-center sm:p-4"
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!valid) return;
+          void onSubmit({
+            employeeUnitPrice: Number(employeeUnitPrice).toFixed(2),
+            qrPointUnitPrice: Number(qrPointUnitPrice).toFixed(2),
+          });
+        }}
+        className="w-full max-w-md rounded-t-2xl bg-[var(--color-card)] p-5 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-2 duration-200 sm:rounded-2xl"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-circular-bold text-[var(--color-text)]">
+              Tarifa de Asistencias
+            </h2>
+            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+              Estos precios aplican globalmente al cotizador.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-input-bg)]"
+          >
+            <XIcon size={16} />
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3">
+          <MoneyField
+            label="Precio por trabajador (S/)"
+            value={employeeUnitPrice}
+            onChange={setEmployeeUnitPrice}
+          />
+          <MoneyField
+            label="Precio por punto QR (S/)"
+            value={qrPointUnitPrice}
+            onChange={setQrPointUnitPrice}
+          />
+        </div>
+
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-10 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={!valid || isSaving}
+            className="h-10 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-50"
+          >
+            {isSaving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function MoneyField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-1.5 text-sm text-[var(--color-text)]">
+      <span className="font-circular-bold">{label}</span>
+      <input
+        type="number"
+        min="0"
+        max="999999999.99"
+        step="0.01"
+        required
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 outline-none focus:border-[var(--color-primary)]"
+      />
+    </label>
   );
 }
 
@@ -615,6 +827,8 @@ function LimitsModal({
     documents: String(plan.limits.documents),
     documentQueries: String(plan.limits.documentQueries),
     storageMb: String(plan.limits.storageBytes / (1024 * 1024)),
+    attendanceEmployees: String(plan.limits.attendanceEmployees),
+    attendanceQrPoints: String(plan.limits.attendanceQrPoints),
   });
   const [warehousesUnlimited, setWarehousesUnlimited] = useState(
     plan.limits.warehouses === null,
@@ -635,7 +849,9 @@ function LimitsModal({
   const isValid = fields.every(
     ([key, , min, max]) =>
       (key === "warehouses" && warehousesUnlimited) ||
-      (Number.isInteger(parsed[key]) && parsed[key] >= min && parsed[key] <= max),
+      (Number.isInteger(parsed[key]) &&
+        parsed[key] >= min &&
+        parsed[key] <= max),
   );
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -650,6 +866,8 @@ function LimitsModal({
       documents: parsed.documents,
       documentQueries: parsed.documentQueries,
       storageBytes: parsed.storageMb * 1024 * 1024,
+      attendanceEmployees: parsed.attendanceEmployees,
+      attendanceQrPoints: parsed.attendanceQrPoints,
       expectedUpdatedAt: plan.limitsUpdatedAt,
     });
   };
@@ -700,29 +918,29 @@ function LimitsModal({
             {fields.map(([key, label, min, max]) => {
               const disabled = key === "warehouses" && warehousesUnlimited;
               return (
-              <label
-                key={key}
-                className="grid gap-1.5 text-sm text-[var(--color-text)]"
-              >
-                <span className="font-circular-bold">{label}</span>
-                <input
-                  type="number"
-                  min={min}
-                  max={max}
-                  step="1"
-                  required={!disabled}
-                  disabled={disabled}
-                  value={disabled ? "" : values[key]}
-                  placeholder={disabled ? "Ilimitado" : undefined}
-                  onChange={(event) =>
-                    setValues((current) => ({
-                      ...current,
-                      [key]: event.target.value,
-                    }))
-                  }
-                  className="h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 outline-none focus:border-[var(--color-primary)]"
-                />
-              </label>
+                <label
+                  key={key}
+                  className="grid gap-1.5 text-sm text-[var(--color-text)]"
+                >
+                  <span className="font-circular-bold">{label}</span>
+                  <input
+                    type="number"
+                    min={min}
+                    max={max}
+                    step="1"
+                    required={!disabled}
+                    disabled={disabled}
+                    value={disabled ? "" : values[key]}
+                    placeholder={disabled ? "Ilimitado" : undefined}
+                    onChange={(event) =>
+                      setValues((current) => ({
+                        ...current,
+                        [key]: event.target.value,
+                      }))
+                    }
+                    className="h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 outline-none focus:border-[var(--color-primary)]"
+                  />
+                </label>
               );
             })}
           </div>

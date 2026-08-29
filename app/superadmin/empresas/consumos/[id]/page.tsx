@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -10,6 +16,7 @@ import {
   FileTextIcon,
   FloppyDiskIcon,
   ImageIcon,
+  QrCodeIcon,
   StorefrontIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react/ssr";
@@ -32,6 +39,8 @@ const emptyLimits: PlatformPlanLimits = {
   documents: 0,
   documentQueries: 0,
   storageBytes: 0,
+  attendanceEmployees: 0,
+  attendanceQrPoints: 0,
 };
 
 const resources: Array<{
@@ -98,6 +107,10 @@ export default function CustomizeCompanyLimitsPage() {
   const { showToast } = useSystemToast();
   const [company, setCompany] = useState<PlatformCompanyLimits | null>(null);
   const [values, setValues] = useState<PlatformPlanLimits>(emptyLimits);
+  const [attendanceCapacity, setAttendanceCapacity] = useState({
+    employeesLimit: 0,
+    qrPointsLimit: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +122,16 @@ export default function CustomizeCompanyLimitsPage() {
       const result = await platformAdminApi.getCompanyLimits(params.id);
       setCompany(result);
       setValues(result.additionalLimits);
+      setAttendanceCapacity({
+        employeesLimit:
+          result.attendance?.effectiveEmployeesLimit ??
+          result.attendance?.employeesLimit ??
+          0,
+        qrPointsLimit:
+          result.attendance?.effectiveQrPointsLimit ??
+          result.attendance?.qrPointsLimit ??
+          0,
+      });
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -161,6 +184,42 @@ export default function CustomizeCompanyLimitsPage() {
     }
   };
 
+  const submitAttendanceCapacity = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const updated = await platformAdminApi.updateCompanyAttendanceCapacity(
+        params.id,
+        attendanceCapacity,
+      );
+      setCompany((current) =>
+        current ? { ...current, attendance: updated } : current,
+      );
+      setAttendanceCapacity({
+        employeesLimit: updated.effectiveEmployeesLimit,
+        qrPointsLimit: updated.effectiveQrPointsLimit,
+      });
+      showToast({
+        title: "Asistencias actualizada",
+        description: "La nueva capacidad contratada quedó activa.",
+        variant: "success",
+      });
+    } catch (requestError) {
+      showToast({
+        title: "No se pudo ampliar",
+        description:
+          requestError instanceof Error
+            ? requestError.message
+            : "Revisa los limites contratados.",
+        variant: "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <DashboardShell
       headerTitle="Personalizar limites"
@@ -205,8 +264,9 @@ export default function CustomizeCompanyLimitsPage() {
             ))}
           </div>
         ) : (
-          <form onSubmit={submit}>
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <>
+            <form onSubmit={submit}>
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {resources.map((resource) => {
                 const Icon = resource.icon;
                 const formatter =
@@ -263,7 +323,9 @@ export default function CustomizeCompanyLimitsPage() {
                         >
                           Base
                         </p>
-                        <strong>{unlimited ? "Ilimitado" : formatter(base)}</strong>
+                        <strong>
+                          {unlimited ? "Ilimitado" : formatter(base)}
+                        </strong>
                       </div>
                       <div>
                         <p
@@ -276,7 +338,9 @@ export default function CustomizeCompanyLimitsPage() {
                         >
                           Adicional
                         </p>
-                        <strong>{unlimited ? "-" : formatter(additional)}</strong>
+                        <strong>
+                          {unlimited ? "-" : formatter(additional)}
+                        </strong>
                       </div>
                       <div>
                         <p
@@ -331,8 +395,8 @@ export default function CustomizeCompanyLimitsPage() {
                   </article>
                 );
               })}
-            </section>
-            <div className="mt-4 flex flex-col-reverse gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] sm:flex-row sm:justify-between">
+              </section>
+              <div className="mt-4 flex flex-col-reverse gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setValues(emptyLimits)}
@@ -356,11 +420,124 @@ export default function CustomizeCompanyLimitsPage() {
                   {saving ? "Guardando..." : "Guardar cambios"}
                 </button>
               </div>
-            </div>
-          </form>
+              </div>
+            </form>
+            <form
+              onSubmit={submitAttendanceCapacity}
+              className="mt-4 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="font-circular-bold text-[var(--color-text)]">
+                    Ampliar Asistencias
+                  </h2>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    Ajusta solo la capacidad contratada vigente.
+                  </p>
+                </div>
+                <span className="rounded-lg bg-[var(--color-input-bg)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+                  {company.attendance?.effectiveActive
+                    ? "Suscripción vigente"
+                    : "Sin suscripción vigente"}
+                </span>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <AttendanceCapacityCard
+                  icon={<UsersThreeIcon size={18} weight="fill" />}
+                  label="Trabajadores"
+                  used={company.attendance?.usage?.employees ?? 0}
+                  value={attendanceCapacity.employeesLimit}
+                  disabled={!company.attendance?.effectiveActive}
+                  onChange={(value) =>
+                    setAttendanceCapacity((current) => ({
+                      ...current,
+                      employeesLimit: Math.max(
+                        company.attendance?.usage?.employees ?? 0,
+                        Math.trunc(Number(value) || 0),
+                      ),
+                    }))
+                  }
+                />
+                <AttendanceCapacityCard
+                  icon={<QrCodeIcon size={18} weight="fill" />}
+                  label="Puntos QR"
+                  used={company.attendance?.usage?.qrPoints ?? 0}
+                  value={attendanceCapacity.qrPointsLimit}
+                  disabled={!company.attendance?.effectiveActive}
+                  onChange={(value) =>
+                    setAttendanceCapacity((current) => ({
+                      ...current,
+                      qrPointsLimit: Math.max(
+                        company.attendance?.usage?.qrPoints ?? 0,
+                        Math.trunc(Number(value) || 0),
+                      ),
+                    }))
+                  }
+                />
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={saving || !company.attendance?.effectiveActive}
+                  className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-50"
+                >
+                  <FloppyDiskIcon size={16} />{" "}
+                  {saving ? "Guardando..." : "Guardar capacidad"}
+                </button>
+              </div>
+            </form>
+          </>
         )}
       </main>
     </DashboardShell>
+  );
+}
+
+function AttendanceCapacityCard({
+  icon,
+  label,
+  used,
+  value,
+  disabled,
+  onChange,
+}: {
+  icon: ReactNode;
+  label: string;
+  used: number;
+  value: number;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <article className="rounded-xl bg-[var(--color-background)] p-4">
+      <div className="flex items-center gap-2">
+        <span className="grid size-9 place-items-center rounded-lg bg-[#10b981]/10 text-[#059669]">
+          {icon}
+        </span>
+        <div>
+          <p className="text-sm font-circular-bold text-[var(--color-text)]">
+            {label}
+          </p>
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Usado {used.toLocaleString("es-PE")}
+          </p>
+        </div>
+      </div>
+      <label className="mt-4 grid gap-1.5 text-sm">
+        <span className="text-xs font-circular-bold text-[var(--color-text)]">
+          Contratado
+        </span>
+        <input
+          type="number"
+          min={used}
+          step="1"
+          disabled={disabled}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] disabled:opacity-60"
+        />
+      </label>
+    </article>
   );
 }
 

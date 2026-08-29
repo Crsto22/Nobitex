@@ -11,6 +11,7 @@ import {
   DatabaseIcon,
   DownloadSimpleIcon,
   FileTextIcon,
+  QrCodeIcon,
   ReceiptIcon,
   StorefrontIcon,
   TagIcon,
@@ -29,12 +30,14 @@ import {
 } from "@/lib/api/platform-billing";
 import {
   plansApi,
+  type AttendanceAddon,
+  type AttendancePricing,
   type PlanDefinition,
   type PlanLimits,
 } from "@/lib/api/plans";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
-import { formatCurrency, formatDate, formatDateShort } from "@/lib/intl";
+import { formatCurrency, formatDate } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 type Tab = "plans" | "usage" | "receipts";
@@ -48,12 +51,14 @@ const tabs: { key: Tab; label: string; icon: typeof TagIcon }[] = [
   { key: "receipts", label: "Mis comprobantes", icon: ReceiptIcon },
 ];
 
-const usageItems: {
+type UsageItem = {
   key: keyof PlanLimits;
   label: string;
   icon: typeof UsersThreeIcon;
   color: string;
-}[] = [
+};
+
+const usageItems: UsageItem[] = [
   { key: "users", label: "Usuarios", icon: UsersThreeIcon, color: "#2563eb" },
   {
     key: "branches",
@@ -317,6 +322,8 @@ export default function PlanPage() {
             }
             customerName={getUserDisplayName(user)}
             customerEmail={user?.email}
+            attendance={currentPlan?.attendance}
+            attendancePricing={currentPlan?.attendancePricing}
             loading={isLoading}
           />
         ) : null}
@@ -350,6 +357,8 @@ function PlansTab({
   companyName,
   customerName,
   customerEmail,
+  attendance,
+  attendancePricing,
   loading,
 }: {
   plans: PlanDefinition[];
@@ -360,6 +369,8 @@ function PlansTab({
   companyName: string;
   customerName: string;
   customerEmail?: string;
+  attendance?: AttendanceAddon;
+  attendancePricing?: AttendancePricing;
   loading: boolean;
 }) {
   return (
@@ -386,6 +397,15 @@ function PlansTab({
           ))}
         </div>
       </div>
+
+      <AttendanceQuoteCard
+        key={`${attendance?.active}-${attendance?.employeesLimit}-${attendance?.qrPointsLimit}`}
+        attendance={attendance}
+        attendancePricing={attendancePricing}
+        companyName={companyName}
+        customerName={customerName}
+        customerEmail={customerEmail}
+      />
 
       <div className="-mx-3 px-3 sm:mx-0 sm:px-0 md:contents">
         <div className="flex gap-4 overflow-x-auto scrollbar-hidden pb-2 sm:gap-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-5">
@@ -421,6 +441,131 @@ function PlansTab({
         </div>
       </div>
     </section>
+  );
+}
+
+function AttendanceQuoteCard({
+  attendance,
+  attendancePricing,
+  companyName,
+  customerName,
+  customerEmail,
+}: {
+  attendance?: AttendanceAddon;
+  attendancePricing?: AttendancePricing;
+  companyName: string;
+  customerName: string;
+  customerEmail?: string;
+}) {
+  const [employees, setEmployees] = useState(
+    String(attendance?.employeesLimit || 10),
+  );
+  const [qrPoints, setQrPoints] = useState(String(attendance?.qrPointsLimit || 1));
+
+  const employeeUnitPrice = Number(
+    attendancePricing?.employeeUnitPrice ?? 0,
+  );
+  const qrPointUnitPrice = Number(
+    attendancePricing?.qrPointUnitPrice ?? 0,
+  );
+  const safeEmployees = Math.max(0, Math.trunc(Number(employees) || 0));
+  const safeQrPoints = Math.max(0, Math.trunc(Number(qrPoints) || 0));
+  const monthlyTotal =
+    safeEmployees * employeeUnitPrice + safeQrPoints * qrPointUnitPrice;
+  const hasPrices = employeeUnitPrice > 0 || qrPointUnitPrice > 0;
+
+  return (
+    <article className="grid gap-4 rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)] lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+      <div>
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-[12px] bg-[#14b8a6]/10 text-[#0f766e]">
+            <QrCodeIcon size={20} weight="fill" />
+          </span>
+          <div>
+            <h2 className="text-base font-bold text-[var(--color-text)]">
+              Asistencias
+            </h2>
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              {hasPrices
+                ? `${formatCurrency(String(employeeUnitPrice))} por trabajador · ${formatCurrency(String(qrPointUnitPrice))} por punto QR`
+                : "Precio según cotización"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <NumberField
+            label="Trabajadores"
+            value={employees}
+            min={1}
+            onChange={setEmployees}
+          />
+          <NumberField
+            label="Puntos QR"
+            value={qrPoints}
+            min={0}
+            onChange={setQrPoints}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-[12px] bg-[var(--color-input-bg)] p-4">
+        <p className="text-xs text-[var(--color-muted-foreground)]">
+          Total mensual
+        </p>
+        <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
+          {hasPrices ? formatCurrency(String(monthlyTotal)) : "A cotizar"}
+        </p>
+        <a
+          href={buildAttendanceWhatsAppUrl({
+            companyName,
+            customerName,
+            customerEmail,
+            employees: safeEmployees,
+            qrPoints: safeQrPoints,
+            monthlyTotal,
+            hasPrices,
+          })}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#25d366] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90"
+        >
+          <Image
+            src="/svg/redes-sociales/whatsapp.svg"
+            alt=""
+            width={18}
+            height={18}
+          />
+          Solicitar Asistencias
+        </a>
+      </div>
+    </article>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  min,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  min: number;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-1 text-sm text-[var(--color-muted-foreground)]">
+      {label}
+      <input
+        type="number"
+        min={min}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+      />
+    </label>
   );
 }
 
@@ -652,6 +797,11 @@ function getPlanDescription(code: PlanDefinition["code"]) {
     emprendedor: "Para negocios en crecimiento con equipo y más capacidad.",
     crecimiento: "Para operaciones consolidadas que necesitan control total.",
     empresarial: "Para empresas con alto volumen y múltiples tiendas.",
+    pos_basico: "Para vender con POS e inventario.",
+    asistencias_basico: "Plan anterior de asistencias.",
+    asistencias_pro: "Plan anterior de asistencias.",
+    completo_emprende: "Plan anterior combinado.",
+    completo_empresa: "Plan anterior combinado.",
   }[code];
 }
 
@@ -698,6 +848,56 @@ function UsageTab({
           <p className="text-xl font-circular-bold text-[#d97706]">
             {formatCurrency(currentPlan.documentOverage.estimatedAmount)}
           </p>
+        </div>
+      ) : null}
+
+      {currentPlan.attendance?.effectiveActive ? (
+        <div className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                Complemento de Asistencias
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                {currentPlan.attendance.effectiveEmployeesLimit.toLocaleString("es-PE")}{" "}
+                trabajadores y{" "}
+                {currentPlan.attendance.effectiveQrPointsLimit.toLocaleString("es-PE")}{" "}
+                puntos QR {currentPlan.attendance.trial ? "de prueba." : "contratados."}
+              </p>
+            </div>
+            <p className="text-xl font-circular-bold text-[var(--color-text)]">
+              {formatCurrency(currentPlan.attendance.monthlyPrice)}
+              <span className="ml-1 text-xs font-normal text-[var(--color-muted-foreground)]">
+                / mes
+              </span>
+            </p>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <UsageCard
+              item={{
+                key: "attendanceEmployees",
+                label: "Trabajadores",
+                icon: UsersThreeIcon,
+                color: "#14b8a6",
+              }}
+              used={currentPlan.usage.attendanceEmployees}
+              limit={currentPlan.effectiveLimits.attendanceEmployees}
+              base={currentPlan.baseLimits.attendanceEmployees}
+              additional={currentPlan.additionalLimits.attendanceEmployees}
+            />
+            <UsageCard
+              item={{
+                key: "attendanceQrPoints",
+                label: "Puntos QR",
+                icon: QrCodeIcon,
+                color: "#22c55e",
+              }}
+              used={currentPlan.usage.attendanceQrPoints}
+              limit={currentPlan.effectiveLimits.attendanceQrPoints}
+              base={currentPlan.baseLimits.attendanceQrPoints}
+              additional={currentPlan.additionalLimits.attendanceQrPoints}
+            />
+          </div>
         </div>
       ) : null}
 
@@ -903,7 +1103,7 @@ function UsageCard({
   base,
   additional,
 }: {
-  item: (typeof usageItems)[number];
+  item: UsageItem;
   used?: number | null;
   limit?: number | null;
   base?: number | null;
@@ -1023,6 +1223,44 @@ function buildWhatsAppUrl({
     `Plan: ${plan.name}`,
     `Periodo: ${annual ? "Anual (12 meses)" : "Mensual (1 mes)"}`,
     `Total: ${formatCurrency(total)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+    /\D/g,
+    "",
+  );
+  const text = encodeURIComponent(message);
+  return phone
+    ? `https://wa.me/${phone}?text=${text}`
+    : `https://api.whatsapp.com/send?text=${text}`;
+}
+
+function buildAttendanceWhatsAppUrl({
+  companyName,
+  customerName,
+  customerEmail,
+  employees,
+  qrPoints,
+  monthlyTotal,
+  hasPrices,
+}: {
+  companyName: string;
+  customerName: string;
+  customerEmail?: string;
+  employees: number;
+  qrPoints: number;
+  monthlyTotal: number;
+  hasPrices: boolean;
+}) {
+  const message = [
+    "Hola, deseo solicitar Asistencias para Nuvex.",
+    `Empresa: ${companyName}`,
+    `Cliente: ${customerName}`,
+    customerEmail ? `Correo: ${customerEmail}` : "",
+    `Trabajadores: ${employees.toLocaleString("es-PE")}`,
+    `Puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
+    hasPrices ? `Total mensual estimado: ${formatCurrency(String(monthlyTotal))}` : "",
   ]
     .filter(Boolean)
     .join("\n");
