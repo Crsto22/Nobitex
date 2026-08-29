@@ -77,7 +77,7 @@ export default function AsistenciasReportesPage() {
   const [report, setReport] = useState<AttendanceDashboardResponse | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedDateFilter, setSelectedDateFilter] =
-    useState<AttendanceDashboardDateFilter>("month");
+    useState<AttendanceDashboardDateFilter>("30days");
   const [fromDate, setFromDate] = useState(() => dateInputValue(new Date()));
   const [toDate, setToDate] = useState(() => dateInputValue(new Date()));
   const [selectedBranch, setSelectedBranch] = useState("all");
@@ -330,9 +330,9 @@ const periodOptions: Array<{
   label: string;
   value: AttendanceDashboardDateFilter;
 }> = [
-  { label: "Semana", value: "week" },
-  { label: "Quincena", value: "fortnight" },
-  { label: "Mes", value: "month" },
+  { label: "Semana", value: "7days" },
+  { label: "Quincena", value: "14days" },
+  { label: "Mes", value: "30days" },
   { label: "Por fecha", value: "custom" },
 ];
 

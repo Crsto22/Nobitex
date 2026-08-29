@@ -338,7 +338,7 @@ export type DeliveriesQuery = {
 
 export type DeliveriesResponse = {
   data: VentaResponse[];
-  meta: {
+  meta?: {
     page: number;
     limit: number;
     total: number;

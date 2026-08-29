@@ -102,7 +102,14 @@ export default function PendingDeliveriesPage() {
         search: debouncedSearchTerm || undefined,
       });
       setSales(response.data);
-      setMeta(response.meta);
+      setMeta(
+        response.meta ?? {
+          page,
+          limit: pageSize,
+          total: response.data.length,
+          totalPages: 1,
+        },
+      );
     } catch (error: unknown) {
       toast.showToast({
         title: "No se pudieron cargar entregas",
