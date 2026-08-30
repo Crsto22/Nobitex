@@ -193,12 +193,19 @@ export type PlatformAttendanceAddon = {
   qrPointsLimit: number;
   effectiveEmployeesLimit: number;
   effectiveQrPointsLimit: number;
+  branchesLimit: number;
+  documentQueriesLimit: number;
   startsAt: string | null;
   endsAt: string | null;
   monthlyPrice: string;
   currency: "PEN";
   includesIgv: true;
-  usage?: { employees: number; qrPoints: number };
+  usage?: {
+    employees: number;
+    qrPoints: number;
+    branches?: number;
+    documentQueries?: number;
+  };
 };
 
 export type UpdatePlatformAttendanceAddonPayload = {
@@ -767,7 +774,11 @@ export const platformAdminApi = {
 
   updateCompanyAttendanceCapacity(
     id: string,
-    payload: { employeesLimit: number; qrPointsLimit: number },
+    payload: {
+      employeesLimit: number;
+      qrPointsLimit: number;
+      branchesLimit: number;
+    },
   ) {
     return authFetch<PlatformAttendanceAddon>(
       `/platform-admin/companies/${encodeURIComponent(id)}/attendance-capacity`,

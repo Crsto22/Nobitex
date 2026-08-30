@@ -33,6 +33,7 @@ export type UpdateCompanyPayload = {
 };
 
 export type CreateCompanyPayload = {
+  productMode: "pos" | "attendance" | "both";
   catalogProfile: CompanyCatalogProfile;
   nombreComercial: string;
   telefonoEmpresa: string;

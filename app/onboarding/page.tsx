@@ -64,6 +64,14 @@ export default function OnboardingPage() {
 
   const isOwner = user?.roles.includes("OWNER") ?? false;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
+  const moduleKeys = user?.moduleKeys ?? currentPlan?.effectiveModuleKeys ?? [];
+  const hasAttendanceModules = moduleKeys.some((key) =>
+    key.startsWith("asistencias-"),
+  );
+  const hasPosModules = moduleKeys.some((key) =>
+    ["dashboard", "ventas-pos", "productos", "caja"].includes(key),
+  );
+  const attendanceOnly = hasAttendanceModules && !hasPosModules;
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
 
@@ -83,10 +91,15 @@ export default function OnboardingPage() {
       );
       return;
     }
+    if (attendanceOnly) {
+      router.replace("/asistencias/configuracion");
+      return;
+    }
     if (setupStatus && !setupStatus.requiresBranch && !branchCreated) {
       router.replace("/dashboard");
     }
   }, [
+    attendanceOnly,
     branchCreated,
     isAuthenticated,
     isExpired,

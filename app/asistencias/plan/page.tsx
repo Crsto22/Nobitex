@@ -5,7 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowClockwiseIcon,
+  BuildingsIcon,
   CalendarBlankIcon,
+  FileTextIcon,
   PlusIcon,
   QrCodeIcon,
   UsersThreeIcon,
@@ -22,6 +24,7 @@ export default function AsistenciasPlanPage() {
   const { showToast } = useSystemToast();
   const [workers, setWorkers] = useState("1");
   const [qrPoints, setQrPoints] = useState("1");
+  const [branches, setBranches] = useState("1");
   const [isLoading, setIsLoading] = useState(!currentPlan);
 
   const loadPlan = useCallback(async () => {
@@ -51,7 +54,9 @@ export default function AsistenciasPlanPage() {
   const qrUnitPrice = Number(pricing?.qrPointUnitPrice ?? 0);
   const workerCount = Math.max(0, Math.trunc(Number(workers) || 0));
   const qrCount = Math.max(0, Math.trunc(Number(qrPoints) || 0));
+  const branchCount = Math.max(0, Math.trunc(Number(branches) || 0));
   const monthlyTotal = workerCount * workerUnitPrice + qrCount * qrUnitPrice;
+  const includedDocumentQueries = getIncludedDocumentQueries(monthlyTotal);
   const hasPrices = workerUnitPrice > 0 || qrUnitPrice > 0;
   const companyName =
     companyInfo?.nombreComercial ?? user?.empresaNombreComercial ?? "Mi empresa";
@@ -84,7 +89,7 @@ export default function AsistenciasPlanPage() {
           </button>
         </header>
 
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
           <MetricCard
             label="Estado"
             value={attendance?.effectiveActive ? "Activo" : "Sin contratar"}
@@ -102,6 +107,18 @@ export default function AsistenciasPlanPage() {
             value={`${currentPlan?.usage.attendanceQrPoints ?? 0} / ${attendance?.effectiveQrPointsLimit ?? 0}`}
             icon={<QrCodeIcon size={20} weight="fill" />}
             color="#22c55e"
+          />
+          <MetricCard
+            label="Sucursales"
+            value={`${currentPlan?.usage.branches ?? 0} / ${currentPlan?.effectiveLimits.branches ?? 0}`}
+            icon={<BuildingsIcon size={20} weight="fill" />}
+            color="#2563eb"
+          />
+          <MetricCard
+            label="Consultas DNI"
+            value={`${currentPlan?.usage.documentQueries ?? 0} / ${currentPlan?.effectiveLimits.documentQueries ?? 0}`}
+            icon={<FileTextIcon size={20} weight="fill" />}
+            color="#f59e0b"
           />
           <MetricCard
             label="Vencimiento"
@@ -153,7 +170,7 @@ export default function AsistenciasPlanPage() {
                 : "Precio segun cotizacion."}
             </p>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <NumberField
                 label="Agregar trabajadores"
                 value={workers}
@@ -164,15 +181,34 @@ export default function AsistenciasPlanPage() {
                 value={qrPoints}
                 onChange={setQrPoints}
               />
+              <NumberField
+                label="Sucursales"
+                value={branches}
+                onChange={setBranches}
+              />
             </div>
 
             <div className="mt-4 rounded-[12px] bg-[var(--color-input-bg)] p-4">
-              <p className="text-xs text-[var(--color-muted-foreground)]">
-                Total mensual estimado
-              </p>
-              <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
-                {hasPrices ? formatCurrency(String(monthlyTotal)) : "A cotizar"}
-              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    Total mensual estimado
+                  </p>
+                  <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
+                    {hasPrices
+                      ? formatCurrency(String(monthlyTotal))
+                      : "A cotizar"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    Consultas DNI/RUC incluidas
+                  </p>
+                  <p className="mt-1 text-2xl font-circular-bold text-[#059669]">
+                    {includedDocumentQueries.toLocaleString("es-PE")}
+                  </p>
+                </div>
+              </div>
               <a
                 href={buildWhatsAppUrl({
                   companyName,
@@ -180,6 +216,8 @@ export default function AsistenciasPlanPage() {
                   customerEmail: user?.email,
                   workers: workerCount,
                   qrPoints: qrCount,
+                  branches: branchCount,
+                  documentQueries: includedDocumentQueries,
                   monthlyTotal,
                   hasPrices,
                 })}
@@ -285,6 +323,8 @@ function buildWhatsAppUrl({
   customerEmail,
   workers,
   qrPoints,
+  branches,
+  documentQueries,
   monthlyTotal,
   hasPrices,
 }: {
@@ -293,6 +333,8 @@ function buildWhatsAppUrl({
   customerEmail?: string;
   workers: number;
   qrPoints: number;
+  branches: number;
+  documentQueries: number;
   monthlyTotal: number;
   hasPrices: boolean;
 }) {
@@ -303,6 +345,8 @@ function buildWhatsAppUrl({
     customerEmail ? `Correo: ${customerEmail}` : "",
     `Agregar trabajadores: ${workers.toLocaleString("es-PE")}`,
     `Agregar puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
+    `Sucursales requeridas: ${branches.toLocaleString("es-PE")}`,
+    `Consultas DNI/RUC incluidas: ${documentQueries.toLocaleString("es-PE")}`,
     hasPrices
       ? `Total mensual estimado: ${formatCurrency(String(monthlyTotal))}`
       : "",
@@ -317,4 +361,11 @@ function buildWhatsAppUrl({
   return phone
     ? `https://wa.me/${phone}?text=${text}`
     : `https://api.whatsapp.com/send?text=${text}`;
+}
+
+function getIncludedDocumentQueries(monthlyTotal: number) {
+  if (monthlyTotal >= 100) return 800;
+  if (monthlyTotal >= 60) return 300;
+  if (monthlyTotal >= 30) return 100;
+  return 20;
 }

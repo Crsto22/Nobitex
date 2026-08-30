@@ -110,6 +110,7 @@ export default function CustomizeCompanyLimitsPage() {
   const [attendanceCapacity, setAttendanceCapacity] = useState({
     employeesLimit: 0,
     qrPointsLimit: 0,
+    branchesLimit: 0,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -131,6 +132,7 @@ export default function CustomizeCompanyLimitsPage() {
           result.attendance?.effectiveQrPointsLimit ??
           result.attendance?.qrPointsLimit ??
           0,
+        branchesLimit: result.attendance?.branchesLimit ?? 0,
       });
     } catch (requestError) {
       setError(
@@ -200,6 +202,7 @@ export default function CustomizeCompanyLimitsPage() {
       setAttendanceCapacity({
         employeesLimit: updated.effectiveEmployeesLimit,
         qrPointsLimit: updated.effectiveQrPointsLimit,
+        branchesLimit: updated.branchesLimit,
       });
       showToast({
         title: "Asistencias actualizada",
@@ -441,7 +444,7 @@ export default function CustomizeCompanyLimitsPage() {
                     : "Sin suscripción vigente"}
                 </span>
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <AttendanceCapacityCard
                   icon={<UsersThreeIcon size={18} weight="fill" />}
                   label="Trabajadores"
@@ -474,6 +477,48 @@ export default function CustomizeCompanyLimitsPage() {
                     }))
                   }
                 />
+                <AttendanceCapacityCard
+                  icon={<BuildingsIcon size={18} weight="fill" />}
+                  label="Sucursales"
+                  used={company.attendance?.usage?.branches ?? 0}
+                  value={attendanceCapacity.branchesLimit}
+                  disabled={!company.attendance?.effectiveActive}
+                  onChange={(value) =>
+                    setAttendanceCapacity((current) => ({
+                      ...current,
+                      branchesLimit: Math.max(
+                        company.attendance?.usage?.branches ?? 0,
+                        Math.trunc(Number(value) || 0),
+                      ),
+                    }))
+                  }
+                />
+                <article className="rounded-xl bg-[var(--color-background)] p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="grid size-9 place-items-center rounded-lg bg-[#3b82f6]/10 text-[#2563eb]">
+                      <FileTextIcon size={18} weight="fill" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                        Consultas DNI/RUC
+                      </p>
+                      <p className="text-xs text-[var(--color-muted-foreground)]">
+                        Usado{" "}
+                        {(
+                          company.attendance?.usage?.documentQueries ?? 0
+                        ).toLocaleString("es-PE")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-2xl font-circular-bold text-[var(--color-text)]">
+                    {company.attendance?.documentQueriesLimit.toLocaleString(
+                      "es-PE",
+                    ) ?? 0}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                    Se calcula automáticamente por monto mensual.
+                  </p>
+                </article>
               </div>
               <div className="mt-4 flex justify-end">
                 <button

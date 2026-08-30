@@ -15,8 +15,10 @@ import {
   IdentificationCardIcon,
   KeyIcon,
   PackageIcon,
+  QrCodeIcon,
   SneakerIcon,
   ShoppingCartSimpleIcon,
+  StorefrontIcon,
   TShirtIcon,
   UserIcon,
 } from "@phosphor-icons/react/ssr";
@@ -91,13 +93,26 @@ const catalogProfileOptions = [
   },
 ] as const;
 
-const activationItems = [
-  "Registrando empresa",
-  "Creando tu catalogo de productos",
-  "Configurando tu interfaz",
-  "Activando modulo de ventas",
-  "Preparando acceso",
-];
+const productModeOptions = [
+  {
+    value: "pos",
+    label: "POS",
+    description: "Ventas, stock, caja y comprobantes",
+    icon: StorefrontIcon,
+  },
+  {
+    value: "attendance",
+    label: "Asistencias",
+    description: "5 trabajadores y 1 QR gratis por 7 dias",
+    icon: QrCodeIcon,
+  },
+  {
+    value: "both",
+    label: "POS + Asistencias",
+    description: "Ventas y control de personal juntos",
+    icon: ShoppingCartSimpleIcon,
+  },
+] as const;
 
 const activationIntervalMs = 220;
 
@@ -111,6 +126,7 @@ type AccountFormData = {
 };
 
 type CompanyFormData = {
+  productMode: ProductMode | "";
   catalogProfile: CompanyCatalogProfile | "";
   nombreComercial: string;
   noCuentaConRuc: boolean;
@@ -122,6 +138,8 @@ type CompanyFormData = {
   direccion: string;
   comoConocio: string;
 };
+
+type ProductMode = (typeof productModeOptions)[number]["value"];
 
 export function RegisterPage() {
   const router = useRouter();
@@ -151,6 +169,7 @@ export function RegisterPage() {
     verificationCode: "",
   });
   const [companyData, setCompanyData] = useState<CompanyFormData>({
+    productMode: "",
     catalogProfile: "",
     nombreComercial: "",
     noCuentaConRuc: false,
@@ -231,11 +250,15 @@ export function RegisterPage() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      router.push("/onboarding");
+      router.push(
+        companyData.productMode === "attendance"
+          ? "/asistencias/configuracion"
+          : "/onboarding",
+      );
     }, 900);
 
     return () => window.clearTimeout(timeoutId);
-  }, [activationProgress, router]);
+  }, [activationProgress, companyData.productMode, router]);
 
   const updateAccountValue = (name: keyof AccountFormData, value: string) => {
     setAccountData((currentData) => ({
@@ -266,6 +289,15 @@ export function RegisterPage() {
           ...currentData,
           noCuentaConRuc: false,
           dni: "",
+        };
+      }
+
+      if (name === "productMode") {
+        return {
+          ...currentData,
+          productMode: value as ProductMode,
+          catalogProfile:
+            value === "attendance" ? "" : currentData.catalogProfile,
         };
       }
 
@@ -364,7 +396,18 @@ export function RegisterPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const catalogProfile = companyData.catalogProfile;
+    const productMode = companyData.productMode;
+    if (!productMode) {
+      showToast({
+        title: "Selecciona que quieres usar",
+        description: "Elige POS, Asistencias o ambos.",
+        variant: "warning",
+      });
+      return;
+    }
+
+    const catalogProfile =
+      productMode === "attendance" ? "otros" : companyData.catalogProfile;
     if (!catalogProfile) {
       showToast({
         title: "Selecciona qué productos venderás",
@@ -400,6 +443,7 @@ export function RegisterPage() {
     try {
       const response = await companyApi.createCompany(
         {
+          productMode,
           catalogProfile,
           nombreComercial: companyData.nombreComercial,
           telefonoEmpresa: companyData.telefonoEmpresa,
@@ -425,7 +469,10 @@ export function RegisterPage() {
       setIsComplete(true);
       showToast({
         title: "Empresa registrada",
-        description: "Estamos activando tu entorno de ventas.",
+        description:
+          productMode === "attendance"
+            ? "Estamos activando tus asistencias."
+            : "Estamos activando tu entorno.",
         variant: "success",
       });
     } catch (error) {
@@ -497,7 +544,10 @@ export function RegisterPage() {
             }`}
           >
             {isComplete ? (
-              <ActivationScreen progress={activationProgress} />
+              <ActivationScreen
+                progress={activationProgress}
+                productMode={companyData.productMode || "pos"}
+              />
             ) : (
               <>
                 <form
@@ -710,7 +760,12 @@ export function RegisterPage() {
                     ) : (
                       <Button
                         type="submit"
-                        disabled={isSubmitting || !companyData.catalogProfile}
+                        disabled={
+                          isSubmitting ||
+                          !companyData.productMode ||
+                          (companyData.productMode !== "attendance" &&
+                            !companyData.catalogProfile)
+                        }
                         className="h-11 flex-1 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"
                       >
                         {isSubmitting
@@ -747,8 +802,16 @@ function getActionLabel(currentStep: number, isSubmitting: boolean) {
   return currentStep === 0 ? "Enviando..." : "Verificando...";
 }
 
-function ActivationScreen({ progress }: { progress: number }) {
+function ActivationScreen({
+  progress,
+  productMode,
+}: {
+  progress: number;
+  productMode: ProductMode;
+}) {
   const isReady = progress >= 100;
+  const activationItems = getActivationItems(productMode);
+  const copy = getActivationCopy(productMode);
   const completedItems = Math.floor((progress / 100) * activationItems.length);
   const activeIndex = Math.min(completedItems, activationItems.length - 1);
 
@@ -756,11 +819,11 @@ function ActivationScreen({ progress }: { progress: number }) {
     <div className="login-form-motion flex min-h-[calc(100dvh-3rem)] flex-col justify-center py-8">
       <div className="mx-auto w-full max-w-[420px] text-center">
         <h2 className="text-2xl font-black text-[var(--color-primary)] text-fixed-2xl">
-          {isReady ? "Tu tienda esta lista!" : "Activando ventas"}
+          {isReady ? copy.readyTitle : copy.loadingTitle}
         </h2>
         {!isReady && (
           <p className="mt-2 text-sm font-circular-regular text-[#525b75]">
-            Conectando modulos de inventario...
+            {copy.description}
           </p>
         )}
 
@@ -822,6 +885,56 @@ function ActivationScreen({ progress }: { progress: number }) {
       </div>
     </div>
   );
+}
+
+function getActivationItems(productMode: ProductMode) {
+  if (productMode === "attendance") {
+    return [
+      "Registrando empresa",
+      "Activando asistencias",
+      "Preparando trabajadores",
+      "Configurando punto QR gratis",
+      "Preparando acceso",
+    ];
+  }
+  if (productMode === "both") {
+    return [
+      "Registrando empresa",
+      "Creando tu catalogo de productos",
+      "Activando asistencias",
+      "Configurando tu interfaz",
+      "Preparando acceso",
+    ];
+  }
+  return [
+    "Registrando empresa",
+    "Creando tu catalogo de productos",
+    "Configurando tu interfaz",
+    "Activando modulo de ventas",
+    "Preparando acceso",
+  ];
+}
+
+function getActivationCopy(productMode: ProductMode) {
+  if (productMode === "attendance") {
+    return {
+      loadingTitle: "Activando asistencias",
+      readyTitle: "Tus asistencias estan listas!",
+      description: "Preparando trabajadores y punto QR...",
+    };
+  }
+  if (productMode === "both") {
+    return {
+      loadingTitle: "Activando tu sistema",
+      readyTitle: "Tu sistema esta listo!",
+      description: "Conectando ventas y asistencias...",
+    };
+  }
+  return {
+    loadingTitle: "Activando ventas",
+    readyTitle: "Tu tienda esta lista!",
+    description: "Conectando modulos de inventario...",
+  };
 }
 
 function StepProgress({
@@ -929,11 +1042,11 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
     <>
       <fieldset>
         <legend className="text-sm font-circular-bold text-[var(--color-text)]">
-          ¿Qué productos venderás?
+          ¿Qué quieres usar?
         </legend>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {catalogProfileOptions.map((option) => {
-            const selected = companyData.catalogProfile === option.value;
+        <div className="mt-2 grid gap-3 lg:grid-cols-3">
+          {productModeOptions.map((option) => {
+            const selected = companyData.productMode === option.value;
             const Icon = option.icon;
 
             return (
@@ -947,13 +1060,14 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
               >
                 <input
                   type="radio"
-                  name="catalogProfile"
+                  name="productMode"
                   value={option.value}
                   checked={selected}
                   onChange={() =>
-                    updateCompanyValue("catalogProfile", option.value)
+                    updateCompanyValue("productMode", option.value)
                   }
                   className="sr-only"
+                  required
                 />
                 <span
                   className={`grid size-10 shrink-0 place-items-center rounded-xl ${
@@ -990,6 +1104,72 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
           })}
         </div>
       </fieldset>
+
+      {companyData.productMode && companyData.productMode !== "attendance" && (
+        <fieldset>
+          <legend className="text-sm font-circular-bold text-[var(--color-text)]">
+            ¿Qué productos venderás?
+          </legend>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {catalogProfileOptions.map((option) => {
+              const selected = companyData.catalogProfile === option.value;
+              const Icon = option.icon;
+
+              return (
+                <label
+                  key={option.value}
+                  className={`relative flex min-h-24 cursor-pointer items-center gap-3 rounded-[14px] p-4 transition-colors ${
+                    selected
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="catalogProfile"
+                    value={option.value}
+                    checked={selected}
+                    onChange={() =>
+                      updateCompanyValue("catalogProfile", option.value)
+                    }
+                    className="sr-only"
+                  />
+                  <span
+                    className={`grid size-10 shrink-0 place-items-center rounded-xl ${
+                      selected
+                        ? "bg-white/15"
+                        : "bg-[var(--color-card)] text-[var(--color-primary)]"
+                    }`}
+                  >
+                    <Icon size={22} weight="fill" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-circular-bold">
+                      {option.label}
+                    </span>
+                    <span
+                      className={`mt-1 block text-xs ${
+                        selected
+                          ? "text-white/75"
+                          : "text-[var(--color-muted-foreground)]"
+                      }`}
+                    >
+                      {option.description}
+                    </span>
+                  </span>
+                  {selected && (
+                    <CheckCircleIcon
+                      size={18}
+                      weight="fill"
+                      className="absolute right-3 top-3"
+                    />
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
       <div>
         <RegisterInput

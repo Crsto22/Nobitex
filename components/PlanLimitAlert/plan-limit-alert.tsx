@@ -57,13 +57,13 @@ export function PlanLimitAlert() {
     typeof detail.used === "number" && typeof detail.limit === "number";
 
   return createPortal(
-    <div className="fixed inset-0 z-[2147483647] flex items-end justify-center bg-black/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+    <div className="fixed inset-0 isolate z-[2147483647] flex items-end justify-center bg-black/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
       <section
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="plan-limit-title"
         aria-describedby="plan-limit-description"
-        className="w-full max-w-md rounded-t-[18px] bg-[var(--color-card)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.3)] sm:rounded-[18px] sm:p-6"
+        className="relative z-[1] w-full max-w-md rounded-t-[18px] bg-[var(--color-card)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.3)] sm:rounded-[18px] sm:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#fff7ed] text-[#f59e0b]">
