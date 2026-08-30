@@ -72,7 +72,7 @@ export default function AsistenciasDashboardPage() {
     let isMounted = true;
     const timeoutId = window.setTimeout(() => {
       branchesApi
-        .findAll({ limit: 100, estado: "activo", tipo: "asistencia" })
+        .findAll({ limit: 100, estado: "activo" })
         .then((response) => {
           if (!isMounted) return;
           setBranches(response.data);

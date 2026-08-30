@@ -5,25 +5,77 @@ import Image from "next/image";
 import {
   ArrowClockwiseIcon,
   CalendarBlankIcon,
+  DatabaseIcon,
+  DownloadSimpleIcon,
   FileTextIcon,
   MinusIcon,
   PlusIcon,
   QrCodeIcon,
+  ReceiptIcon,
+  TagIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import {
+  downloadBlob,
+  platformBillingApi,
+  type PlatformReceipt,
+  type PlatformReceiptStatus,
+} from "@/lib/api/platform-billing";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
 import { formatCurrency, formatDate } from "@/lib/intl";
+import { cn } from "@/lib/utils";
+
+type Tab = "plans" | "usage" | "receipts";
+
+const receiptPageSize = 10;
+
+const tabs: { key: Tab; label: string; icon: typeof TagIcon }[] = [
+  { key: "plans", label: "Planes", icon: TagIcon },
+  { key: "usage", label: "Consumo", icon: DatabaseIcon },
+  { key: "receipts", label: "Mis comprobantes", icon: ReceiptIcon },
+];
+
+const receiptStatus: Record<
+  PlatformReceiptStatus,
+  { label: string; className: string }
+> = {
+  pendiente: {
+    label: "Pendiente",
+    className: "bg-[#f59e0b]/10 text-[#b45309]",
+  },
+  aceptado: { label: "Aceptado", className: "bg-[#10b981]/10 text-[#059669]" },
+  rechazado: {
+    label: "Rechazado",
+    className: "bg-[#ef4444]/10 text-[#dc2626]",
+  },
+  error: { label: "Con error", className: "bg-[#ef4444]/10 text-[#dc2626]" },
+  anulacion_pendiente: {
+    label: "Anulacion pendiente",
+    className: "bg-[#f59e0b]/10 text-[#b45309]",
+  },
+  anulado: {
+    label: "Anulado",
+    className:
+      "bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]",
+  },
+};
 
 export default function AsistenciasPlanPage() {
   const { user, companyInfo, currentPlan, refreshPlan } = useAuth();
   const { showToast } = useSystemToast();
+  const [activeTab, setActiveTab] = useState<Tab>("plans");
   const [workers, setWorkers] = useState("1");
   const [qrPoints, setQrPoints] = useState("1");
+  const [receipts, setReceipts] = useState<PlatformReceipt[]>([]);
+  const [receiptPage, setReceiptPage] = useState(1);
+  const [receiptMeta, setReceiptMeta] = useState({ total: 0, totalPages: 1 });
   const [isLoading, setIsLoading] = useState(!currentPlan);
+  const [isLoadingReceipts, setIsLoadingReceipts] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadPlan = useCallback(async () => {
     setIsLoading(true);
@@ -41,10 +93,39 @@ export default function AsistenciasPlanPage() {
     }
   }, [refreshPlan, showToast]);
 
+  const loadReceipts = useCallback(async () => {
+    setIsLoadingReceipts(true);
+    try {
+      const response = await platformBillingApi.findReceipts(
+        { page: receiptPage, limit: receiptPageSize },
+        true,
+      );
+      setReceipts(response.data);
+      setReceiptMeta({
+        total: response.meta.total,
+        totalPages: Math.max(1, response.meta.totalPages),
+      });
+    } catch (error) {
+      showToast({
+        title: "No se pudo cargar comprobantes",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsLoadingReceipts(false);
+    }
+  }, [receiptPage, showToast]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => void loadPlan(), 0);
     return () => window.clearTimeout(timer);
   }, [loadPlan]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadReceipts(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadReceipts]);
 
   const attendance = currentPlan?.attendance;
   const pricing = currentPlan?.attendancePricing;
@@ -58,6 +139,27 @@ export default function AsistenciasPlanPage() {
   const companyName =
     companyInfo?.nombreComercial ?? user?.empresaNombreComercial ?? "Mi empresa";
   const customerName = getUserDisplayName(user);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([loadPlan(), loadReceipts()]);
+    setIsRefreshing(false);
+  };
+  const downloadReceipt = async (
+    receipt: PlatformReceipt,
+    kind: "pdf" | "xml" | "cdr",
+  ) => {
+    try {
+      const blob = await platformBillingApi.download(receipt.id, kind, true);
+      downloadBlob(blob, `${receipt.correlativo}.${kind}`);
+    } catch (error) {
+      showToast({
+        title: "No se pudo descargar",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    }
+  };
 
   return (
     <DashboardShell headerTitle="Plan y facturacion">
@@ -73,43 +175,25 @@ export default function AsistenciasPlanPage() {
           </div>
           <button
             type="button"
-            onClick={() => void loadPlan()}
-            disabled={isLoading}
+            onClick={() => void handleRefresh()}
+            disabled={isRefreshing}
             className="grid size-11 place-items-center rounded-[16px] bg-[var(--color-input-bg)] text-[var(--color-text)] disabled:opacity-50"
             aria-label="Actualizar plan"
           >
             <ArrowClockwiseIcon
               size={18}
               weight="bold"
-              className={isLoading ? "animate-spin" : ""}
+              className={isRefreshing ? "animate-spin" : ""}
             />
           </button>
         </header>
 
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <MetricCard
             label="Estado"
             value={attendance?.effectiveActive ? "Activo" : "Sin contratar"}
             icon={<CalendarBlankIcon size={20} weight="fill" />}
             color={attendance?.effectiveActive ? "#10b981" : "#f59e0b"}
-          />
-          <MetricCard
-            label="Trabajadores"
-            value={`${currentPlan?.usage.attendanceEmployees ?? 0} / ${attendance?.effectiveEmployeesLimit ?? 0}`}
-            icon={<UsersThreeIcon size={20} weight="fill" />}
-            color="#14b8a6"
-          />
-          <MetricCard
-            label="Puntos QR"
-            value={`${currentPlan?.usage.attendanceQrPoints ?? 0} / ${attendance?.effectiveQrPointsLimit ?? 0}`}
-            icon={<QrCodeIcon size={20} weight="fill" />}
-            color="#22c55e"
-          />
-          <MetricCard
-            label="Consultas DNI"
-            value={`${currentPlan?.usage.documentQueries ?? 0} / ${currentPlan?.effectiveLimits.documentQueries ?? 0}`}
-            icon={<FileTextIcon size={20} weight="fill" />}
-            color="#f59e0b"
           />
           <MetricCard
             label="Vencimiento"
@@ -119,9 +203,54 @@ export default function AsistenciasPlanPage() {
             icon={<CalendarBlankIcon size={20} weight="fill" />}
             color="#2563eb"
           />
+          <MetricCard
+            label="Pago mensual"
+            value={formatCurrency(attendance?.monthlyPrice ?? "0")}
+            icon={<ReceiptIcon size={20} weight="fill" />}
+            color="#14b8a6"
+          />
+          <MetricCard
+            label="Consultas DNI"
+            value={`${currentPlan?.usage.documentQueries ?? 0} / ${currentPlan?.effectiveLimits.documentQueries ?? 0}`}
+            icon={<FileTextIcon size={20} weight="fill" />}
+            color="#f59e0b"
+          />
         </section>
 
-        <section>
+        <nav
+          className="grid grid-cols-3 gap-1.5 rounded-[14px] bg-[var(--color-input-bg)] p-1.5"
+          aria-label="Secciones del plan de asistencias"
+        >
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "flex h-10 min-w-0 items-center justify-center gap-2 rounded-[11px] px-2 text-xs font-circular-bold transition-colors sm:px-4 sm:text-sm",
+                  activeTab === tab.key
+                    ? "bg-[var(--color-primary)] text-white shadow-sm"
+                    : "bg-[var(--color-card)] text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
+                )}
+              >
+                <Icon
+                  size={17}
+                  weight={activeTab === tab.key ? "fill" : "regular"}
+                />
+                {tab.label}
+                {tab.key === "receipts" && receiptMeta.total > 0 ? (
+                  <span className="rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[11px] text-[var(--color-primary)]">
+                    {receiptMeta.total}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </nav>
+
+        {activeTab === "plans" ? (
           <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
             <h2 className="text-base font-circular-bold text-[var(--color-text)]">
               Solicitar adicionales
@@ -194,9 +323,282 @@ export default function AsistenciasPlanPage() {
               </a>
             </div>
           </article>
-        </section>
+        ) : null}
+
+        {activeTab === "usage" ? (
+          <UsageTab currentPlan={currentPlan} loading={isLoading} />
+        ) : null}
+
+        {activeTab === "receipts" ? (
+          <ReceiptsTab
+            rows={receipts}
+            page={receiptPage}
+            total={receiptMeta.total}
+            totalPages={receiptMeta.totalPages}
+            loading={isLoadingReceipts}
+            onPageChange={setReceiptPage}
+            onDownload={downloadReceipt}
+          />
+        ) : null}
       </div>
     </DashboardShell>
+  );
+}
+
+function UsageTab({
+  currentPlan,
+  loading,
+}: {
+  currentPlan: ReturnType<typeof useAuth>["currentPlan"];
+  loading: boolean;
+}) {
+  if (loading && !currentPlan) {
+    return (
+      <div className="h-72 animate-pulse rounded-[14px] bg-[var(--color-card)]" />
+    );
+  }
+  if (!currentPlan) {
+    return <EmptyState title="No se pudo cargar el consumo" />;
+  }
+
+  const attendance = currentPlan.attendance;
+  const items = [
+    {
+      label: "Trabajadores",
+      used: currentPlan.usage.attendanceEmployees,
+      limit: attendance?.effectiveEmployeesLimit ?? 0,
+      icon: UsersThreeIcon,
+      color: "#14b8a6",
+    },
+    {
+      label: "Puntos QR",
+      used: currentPlan.usage.attendanceQrPoints,
+      limit: attendance?.effectiveQrPointsLimit ?? 0,
+      icon: QrCodeIcon,
+      color: "#22c55e",
+    },
+    {
+      label: "Consultas DNI/RUC",
+      used: currentPlan.usage.documentQueries,
+      limit: currentPlan.effectiveLimits.documentQueries,
+      icon: FileTextIcon,
+      color: "#f59e0b",
+    },
+  ];
+
+  return (
+    <section className="grid grid-cols-1 gap-3 pb-5 sm:grid-cols-2 xl:grid-cols-3">
+      {items.map((item) => (
+        <UsageCard key={item.label} {...item} />
+      ))}
+    </section>
+  );
+}
+
+function UsageCard({
+  label,
+  used,
+  limit,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  used: number;
+  limit: number;
+  icon: typeof UsersThreeIcon;
+  color: string;
+}) {
+  const percent =
+    limit > 0 ? Math.min(100, (used / limit) * 100) : used > 0 ? 100 : 0;
+  return (
+    <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-[var(--color-muted-foreground)]">
+            {label}
+          </p>
+          <p className="mt-1 text-xl font-circular-bold text-[var(--color-text)]">
+            {used.toLocaleString("es-PE")}{" "}
+            <span className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+              de {limit.toLocaleString("es-PE")}
+            </span>
+          </p>
+        </div>
+        <span
+          className="grid size-10 place-items-center rounded-[11px]"
+          style={{ backgroundColor: `${color}18`, color }}
+        >
+          <Icon size={19} weight="fill" />
+        </span>
+      </div>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--color-input-bg)]">
+        <div
+          className={cn(
+            "h-full rounded-full",
+            percent >= 90 ? "bg-[#ef4444]" : "bg-[var(--color-primary)]",
+          )}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <p className="mt-3 text-[11px] text-[var(--color-muted-foreground)]">
+        {Math.round(percent)}% utilizado
+      </p>
+    </article>
+  );
+}
+
+function ReceiptsTab({
+  rows,
+  page,
+  total,
+  totalPages,
+  loading,
+  onPageChange,
+  onDownload,
+}: {
+  rows: PlatformReceipt[];
+  page: number;
+  total: number;
+  totalPages: number;
+  loading: boolean;
+  onPageChange: (page: number) => void;
+  onDownload: (
+    receipt: PlatformReceipt,
+    kind: "pdf" | "xml" | "cdr",
+  ) => Promise<void>;
+}) {
+  return (
+    <section className="space-y-3 pb-5">
+      <div className="overflow-hidden rounded-[14px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="bg-[var(--color-input-bg)] text-xs text-[var(--color-muted-foreground)]">
+              <tr>
+                <th className="px-4 py-3 font-circular-bold">Comprobante</th>
+                <th className="px-4 py-3 font-circular-bold">Tipo</th>
+                <th className="px-4 py-3 font-circular-bold">Fecha</th>
+                <th className="px-4 py-3 font-circular-bold">Total</th>
+                <th className="px-4 py-3 font-circular-bold">Estado</th>
+                <th className="px-4 py-3 text-right font-circular-bold">
+                  Archivos
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && rows.length === 0 ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr
+                    key={index}
+                    className="border-t border-[var(--color-border)]"
+                  >
+                    <td colSpan={6} className="px-4 py-3">
+                      <div className="h-9 animate-pulse rounded-lg bg-[var(--color-input-bg)]" />
+                    </td>
+                  </tr>
+                ))
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-14">
+                    <EmptyState title="Aun no tienes comprobantes emitidos" />
+                  </td>
+                </tr>
+              ) : (
+                rows.map((receipt) => (
+                  <tr
+                    key={receipt.id}
+                    className="border-t border-[var(--color-border)] text-[var(--color-text)]"
+                  >
+                    <td className="px-4 py-3 font-circular-bold">
+                      {receipt.correlativo}
+                    </td>
+                    <td className="px-4 py-3">
+                      {formatReceiptType(receipt.type)}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--color-muted-foreground)]">
+                      {formatDate(receipt.issuedAt)}
+                    </td>
+                    <td className="px-4 py-3 font-circular-bold">
+                      {formatCurrency(receipt.total)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={receipt.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        {(["pdf", "xml", "cdr"] as const).map((kind) =>
+                          receipt.downloads[kind] ? (
+                            <button
+                              key={kind}
+                              type="button"
+                              onClick={() => void onDownload(receipt, kind)}
+                              className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold"
+                            >
+                              <DownloadSimpleIcon size={14} />
+                              {kind.toUpperCase()}
+                            </button>
+                          ) : null,
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] pt-4">
+        <p className="text-xs text-[var(--color-muted-foreground)]">
+          Mostrando {rows.length} de {total} comprobantes
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={loading || page <= 1}
+            className="h-8 rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <span className="grid size-8 place-items-center rounded-[8px] bg-[var(--color-primary)] text-xs font-circular-bold text-white">
+            {page}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+            disabled={loading || page >= totalPages}
+            className="h-8 rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs disabled:opacity-40"
+          >
+            Siguiente
+          </button>
+        </div>
+      </footer>
+    </section>
+  );
+}
+
+function StatusBadge({ status }: { status: PlatformReceiptStatus }) {
+  const config = receiptStatus[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2.5 py-1 text-xs font-circular-bold",
+        config.className,
+      )}
+    >
+      {config.label}
+    </span>
+  );
+}
+
+function EmptyState({ title }: { title: string }) {
+  return (
+    <div className="text-center text-[var(--color-muted-foreground)]">
+      <ReceiptIcon size={42} weight="light" className="mx-auto" />
+      <p className="mt-2 text-sm font-circular-bold text-[var(--color-text)]">
+        {title}
+      </p>
+    </div>
   );
 }
 
@@ -326,4 +728,13 @@ function getIncludedDocumentQueries(monthlyTotal: number) {
   if (monthlyTotal >= 60) return 300;
   if (monthlyTotal >= 30) return 100;
   return 20;
+}
+
+function formatReceiptType(type: PlatformReceipt["type"]) {
+  return {
+    nota_venta: "Nota de venta",
+    boleta: "Boleta",
+    factura: "Factura",
+    nota_credito: "Nota de crédito",
+  }[type];
 }

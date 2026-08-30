@@ -100,7 +100,7 @@ export default function AsistenciasReportesPage() {
   useEffect(() => {
     let mounted = true;
     branchesApi
-      .findAll({ estado: "activo", limit: 100, tipo: "asistencia" })
+      .findAll({ estado: "activo", limit: 100 })
       .then((response) => {
         if (mounted) setBranches(response.data);
       })

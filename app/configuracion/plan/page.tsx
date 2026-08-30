@@ -261,12 +261,10 @@ export default function PlanPage() {
             color="#2563eb"
           />
           <MetricCard
-            label="Adicional estimado"
-            value={formatCurrency(
-              currentPlan?.documentOverage.estimatedAmount ?? "0",
-            )}
-            icon={<FileTextIcon size={20} weight="fill" />}
-            color="#f59e0b"
+            label="Pago mensual"
+            value={formatCurrency(currentPlan?.plan.priceMonthly ?? "0")}
+            icon={<ReceiptIcon size={20} weight="fill" />}
+            color="#14b8a6"
           />
         </section>
 
