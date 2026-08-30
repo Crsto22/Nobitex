@@ -194,7 +194,10 @@ export default function CustomizeCompanyLimitsPage() {
     try {
       const updated = await platformAdminApi.updateCompanyAttendanceCapacity(
         params.id,
-        attendanceCapacity,
+        {
+          ...attendanceCapacity,
+          branchesLimit: attendanceCapacity.qrPointsLimit,
+        },
       );
       setCompany((current) =>
         current ? { ...current, attendance: updated } : current,
@@ -202,7 +205,7 @@ export default function CustomizeCompanyLimitsPage() {
       setAttendanceCapacity({
         employeesLimit: updated.effectiveEmployeesLimit,
         qrPointsLimit: updated.effectiveQrPointsLimit,
-        branchesLimit: updated.branchesLimit,
+        branchesLimit: updated.effectiveQrPointsLimit,
       });
       showToast({
         title: "Asistencias actualizada",
@@ -479,19 +482,11 @@ export default function CustomizeCompanyLimitsPage() {
                 />
                 <AttendanceCapacityCard
                   icon={<BuildingsIcon size={18} weight="fill" />}
-                  label="Sucursales"
+                  label="Sedes por QR"
                   used={company.attendance?.usage?.branches ?? 0}
-                  value={attendanceCapacity.branchesLimit}
+                  value={attendanceCapacity.qrPointsLimit}
                   disabled={!company.attendance?.effectiveActive}
-                  onChange={(value) =>
-                    setAttendanceCapacity((current) => ({
-                      ...current,
-                      branchesLimit: Math.max(
-                        company.attendance?.usage?.branches ?? 0,
-                        Math.trunc(Number(value) || 0),
-                      ),
-                    }))
-                  }
+                  readonly
                 />
                 <article className="rounded-xl bg-[var(--color-background)] p-4">
                   <div className="flex items-center gap-2">
@@ -545,13 +540,15 @@ function AttendanceCapacityCard({
   value,
   disabled,
   onChange,
+  readonly = false,
 }: {
   icon: ReactNode;
   label: string;
   used: number;
   value: number;
   disabled: boolean;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
+  readonly?: boolean;
 }) {
   return (
     <article className="rounded-xl bg-[var(--color-background)] p-4">
@@ -576,12 +573,17 @@ function AttendanceCapacityCard({
           type="number"
           min={used}
           step="1"
-          disabled={disabled}
+          disabled={disabled || readonly}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange?.(event.target.value)}
           className="h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] disabled:opacity-60"
         />
       </label>
+      {readonly ? (
+        <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+          Se iguala automaticamente a puntos QR.
+        </p>
+      ) : null}
     </article>
   );
 }

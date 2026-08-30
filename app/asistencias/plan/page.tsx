@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import {
   ArrowClockwiseIcon,
-  BuildingsIcon,
   CalendarBlankIcon,
   FileTextIcon,
+  MinusIcon,
   PlusIcon,
   QrCodeIcon,
   UsersThreeIcon,
@@ -24,7 +23,6 @@ export default function AsistenciasPlanPage() {
   const { showToast } = useSystemToast();
   const [workers, setWorkers] = useState("1");
   const [qrPoints, setQrPoints] = useState("1");
-  const [branches, setBranches] = useState("1");
   const [isLoading, setIsLoading] = useState(!currentPlan);
 
   const loadPlan = useCallback(async () => {
@@ -54,7 +52,6 @@ export default function AsistenciasPlanPage() {
   const qrUnitPrice = Number(pricing?.qrPointUnitPrice ?? 0);
   const workerCount = Math.max(0, Math.trunc(Number(workers) || 0));
   const qrCount = Math.max(0, Math.trunc(Number(qrPoints) || 0));
-  const branchCount = Math.max(0, Math.trunc(Number(branches) || 0));
   const monthlyTotal = workerCount * workerUnitPrice + qrCount * qrUnitPrice;
   const includedDocumentQueries = getIncludedDocumentQueries(monthlyTotal);
   const hasPrices = workerUnitPrice > 0 || qrUnitPrice > 0;
@@ -109,12 +106,6 @@ export default function AsistenciasPlanPage() {
             color="#22c55e"
           />
           <MetricCard
-            label="Sucursales"
-            value={`${currentPlan?.usage.branches ?? 0} / ${currentPlan?.effectiveLimits.branches ?? 0}`}
-            icon={<BuildingsIcon size={20} weight="fill" />}
-            color="#2563eb"
-          />
-          <MetricCard
             label="Consultas DNI"
             value={`${currentPlan?.usage.documentQueries ?? 0} / ${currentPlan?.effectiveLimits.documentQueries ?? 0}`}
             icon={<FileTextIcon size={20} weight="fill" />}
@@ -130,36 +121,7 @@ export default function AsistenciasPlanPage() {
           />
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-            <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-[12px] bg-[#14b8a6]/10 text-[#0f766e]">
-                <QrCodeIcon size={20} weight="fill" />
-              </span>
-              <div>
-                <h2 className="text-base font-circular-bold text-[var(--color-text)]">
-                  Asistencias
-                </h2>
-                <p className="text-xs text-[var(--color-muted-foreground)]">
-                  {attendance?.trial
-                    ? "Beneficio activo por prueba gratuita."
-                    : attendance?.effectiveActive
-                      ? "Plan contratado activo."
-                      : "Solicita el plan de asistencias."}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <LinkButton href="/asistencias/personal" label="Nuevo trabajador">
-                <UsersThreeIcon size={18} weight="bold" />
-              </LinkButton>
-              <LinkButton href="/asistencias/puntos-qr" label="Nuevo QR">
-                <QrCodeIcon size={18} weight="bold" />
-              </LinkButton>
-            </div>
-          </article>
-
+        <section>
           <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
             <h2 className="text-base font-circular-bold text-[var(--color-text)]">
               Solicitar adicionales
@@ -170,7 +132,7 @@ export default function AsistenciasPlanPage() {
                 : "Precio segun cotizacion."}
             </p>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <NumberField
                 label="Agregar trabajadores"
                 value={workers}
@@ -180,11 +142,6 @@ export default function AsistenciasPlanPage() {
                 label="Agregar puntos QR"
                 value={qrPoints}
                 onChange={setQrPoints}
-              />
-              <NumberField
-                label="Sucursales"
-                value={branches}
-                onChange={setBranches}
               />
             </div>
 
@@ -207,6 +164,9 @@ export default function AsistenciasPlanPage() {
                   <p className="mt-1 text-2xl font-circular-bold text-[#059669]">
                     {includedDocumentQueries.toLocaleString("es-PE")}
                   </p>
+                  <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                    {qrCount.toLocaleString("es-PE")} sedes incluidas por QR
+                  </p>
                 </div>
               </div>
               <a
@@ -216,7 +176,6 @@ export default function AsistenciasPlanPage() {
                   customerEmail: user?.email,
                   workers: workerCount,
                   qrPoints: qrCount,
-                  branches: branchCount,
                   documentQueries: includedDocumentQueries,
                   monthlyTotal,
                   hasPrices,
@@ -270,27 +229,6 @@ function MetricCard({
   );
 }
 
-function LinkButton({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-    >
-      {children}
-      <PlusIcon size={16} weight="bold" />
-      {label}
-    </Link>
-  );
-}
-
 function NumberField({
   label,
   value,
@@ -300,19 +238,41 @@ function NumberField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const numericValue = Math.max(0, Math.trunc(Number(value) || 0));
+  const updateValue = (next: number) => onChange(String(Math.max(0, next)));
+
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-circular-bold text-[var(--color-muted-foreground)]">
         {label}
       </span>
-      <input
-        type="number"
-        min={0}
-        step={1}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-      />
+      <div className="grid grid-cols-[44px_1fr_44px] overflow-hidden rounded-[12px] bg-[var(--color-input-bg)]">
+        <button
+          type="button"
+          onClick={() => updateValue(numericValue - 1)}
+          className="grid h-11 place-items-center text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:opacity-40"
+          disabled={numericValue <= 0}
+          aria-label={`Restar ${label.toLowerCase()}`}
+        >
+          <MinusIcon size={16} weight="bold" />
+        </button>
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-11 w-full bg-transparent px-3 text-center text-sm font-circular-bold text-[var(--color-text)] outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => updateValue(numericValue + 1)}
+          className="grid h-11 place-items-center text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+          aria-label={`Sumar ${label.toLowerCase()}`}
+        >
+          <PlusIcon size={16} weight="bold" />
+        </button>
+      </div>
     </label>
   );
 }
@@ -323,7 +283,6 @@ function buildWhatsAppUrl({
   customerEmail,
   workers,
   qrPoints,
-  branches,
   documentQueries,
   monthlyTotal,
   hasPrices,
@@ -333,7 +292,6 @@ function buildWhatsAppUrl({
   customerEmail?: string;
   workers: number;
   qrPoints: number;
-  branches: number;
   documentQueries: number;
   monthlyTotal: number;
   hasPrices: boolean;
@@ -345,7 +303,7 @@ function buildWhatsAppUrl({
     customerEmail ? `Correo: ${customerEmail}` : "",
     `Agregar trabajadores: ${workers.toLocaleString("es-PE")}`,
     `Agregar puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
-    `Sucursales requeridas: ${branches.toLocaleString("es-PE")}`,
+    `Sedes incluidas por puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
     `Consultas DNI/RUC incluidas: ${documentQueries.toLocaleString("es-PE")}`,
     hasPrices
       ? `Total mensual estimado: ${formatCurrency(String(monthlyTotal))}`

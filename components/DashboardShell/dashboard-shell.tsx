@@ -344,6 +344,7 @@ export function DashboardShell({
           onToggleSidebar={toggleSidebar}
           user={user}
           planCode={currentPlan?.plan.code}
+          isAttendanceContext={pathname.startsWith("/asistencias")}
           onLogout={logout}
         />
 

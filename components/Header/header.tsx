@@ -39,6 +39,7 @@ type HeaderProps = {
   onToggleSidebar?: () => void;
   user?: SessionUser | null;
   planCode?: string;
+  isAttendanceContext?: boolean;
   onLogout?: () => Promise<void> | void;
 };
 
@@ -56,6 +57,7 @@ export function Header({
   onToggleSidebar,
   user,
   planCode,
+  isAttendanceContext = false,
   onLogout,
 }: HeaderProps) {
   const router = useRouter();
@@ -206,6 +208,16 @@ export function Header({
   const companyName = user?.empresaNombreComercial;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
   const isTrial = !planCode || planCode === "prueba";
+  const planRoute = isAttendanceContext
+    ? "/asistencias/plan"
+    : isTrial
+      ? "/configuracion/plan"
+      : "/configuracion/plan?tab=usage";
+  const planLabel = isAttendanceContext
+    ? "Uso de asistencias"
+    : isTrial
+      ? "Mejorar plan"
+      : "Uso y plan";
 
   return (
     <header
@@ -234,13 +246,7 @@ export function Header({
         {!isSuperAdmin ? (
           <button
             type="button"
-            onClick={() =>
-              router.push(
-                isTrial
-                  ? "/configuracion/plan"
-                  : "/configuracion/plan?tab=usage",
-              )
-            }
+            onClick={() => router.push(planRoute)}
             className="flex h-9 items-center justify-center gap-2 rounded-full px-2 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
           >
             {isTrial ? (
@@ -253,7 +259,7 @@ export function Header({
               />
             )}
             <span className="hidden sm:inline">
-              {isTrial ? "Mejorar plan" : "Uso y plan"}
+              {planLabel}
             </span>
           </button>
         ) : null}
