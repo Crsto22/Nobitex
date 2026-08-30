@@ -64,7 +64,10 @@ export default function OnboardingPage() {
 
   const isOwner = user?.roles.includes("OWNER") ?? false;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
-  const moduleKeys = user?.moduleKeys ?? currentPlan?.effectiveModuleKeys ?? [];
+  const moduleKeys = [
+    ...(user?.moduleKeys ?? []),
+    ...(currentPlan?.effectiveModuleKeys ?? []),
+  ];
   const hasAttendanceModules = moduleKeys.some((key) =>
     key.startsWith("asistencias-"),
   );

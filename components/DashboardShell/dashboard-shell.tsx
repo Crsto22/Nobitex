@@ -178,6 +178,9 @@ export function DashboardShell({
     ],
     [currentPlan?.effectiveModuleKeys, user?.moduleKeys],
   );
+  const hasPosSetupModules = allowedModuleKeys.some((key) =>
+    ["dashboard", "ventas-pos", "productos", "caja"].includes(key),
+  );
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
   const isPlatformRoute =
@@ -185,7 +188,10 @@ export function DashboardShell({
   const isNotificationsRoute = pathname === "/notificaciones";
   const isOnboardingRoute = pathname === "/onboarding";
   const mustCompleteSetup =
-    !isSuperAdmin && !isExpired && Boolean(setupStatus?.requiresBranch);
+    !isSuperAdmin &&
+    !isExpired &&
+    hasPosSetupModules &&
+    Boolean(setupStatus?.requiresBranch);
   const canAccessTenantRoute =
     !currentModule ||
     currentModule.key === "mi-cuenta" ||
