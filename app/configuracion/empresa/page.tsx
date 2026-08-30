@@ -83,6 +83,14 @@ const defaultSunatForm: SunatForm = {
 const maxCertificateSize = 2 * 1024 * 1024;
 
 export default function EmpresaPage() {
+  return <EmpresaPageContent />;
+}
+
+export function EmpresaPageContent({
+  attendanceMode = false,
+}: {
+  attendanceMode?: boolean;
+}) {
   const { showToast } = useSystemToast();
   const { updateCompanyInfo, currentPlan } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("empresa");
@@ -105,7 +113,12 @@ export default function EmpresaPage() {
   const certificateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    Promise.all([companyApi.getCompany(), companyApi.getSunatConfig()])
+    Promise.all([
+      companyApi.getCompany(),
+      attendanceMode
+        ? Promise.resolve<SunatConfig | null>(null)
+        : companyApi.getSunatConfig(),
+    ])
       .then(([companyData, sunatData]) => {
         setCompany(companyData);
         setSunatConfig(sunatData);
@@ -119,7 +132,9 @@ export default function EmpresaPage() {
           ubigeo: "",
           distrito: "",
         });
-        setSunatForm(toSunatForm(sunatData));
+        if (sunatData) {
+          setSunatForm(toSunatForm(sunatData));
+        }
 
         if (companyData.logoUrl) {
           setLogoPreview(companyData.logoUrl);
@@ -139,7 +154,7 @@ export default function EmpresaPage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [showToast]);
+  }, [attendanceMode, showToast]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -512,22 +527,24 @@ export default function EmpresaPage() {
   return (
     <DashboardShell headerTitle="Empresa">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <div className="flex flex-wrap gap-2 rounded-[16px] bg-[var(--color-input-bg)] p-1">
-          <TabButton
-            active={activeTab === "empresa"}
-            label="Datos de empresa"
-            icon={<BuildingIcon size={16} weight="bold" />}
-            onClick={() => setActiveTab("empresa")}
-          />
-          <TabButton
-            active={activeTab === "sunat"}
-            label="Conexion SUNAT"
-            icon={<ShieldCheckIcon size={16} weight="bold" />}
-            onClick={() => setActiveTab("sunat")}
-          />
-        </div>
+        {!attendanceMode ? (
+          <div className="flex flex-wrap gap-2 rounded-[16px] bg-[var(--color-input-bg)] p-1">
+            <TabButton
+              active={activeTab === "empresa"}
+              label="Datos de empresa"
+              icon={<BuildingIcon size={16} weight="bold" />}
+              onClick={() => setActiveTab("empresa")}
+            />
+            <TabButton
+              active={activeTab === "sunat"}
+              label="Conexion SUNAT"
+              icon={<ShieldCheckIcon size={16} weight="bold" />}
+              onClick={() => setActiveTab("sunat")}
+            />
+          </div>
+        ) : null}
 
-        {activeTab === "empresa" ? (
+        {attendanceMode || activeTab === "empresa" ? (
           <form
             className="grid gap-4 lg:grid-cols-[320px_1fr]"
             onSubmit={handleSubmit}

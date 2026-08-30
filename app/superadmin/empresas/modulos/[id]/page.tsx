@@ -79,6 +79,8 @@ const moduleGroups = [
       "asistencias-puntos-qr",
       "asistencias-reportes",
       "asistencias-configuracion",
+      "asistencias-empresa",
+      "asistencias-mi-cuenta",
     ],
   },
 ];

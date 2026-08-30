@@ -2,6 +2,7 @@ import type { Icon } from "@phosphor-icons/react";
 import {
   ChartBarIcon,
   BellIcon,
+  BuildingsIcon,
   CalendarBlankIcon,
   CashRegisterIcon,
   ClockUserIcon,
@@ -395,10 +396,26 @@ export const attendanceSidebarSections: SidebarSection[] = [
   },
   {
     key: "asistencias-configuracion",
-    label: "Configuración",
-    icon: GearSixIcon,
+    label: "Sucursales",
+    icon: BuildingsIcon,
     direct: true,
     route: "/asistencias/configuracion",
+    children: [],
+  },
+  {
+    key: "asistencias-empresa",
+    label: "Empresa",
+    icon: GearSixIcon,
+    direct: true,
+    route: "/asistencias/empresa",
+    children: [],
+  },
+  {
+    key: "asistencias-mi-cuenta",
+    label: "Mi cuenta",
+    icon: UserCircleIcon,
+    direct: true,
+    route: "/asistencias/mi-cuenta",
     children: [],
   },
 ];

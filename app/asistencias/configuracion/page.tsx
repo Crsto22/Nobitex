@@ -8,6 +8,8 @@ import {
   PencilSimpleIcon,
   PlusIcon,
   StorefrontIcon,
+  UsersIcon,
+  WarehouseIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
@@ -19,6 +21,7 @@ import {
   type Branch,
   type BranchPayload,
   type BranchStatus,
+  type BranchType,
 } from "@/lib/api/branches";
 import { useAuth } from "@/lib/auth/auth-provider";
 import peruUbigeos from "@/lib/data/peru-ubigeos.json";
@@ -35,6 +38,23 @@ type PeruUbigeo = {
 
 const ubigeos = peruUbigeos as PeruUbigeo[];
 const pageSize = defaultPageSize;
+const typeConfig = {
+  tienda: {
+    label: "POS",
+    icon: StorefrontIcon,
+    className: "bg-[#3b82f6]/10 text-[#2563eb]",
+  },
+  almacen: {
+    label: "Almacen",
+    icon: WarehouseIcon,
+    className: "bg-[#f59e0b]/10 text-[#d97706]",
+  },
+  asistencia: {
+    label: "Asistencia",
+    icon: UsersIcon,
+    className: "bg-[#10b981]/10 text-[#059669]",
+  },
+};
 const emptyForm = {
   nombre: "",
   ubigeo: "",
@@ -44,7 +64,7 @@ const emptyForm = {
 };
 
 export default function AsistenciasConfiguracionPage() {
-  const { currentPlan, refreshPlan } = useAuth();
+  const { refreshPlan } = useAuth();
   const { showToast } = useSystemToast();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [meta, setMeta] = useState({
@@ -75,7 +95,6 @@ export default function AsistenciasConfiguracionPage() {
           page,
           limit: pageSize,
           search,
-          tipo: "asistencia",
         }),
         refreshPlan(),
       ]);
@@ -100,9 +119,7 @@ export default function AsistenciasConfiguracionPage() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const branchLimit = currentPlan?.effectiveLimits.branches ?? 0;
-  const branchUsage = meta.attendanceTotal;
-  const remaining = Math.max(0, branchLimit - branchUsage);
+  const branchUsage = meta.total;
   const districtOptions = useMemo(
     () =>
       ubigeos
@@ -145,7 +162,7 @@ export default function AsistenciasConfiguracionPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const payload = buildPayload(form);
+    const payload = buildPayload(form, editing?.tipo);
     if (!payload) {
       setError("Completa nombre, distrito, ubigeo y direccion.");
       return;
@@ -202,11 +219,13 @@ export default function AsistenciasConfiguracionPage() {
   };
 
   return (
-    <DashboardShell headerTitle="Configuración de asistencias">
+    <DashboardShell headerTitle="Sucursales">
       <main className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6 lg:py-5">
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Metric label="Sedes" value={`${branchUsage} / ${branchLimit}`} />
-          <Metric label="Disponibles" value={String(remaining)} />
+          <Metric label="Sucursales" value={String(branchUsage)} />
+          <Metric label="POS" value={String(meta.storeTotal)} />
+          <Metric label="Almacenes" value={String(meta.warehouseTotal)} />
+          <Metric label="Asistencia" value={String(meta.attendanceTotal)} />
           <Metric label="Activas" value={String(meta.activeTotal)} />
           <Metric label="Inactivas" value={String(meta.inactiveTotal)} />
         </section>
@@ -223,7 +242,7 @@ export default function AsistenciasConfiguracionPage() {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Buscar sede, distrito o direccion..."
+              placeholder="Buscar sucursal, distrito o direccion..."
               className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </label>
@@ -233,7 +252,7 @@ export default function AsistenciasConfiguracionPage() {
             className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white"
           >
             <PlusIcon size={16} weight="bold" />
-            Nueva sede
+            Nueva sucursal
           </button>
         </section>
 
@@ -248,22 +267,25 @@ export default function AsistenciasConfiguracionPage() {
           </div>
         ) : branches.length ? (
           <section className="grid gap-3">
-            {branches.map((branch) => (
+            {branches.map((branch) => {
+              const type = typeConfig[branch.tipo];
+              const TypeIcon = type.icon;
+              return (
               <article
                 key={branch.id}
                 className="grid gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.1)] md:grid-cols-[1fr_1.2fr_auto] md:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#10b981]/10 text-[#059669]">
-                    <StorefrontIcon size={21} weight="fill" />
+                  <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", type.className)}>
+                    <TypeIcon size={21} weight="fill" />
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
                       {branch.nombre}
                     </p>
-                    <p className="text-xs text-[var(--color-muted-foreground)]">
-                      SUC-{branch.id.padStart(3, "0")}
-                    </p>
+                    <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-circular-bold", type.className)}>
+                      {type.label}
+                    </span>
                   </div>
                 </div>
                 <div className="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text)]">
@@ -298,7 +320,8 @@ export default function AsistenciasConfiguracionPage() {
                   </button>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </section>
         ) : (
           <section className="grid min-h-[220px] place-items-center rounded-[14px] bg-[var(--color-card)] p-6 text-center">
@@ -307,10 +330,10 @@ export default function AsistenciasConfiguracionPage() {
                 <StorefrontIcon size={24} weight="fill" />
               </span>
               <h2 className="mt-3 text-base font-circular-bold text-[var(--color-text)]">
-                Sin sedes de asistencia
+                Sin sucursales
               </h2>
               <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                Crea una sede para enlazar tus puntos QR.
+                Crea una sucursal para enlazar tus puntos QR.
               </p>
             </div>
           </section>
@@ -349,8 +372,8 @@ export default function AsistenciasConfiguracionPage() {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editing ? "Editar sede" : "Nueva sede"}
-        description="Sede usada para marcajes y puntos QR."
+        title={editing ? "Editar sucursal" : "Nueva sucursal"}
+        description="Sucursal o sede usada para marcajes y puntos QR."
         size="lg"
       >
         <form className="space-y-4" onSubmit={submit}>
@@ -499,7 +522,10 @@ function Field({
   );
 }
 
-function buildPayload(form: typeof emptyForm): BranchPayload | null {
+function buildPayload(
+  form: typeof emptyForm,
+  branchType: BranchType = "asistencia",
+): BranchPayload | null {
   const nombre = form.nombre.trim();
   const ubigeo = form.ubigeo.trim();
   const distrito = form.distrito.trim();
@@ -509,7 +535,7 @@ function buildPayload(form: typeof emptyForm): BranchPayload | null {
   }
   return {
     nombre,
-    tipo: "asistencia",
+    tipo: branchType,
     ubigeo,
     distrito,
     direccion,

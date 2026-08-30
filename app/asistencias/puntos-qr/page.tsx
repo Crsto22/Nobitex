@@ -132,7 +132,7 @@ export default function AsistenciasPuntosQrPage() {
     let isMounted = true;
 
     branchesApi
-      .findAll({ estado: "activo", limit: 100, tipo: "asistencia" })
+      .findAll({ estado: "activo", limit: 100 })
       .then((response) => {
         if (isMounted) setBranches(response.data);
       })
@@ -343,7 +343,7 @@ export default function AsistenciasPuntosQrPage() {
                 No hay puntos QR
               </p>
               <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                Crea el primer punto QR enlazado a una sede.
+                Crea el primer punto QR enlazado a una sucursal o sede.
               </p>
             </div>
           </div>
@@ -465,14 +465,19 @@ function QrPointRow({
 
       <div className="min-w-0">
         <p className="text-[10px] text-[var(--color-muted-foreground)]">
-          Sede
+          Sucursal / sede
         </p>
         <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
           {point.sucursal.nombre}
         </p>
-        <p className="truncate text-xs text-[var(--color-muted-foreground)]">
-          {point.sucursal.distrito}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-circular-bold text-[var(--color-primary)]">
+            {branchTypeLabel(point.sucursal.tipo)}
+          </span>
+          <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+            {point.sucursal.distrito}
+          </p>
+        </div>
       </div>
 
       <div className="min-w-0">
@@ -640,7 +645,7 @@ function QrPointFormModal({
 
           <label className="block">
             <span className="mb-2 block text-sm font-circular-regular text-[#4e5671]">
-              Sede del QR
+              Sucursal / sede del QR
             </span>
             <NativeSelect
               value={form.sucursalId}
@@ -648,10 +653,10 @@ function QrPointFormModal({
               onChange={(event) => setField("sucursalId", event.target.value)}
               className="h-11 w-full rounded-[14px] border-0 bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
             >
-              <option value="">Seleccionar sede</option>
+              <option value="">Seleccionar sucursal o sede</option>
               {branches.map((branch) => (
                 <option key={branch.id} value={branch.id}>
-                  {branch.nombre}
+                  {branch.nombre} · {branchTypeLabel(branch.tipo)}
                 </option>
               ))}
             </NativeSelect>
@@ -846,6 +851,12 @@ function validateForm(payload: QrPointPayload) {
 
 function formatCoordinate(value: number) {
   return value.toFixed(6);
+}
+
+function branchTypeLabel(tipo: Branch["tipo"]) {
+  if (tipo === "tienda") return "POS";
+  if (tipo === "almacen") return "Almacen";
+  return "Asistencia";
 }
 
 function InputField({
