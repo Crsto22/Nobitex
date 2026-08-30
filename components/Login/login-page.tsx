@@ -18,6 +18,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/auth-provider";
 import {
   consumeSessionExpired,
+  getSessionUser,
   ONBOARDING_TOKEN_STORAGE_KEY,
   ONBOARDING_USER_STORAGE_KEY,
 } from "@/lib/auth/session";
@@ -111,7 +112,7 @@ export function LoginPage() {
         description: "Inicio de sesion correcto.",
         variant: "success",
       });
-      router.replace("/dashboard");
+      router.replace(getPostLoginPath(response.usuario?.moduleKeys));
     } catch (error) {
       const errorCode =
         error instanceof ApiError &&
@@ -342,4 +343,20 @@ export function LoginPage() {
       )}
     </main>
   );
+}
+
+const posEntryModuleKeys = new Set([
+  "dashboard",
+  "ventas-pos",
+  "productos",
+  "caja",
+]);
+
+function getPostLoginPath(moduleKeys?: string[]) {
+  const keys = moduleKeys?.length
+    ? moduleKeys
+    : (getSessionUser()?.moduleKeys ?? []);
+  const hasAttendance = keys.some((key) => key.startsWith("asistencias-"));
+  const hasPos = keys.some((key) => posEntryModuleKeys.has(key));
+  return hasAttendance && !hasPos ? "/asistencias/dashboard" : "/dashboard";
 }

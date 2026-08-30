@@ -178,9 +178,13 @@ export function DashboardShell({
     ],
     [currentPlan?.effectiveModuleKeys, user?.moduleKeys],
   );
-  const hasPosSetupModules = allowedModuleKeys.some((key) =>
+  const hasAttendanceModules = allowedModuleKeys.some((key) =>
+    key.startsWith("asistencias-"),
+  );
+  const hasPosModules = allowedModuleKeys.some((key) =>
     ["dashboard", "ventas-pos", "productos", "caja"].includes(key),
   );
+  const attendanceOnly = hasAttendanceModules && !hasPosModules;
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
   const isPlatformRoute =
@@ -190,7 +194,7 @@ export function DashboardShell({
   const mustCompleteSetup =
     !isSuperAdmin &&
     !isExpired &&
-    hasPosSetupModules &&
+    hasPosModules &&
     Boolean(setupStatus?.requiresBranch);
   const canAccessTenantRoute =
     !currentModule ||
@@ -224,8 +228,12 @@ export function DashboardShell({
         ? "/onboarding"
         : isExpired
           ? isOwner
-            ? "/configuracion/plan"
+            ? attendanceOnly
+              ? "/asistencias/plan"
+              : "/configuracion/plan"
             : "/configuracion/mi-cuenta"
+          : attendanceOnly
+            ? "/asistencias/dashboard"
           : (sidebarModules.find(
               (module) =>
                 module.key === "mi-cuenta" ||
@@ -242,6 +250,7 @@ export function DashboardShell({
     isOwner,
     isSuperAdmin,
     mustCompleteSetup,
+    attendanceOnly,
     router,
     allowedModuleKeys,
   ]);
