@@ -132,7 +132,7 @@ export default function AsistenciasPuntosQrPage() {
     let isMounted = true;
 
     branchesApi
-      .findAll({ estado: "activo", limit: 100 })
+      .findAll({ estado: "activo", limit: 100, tipo: "asistencia" })
       .then((response) => {
         if (isMounted) setBranches(response.data);
       })
@@ -271,7 +271,7 @@ export default function AsistenciasPuntosQrPage() {
           />
           <MetricCard
             icon={<BuildingsIcon size={22} weight="fill" />}
-            label="Sucursales con QR"
+            label="Sedes con QR"
             value={meta.branchesWithQrTotal}
             tone="neutral"
           />
@@ -285,7 +285,7 @@ export default function AsistenciasPuntosQrPage() {
             />
             <input
               type="text"
-              placeholder="Buscar punto o sucursal..."
+              placeholder="Buscar punto o sede..."
               value={searchTerm}
               onChange={(event) => {
                 setSearchTerm(event.target.value);
@@ -343,7 +343,7 @@ export default function AsistenciasPuntosQrPage() {
                 No hay puntos QR
               </p>
               <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                Crea el primer punto QR enlazado a una sucursal.
+                Crea el primer punto QR enlazado a una sede.
               </p>
             </div>
           </div>
@@ -465,7 +465,7 @@ function QrPointRow({
 
       <div className="min-w-0">
         <p className="text-[10px] text-[var(--color-muted-foreground)]">
-          Sucursal
+          Sede
         </p>
         <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
           {point.sucursal.nombre}
@@ -640,7 +640,7 @@ function QrPointFormModal({
 
           <label className="block">
             <span className="mb-2 block text-sm font-circular-regular text-[#4e5671]">
-              Sucursal
+              Sede del QR
             </span>
             <NativeSelect
               value={form.sucursalId}
@@ -648,10 +648,10 @@ function QrPointFormModal({
               onChange={(event) => setField("sucursalId", event.target.value)}
               className="h-11 w-full rounded-[14px] border-0 bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
             >
-              <option value="">Seleccionar sucursal</option>
+              <option value="">Seleccionar sede</option>
               {branches.map((branch) => (
                 <option key={branch.id} value={branch.id}>
-                  {branch.nombre} ({branch.tipo})
+                  {branch.nombre}
                 </option>
               ))}
             </NativeSelect>

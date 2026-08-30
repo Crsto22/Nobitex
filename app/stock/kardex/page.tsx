@@ -118,7 +118,9 @@ export default function StockKardexPage() {
     branchesApi
       .findAll({ limit: 100, estado: "activo" })
       .then((response) => {
-        const activeBranches = response.data;
+        const activeBranches = response.data.filter(
+          (branch) => branch.tipo !== "asistencia",
+        );
         const principalBranch =
           activeBranches.find((branch) => branch.esPrincipal) ??
           activeBranches[0];

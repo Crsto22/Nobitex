@@ -347,12 +347,15 @@ export default function GuiasRemisionPage() {
       ])
         .then(([branchesResponse, driversResponse, vehiclesResponse]) => {
           if (!isMounted) return;
-          setBranches(branchesResponse.data);
+          const commercialBranches = branchesResponse.data.filter(
+            (branch) => branch.tipo !== "asistencia",
+          );
+          setBranches(commercialBranches);
           setConductores(driversResponse.data);
           setVehiculos(vehiclesResponse.data);
           const defaultBranch =
-            branchesResponse.data.find((branch) => branch.esPrincipal) ??
-            branchesResponse.data[0];
+            commercialBranches.find((branch) => branch.esPrincipal) ??
+            commercialBranches[0];
           setCreateForm((current) => ({
             ...current,
             sucursalId: current.sucursalId || defaultBranch?.id || "",

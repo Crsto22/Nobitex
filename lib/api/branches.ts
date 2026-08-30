@@ -1,6 +1,6 @@
 import { authFetch } from "@/lib/api/auth-fetch";
 
-export type BranchType = "tienda" | "almacen";
+export type BranchType = "tienda" | "almacen" | "asistencia";
 export type BranchStatus = "activo" | "inactivo";
 
 export type Branch = {
@@ -50,6 +50,7 @@ export type BranchesResponse = {
     inactiveTotal: number;
     storeTotal: number;
     warehouseTotal: number;
+    attendanceTotal: number;
   };
 };
 

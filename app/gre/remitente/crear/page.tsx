@@ -132,7 +132,9 @@ export default function CrearGuiaRemisionPage() {
       .then(([branchesResponse, driversResponse, vehiclesResponse]) => {
         if (!isMounted) return;
 
-        setBranches(branchesResponse.data);
+        setBranches(
+          branchesResponse.data.filter((branch) => branch.tipo !== "asistencia"),
+        );
         setConductores(driversResponse.data);
         setVehiculos(vehiclesResponse.data);
 

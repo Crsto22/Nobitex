@@ -36,7 +36,7 @@ export type PurchaseOrder = {
   id: string;
   publicId: string;
   proveedor: { id: string; ruc: string; razonSocial: string; displayName: string };
-  destino: { id: string; nombre: string; tipo: "tienda" | "almacen" };
+  destino: { id: string; nombre: string; tipo: "tienda" | "almacen" | "asistencia" };
   tipoComprobante: PurchaseDocumentType | null;
   fechaEmision: string | null;
   serie: string | null;

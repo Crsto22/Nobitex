@@ -11,12 +11,12 @@ export type AccountProfile = {
   roles: string[];
   moduleKeys: string[];
   sucursalId: string | null;
-  sucursalTipo: "tienda" | "almacen" | null;
+  sucursalTipo: "tienda" | "almacen" | "asistencia" | null;
   sucursal: {
     id: string;
     nombre: string;
     estado: "activo" | "inactivo";
-    tipo: "tienda" | "almacen";
+    tipo: "tienda" | "almacen" | "asistencia";
   } | null;
   visibilidadOperaciones: "propias" | "todas";
 };

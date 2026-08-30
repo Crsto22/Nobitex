@@ -121,7 +121,7 @@ export default function AsistenciasMarcajesPage() {
     let isMounted = true;
 
     Promise.all([
-      branchesApi.findAll({ estado: "activo", limit: 100 }),
+      branchesApi.findAll({ estado: "activo", limit: 100, tipo: "asistencia" }),
       shiftsApi.findAll({ estado: "activo", limit: 100 }),
       employeesApi.findAll({ estado: "activo", limit: 100 }),
     ])
@@ -262,9 +262,9 @@ export default function AsistenciasMarcajesPage() {
             value={selectedBranch}
             onChange={setSelectedBranch}
             searchable
-            placeholder="Todas las sucursales"
+            placeholder="Todas las sedes"
             options={[
-              { label: "Todas las sucursales", value: "todos" },
+              { label: "Todas las sedes", value: "todos" },
               ...branches.map((branch) => ({ label: branch.nombre, value: branch.id })),
             ]}
             className="min-w-0 lg:w-[180px]"
@@ -410,9 +410,9 @@ function ManualEntryModal({
             value={branchId}
             onChange={setBranchId}
             searchable
-            placeholder="Sin sucursal"
+            placeholder="Sin sede"
             options={[
-              { label: "Sin sucursal", value: "todos" },
+              { label: "Sin sede", value: "todos" },
               ...branches.map((branch) => ({
                 label: branch.nombre,
                 value: branch.id,

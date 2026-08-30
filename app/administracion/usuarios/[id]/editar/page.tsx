@@ -86,7 +86,9 @@ export default function EditarUsuarioPage() {
   useEffect(() => {
     branchesApi
       .findAll({ limit: 100, estado: "activo" })
-      .then((response) => setBranches(response.data))
+      .then((response) =>
+        setBranches(response.data.filter((branch) => branch.tipo !== "asistencia")),
+      )
       .catch(() => setBranches([]));
   }, []);
 

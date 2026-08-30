@@ -260,17 +260,20 @@ function CrearProductoPageContent() {
         estado: "activo",
       });
 
-      setCatalogBranches(response.data);
+      const stockBranches = response.data.filter(
+        (branch) => branch.tipo !== "asistencia",
+      );
+      setCatalogBranches(stockBranches);
       setSelectedStockBranches((current) => {
         if (current.length === 0) {
           return current;
         }
 
         const valid = current.filter((id) =>
-          response.data.some((branch) => branch.id === id),
+          stockBranches.some((branch) => branch.id === id),
         );
 
-        if (valid.length === 0 || valid.length >= response.data.length) {
+        if (valid.length === 0 || valid.length >= stockBranches.length) {
           return [];
         }
 

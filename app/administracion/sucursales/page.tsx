@@ -13,6 +13,7 @@ import {
   StarIcon,
   StorefrontIcon,
   TrashIcon,
+  UsersIcon,
   WarehouseIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react/ssr";
@@ -45,6 +46,12 @@ const typeConfig = {
     icon: WarehouseIcon,
     bg: "bg-[#f59e0b]/10",
     text: "text-[#d97706]",
+  },
+  asistencia: {
+    label: "Asistencia",
+    icon: UsersIcon,
+    bg: "bg-[#10b981]/10",
+    text: "text-[#059669]",
   },
 };
 
@@ -81,8 +88,9 @@ const ubigeos = peruUbigeos as PeruUbigeo[];
 
 const typeOptions: { label: string; value: TypeFilter }[] = [
   { label: "Todos", value: "todos" },
-  { label: "Tienda", value: "tienda" },
+  { label: "POS", value: "tienda" },
   { label: "Almacen", value: "almacen" },
+  { label: "Asistencia", value: "asistencia" },
 ];
 
 const statusOptions: { label: string; value: StatusFilter }[] = [
@@ -103,6 +111,7 @@ export default function SucursalesPage() {
     inactiveTotal: 0,
     storeTotal: 0,
     warehouseTotal: 0,
+    attendanceTotal: 0,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -370,7 +379,7 @@ export default function SucursalesPage() {
   return (
     <DashboardShell headerTitle="Sucursales">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-6">
           <MetricCard
             icon={<StorefrontIcon size={22} weight="fill" />}
             label="Total Sucursales"
@@ -394,6 +403,12 @@ export default function SucursalesPage() {
             label="Almacenes"
             value={meta.warehouseTotal}
             tone="warning"
+          />
+          <MetricCard
+            icon={<UsersIcon size={22} weight="fill" />}
+            label="Asistencia"
+            value={meta.attendanceTotal}
+            tone="success"
           />
           <MetricCard
             icon={<ReceiptIcon size={22} weight="fill" />}
@@ -494,7 +509,7 @@ export default function SucursalesPage() {
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                      <StorefrontIcon size={22} weight="fill" />
+                      <TypeIcon size={22} weight="fill" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2">
@@ -604,7 +619,7 @@ export default function SucursalesPage() {
                           <PencilSimpleIcon size={16} weight="bold" />
                           Editar sucursal
                         </button>
-                        {!branch.esPrincipal ? (
+                        {branch.tipo === "tienda" && !branch.esPrincipal ? (
                           <button
                             type="button"
                             onClick={() => void setAsPrincipal(branch)}
@@ -693,7 +708,7 @@ export default function SucursalesPage() {
         isOpen={modal.isOpen}
         onClose={closeModal}
         title={modal.editing ? "Editar sucursal" : "Nueva sucursal"}
-        description="Registra una tienda o almacen de la empresa."
+        description="Registra una tienda POS, almacen o sede de asistencia."
         size="lg"
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -712,18 +727,24 @@ export default function SucursalesPage() {
 
             <Select
               options={[
-                { label: "Tienda", value: "tienda" },
+                { label: "POS", value: "tienda" },
                 { label: "Almacen", value: "almacen" },
+                { label: "Asistencia", value: "asistencia" },
               ]}
               value={modal.form.tipo}
               onChange={(value) =>
                 setModal((prev) => ({ ...prev, form: { ...prev.form,
                   tipo: value as BranchType,
-                  esPrincipal: value === "tienda" ? prev.form.esPrincipal : false,
+                  esPrincipal:
+                    value === "tienda" ? prev.form.esPrincipal : false,
                   modoCajaHabilitado:
                     value === "tienda"
                       ? prev.form.modoCajaHabilitado
                       : false,
+                  codigoEstablecimientoSunat:
+                    value === "asistencia"
+                      ? ""
+                      : prev.form.codigoEstablecimientoSunat,
                 } }))
               }
               placeholder="Seleccionar tipo"
@@ -761,7 +782,7 @@ export default function SucursalesPage() {
               value={modal.form.codigoEstablecimientoSunat}
               placeholder="0001"
               maxLength={10}
-              disabled={isSubmitting}
+              disabled={isSubmitting || modal.form.tipo === "asistencia"}
               onChange={(value) =>
                 setModal((prev) => ({ ...prev, form: { ...prev.form, codigoEstablecimientoSunat: value, } }))
               }
@@ -796,7 +817,7 @@ export default function SucursalesPage() {
               onChange={(event) =>
                 setModal((prev) => ({ ...prev, form: { ...prev.form, esPrincipal: event.target.checked, } }))
               }
-              disabled={isSubmitting || modal.form.tipo === "almacen"}
+              disabled={isSubmitting || modal.form.tipo !== "tienda"}
               className="h-5 w-5 accent-[var(--color-primary)]"
             />
           </label>
@@ -804,7 +825,7 @@ export default function SucursalesPage() {
           <label
             className={cn(
               "flex items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold transition-colors",
-              modal.form.tipo === "almacen"
+              modal.form.tipo !== "tienda"
                 ? "cursor-not-allowed opacity-60"
                 : "cursor-pointer hover:bg-[var(--color-button-hover)]",
               modal.form.modoCajaHabilitado
@@ -827,7 +848,7 @@ export default function SucursalesPage() {
                       : false,
                 } }))
               }
-              disabled={isSubmitting || modal.form.tipo === "almacen"}
+              disabled={isSubmitting || modal.form.tipo !== "tienda"}
               className="h-5 w-5 accent-[var(--color-primary)]"
             />
           </label>
@@ -840,8 +861,10 @@ export default function SucursalesPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
                 {modal.form.tipo === "tienda" ? (
                   <StorefrontIcon size={22} weight="fill" />
-                ) : (
+                ) : modal.form.tipo === "almacen" ? (
                   <WarehouseIcon size={22} weight="fill" />
+                ) : (
+                  <UsersIcon size={22} weight="fill" />
                 )}
               </div>
               <div className="min-w-0">
@@ -855,7 +878,9 @@ export default function SucursalesPage() {
                 <p className="mt-1 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
                   {modal.form.tipo === "tienda" && modal.form.modoCajaHabilitado
                     ? "Caja activa para ventas"
-                    : "Caja no requerida"}
+                    : modal.form.tipo === "asistencia"
+                      ? "Sede solo para marcajes"
+                      : "Caja no requerida"}
                 </p>
               </div>
             </div>

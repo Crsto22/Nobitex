@@ -72,7 +72,7 @@ export default function AsistenciasDashboardPage() {
     let isMounted = true;
     const timeoutId = window.setTimeout(() => {
       branchesApi
-        .findAll({ limit: 100, estado: "activo" })
+        .findAll({ limit: 100, estado: "activo", tipo: "asistencia" })
         .then((response) => {
           if (!isMounted) return;
           setBranches(response.data);
@@ -574,7 +574,7 @@ function AttendanceByBranchChart({
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-circular-bold text-[var(--color-text)] text-fixed-lg">
-            Marcajes por sucursal
+            Marcajes por sede
           </h3>
           <p className="text-sm text-[var(--color-muted-foreground)]">
             Entradas y salidas registradas

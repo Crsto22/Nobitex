@@ -54,7 +54,7 @@ export default function HistorialMarcacionesPage() {
   useEffect(() => {
     let isMounted = true;
     branchesApi
-      .findAll({ estado: "activo", limit: 100 })
+      .findAll({ estado: "activo", limit: 100, tipo: "asistencia" })
       .then((response) => {
         if (isMounted) setBranches(response.data);
       })
@@ -145,9 +145,9 @@ export default function HistorialMarcacionesPage() {
               resetPage();
             }}
             searchable
-            placeholder="Todas las sucursales"
+            placeholder="Todas las sedes"
             options={[
-              { label: "Todas las sucursales", value: "todos" },
+              { label: "Todas las sedes", value: "todos" },
               ...branches.map((branch) => ({
                 label: branch.nombre,
                 value: branch.id,

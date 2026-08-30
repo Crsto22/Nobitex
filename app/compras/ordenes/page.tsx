@@ -42,7 +42,7 @@ export default function PurchaseOrdersPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
-    branchesApi.findAll({ page: 1, limit: 100, estado: "activo" }).then((result) => setBranches(result.data)).catch(() => setBranches([]));
+    branchesApi.findAll({ page: 1, limit: 100, estado: "activo" }).then((result) => setBranches(result.data.filter((branch) => branch.tipo !== "asistencia"))).catch(() => setBranches([]));
   }, []);
 
   const load = useCallback(async () => {

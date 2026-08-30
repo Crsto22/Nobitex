@@ -56,6 +56,7 @@ export default function AsistenciasConfiguracionPage() {
     inactiveTotal: 0,
     storeTotal: 0,
     warehouseTotal: 0,
+    attendanceTotal: 0,
   });
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -70,7 +71,12 @@ export default function AsistenciasConfiguracionPage() {
     setLoading(true);
     try {
       const [response] = await Promise.all([
-        branchesApi.findAll({ page, limit: pageSize, search, tipo: "tienda" }),
+        branchesApi.findAll({
+          page,
+          limit: pageSize,
+          search,
+          tipo: "asistencia",
+        }),
         refreshPlan(),
       ]);
       setBranches(response.data);
@@ -95,7 +101,7 @@ export default function AsistenciasConfiguracionPage() {
   }, [load]);
 
   const branchLimit = currentPlan?.effectiveLimits.branches ?? 0;
-  const branchUsage = currentPlan?.usage.branches ?? meta.storeTotal;
+  const branchUsage = meta.attendanceTotal;
   const remaining = Math.max(0, branchLimit - branchUsage);
   const districtOptions = useMemo(
     () =>
@@ -199,7 +205,7 @@ export default function AsistenciasConfiguracionPage() {
     <DashboardShell headerTitle="Configuración de asistencias">
       <main className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6 lg:py-5">
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Metric label="Sucursales" value={`${branchUsage} / ${branchLimit}`} />
+          <Metric label="Sedes" value={`${branchUsage} / ${branchLimit}`} />
           <Metric label="Disponibles" value={String(remaining)} />
           <Metric label="Activas" value={String(meta.activeTotal)} />
           <Metric label="Inactivas" value={String(meta.inactiveTotal)} />
@@ -217,7 +223,7 @@ export default function AsistenciasConfiguracionPage() {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Buscar sucursal, distrito o direccion..."
+              placeholder="Buscar sede, distrito o direccion..."
               className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </label>
@@ -227,7 +233,7 @@ export default function AsistenciasConfiguracionPage() {
             className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white"
           >
             <PlusIcon size={16} weight="bold" />
-            Nueva sucursal
+            Nueva sede
           </button>
         </section>
 
@@ -301,10 +307,10 @@ export default function AsistenciasConfiguracionPage() {
                 <StorefrontIcon size={24} weight="fill" />
               </span>
               <h2 className="mt-3 text-base font-circular-bold text-[var(--color-text)]">
-                Sin sucursales de asistencia
+                Sin sedes de asistencia
               </h2>
               <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                Crea una sucursal para enlazar tus puntos QR.
+                Crea una sede para enlazar tus puntos QR.
               </p>
             </div>
           </section>
@@ -343,8 +349,8 @@ export default function AsistenciasConfiguracionPage() {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editing ? "Editar sucursal" : "Nueva sucursal"}
-        description="Sucursal usada para marcajes y puntos QR."
+        title={editing ? "Editar sede" : "Nueva sede"}
+        description="Sede usada para marcajes y puntos QR."
         size="lg"
       >
         <form className="space-y-4" onSubmit={submit}>
@@ -503,7 +509,7 @@ function buildPayload(form: typeof emptyForm): BranchPayload | null {
   }
   return {
     nombre,
-    tipo: "tienda",
+    tipo: "asistencia",
     ubigeo,
     distrito,
     direccion,

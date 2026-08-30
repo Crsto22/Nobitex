@@ -51,7 +51,9 @@ export default function StockMovementsPage() {
   useEffect(() => {
     branchesApi
       .findAll({ page: 1, limit: 100 })
-      .then((result) => setBranches(result.data))
+      .then((result) =>
+        setBranches(result.data.filter((branch) => branch.tipo !== "asistencia")),
+      )
       .catch(() => setBranches([]));
   }, []);
 

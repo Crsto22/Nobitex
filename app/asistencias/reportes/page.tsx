@@ -100,7 +100,7 @@ export default function AsistenciasReportesPage() {
   useEffect(() => {
     let mounted = true;
     branchesApi
-      .findAll({ estado: "activo", limit: 100 })
+      .findAll({ estado: "activo", limit: 100, tipo: "asistencia" })
       .then((response) => {
         if (mounted) setBranches(response.data);
       })
@@ -275,8 +275,8 @@ export default function AsistenciasReportesPage() {
 
         <section className="grid gap-4 xl:grid-cols-2">
           <SimpleBarChart
-            title="Por sucursal"
-            description="Marcaciones agrupadas por tienda."
+            title="Por sede"
+            description="Marcaciones agrupadas por sede."
             data={current.attendanceByBranch.map((item) => ({
               label: item.name,
               value: item.value,
@@ -749,7 +749,7 @@ function toExportRow(entry: AttendanceTimeEntryHistoryItem) {
     Turno: entry.turno
       ? `${entry.turno.nombre} ${entry.turno.horaEntrada}-${entry.turno.horaSalida}`
       : "",
-    Sucursal: entry.sucursal?.nombre ?? "",
+    Sede: entry.sucursal?.nombre ?? "",
     "Punto QR": entry.puntoQr?.nombre ?? "",
   };
 }

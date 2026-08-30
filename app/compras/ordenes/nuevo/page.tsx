@@ -28,7 +28,7 @@ const documentOptions: Array<{ value: "" | PurchaseDocumentType; label: string }
 type Location = {
   id: string;
   nombre: string;
-  tipo: "tienda" | "almacen";
+  tipo: "tienda" | "almacen" | "asistencia";
   canUseAsOrigin: boolean;
 };
 
@@ -58,8 +58,13 @@ export default function NewPurchaseOrderPage() {
     stockApi
       .locations()
       .then((result) => {
-        setLocations(result);
-        if (result.length === 1) setDestinationId(result[0].id);
+        const commercialLocations = result.filter(
+          (location) => location.tipo !== "asistencia",
+        );
+        setLocations(commercialLocations);
+        if (commercialLocations.length === 1) {
+          setDestinationId(commercialLocations[0].id);
+        }
       })
       .catch(() => setLocations([]));
   }, []);

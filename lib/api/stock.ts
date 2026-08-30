@@ -47,7 +47,7 @@ export type StockKardexVariant = {
   stockTotal: number;
   stockSucursal: number | null;
   inventarios: Array<{
-    sucursal: { id: string; nombre: string; tipo: "tienda" | "almacen" };
+    sucursal: { id: string; nombre: string; tipo: "tienda" | "almacen" | "asistencia" };
     stockActual: number;
   }>;
 };
@@ -69,7 +69,7 @@ export type StockMovement = {
   referenciaTipo: string | null;
   referenciaId: string | null;
   traspasoPublicId: string | null;
-  sucursal: { id: string; nombre: string; tipo: "tienda" | "almacen" };
+  sucursal: { id: string; nombre: string; tipo: "tienda" | "almacen" | "asistencia" };
   producto: StockProduct;
   creadoPor: { id: string; nombre: string; apellido: string | null } | null;
   createdAt: string;
@@ -79,8 +79,8 @@ export type StockTransfer = {
   id: string;
   publicId: string;
   motivo: string;
-  origen: { id: string; nombre: string; tipo: "tienda" | "almacen" };
-  destino: { id: string; nombre: string; tipo: "tienda" | "almacen" };
+  origen: { id: string; nombre: string; tipo: "tienda" | "almacen" | "asistencia" };
+  destino: { id: string; nombre: string; tipo: "tienda" | "almacen" | "asistencia" };
   creadoPor: { id: string; nombre: string; apellido: string | null } | null;
   items: Array<{ id: string; cantidad: number; producto: StockProduct }>;
   cantidadTotal: number;
@@ -126,7 +126,7 @@ export const stockApi = {
       Array<{
         id: string;
         nombre: string;
-        tipo: "tienda" | "almacen";
+        tipo: "tienda" | "almacen" | "asistencia";
         canUseAsOrigin: boolean;
       }>
     >("/stock/locations");

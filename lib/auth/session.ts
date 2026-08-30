@@ -26,7 +26,7 @@ export type SessionUser = {
   planStartsAt?: string;
   planEndsAt?: string | null;
   sucursalId?: string | null;
-  sucursalTipo?: "tienda" | "almacen" | null;
+  sucursalTipo?: "tienda" | "almacen" | "asistencia" | null;
   visibilidadOperaciones?: "propias" | "todas";
 };
 
@@ -72,7 +72,7 @@ type JwtPayload = {
   planStartsAt?: string;
   planEndsAt?: string | null;
   sucursalId?: string | null;
-  sucursalTipo?: "tienda" | "almacen" | null;
+  sucursalTipo?: "tienda" | "almacen" | "asistencia" | null;
   visibilidadOperaciones?: "propias" | "todas";
   exp?: number;
 };

@@ -10,7 +10,7 @@ export type QrPoint = {
   sucursal: {
     id: string;
     nombre: string;
-    tipo: "tienda" | "almacen";
+    tipo: "tienda" | "almacen" | "asistencia";
     direccion: string;
     distrito: string;
   };

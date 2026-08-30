@@ -31,8 +31,11 @@ export default function NewStockMovementPage() {
     branchesApi
       .findAll({ page: 1, limit: 100, estado: "activo" })
       .then((result) => {
-        setBranches(result.data);
-        if (result.data.length === 1) setBranchId(result.data[0].id);
+        const stockBranches = result.data.filter(
+          (branch) => branch.tipo !== "asistencia",
+        );
+        setBranches(stockBranches);
+        if (stockBranches.length === 1) setBranchId(stockBranches[0].id);
       });
   }, []);
 
