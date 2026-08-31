@@ -8,36 +8,52 @@ import {
   CheckCircleIcon,
   MapPinIcon,
   PackageIcon,
+  QrCodeIcon,
+  StorefrontIcon,
   TagIcon,
   UsersIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
-import { branchesApi } from "@/lib/api/branches";
+import { UbigeoSelect } from "@/components/ui/ubigeo-select";
+import { branchesApi, type BranchType } from "@/lib/api/branches";
 import { brandsApi } from "@/lib/api/brands";
 import { categoriesApi } from "@/lib/api/categories";
+import {
+  plansApi,
+  type AttendancePricing,
+  type PlanDefinition,
+} from "@/lib/api/plans";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
+import { formatCurrency } from "@/lib/intl";
 import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
-import { UbigeoSelect } from "@/components/ui/ubigeo-select";
 
-type Step = 1 | 2 | 3;
+type OnboardingStage =
+  | "pos-plan"
+  | "attendance-plan"
+  | "branch"
+  | "catalog"
+  | "product";
 type CatalogKind = "category" | "brand";
 
 const initialBranch = {
   nombre: "",
-  tipo: "tienda" as const,
   ubigeo: "",
   distrito: "",
   direccion: "",
 };
+
+const includedAttendanceEmployees = 5;
+const includedAttendanceQrPoints = 1;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { showToast } = useSystemToast();
   const {
     user,
+    companyInfo,
     currentPlan,
     setupStatus,
     isLoading,
@@ -46,11 +62,16 @@ export default function OnboardingPage() {
     refreshSetupStatus,
     logout,
   } = useAuth();
-  const [step, setStep] = useState<Step>(1);
+  const [stage, setStage] = useState<OnboardingStage>("pos-plan");
   const [branchCreated, setBranchCreated] = useState(false);
   const [branch, setBranch] = useState(initialBranch);
   const [isSavingBranch, setIsSavingBranch] = useState(false);
   const [branchError, setBranchError] = useState("");
+  const [plans, setPlans] = useState<PlanDefinition[]>([]);
+  const [attendancePricing, setAttendancePricing] =
+    useState<AttendancePricing | null>(null);
+  const [requestedEmployees, setRequestedEmployees] = useState(0);
+  const [requestedQrPoints, setRequestedQrPoints] = useState(0);
   const [catalogValues, setCatalogValues] = useState({
     category: "",
     brand: "",
@@ -65,13 +86,49 @@ export default function OnboardingPage() {
 
   const isOwner = user?.roles.includes("OWNER") ?? false;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
+  const companyName =
+    companyInfo?.nombreComercial ?? user?.empresaNombreComercial ?? "Mi empresa";
   const moduleKeys = [
     ...(user?.moduleKeys ?? []),
     ...(currentPlan?.effectiveModuleKeys ?? []),
   ];
-  const { attendanceOnly } = getProductModeFromModuleKeys(moduleKeys);
+  const productMode = getProductModeFromModuleKeys(moduleKeys);
+  const flowKind = productMode.attendanceOnly
+    ? "attendance"
+    : productMode.both
+      ? "both"
+      : "pos";
+  const stageFlow = getStageFlow(flowKind);
+  const activeStage = stageFlow.includes(stage) ? stage : stageFlow[0];
+  const currentStep = Math.max(stageFlow.indexOf(activeStage) + 1, 1);
+  const branchType: BranchType = productMode.attendanceOnly
+    ? "asistencia"
+    : "tienda";
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
+
+  useEffect(() => {
+    let mounted = true;
+
+    void Promise.all([plansApi.findAll(), plansApi.attendancePricing()])
+      .then(([catalog, pricing]) => {
+        if (!mounted) return;
+        setPlans(catalog.filter(isPosPlan));
+        setAttendancePricing(pricing);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        showToast({
+          title: "No se pudo cargar planes",
+          description: "Podras continuar con la prueba y solicitar planes despues.",
+          variant: "error",
+        });
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [showToast]);
 
   useEffect(() => {
     if (isLoading || isSetupLoading) return;
@@ -86,22 +143,23 @@ export default function OnboardingPage() {
     if (isExpired) {
       router.replace(
         isOwner
-          ? attendanceOnly
+          ? productMode.attendanceOnly
             ? "/asistencias/plan"
             : "/configuracion/plan"
           : "/configuracion/mi-cuenta",
       );
       return;
     }
-    if (attendanceOnly) {
-      router.replace("/asistencias/configuracion");
-      return;
-    }
-    if (setupStatus && !setupStatus.requiresBranch && !branchCreated) {
+    if (
+      activeStage === "branch" &&
+      !productMode.attendanceOnly &&
+      setupStatus &&
+      !setupStatus.requiresBranch &&
+      !branchCreated
+    ) {
       router.replace("/dashboard");
     }
   }, [
-    attendanceOnly,
     branchCreated,
     isAuthenticated,
     isExpired,
@@ -109,8 +167,10 @@ export default function OnboardingPage() {
     isOwner,
     isSetupLoading,
     isSuperAdmin,
+    productMode.attendanceOnly,
     router,
     setupStatus,
+    activeStage,
   ]);
 
   if (isLoading || isSetupLoading || !isAuthenticated) {
@@ -139,6 +199,14 @@ export default function OnboardingPage() {
     );
   }
 
+  const goAfterPosPlan = () => {
+    setStage(flowKind === "both" ? "attendance-plan" : "branch");
+  };
+
+  const goAfterAttendancePlan = () => {
+    setStage("branch");
+  };
+
   const createBranch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBranchError("");
@@ -152,19 +220,28 @@ export default function OnboardingPage() {
     try {
       await branchesApi.create({
         ...branch,
+        tipo: branchType,
         nombre: branch.nombre.trim(),
         direccion: branch.direccion.trim(),
         estado: "activo",
-        esPrincipal: true,
+        esPrincipal: branchType === "tienda",
+        modoCajaHabilitado: false,
       });
       setBranchCreated(true);
-      setStep(2);
       await refreshSetupStatus();
       showToast({
-        title: "Sucursal creada",
-        description: "Tu empresa ya tiene una sucursal principal.",
+        title: branchType === "asistencia" ? "Sede creada" : "Sucursal creada",
+        description:
+          branchType === "asistencia"
+            ? "Ya puedes usar el dashboard de asistencias."
+            : "Tu empresa ya tiene una sucursal principal.",
         variant: "success",
       });
+      if (productMode.attendanceOnly) {
+        router.replace("/asistencias/dashboard");
+        return;
+      }
+      setStage("catalog");
     } catch (error) {
       setBranchError(
         error instanceof Error
@@ -223,13 +300,13 @@ export default function OnboardingPage() {
             priority
           />
           <div className="flex items-center gap-2">
-            {[1, 2, 3].map((item) => (
+            {stageFlow.map((item, index) => (
               <span
                 key={item}
                 className={`h-2.5 rounded-full transition-colors ${
-                  step === item
+                  activeStage === item
                     ? "w-8 bg-[var(--color-primary)]"
-                    : item < step
+                    : index < currentStep - 1
                       ? "w-2.5 bg-[#18b981]"
                       : "w-2.5 bg-[var(--color-border)]"
                 }`}
@@ -242,7 +319,7 @@ export default function OnboardingPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-circular-bold text-[var(--color-primary)]">
-                Paso {step} de 3
+                Paso {currentStep} de {stageFlow.length}
               </p>
               <h1 className="mt-1 text-2xl font-circular-bold text-[var(--color-text)] sm:text-3xl text-fixed-2xl">
                 Bienvenido, {getUserDisplayName(user)}
@@ -255,31 +332,63 @@ export default function OnboardingPage() {
           </div>
         </section>
 
-        {step === 1 ? (
+        {activeStage === "pos-plan" ? (
+          <PosPlanStep
+            plans={plans}
+            companyName={companyName}
+            onUseTrial={goAfterPosPlan}
+          />
+        ) : null}
+
+        {activeStage === "attendance-plan" ? (
+          <AttendancePlanStep
+            companyName={companyName}
+            pricing={attendancePricing}
+            employees={requestedEmployees}
+            qrPoints={requestedQrPoints}
+            onEmployeesChange={setRequestedEmployees}
+            onQrPointsChange={setRequestedQrPoints}
+            onUseTrial={goAfterAttendancePlan}
+          />
+        ) : null}
+
+        {activeStage === "branch" ? (
           <form
             onSubmit={createBranch}
             className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6"
           >
             <SectionTitle
               icon={<BuildingsIcon size={22} weight="fill" />}
-              title="Registra tu primera sucursal"
+              title={
+                branchType === "asistencia"
+                  ? "Crea tu primera sede de asistencia"
+                  : "Registra tu primera sucursal"
+              }
               badge="Obligatorio"
             />
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <Field
-                label="Nombre de la sucursal"
+                label={
+                  branchType === "asistencia"
+                    ? "Nombre de la sede"
+                    : "Nombre de la sucursal"
+                }
                 value={branch.nombre}
-                placeholder="Sucursal principal"
+                placeholder={
+                  branchType === "asistencia"
+                    ? "Sede principal"
+                    : "Sucursal principal"
+                }
                 onChange={(value) =>
                   setBranch((current) => ({ ...current, nombre: value }))
                 }
               />
               <div className="block">
                 <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
-                  Tipo de sucursal
+                  Tipo
                 </span>
                 <span className="flex h-11 w-full items-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)]">
-                  Tienda
+                  {branchType === "asistencia" ? "Asistencia" : "Tienda POS"}
                 </span>
               </div>
               <UbigeoSelect
@@ -307,13 +416,13 @@ export default function OnboardingPage() {
             ) : null}
             <div className="mt-6 flex justify-end">
               <PrimaryButton disabled={isSavingBranch}>
-                {isSavingBranch ? "Creando sucursal..." : "Crear y continuar"}
+                {isSavingBranch ? "Creando..." : "Crear y continuar"}
               </PrimaryButton>
             </div>
           </form>
         ) : null}
 
-        {step === 2 ? (
+        {activeStage === "catalog" ? (
           <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
             <SectionTitle
               icon={<PackageIcon size={22} weight="fill" />}
@@ -350,19 +459,19 @@ export default function OnboardingPage() {
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setStep(3)}
+                onClick={() => setStage("product")}
                 className="h-11 rounded-[14px] px-5 text-sm font-circular-bold text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]"
               >
                 Omitir por ahora
               </button>
-              <PrimaryButton type="button" onClick={() => setStep(3)}>
+              <PrimaryButton type="button" onClick={() => setStage("product")}>
                 Continuar
               </PrimaryButton>
             </div>
           </section>
         ) : null}
 
-        {step === 3 ? (
+        {activeStage === "product" ? (
           <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-6 text-center shadow-sm sm:p-10">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#e8f1ff] text-[#2563eb]">
               <PackageIcon size={28} weight="fill" />
@@ -413,6 +522,261 @@ export default function OnboardingPage() {
         }
       `}</style>
     </main>
+  );
+}
+
+function PosPlanStep({
+  plans,
+  companyName,
+  onUseTrial,
+}: {
+  plans: PlanDefinition[];
+  companyName?: string | null;
+  onUseTrial: () => void;
+}) {
+  return (
+    <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
+      <SectionTitle
+        icon={<StorefrontIcon size={22} weight="fill" />}
+        title="Elige tu plan POS"
+        badge="Primer paso"
+      />
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <PlanChoiceCard
+          title="Prueba gratis 7 dias"
+          price="S/ 0.00"
+          items={["Ventas, caja y stock", "Uso inicial por 7 dias"]}
+          action={
+            <PrimaryButton type="button" onClick={onUseTrial}>
+              Usar prueba gratis
+            </PrimaryButton>
+          }
+        />
+        {plans.map((plan) => (
+          <PlanChoiceCard
+            key={plan.code}
+            title={plan.name}
+            price={formatCurrency(plan.priceMonthly)}
+            items={
+              plan.highlights.length
+                ? plan.highlights.slice(0, 3)
+                : ["Plan POS mensual"]
+            }
+            action={
+              <WhatsAppButton
+                href={buildWhatsAppUrl([
+                  "Hola, quiero solicitar un plan POS para Nuvex.",
+                  `Empresa: ${companyName ?? "-"}`,
+                  `Plan: ${plan.name}`,
+                  `Precio mensual: ${formatCurrency(plan.priceMonthly)}`,
+                ])}
+              />
+            }
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AttendancePlanStep({
+  companyName,
+  pricing,
+  employees,
+  qrPoints,
+  onEmployeesChange,
+  onQrPointsChange,
+  onUseTrial,
+}: {
+  companyName?: string | null;
+  pricing: AttendancePricing | null;
+  employees: number;
+  qrPoints: number;
+  onEmployeesChange: (value: number) => void;
+  onQrPointsChange: (value: number) => void;
+  onUseTrial: () => void;
+}) {
+  const employeePrice = Number(pricing?.employeeUnitPrice ?? 0);
+  const qrPrice = Number(pricing?.qrPointUnitPrice ?? 0);
+  const total = employees * employeePrice + qrPoints * qrPrice;
+
+  return (
+    <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
+      <SectionTitle
+        icon={<QrCodeIcon size={22} weight="fill" />}
+        title="Elige tu plan de asistencias"
+        badge="Asistencias"
+      />
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <PlanChoiceCard
+          title="Prueba gratis 7 dias"
+          price="S/ 0.00"
+          items={[
+            `${includedAttendanceEmployees} trabajadores incluidos`,
+            `${includedAttendanceQrPoints} punto QR incluido`,
+          ]}
+          action={
+            <PrimaryButton type="button" onClick={onUseTrial}>
+              Usar prueba gratis
+            </PrimaryButton>
+          }
+        />
+
+        <div className="rounded-[8px] bg-[var(--color-input-bg)] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-circular-bold text-[var(--color-text)]">
+                Solicitar mayor capacidad
+              </h3>
+              <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+                Puedes seguir con la prueba mientras atendemos tu solicitud.
+              </p>
+            </div>
+            <span className="text-xl font-circular-bold text-[var(--color-primary)]">
+              {formatCurrency(total)}
+            </span>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <QuantityInput
+              label="Trabajadores"
+              value={employees}
+              onChange={onEmployeesChange}
+            />
+            <QuantityInput
+              label="Puntos QR"
+              value={qrPoints}
+              onChange={onQrPointsChange}
+            />
+          </div>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Las sedes incluidas seran iguales a los puntos QR solicitados.
+            </p>
+            <WhatsAppButton
+              disabled={total <= 0}
+              href={buildWhatsAppUrl([
+                "Hola, quiero solicitar un plan de asistencias para Nuvex.",
+                `Empresa: ${companyName ?? "-"}`,
+                `Agregar trabajadores: ${employees}`,
+                `Agregar puntos QR: ${qrPoints}`,
+                `Sedes incluidas por puntos QR: ${qrPoints}`,
+                `Total mensual estimado: ${formatCurrency(total)}`,
+              ])}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function QuantityInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const update = (next: number) => onChange(Math.max(0, next));
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
+        {label}
+      </span>
+      <span className="flex h-11 overflow-hidden rounded-[14px] bg-[var(--color-card)]">
+        <button
+          type="button"
+          onClick={() => update(value - 1)}
+          className="w-11 text-lg font-circular-bold text-[var(--color-primary)] hover:bg-[var(--color-button-hover)]"
+        >
+          -
+        </button>
+        <input
+          type="number"
+          min={0}
+          value={value}
+          onChange={(event) => update(Number(event.target.value))}
+          className="min-w-0 flex-1 border-0 bg-transparent text-center text-sm font-circular-bold text-[var(--color-text)] outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => update(value + 1)}
+          className="w-11 text-lg font-circular-bold text-[var(--color-primary)] hover:bg-[var(--color-button-hover)]"
+        >
+          +
+        </button>
+      </span>
+    </label>
+  );
+}
+
+function PlanChoiceCard({
+  title,
+  price,
+  items,
+  action,
+}: {
+  title: string;
+  price: string;
+  items: string[];
+  action: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-[220px] flex-col rounded-[8px] bg-[var(--color-input-bg)] p-4">
+      <h3 className="text-lg font-circular-bold text-[var(--color-text)]">
+        {title}
+      </h3>
+      <p className="mt-2 text-2xl font-circular-bold text-[var(--color-primary)]">
+        {price}
+      </p>
+      <div className="mt-4 space-y-2 text-sm text-[var(--color-muted-foreground)]">
+        {items.map((item) => (
+          <p key={item} className="flex items-center gap-2">
+            <CheckCircleIcon
+              size={16}
+              weight="fill"
+              className="text-[#10b981]"
+            />
+            {item}
+          </p>
+        ))}
+      </div>
+      <div className="mt-auto pt-5">{action}</div>
+    </div>
+  );
+}
+
+function WhatsAppButton({
+  href,
+  disabled,
+}: {
+  href: string;
+  disabled?: boolean;
+}) {
+  return (
+    <a
+      href={disabled ? undefined : href}
+      target="_blank"
+      rel="noreferrer"
+      aria-disabled={disabled}
+      className={`inline-flex h-11 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-circular-bold text-white ${
+        disabled
+          ? "pointer-events-none bg-[#94a3b8]"
+          : "bg-[#16a34a] hover:bg-[#15803d]"
+      }`}
+    >
+      <Image
+        src="/svg/redes-sociales/whatsapp.svg"
+        alt=""
+        width={18}
+        height={18}
+        className="h-4 w-4"
+      />
+      Solicitar por WhatsApp
+    </a>
   );
 }
 
@@ -592,4 +956,33 @@ function CenteredState({
       </div>
     </main>
   );
+}
+
+function getStageFlow(kind: "pos" | "attendance" | "both"): OnboardingStage[] {
+  if (kind === "attendance") return ["attendance-plan", "branch"];
+  if (kind === "both") {
+    return ["pos-plan", "attendance-plan", "branch", "catalog", "product"];
+  }
+  return ["pos-plan", "branch", "catalog", "product"];
+}
+
+function isPosPlan(plan: PlanDefinition) {
+  return ![
+    "prueba",
+    "asistencias_basico",
+    "asistencias_pro",
+    "completo_emprende",
+    "completo_empresa",
+  ].includes(plan.code);
+}
+
+function buildWhatsAppUrl(lines: string[]) {
+  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+    /\D/g,
+    "",
+  );
+  const text = encodeURIComponent(lines.filter(Boolean).join("\n"));
+  return phone
+    ? `https://wa.me/${phone}?text=${text}`
+    : `https://api.whatsapp.com/send?text=${text}`;
 }

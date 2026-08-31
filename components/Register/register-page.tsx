@@ -103,7 +103,7 @@ const productModeOptions = [
   {
     value: "attendance",
     label: "Asistencias",
-    description: "5 trabajadores y 1 QR gratis por 7 dias",
+    description: "Marcajes, trabajadores y puntos QR",
     icon: QrCodeIcon,
   },
   {
@@ -250,11 +250,7 @@ export function RegisterPage() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      router.push(
-        companyData.productMode === "attendance"
-          ? "/asistencias/configuracion"
-          : "/onboarding",
-      );
+      router.push("/onboarding");
     }, 900);
 
     return () => window.clearTimeout(timeoutId);
@@ -768,9 +764,7 @@ export function RegisterPage() {
                         }
                         className="h-11 flex-1 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"
                       >
-                        {isSubmitting
-                          ? "Creando empresa..."
-                          : "Crear tu cuenta gratis 7 dias"}
+                        {isSubmitting ? "Creando empresa..." : "Crear cuenta"}
                       </Button>
                     )}
                   </div>
@@ -893,7 +887,7 @@ function getActivationItems(productMode: ProductMode) {
       "Registrando empresa",
       "Activando asistencias",
       "Preparando trabajadores",
-      "Configurando punto QR gratis",
+      "Configurando punto QR",
       "Preparando acceso",
     ];
   }
