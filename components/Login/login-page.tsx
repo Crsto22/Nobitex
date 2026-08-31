@@ -22,6 +22,7 @@ import {
   ONBOARDING_TOKEN_STORAGE_KEY,
   ONBOARDING_USER_STORAGE_KEY,
 } from "@/lib/auth/session";
+import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 
 export function LoginPage() {
   const router = useRouter();
@@ -345,18 +346,11 @@ export function LoginPage() {
   );
 }
 
-const posEntryModuleKeys = new Set([
-  "dashboard",
-  "ventas-pos",
-  "productos",
-  "caja",
-]);
-
 function getPostLoginPath(moduleKeys?: string[]) {
   const keys = moduleKeys?.length
     ? moduleKeys
     : (getSessionUser()?.moduleKeys ?? []);
-  const hasAttendance = keys.some((key) => key.startsWith("asistencias-"));
-  const hasPos = keys.some((key) => posEntryModuleKeys.has(key));
-  return hasAttendance && !hasPos ? "/asistencias/dashboard" : "/dashboard";
+  return getProductModeFromModuleKeys(keys).attendanceOnly
+    ? "/asistencias/dashboard"
+    : "/dashboard";
 }

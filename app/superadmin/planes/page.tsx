@@ -127,11 +127,11 @@ export default function PlatformPlansPage() {
     try {
       const [catalog, dashboardResponse, overageResponse, attendanceResponse] =
         await Promise.all([
-        platformAdminApi.findPlanPricing(),
-        platformAdminApi.getDashboard(),
-        platformAdminApi.getOveragePricing(),
-        platformAdminApi.getAttendancePricing(),
-      ]);
+          platformAdminApi.findPlanPricing(),
+          platformAdminApi.getDashboard(),
+          platformAdminApi.getOveragePricing(),
+          platformAdminApi.getAttendancePricing(),
+        ]);
       setPlans(catalog);
       setDashboard(dashboardResponse);
       setOveragePricing(overageResponse);
@@ -307,56 +307,62 @@ export default function PlatformPlansPage() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-2">
-        {overagePricing ? (
-          <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f59e0b]/10 text-[#d97706]">
-                <FileTextIcon size={21} weight="fill" />
-              </span>
-              <div>
-                <p className="font-circular-bold text-[var(--color-text)]">
-                  Comprobante adicional
-                </p>
-                <p className="text-sm text-[var(--color-muted-foreground)]">
-                  Tarifa global: {formatCurrency(overagePricing.unitPrice)} por
-                  unidad · IGV incluido
-                </p>
+          {overagePricing ? (
+            <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f59e0b]/10 text-[#d97706]">
+                  <FileTextIcon size={21} weight="fill" />
+                </span>
+                <div>
+                  <p className="font-circular-bold text-[var(--color-text)]">
+                    Comprobante adicional
+                  </p>
+                  <p className="text-sm text-[var(--color-muted-foreground)]">
+                    Tarifa global: {formatCurrency(overagePricing.unitPrice)}{" "}
+                    por unidad · IGV incluido
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setEditingOverage(true)}
+                className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]"
+              >
+                <PencilSimpleIcon size={16} weight="bold" /> Editar tarifa
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setEditingOverage(true)}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]"
-            >
-              <PencilSimpleIcon size={16} weight="bold" /> Editar tarifa
-            </button>
-          </div>
-        ) : null}
-        {attendancePricing ? (
-          <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#14b8a6]/10 text-[#0f766e]">
-                <QrCodeIcon size={21} weight="fill" />
-              </span>
-              <div>
-                <p className="font-circular-bold text-[var(--color-text)]">
-                  Asistencias
-                </p>
-                <p className="text-sm text-[var(--color-muted-foreground)]">
-                  {formatCurrency(attendancePricing.employeeUnitPrice)} por trabajador ·{" "}
-                  {formatCurrency(attendancePricing.qrPointUnitPrice)} por punto QR
-                </p>
+          ) : null}
+          {attendancePricing ? (
+            <div className="flex flex-col gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#14b8a6]/10 text-[#0f766e]">
+                  <QrCodeIcon size={21} weight="fill" />
+                </span>
+                <div>
+                  <p className="font-circular-bold text-[var(--color-text)]">
+                    Asistencias
+                  </p>
+                  <p className="text-sm text-[var(--color-muted-foreground)]">
+                    {formatCurrency(attendancePricing.employeeUnitPrice)} por
+                    trabajador ·{" "}
+                    {formatCurrency(attendancePricing.qrPointUnitPrice)} por
+                    punto QR
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+                    Oferta anual:{" "}
+                    {formatPercent(attendancePricing.annualDiscountPercent)}
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setEditingAttendance(true)}
+                className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]"
+              >
+                <PencilSimpleIcon size={16} weight="bold" /> Editar tarifa
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setEditingAttendance(true)}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)]"
-            >
-              <PencilSimpleIcon size={16} weight="bold" /> Editar tarifa
-            </button>
-          </div>
-        ) : null}
+          ) : null}
         </section>
 
         {error ? (
@@ -451,7 +457,8 @@ export default function PlatformPlansPage() {
                 await loadPlans();
                 showToast({
                   title: "Tarifa actualizada",
-                  description: "El cotizador de Asistencias ya usa los nuevos precios.",
+                  description:
+                    "El cotizador de Asistencias ya usa los nuevos precios.",
                   variant: "success",
                 });
               } catch (requestError) {
@@ -573,6 +580,7 @@ function AttendancePricingModal({
   onSubmit: (payload: {
     employeeUnitPrice: string;
     qrPointUnitPrice: string;
+    annualDiscountPercent: string;
   }) => Promise<void>;
 }) {
   const [employeeUnitPrice, setEmployeeUnitPrice] = useState(
@@ -581,10 +589,19 @@ function AttendancePricingModal({
   const [qrPointUnitPrice, setQrPointUnitPrice] = useState(
     pricing.qrPointUnitPrice,
   );
-  const valid = [employeeUnitPrice, qrPointUnitPrice].every((value) => {
+  const [annualDiscountPercent, setAnnualDiscountPercent] = useState(
+    pricing.annualDiscountPercent,
+  );
+  const validPrices = [employeeUnitPrice, qrPointUnitPrice].every((value) => {
     const number = Number(value);
     return Number.isFinite(number) && number >= 0 && number <= 999999999.99;
   });
+  const annualDiscountValue = Number(annualDiscountPercent);
+  const valid =
+    validPrices &&
+    Number.isFinite(annualDiscountValue) &&
+    annualDiscountValue >= 0 &&
+    annualDiscountValue <= 100;
   return (
     <div
       role="dialog"
@@ -599,6 +616,7 @@ function AttendancePricingModal({
           void onSubmit({
             employeeUnitPrice: Number(employeeUnitPrice).toFixed(2),
             qrPointUnitPrice: Number(qrPointUnitPrice).toFixed(2),
+            annualDiscountPercent: annualDiscountValue.toFixed(2),
           });
         }}
         className="w-full max-w-md rounded-t-2xl bg-[var(--color-card)] p-5 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-2 duration-200 sm:rounded-2xl"
@@ -633,6 +651,21 @@ function AttendancePricingModal({
             value={qrPointUnitPrice}
             onChange={setQrPointUnitPrice}
           />
+          <label className="grid gap-1.5 text-sm text-[var(--color-text)]">
+            <span className="font-circular-bold">
+              Oferta anual de asistencias (%)
+            </span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              required
+              value={annualDiscountPercent}
+              onChange={(event) => setAnnualDiscountPercent(event.target.value)}
+              className="h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 outline-none focus:border-[var(--color-primary)]"
+            />
+          </label>
         </div>
 
         <div className="mt-5 flex justify-end gap-3">

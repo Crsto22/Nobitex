@@ -19,6 +19,7 @@ import { brandsApi } from "@/lib/api/brands";
 import { categoriesApi } from "@/lib/api/categories";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
+import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 import { UbigeoSelect } from "@/components/ui/ubigeo-select";
 
 type Step = 1 | 2 | 3;
@@ -68,13 +69,7 @@ export default function OnboardingPage() {
     ...(user?.moduleKeys ?? []),
     ...(currentPlan?.effectiveModuleKeys ?? []),
   ];
-  const hasAttendanceModules = moduleKeys.some((key) =>
-    key.startsWith("asistencias-"),
-  );
-  const hasPosModules = moduleKeys.some((key) =>
-    ["dashboard", "ventas-pos", "productos", "caja"].includes(key),
-  );
-  const attendanceOnly = hasAttendanceModules && !hasPosModules;
+  const { attendanceOnly } = getProductModeFromModuleKeys(moduleKeys);
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
 
@@ -90,7 +85,11 @@ export default function OnboardingPage() {
     }
     if (isExpired) {
       router.replace(
-        isOwner ? "/configuracion/plan" : "/configuracion/mi-cuenta",
+        isOwner
+          ? attendanceOnly
+            ? "/asistencias/plan"
+            : "/configuracion/plan"
+          : "/configuracion/mi-cuenta",
       );
       return;
     }

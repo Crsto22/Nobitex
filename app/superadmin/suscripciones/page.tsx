@@ -597,8 +597,9 @@ function SubscriptionCompanyRow({
   menuOpen: boolean;
   onToggleMenu: () => void;
 }) {
+  const attendance = company.attendance;
   return (
-    <article className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.4fr)_minmax(150px,1.1fr)_minmax(125px,0.9fr)_minmax(150px,1fr)_minmax(120px,0.8fr)_32px] md:items-center">
+    <article className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(125px,0.8fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(120px,0.8fr)_32px] md:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-white">
           <StorefrontIcon size={21} weight="fill" />
@@ -626,6 +627,24 @@ function SubscriptionCompanyRow({
         <p className="text-xs text-[var(--color-muted-foreground)]">
           {getRemainingLabel(company.endsAt, company.planStatus)}
         </p>
+      </div>
+      <div className="space-y-1">
+        <CompanyAttendanceBadge company={company} />
+        {attendance?.active ? (
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            {attendance.employeesLimit} trabajadores ·{" "}
+            {attendance.qrPointsLimit} QR
+          </p>
+        ) : (
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Sin límites de asistencia
+          </p>
+        )}
+        {attendance?.endsAt ? (
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Vence {formatDate(attendance.endsAt)}
+          </p>
+        ) : null}
       </div>
       <div>
         <CompanyStateBadge state={company.state} />
@@ -662,6 +681,35 @@ function SubscriptionCompanyRow({
         ) : null}
       </div>
     </article>
+  );
+}
+
+function CompanyAttendanceBadge({ company }: { company: PlatformCompany }) {
+  const attendance = company.attendance;
+  const expired = Boolean(attendance?.active && !attendance.effectiveActive);
+  const label = !attendance?.active
+    ? "Sin asistencias"
+    : expired
+      ? "Asistencias vencida"
+      : attendance.trial
+        ? "Asistencias prueba"
+        : "Asistencias activa";
+  const className = !attendance?.active
+    ? "bg-slate-500/10 text-slate-600"
+    : expired
+      ? "bg-red-500/10 text-red-600"
+      : attendance.trial
+        ? "bg-amber-500/10 text-amber-700"
+        : "bg-emerald-500/10 text-emerald-700";
+  return (
+    <span
+      className={cn(
+        "inline-flex h-7 items-center rounded-full px-3 text-xs font-circular-bold",
+        className,
+      )}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -845,8 +893,7 @@ function AttendanceSubscriptionsPanel({
           onChange={(event) =>
             onStatusChange(
               event.target.value as
-                | Exclude<PlatformAttendanceSubscriptionStatus, "vencida">
-                | "",
+                Exclude<PlatformAttendanceSubscriptionStatus, "vencida"> | "",
             )
           }
           className={controlClassName}

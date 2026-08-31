@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   ArrowRightIcon,
@@ -23,10 +23,13 @@ const resourceLabels: Record<string, string> = {
   documents: "comprobantes",
   documentQueries: "consultas DNI/RUC",
   storageBytes: "almacenamiento de imágenes",
+  attendanceEmployees: "trabajadores",
+  attendanceQrPoints: "puntos QR",
 };
 
 export function PlanLimitAlert() {
   const router = useRouter();
+  const pathname = usePathname();
   const actionRef = useRef<HTMLButtonElement>(null);
   const [detail, setDetail] = useState<PlanLimitReachedDetail | null>(null);
 
@@ -35,7 +38,8 @@ export function PlanLimitAlert() {
       setDetail((event as CustomEvent<PlanLimitReachedDetail>).detail);
     };
     window.addEventListener(planLimitReachedEventName, handleLimit);
-    return () => window.removeEventListener(planLimitReachedEventName, handleLimit);
+    return () =>
+      window.removeEventListener(planLimitReachedEventName, handleLimit);
   }, []);
 
   useEffect(() => {
@@ -51,10 +55,17 @@ export function PlanLimitAlert() {
   if (!detail) return null;
 
   const resource = detail.resource
-    ? resourceLabels[detail.resource] ?? detail.resource
+    ? (resourceLabels[detail.resource] ?? detail.resource)
     : null;
   const hasUsage =
     typeof detail.used === "number" && typeof detail.limit === "number";
+  const attendanceResource =
+    detail.resource === "attendanceEmployees" ||
+    detail.resource === "attendanceQrPoints";
+  const planRoute =
+    pathname.startsWith("/asistencias") || attendanceResource
+      ? "/asistencias/plan"
+      : "/configuracion/plan";
 
   return createPortal(
     <div className="fixed inset-0 isolate z-[2147483647] flex items-end justify-center bg-black/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
@@ -98,7 +109,9 @@ export function PlanLimitAlert() {
         {hasUsage ? (
           <div className="mt-5 rounded-[12px] bg-[var(--color-input-bg)] p-4">
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-[var(--color-muted-foreground)]">Uso actual</span>
+              <span className="text-[var(--color-muted-foreground)]">
+                Uso actual
+              </span>
               <strong className="font-circular-bold text-[var(--color-text)]">
                 {formatValue(detail.used!, detail.resource)} de{" "}
                 {formatValue(detail.limit!, detail.resource)}
@@ -123,7 +136,7 @@ export function PlanLimitAlert() {
             type="button"
             onClick={() => {
               setDetail(null);
-              router.push("/configuracion/plan");
+              router.push(planRoute);
             }}
             className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white"
           >

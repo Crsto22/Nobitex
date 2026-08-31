@@ -75,6 +75,10 @@ export default function RenewSubscriptionPage() {
   const [receiptType, setReceiptType] = useState<
     "nota_venta" | "boleta" | "factura"
   >("nota_venta");
+  const [manualDiscountType, setManualDiscountType] = useState<
+    "none" | "percent" | "fixed"
+  >("none");
+  const [manualDiscountValue, setManualDiscountValue] = useState("");
   const [affiliateCode, setAffiliateCode] = useState("");
   const [affiliateInfo, setAffiliateInfo] = useState<null | {
     code: string;
@@ -182,15 +186,26 @@ export default function RenewSubscriptionPage() {
     const monthly =
       attendanceEmployees * Number(attendancePricing?.employeeUnitPrice ?? 0) +
       attendanceQrPoints * Number(attendancePricing?.qrPointUnitPrice ?? 0);
+    const list = monthly * attendanceMonths;
+    const annualDiscountPercent =
+      attendanceMonths === 12
+        ? Number(attendancePricing?.annualDiscountPercent ?? 0)
+        : 0;
+    const annualDiscount =
+      Math.round(list * (annualDiscountPercent / 100) * 100) / 100;
     return {
       monthly,
-      total: monthly * attendanceMonths,
+      list,
+      annualDiscountPercent,
+      annualDiscount,
+      total: list - annualDiscount,
       startsAt: new Date(),
       endsAt: addMonthsClamped(new Date(), attendanceMonths),
     };
   }, [
     attendanceEmployees,
     attendanceMonths,
+    attendancePricing?.annualDiscountPercent,
     attendancePricing?.employeeUnitPrice,
     attendancePricing?.qrPointUnitPrice,
     attendanceQrPoints,
@@ -199,15 +214,24 @@ export default function RenewSubscriptionPage() {
     company && enablePos ? buildPreview(company, planCode, months) : null;
   const attendanceTotal = enableAttendance ? attendancePricingPreview.total : 0;
   const checkoutSubtotal = pricing.total + attendanceTotal;
+  const manualDiscount = resolveManualDiscount(
+    checkoutSubtotal,
+    manualDiscountType,
+    manualDiscountValue,
+  );
+  const subtotalAfterManual = checkoutSubtotal - manualDiscount.amount;
   const checkoutAffiliatePercent = affiliateInfo?.appliesDiscount
     ? Number(affiliateInfo.discountPercent)
     : 0;
   const checkoutAffiliateDiscount =
-    Math.round(checkoutSubtotal * (checkoutAffiliatePercent / 100) * 100) / 100;
-  const checkoutTotal = checkoutSubtotal - checkoutAffiliateDiscount;
+    Math.round(subtotalAfterManual * (checkoutAffiliatePercent / 100) * 100) /
+    100;
+  const checkoutTotal = subtotalAfterManual - checkoutAffiliateDiscount;
   const checkoutCommission =
     Math.round(
-      checkoutTotal * (Number(affiliateInfo?.commissionPercent ?? 0) / 100) * 100,
+      checkoutTotal *
+        (Number(affiliateInfo?.commissionPercent ?? 0) / 100) *
+        100,
     ) / 100;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -224,6 +248,12 @@ export default function RenewSubscriptionPage() {
           paymentMethod === "otro" ? paymentMethodOther : undefined,
         receiptType,
         affiliateCode: affiliateInfo?.code,
+        manualDiscountType:
+          manualDiscountType === "none" ? undefined : manualDiscountType,
+        manualDiscountValue:
+          manualDiscountType === "none"
+            ? undefined
+            : Number(manualDiscountValue || 0).toFixed(2),
         pos: enablePos
           ? {
               planCode,
@@ -371,120 +401,184 @@ export default function RenewSubscriptionPage() {
               </section>
 
               {enablePos || enableAttendance ? (
-              <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
-                <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
-                  Afiliación
-                </p>
-                {company.affiliate?.status === "interrumpida" ? (
-                  <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700">
-                    Afiliación finalizada. La empresa no puede aplicar otro
-                    código.
-                  </div>
-                ) : company.affiliate?.status === "activa" ? (
-                  <div className="flex items-center justify-between rounded-xl bg-[var(--color-input-bg)] p-3">
-                    <div>
-                      <p className="text-xs text-[var(--color-muted-foreground)]">
-                        Código vigente
-                      </p>
-                      <p className="font-circular-bold text-[var(--color-primary)]">
-                        {company.affiliate.code}
-                      </p>
-                    </div>
-                    <span className="text-xs font-circular-bold text-emerald-600">
-                      {company.affiliate.commissionPercent}% comisión
-                    </span>
-                  </div>
-                ) : company.affiliateEligible ? (
-                  <div>
-                    <div className="flex gap-2">
-                      <input
-                        value={affiliateCode}
-                        onChange={(event) => {
-                          setAffiliateCode(event.target.value.toUpperCase());
-                          setAffiliateInfo(null);
-                          setAffiliateError(null);
-                        }}
-                        className={inputClass}
-                        maxLength={30}
-                        placeholder="Código de afiliado"
-                        aria-label="Código de afiliado"
-                      />
-                      <button
-                        type="button"
-                        disabled={validatingAffiliate || !affiliateCode.trim()}
-                        onClick={() => void validateAffiliate()}
-                        className="h-11 shrink-0 rounded-xl bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white disabled:opacity-50"
-                      >
-                        {validatingAffiliate ? "Validando..." : "Validar"}
-                      </button>
-                    </div>
-                    {affiliateInfo ? (
-                      <div className="mt-2 rounded-xl bg-emerald-500/10 p-3 text-xs text-emerald-700">
-                        Código válido · {affiliateInfo.discountPercent}% de
-                        descuento inicial · {affiliateInfo.commissionPercent}%
-                        de comisión
-                      </div>
-                    ) : null}
-                    {affiliateError ? (
-                      <p className="mt-2 text-xs text-red-600">
-                        {affiliateError}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Esta empresa ya realizó su primera compra sin código.
+                <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+                  <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
+                    Afiliación
                   </p>
-                )}
-              </section>
+                  {company.affiliate?.status === "interrumpida" ? (
+                    <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700">
+                      Afiliación finalizada. La empresa no puede aplicar otro
+                      código.
+                    </div>
+                  ) : company.affiliate?.status === "activa" ? (
+                    <div className="flex items-center justify-between rounded-xl bg-[var(--color-input-bg)] p-3">
+                      <div>
+                        <p className="text-xs text-[var(--color-muted-foreground)]">
+                          Código vigente
+                        </p>
+                        <p className="font-circular-bold text-[var(--color-primary)]">
+                          {company.affiliate.code}
+                        </p>
+                      </div>
+                      <span className="text-xs font-circular-bold text-emerald-600">
+                        {company.affiliate.commissionPercent}% comisión
+                      </span>
+                    </div>
+                  ) : company.affiliateEligible ? (
+                    <div>
+                      <div className="flex gap-2">
+                        <input
+                          value={affiliateCode}
+                          onChange={(event) => {
+                            setAffiliateCode(event.target.value.toUpperCase());
+                            setAffiliateInfo(null);
+                            setAffiliateError(null);
+                          }}
+                          className={inputClass}
+                          maxLength={30}
+                          placeholder="Código de afiliado"
+                          aria-label="Código de afiliado"
+                        />
+                        <button
+                          type="button"
+                          disabled={
+                            validatingAffiliate || !affiliateCode.trim()
+                          }
+                          onClick={() => void validateAffiliate()}
+                          className="h-11 shrink-0 rounded-xl bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white disabled:opacity-50"
+                        >
+                          {validatingAffiliate ? "Validando..." : "Validar"}
+                        </button>
+                      </div>
+                      {affiliateInfo ? (
+                        <div className="mt-2 rounded-xl bg-emerald-500/10 p-3 text-xs text-emerald-700">
+                          Código válido · {affiliateInfo.discountPercent}% de
+                          descuento inicial · {affiliateInfo.commissionPercent}%
+                          de comisión
+                        </div>
+                      ) : null}
+                      {affiliateError ? (
+                        <p className="mt-2 text-xs text-red-600">
+                          {affiliateError}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      Esta empresa ya realizó su primera compra sin código.
+                    </p>
+                  )}
+                </section>
+              ) : null}
+
+              {enablePos || enableAttendance ? (
+                <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+                  <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
+                    Descuento manual
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="grid gap-1.5 text-xs text-[var(--color-muted-foreground)]">
+                      Tipo
+                      <NativeSelect
+                        className={inputClass}
+                        value={manualDiscountType}
+                        onChange={(event) =>
+                          setManualDiscountType(
+                            event.target.value as typeof manualDiscountType,
+                          )
+                        }
+                      >
+                        <option value="none">Sin descuento</option>
+                        <option value="percent">Porcentaje</option>
+                        <option value="fixed">Monto fijo</option>
+                      </NativeSelect>
+                    </label>
+                    {manualDiscountType !== "none" ? (
+                      <label className="grid gap-1.5 text-xs text-[var(--color-muted-foreground)]">
+                        Valor
+                        <input
+                          type="number"
+                          min="0"
+                          max={
+                            manualDiscountType === "percent"
+                              ? 100
+                              : Math.max(0, checkoutSubtotal)
+                          }
+                          step="0.01"
+                          required
+                          value={manualDiscountValue}
+                          onChange={(event) =>
+                            setManualDiscountValue(event.target.value)
+                          }
+                          className={inputClass}
+                          placeholder={
+                            manualDiscountType === "percent"
+                              ? "Ej. 10"
+                              : "Ej. 20.00"
+                          }
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                  {!manualDiscount.valid ? (
+                    <p className="mt-3 rounded-xl bg-red-500/10 p-3 text-xs text-red-600">
+                      {manualDiscount.message}
+                    </p>
+                  ) : manualDiscount.amount > 0 ? (
+                    <p className="mt-3 rounded-xl bg-emerald-500/10 p-3 text-xs font-circular-bold text-emerald-700">
+                      Se descontará S/ {manualDiscount.amount.toFixed(2)} del
+                      checkout completo.
+                    </p>
+                  ) : null}
+                </section>
               ) : null}
 
               {enablePos ? (
-              <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
-                <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
-                  Plan y duración
-                </p>
-                <label className="grid gap-1.5 text-xs text-[var(--color-muted-foreground)]">
-                  Plan
-                  <NativeSelect
-                    className={inputClass}
-                    value={planCode}
-                    onChange={(event) =>
-                      setPlanCode(event.target.value as typeof planCode)
-                    }
-                  >
-                    {plans.map((plan) => (
-                      <option key={plan.code} value={plan.code}>
-                        {plan.name} · S/ {plan.priceMonthly}/mes
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {durations.map((duration) => (
-                    <button
-                      key={duration}
-                      type="button"
-                      onClick={() => setMonths(duration)}
-                      className={cn(
-                        "h-10 rounded-xl text-xs font-circular-bold",
-                        months === duration
-                          ? "bg-[var(--color-primary)] text-white"
-                          : "bg-[var(--color-input-bg)] text-[var(--color-text)]",
-                      )}
+                <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
+                  <p className="mb-3 text-sm font-circular-bold text-[var(--color-text)]">
+                    Plan y duración
+                  </p>
+                  <label className="grid gap-1.5 text-xs text-[var(--color-muted-foreground)]">
+                    Plan
+                    <NativeSelect
+                      className={inputClass}
+                      value={planCode}
+                      onChange={(event) =>
+                        setPlanCode(event.target.value as typeof planCode)
+                      }
                     >
-                      {duration} {duration === 1 ? "mes" : "meses"}
-                    </button>
-                  ))}
-                </div>
-                {pricing.percent > 0 ? (
-                  <div className="mt-3 rounded-xl bg-[#10b981]/10 px-3 py-2 text-xs font-circular-bold text-[#059669]">
-                    {pricing.percent}% de descuento{" "}
-                    {months === 1 ? "mensual" : "anual"} · ahorro S/{" "}
-                    {pricing.discount.toFixed(2)}
+                      {plans.map((plan) => (
+                        <option key={plan.code} value={plan.code}>
+                          {plan.name} · S/ {plan.priceMonthly}/mes
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {durations.map((duration) => (
+                      <button
+                        key={duration}
+                        type="button"
+                        onClick={() => setMonths(duration)}
+                        className={cn(
+                          "h-10 rounded-xl text-xs font-circular-bold",
+                          months === duration
+                            ? "bg-[var(--color-primary)] text-white"
+                            : "bg-[var(--color-input-bg)] text-[var(--color-text)]",
+                        )}
+                      >
+                        {duration} {duration === 1 ? "mes" : "meses"}
+                      </button>
+                    ))}
                   </div>
-                ) : null}
-              </section>
+                  {pricing.percent > 0 ? (
+                    <div className="mt-3 rounded-xl bg-[#10b981]/10 px-3 py-2 text-xs font-circular-bold text-[#059669]">
+                      {pricing.percent}% de descuento{" "}
+                      {months === 1 ? "mensual" : "anual"} · ahorro S/{" "}
+                      {pricing.discount.toFixed(2)}
+                    </div>
+                  ) : null}
+                </section>
               ) : null}
 
               {enableAttendance ? (
@@ -525,9 +619,17 @@ export default function RenewSubscriptionPage() {
                   </div>
                   <div className="mt-3 rounded-xl bg-[var(--color-input-bg)] p-3 text-xs text-[var(--color-muted-foreground)]">
                     S/ {attendancePricing?.employeeUnitPrice ?? "0.00"} por
-                    trabajador · S/ {attendancePricing?.qrPointUnitPrice ?? "0.00"}{" "}
-                    por punto QR · vence {formatDate(attendancePricingPreview.endsAt)}
+                    trabajador · S/{" "}
+                    {attendancePricing?.qrPointUnitPrice ?? "0.00"} por punto QR
+                    · vence {formatDate(attendancePricingPreview.endsAt)}
                   </div>
+                  {attendancePricingPreview.annualDiscount > 0 ? (
+                    <div className="mt-3 rounded-xl bg-[#10b981]/10 px-3 py-2 text-xs font-circular-bold text-[#059669]">
+                      {attendancePricingPreview.annualDiscountPercent}% de
+                      oferta anual · ahorro S/{" "}
+                      {attendancePricingPreview.annualDiscount.toFixed(2)}
+                    </div>
+                  ) : null}
                 </section>
               ) : null}
 
@@ -649,7 +751,7 @@ export default function RenewSubscriptionPage() {
               <div className="my-4 space-y-2 rounded-xl bg-[var(--color-input-bg)] p-3 text-sm">
                 <p className="flex justify-between text-[var(--color-muted-foreground)]">
                   <span>Subtotal POS</span>
-                  <span>S/ {pricing.total.toFixed(2)}</span>
+                  <span>S/ {pricing.list.toFixed(2)}</span>
                 </p>
                 {pricing.discount > 0 ? (
                   <p className="flex justify-between text-[#059669]">
@@ -665,8 +767,22 @@ export default function RenewSubscriptionPage() {
                 ) : null}
                 <p className="flex justify-between text-[var(--color-muted-foreground)]">
                   <span>Subtotal Asistencias</span>
-                  <span>S/ {attendanceTotal.toFixed(2)}</span>
+                  <span>S/ {attendancePricingPreview.list.toFixed(2)}</span>
                 </p>
+                {attendancePricingPreview.annualDiscount > 0 ? (
+                  <p className="flex justify-between text-[#059669]">
+                    <span>Oferta anual Asistencias</span>
+                    <span>
+                      - S/ {attendancePricingPreview.annualDiscount.toFixed(2)}
+                    </span>
+                  </p>
+                ) : null}
+                {manualDiscount.amount > 0 ? (
+                  <p className="flex justify-between text-[#059669]">
+                    <span>Descuento manual</span>
+                    <span>- S/ {manualDiscount.amount.toFixed(2)}</span>
+                  </p>
+                ) : null}
                 <p className="mt-3 flex justify-between border-t border-[var(--color-border)] pt-3 font-circular-bold text-[var(--color-text)]">
                   <span>Total con IGV</span>
                   <span>S/ {checkoutTotal.toFixed(2)}</span>
@@ -685,6 +801,7 @@ export default function RenewSubscriptionPage() {
                   company.state !== "activa" ||
                   (!enablePos && !enableAttendance) ||
                   (enablePos && !selectedPlan) ||
+                  !manualDiscount.valid ||
                   Boolean(
                     enablePos &&
                     affiliateCode.trim() &&
@@ -859,6 +976,39 @@ function addMonthsClamped(value: Date, months: number) {
   ).getDate();
   result.setDate(Math.min(day, lastDay));
   return result;
+}
+
+function resolveManualDiscount(
+  subtotal: number,
+  type: "none" | "percent" | "fixed",
+  rawValue: string,
+) {
+  if (type === "none") {
+    return { valid: true, amount: 0, message: "" };
+  }
+  const value = Number(rawValue);
+  if (!Number.isFinite(value) || value < 0) {
+    return { valid: false, amount: 0, message: "Ingresa un descuento válido." };
+  }
+  if (type === "percent" && value > 100) {
+    return {
+      valid: false,
+      amount: 0,
+      message: "El porcentaje no puede superar 100%.",
+    };
+  }
+  const amount =
+    type === "percent"
+      ? Math.round(subtotal * (value / 100) * 100) / 100
+      : Math.round(value * 100) / 100;
+  if (amount > subtotal) {
+    return {
+      valid: false,
+      amount: 0,
+      message: "El descuento manual no puede superar el subtotal.",
+    };
+  }
+  return { valid: true, amount, message: "" };
 }
 
 function formatDate(value: Date | string) {

@@ -62,6 +62,7 @@ export type AttendanceAddon = {
 export type AttendancePricing = {
   employeeUnitPrice: string;
   qrPointUnitPrice: string;
+  annualDiscountPercent: string;
   currency: "PEN";
   includesIgv: true;
   updatedAt: string;

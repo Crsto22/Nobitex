@@ -58,9 +58,7 @@ export type PlatformSubscriptionPaymentMethod =
   "yape" | "plin" | "transferencia" | "deposito" | "efectivo" | "otro";
 export type PlatformSubscriptionPaymentStatus = "pagado" | "anulado";
 export type PlatformAttendanceSubscriptionStatus =
-  | "activa"
-  | "cancelada"
-  | "vencida";
+  "activa" | "cancelada" | "vencida";
 export type PlatformAttendanceSubscriptionPeriod = "mensual" | "anual";
 export type PlatformDashboardDateFilter =
   "today" | "7days" | "14days" | "30days" | "month" | "year";
@@ -236,6 +234,7 @@ export type PlatformOveragePricing = {
 export type PlatformAttendancePricing = {
   employeeUnitPrice: string;
   qrPointUnitPrice: string;
+  annualDiscountPercent: string;
   currency: "PEN";
   includesIgv: true;
   updatedAt: string;
@@ -412,6 +411,9 @@ export type PlatformSubscriptionSale = {
   listAmount: string;
   discountPercent: string;
   discountAmount: string;
+  manualDiscountType: "percent" | "fixed" | null;
+  manualDiscountValue: string | null;
+  manualDiscountAmount: string;
   affiliateCode: string | null;
   affiliateDiscountPercent: string;
   affiliateDiscountAmount: string;
@@ -464,6 +466,11 @@ export type PlatformAttendanceSubscription = {
   qrPointUnitPrice: string;
   period: PlatformAttendanceSubscriptionPeriod;
   monthlyAmount: string;
+  discountPercent: string;
+  discountAmount: string;
+  manualDiscountType: "percent" | "fixed" | null;
+  manualDiscountValue: string | null;
+  manualDiscountAmount: string;
   totalAmount: string;
   affiliateCode: string | null;
   affiliateDiscountPercent: string;
@@ -526,6 +533,8 @@ export type CreatePlatformSubscriptionCheckoutPayload = {
   paymentMethodOther?: string;
   receiptType: "nota_venta" | "boleta" | "factura";
   affiliateCode?: string;
+  manualDiscountType?: "percent" | "fixed";
+  manualDiscountValue?: string;
   pos?: {
     planCode: Exclude<PlatformPlanCode, "prueba">;
     months: 1 | 3 | 6 | 12;
@@ -798,6 +807,7 @@ export const platformAdminApi = {
   updateAttendancePricing(payload: {
     employeeUnitPrice: string;
     qrPointUnitPrice: string;
+    annualDiscountPercent: string;
   }) {
     return authFetch<PlatformAttendancePricing>(
       "/platform-admin/attendance-pricing",
@@ -1037,7 +1047,9 @@ export const platformAdminApi = {
     });
   },
 
-  createSubscriptionCheckout(payload: CreatePlatformSubscriptionCheckoutPayload) {
+  createSubscriptionCheckout(
+    payload: CreatePlatformSubscriptionCheckoutPayload,
+  ) {
     return authFetch<{
       sale: PlatformSubscriptionSale | null;
       attendance: PlatformAttendanceSubscription | null;

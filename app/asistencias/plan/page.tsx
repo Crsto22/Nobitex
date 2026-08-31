@@ -24,9 +24,11 @@ import {
   type PlatformReceipt,
   type PlatformReceiptStatus,
 } from "@/lib/api/platform-billing";
+import { plansApi, type PlanDefinition } from "@/lib/api/plans";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
 import { formatCurrency, formatDate } from "@/lib/intl";
+import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 import { cn } from "@/lib/utils";
 
 type Tab = "plans" | "usage" | "receipts";
@@ -70,6 +72,7 @@ export default function AsistenciasPlanPage() {
   const [activeTab, setActiveTab] = useState<Tab>("plans");
   const [workers, setWorkers] = useState("1");
   const [qrPoints, setQrPoints] = useState("1");
+  const [posPlans, setPosPlans] = useState<PlanDefinition[]>([]);
   const [receipts, setReceipts] = useState<PlatformReceipt[]>([]);
   const [receiptPage, setReceiptPage] = useState(1);
   const [receiptMeta, setReceiptMeta] = useState({ total: 0, totalPages: 1 });
@@ -81,6 +84,8 @@ export default function AsistenciasPlanPage() {
     setIsLoading(true);
     try {
       await refreshPlan();
+      const catalog = await plansApi.findAll();
+      setPosPlans(catalog.filter(isPosPlan));
     } catch (error) {
       showToast({
         title: "No se pudo cargar el plan",
@@ -137,8 +142,14 @@ export default function AsistenciasPlanPage() {
   const includedDocumentQueries = getIncludedDocumentQueries(monthlyTotal);
   const hasPrices = workerUnitPrice > 0 || qrUnitPrice > 0;
   const companyName =
-    companyInfo?.nombreComercial ?? user?.empresaNombreComercial ?? "Mi empresa";
+    companyInfo?.nombreComercial ??
+    user?.empresaNombreComercial ??
+    "Mi empresa";
   const customerName = getUserDisplayName(user);
+  const { attendanceOnly } = getProductModeFromModuleKeys([
+    ...(user?.moduleKeys ?? []),
+    ...(currentPlan?.effectiveModuleKeys ?? []),
+  ]);
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([loadPlan(), loadReceipts()]);
@@ -251,78 +262,89 @@ export default function AsistenciasPlanPage() {
         </nav>
 
         {activeTab === "plans" ? (
-          <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-            <h2 className="text-base font-circular-bold text-[var(--color-text)]">
-              Solicitar adicionales
-            </h2>
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-              {hasPrices
-                ? `${formatCurrency(String(workerUnitPrice))} por trabajador y ${formatCurrency(String(qrUnitPrice))} por punto QR.`
-                : "Precio segun cotizacion."}
-            </p>
+          <section className="space-y-4">
+            <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+              <h2 className="text-base font-circular-bold text-[var(--color-text)]">
+                Solicitar adicionales
+              </h2>
+              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                {hasPrices
+                  ? `${formatCurrency(String(workerUnitPrice))} por trabajador y ${formatCurrency(String(qrUnitPrice))} por punto QR.`
+                  : "Precio segun cotizacion."}
+              </p>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <NumberField
-                label="Agregar trabajadores"
-                value={workers}
-                onChange={setWorkers}
-              />
-              <NumberField
-                label="Agregar puntos QR"
-                value={qrPoints}
-                onChange={setQrPoints}
-              />
-            </div>
-
-            <div className="mt-4 rounded-[12px] bg-[var(--color-input-bg)] p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Total mensual estimado
-                  </p>
-                  <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
-                    {hasPrices
-                      ? formatCurrency(String(monthlyTotal))
-                      : "A cotizar"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    Consultas DNI/RUC incluidas
-                  </p>
-                  <p className="mt-1 text-2xl font-circular-bold text-[#059669]">
-                    {includedDocumentQueries.toLocaleString("es-PE")}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                    {qrCount.toLocaleString("es-PE")} sedes incluidas por QR
-                  </p>
-                </div>
-              </div>
-              <a
-                href={buildWhatsAppUrl({
-                  companyName,
-                  customerName,
-                  customerEmail: user?.email,
-                  workers: workerCount,
-                  qrPoints: qrCount,
-                  documentQueries: includedDocumentQueries,
-                  monthlyTotal,
-                  hasPrices,
-                })}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#25d366] px-4 text-sm font-circular-bold text-white transition-opacity hover:opacity-90"
-              >
-                <Image
-                  src="/svg/redes-sociales/whatsapp.svg"
-                  alt=""
-                  width={18}
-                  height={18}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <NumberField
+                  label="Agregar trabajadores"
+                  value={workers}
+                  onChange={setWorkers}
                 />
-                Solicitar
-              </a>
-            </div>
-          </article>
+                <NumberField
+                  label="Agregar puntos QR"
+                  value={qrPoints}
+                  onChange={setQrPoints}
+                />
+              </div>
+
+              <div className="mt-4 rounded-[12px] bg-[var(--color-input-bg)] p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      Total mensual estimado
+                    </p>
+                    <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
+                      {hasPrices
+                        ? formatCurrency(String(monthlyTotal))
+                        : "A cotizar"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      Consultas DNI/RUC incluidas
+                    </p>
+                    <p className="mt-1 text-2xl font-circular-bold text-[#059669]">
+                      {includedDocumentQueries.toLocaleString("es-PE")}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                      {qrCount.toLocaleString("es-PE")} sedes incluidas por QR
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={buildWhatsAppUrl({
+                    companyName,
+                    customerName,
+                    customerEmail: user?.email,
+                    workers: workerCount,
+                    qrPoints: qrCount,
+                    documentQueries: includedDocumentQueries,
+                    monthlyTotal,
+                    hasPrices,
+                  })}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#25d366] px-4 text-sm font-circular-bold text-white transition-opacity hover:opacity-90"
+                >
+                  <Image
+                    src="/svg/redes-sociales/whatsapp.svg"
+                    alt=""
+                    width={18}
+                    height={18}
+                  />
+                  Solicitar
+                </a>
+              </div>
+            </article>
+            {attendanceOnly ? (
+              <PosPlansSection
+                plans={posPlans}
+                companyName={companyName}
+                customerName={customerName}
+                customerEmail={user?.email}
+                loading={isLoading}
+              />
+            ) : null}
+          </section>
         ) : null}
 
         {activeTab === "usage" ? (
@@ -391,6 +413,90 @@ function UsageTab({
       {items.map((item) => (
         <UsageCard key={item.label} {...item} />
       ))}
+    </section>
+  );
+}
+
+function PosPlansSection({
+  plans,
+  companyName,
+  customerName,
+  customerEmail,
+  loading,
+}: {
+  plans: PlanDefinition[];
+  companyName: string;
+  customerName: string;
+  customerEmail?: string;
+  loading: boolean;
+}) {
+  return (
+    <section className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
+      <h2 className="text-base font-circular-bold text-[var(--color-text)]">
+        Planes POS disponibles
+      </h2>
+      <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+        Agrega ventas, caja, productos y stock a tu cuenta.
+      </p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {loading && plans.length === 0
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-44 animate-pulse rounded-[12px] bg-[var(--color-input-bg)]"
+              />
+            ))
+          : plans.map((plan) => (
+              <article
+                key={plan.code}
+                className="rounded-[12px] border border-[var(--color-border)] p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <TagIcon
+                    size={20}
+                    weight="fill"
+                    className="text-[var(--color-primary)]"
+                  />
+                  <span className="rounded-full bg-[#10b981]/10 px-2.5 py-1 text-[10px] font-circular-bold text-[#059669]">
+                    POS
+                  </span>
+                </div>
+                <h3 className="mt-3 text-sm font-circular-bold text-[var(--color-text)]">
+                  {plan.name}
+                </h3>
+                <p className="mt-1 text-xl font-circular-bold text-[var(--color-text)]">
+                  {formatCurrency(plan.priceMonthly)}
+                  <span className="ml-1 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+                    / mes
+                  </span>
+                </p>
+                <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                  {plan.limits.users.toLocaleString("es-PE")} usuarios ·{" "}
+                  {plan.limits.branches.toLocaleString("es-PE")} tiendas ·{" "}
+                  {plan.limits.documents.toLocaleString("es-PE")} comprobantes
+                </p>
+                <a
+                  href={buildPosPlanWhatsAppUrl({
+                    plan,
+                    companyName,
+                    customerName,
+                    customerEmail,
+                  })}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[#25d366] px-3 text-xs font-circular-bold text-white"
+                >
+                  <Image
+                    src="/svg/redes-sociales/whatsapp.svg"
+                    alt=""
+                    width={16}
+                    height={16}
+                  />
+                  Solicitar POS
+                </a>
+              </article>
+            ))}
+      </div>
     </section>
   );
 }
@@ -728,6 +834,45 @@ function getIncludedDocumentQueries(monthlyTotal: number) {
   if (monthlyTotal >= 60) return 300;
   if (monthlyTotal >= 30) return 100;
   return 20;
+}
+
+function isPosPlan(plan: PlanDefinition) {
+  return (
+    plan.code !== "prueba" &&
+    !plan.code.startsWith("asistencias_") &&
+    !plan.code.startsWith("completo_")
+  );
+}
+
+function buildPosPlanWhatsAppUrl({
+  plan,
+  companyName,
+  customerName,
+  customerEmail,
+}: {
+  plan: PlanDefinition;
+  companyName: string;
+  customerName: string;
+  customerEmail?: string;
+}) {
+  const message = [
+    "Hola, deseo agregar un plan POS a mi cuenta de Nuvex.",
+    `Empresa: ${companyName}`,
+    `Cliente: ${customerName}`,
+    customerEmail ? `Correo: ${customerEmail}` : "",
+    `Plan POS: ${plan.name}`,
+    `Pago mensual: ${formatCurrency(plan.priceMonthly)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+    /\D/g,
+    "",
+  );
+  const text = encodeURIComponent(message);
+  return phone
+    ? `https://wa.me/${phone}?text=${text}`
+    : `https://api.whatsapp.com/send?text=${text}`;
 }
 
 function formatReceiptType(type: PlatformReceipt["type"]) {

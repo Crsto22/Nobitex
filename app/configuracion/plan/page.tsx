@@ -35,6 +35,7 @@ import {
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
 import { formatCurrency, formatDate } from "@/lib/intl";
+import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 import { cn } from "@/lib/utils";
 
 type Tab = "plans" | "usage" | "receipts";
@@ -201,6 +202,15 @@ export default function PlanPage() {
       });
     }
   };
+  const companyName =
+    companyInfo?.nombreComercial ??
+    user?.empresaNombreComercial ??
+    "Mi empresa";
+  const customerName = getUserDisplayName(user);
+  const { posOnly } = getProductModeFromModuleKeys([
+    ...(user?.moduleKeys ?? []),
+    ...(currentPlan?.effectiveModuleKeys ?? []),
+  ]);
 
   return (
     <DashboardShell headerTitle="Plan y facturación">
@@ -211,9 +221,7 @@ export default function PlanPage() {
               Plan y facturación
             </h1>
             <p className="text-sm text-[var(--color-muted-foreground)]">
-              {companyInfo?.nombreComercial ??
-                user?.empresaNombreComercial ??
-                "Mi empresa"}
+              {companyName}
             </p>
           </div>
           <button
@@ -310,14 +318,11 @@ export default function PlanPage() {
             }
             period={billingPeriod}
             onPeriodChange={setBillingPeriod}
-            companyName={
-              companyInfo?.nombreComercial ??
-              user?.empresaNombreComercial ??
-              "Mi empresa"
-            }
-            customerName={getUserDisplayName(user)}
+            companyName={companyName}
+            customerName={customerName}
             customerEmail={user?.email}
             loading={isLoading}
+            showAttendanceRequest={posOnly}
           />
         ) : null}
 
@@ -351,6 +356,7 @@ function PlansTab({
   customerName,
   customerEmail,
   loading,
+  showAttendanceRequest,
 }: {
   plans: PlanDefinition[];
   currentCode?: string;
@@ -361,6 +367,7 @@ function PlansTab({
   customerName: string;
   customerEmail?: string;
   loading: boolean;
+  showAttendanceRequest: boolean;
 }) {
   return (
     <section className="space-y-5 pb-5">
@@ -420,7 +427,67 @@ function PlansTab({
               ))}
         </div>
       </div>
+      {showAttendanceRequest ? (
+        <AttendanceRequestCard
+          companyName={companyName}
+          customerName={customerName}
+          customerEmail={customerEmail}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function AttendanceRequestCard({
+  companyName,
+  customerName,
+  customerEmail,
+}: {
+  companyName: string;
+  customerName: string;
+  customerEmail?: string;
+}) {
+  const message = [
+    "Hola, deseo agregar el servicio de asistencias a mi cuenta de Nuvex.",
+    `Empresa: ${companyName}`,
+    `Cliente: ${customerName}`,
+    customerEmail ? `Correo: ${customerEmail}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+    /\D/g,
+    "",
+  );
+  const href = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+
+  return (
+    <article className="flex flex-col gap-4 rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)] sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 className="text-base font-bold text-[var(--color-text)]">
+          Solicitar plan de asistencia
+        </h3>
+        <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+          Agrega control de trabajadores, marcajes y puntos QR a tu empresa.
+        </p>
+      </div>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#25d366] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90"
+      >
+        <Image
+          src="/svg/redes-sociales/whatsapp.svg"
+          alt=""
+          width={18}
+          height={18}
+        />
+        Solicitar por WhatsApp
+      </a>
+    </article>
   );
 }
 

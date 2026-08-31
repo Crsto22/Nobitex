@@ -23,6 +23,7 @@ import {
   getSessionUser,
   setStoredCompanyInfo,
 } from "@/lib/auth/session";
+import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 import { sidebarModules } from "@/lib/navigation/sidebar-modules";
 import { cn } from "@/lib/utils";
 
@@ -178,13 +179,8 @@ export function DashboardShell({
     ],
     [currentPlan?.effectiveModuleKeys, user?.moduleKeys],
   );
-  const hasAttendanceModules = allowedModuleKeys.some((key) =>
-    key.startsWith("asistencias-"),
-  );
-  const hasPosModules = allowedModuleKeys.some((key) =>
-    ["dashboard", "ventas-pos", "productos", "caja"].includes(key),
-  );
-  const attendanceOnly = hasAttendanceModules && !hasPosModules;
+  const { hasPosModules, attendanceOnly } =
+    getProductModeFromModuleKeys(allowedModuleKeys);
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
   const isPlatformRoute =
@@ -234,11 +230,11 @@ export function DashboardShell({
             : "/configuracion/mi-cuenta"
           : attendanceOnly
             ? "/asistencias/dashboard"
-          : (sidebarModules.find(
-              (module) =>
-                module.key === "mi-cuenta" ||
-                (module.ownerOnly ? isOwner : allowedKeys.has(module.key)),
-            )?.route ?? "/configuracion/mi-cuenta");
+            : (sidebarModules.find(
+                (module) =>
+                  module.key === "mi-cuenta" ||
+                  (module.ownerOnly ? isOwner : allowedKeys.has(module.key)),
+              )?.route ?? "/configuracion/mi-cuenta");
 
     router.replace(fallback);
   }, [
