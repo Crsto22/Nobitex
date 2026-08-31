@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { AffiliateCodeInput } from "@/components/AffiliateCode/affiliate-code-input";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   downloadBlob,
@@ -126,6 +127,7 @@ export default function PlanPage() {
   const [receipts, setReceipts] = useState<PlatformReceipt[]>([]);
   const [receiptPage, setReceiptPage] = useState(1);
   const [receiptMeta, setReceiptMeta] = useState({ total: 0, totalPages: 1 });
+  const [affiliateCode, setAffiliateCode] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingReceipts, setIsLoadingReceipts] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -211,6 +213,8 @@ export default function PlanPage() {
     ...(user?.moduleKeys ?? []),
     ...(currentPlan?.effectiveModuleKeys ?? []),
   ]);
+  const showAffiliateCode =
+    currentPlan?.status === "trial" && currentPlan.monthlyDiscountEligible;
 
   return (
     <DashboardShell headerTitle="Plan y facturación">
@@ -323,6 +327,9 @@ export default function PlanPage() {
             customerEmail={user?.email}
             loading={isLoading}
             showAttendanceRequest={posOnly}
+            showAffiliateCode={showAffiliateCode}
+            affiliateCode={affiliateCode}
+            onAffiliateCodeChange={setAffiliateCode}
           />
         ) : null}
 
@@ -357,6 +364,9 @@ function PlansTab({
   customerEmail,
   loading,
   showAttendanceRequest,
+  showAffiliateCode,
+  affiliateCode,
+  onAffiliateCodeChange,
 }: {
   plans: PlanDefinition[];
   currentCode?: string;
@@ -368,9 +378,18 @@ function PlansTab({
   customerEmail?: string;
   loading: boolean;
   showAttendanceRequest: boolean;
+  showAffiliateCode: boolean;
+  affiliateCode: string;
+  onAffiliateCodeChange: (code: string) => void;
 }) {
   return (
     <section className="space-y-5 pb-5">
+      {showAffiliateCode ? (
+        <AffiliateCodeInput
+          value={affiliateCode}
+          onChange={onAffiliateCodeChange}
+        />
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-bold text-[var(--color-text)]">
           Planes disponibles
@@ -422,6 +441,7 @@ function PlansTab({
                     customerName,
                     customerEmail,
                     monthlyDiscountEligible,
+                    affiliateCode,
                   })}
                 />
               ))}
@@ -432,6 +452,7 @@ function PlansTab({
           companyName={companyName}
           customerName={customerName}
           customerEmail={customerEmail}
+          affiliateCode={affiliateCode}
         />
       ) : null}
     </section>
@@ -442,16 +463,19 @@ function AttendanceRequestCard({
   companyName,
   customerName,
   customerEmail,
+  affiliateCode,
 }: {
   companyName: string;
   customerName: string;
   customerEmail?: string;
+  affiliateCode?: string;
 }) {
   const message = [
     "Hola, deseo agregar el servicio de asistencias a mi cuenta de Nuvex.",
     `Empresa: ${companyName}`,
     `Cliente: ${customerName}`,
     customerEmail ? `Correo: ${customerEmail}` : "",
+    affiliateCode ? `Codigo de afiliado: ${affiliateCode}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -1073,6 +1097,7 @@ function buildWhatsAppUrl({
   customerName,
   customerEmail,
   monthlyDiscountEligible,
+  affiliateCode,
 }: {
   plan: PlanDefinition;
   period: BillingPeriod;
@@ -1080,6 +1105,7 @@ function buildWhatsAppUrl({
   customerName: string;
   customerEmail?: string;
   monthlyDiscountEligible: boolean;
+  affiliateCode?: string;
 }) {
   const annual = period === "annual";
   const total = annual
@@ -1095,6 +1121,7 @@ function buildWhatsAppUrl({
     `Plan: ${plan.name}`,
     `Periodo: ${annual ? "Anual (12 meses)" : "Mensual (1 mes)"}`,
     `Total: ${formatCurrency(total)}`,
+    affiliateCode ? `Codigo de afiliado: ${affiliateCode}` : "",
   ]
     .filter(Boolean)
     .join("\n");

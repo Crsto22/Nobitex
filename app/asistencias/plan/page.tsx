@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { AffiliateCodeInput } from "@/components/AffiliateCode/affiliate-code-input";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   downloadBlob,
@@ -76,6 +77,7 @@ export default function AsistenciasPlanPage() {
   const [receipts, setReceipts] = useState<PlatformReceipt[]>([]);
   const [receiptPage, setReceiptPage] = useState(1);
   const [receiptMeta, setReceiptMeta] = useState({ total: 0, totalPages: 1 });
+  const [affiliateCode, setAffiliateCode] = useState("");
   const [isLoading, setIsLoading] = useState(!currentPlan);
   const [isLoadingReceipts, setIsLoadingReceipts] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -150,6 +152,8 @@ export default function AsistenciasPlanPage() {
     ...(user?.moduleKeys ?? []),
     ...(currentPlan?.effectiveModuleKeys ?? []),
   ]);
+  const showAffiliateCode =
+    currentPlan?.status === "trial" && currentPlan.monthlyDiscountEligible;
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([loadPlan(), loadReceipts()]);
@@ -263,6 +267,12 @@ export default function AsistenciasPlanPage() {
 
         {activeTab === "plans" ? (
           <section className="space-y-4">
+            {showAffiliateCode ? (
+              <AffiliateCodeInput
+                value={affiliateCode}
+                onChange={setAffiliateCode}
+              />
+            ) : null}
             <article className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
               <h2 className="text-base font-circular-bold text-[var(--color-text)]">
                 Solicitar adicionales
@@ -320,6 +330,7 @@ export default function AsistenciasPlanPage() {
                     documentQueries: includedDocumentQueries,
                     monthlyTotal,
                     hasPrices,
+                    affiliateCode,
                   })}
                   target="_blank"
                   rel="noreferrer"
@@ -341,6 +352,7 @@ export default function AsistenciasPlanPage() {
                 companyName={companyName}
                 customerName={customerName}
                 customerEmail={user?.email}
+                affiliateCode={affiliateCode}
                 loading={isLoading}
               />
             ) : null}
@@ -422,12 +434,14 @@ function PosPlansSection({
   companyName,
   customerName,
   customerEmail,
+  affiliateCode,
   loading,
 }: {
   plans: PlanDefinition[];
   companyName: string;
   customerName: string;
   customerEmail?: string;
+  affiliateCode?: string;
   loading: boolean;
 }) {
   return (
@@ -481,6 +495,7 @@ function PosPlansSection({
                     companyName,
                     customerName,
                     customerEmail,
+                    affiliateCode,
                   })}
                   target="_blank"
                   rel="noreferrer"
@@ -794,6 +809,7 @@ function buildWhatsAppUrl({
   documentQueries,
   monthlyTotal,
   hasPrices,
+  affiliateCode,
 }: {
   companyName: string;
   customerName: string;
@@ -803,6 +819,7 @@ function buildWhatsAppUrl({
   documentQueries: number;
   monthlyTotal: number;
   hasPrices: boolean;
+  affiliateCode?: string;
 }) {
   const message = [
     "Hola, deseo solicitar adicionales para el plan de asistencias de Nuvex.",
@@ -813,6 +830,7 @@ function buildWhatsAppUrl({
     `Agregar puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
     `Sedes incluidas por puntos QR: ${qrPoints.toLocaleString("es-PE")}`,
     `Consultas DNI/RUC incluidas: ${documentQueries.toLocaleString("es-PE")}`,
+    affiliateCode ? `Codigo de afiliado: ${affiliateCode}` : "",
     hasPrices
       ? `Total mensual estimado: ${formatCurrency(String(monthlyTotal))}`
       : "",
@@ -849,11 +867,13 @@ function buildPosPlanWhatsAppUrl({
   companyName,
   customerName,
   customerEmail,
+  affiliateCode,
 }: {
   plan: PlanDefinition;
   companyName: string;
   customerName: string;
   customerEmail?: string;
+  affiliateCode?: string;
 }) {
   const message = [
     "Hola, deseo agregar un plan POS a mi cuenta de Nuvex.",
@@ -862,6 +882,7 @@ function buildPosPlanWhatsAppUrl({
     customerEmail ? `Correo: ${customerEmail}` : "",
     `Plan POS: ${plan.name}`,
     `Pago mensual: ${formatCurrency(plan.priceMonthly)}`,
+    affiliateCode ? `Codigo de afiliado: ${affiliateCode}` : "",
   ]
     .filter(Boolean)
     .join("\n");

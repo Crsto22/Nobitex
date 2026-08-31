@@ -69,6 +69,14 @@ export type AttendancePricing = {
   updatedBy?: { id: string; name: string; email: string } | null;
 };
 
+export type AffiliateCodeValidation = {
+  valid: boolean;
+  code: string;
+  discountPercent: string;
+  reason?: "invalid" | "inactive";
+  currency?: "PEN";
+};
+
 export type CurrentPlanResponse = {
   plan: PlanDefinition;
   status: PlanStatus;
@@ -102,5 +110,11 @@ export const plansApi = {
 
   attendancePricing() {
     return apiRequest<AttendancePricing>("/plans/attendance-pricing");
+  },
+
+  validateAffiliateCode(code: string) {
+    return apiRequest<AffiliateCodeValidation>(
+      `/plans/affiliate-code?code=${encodeURIComponent(code)}`,
+    );
   },
 };
