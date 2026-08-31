@@ -103,14 +103,12 @@ export default function RenewSubscriptionPage() {
           platformAdminApi.getAttendancePricing(),
         ]);
       const paid = catalog.filter((plan) => plan.code !== "prueba");
+      const paidEmployees = getPaidAttendanceLimit(companyResult, "employees");
+      const paidQrPoints = getPaidAttendanceLimit(companyResult, "qrPoints");
       setCompany(companyResult);
       setAttendancePricing(attendancePricingResult);
-      setAttendanceEmployees(
-        Math.max(3, companyResult.attendance?.effectiveEmployeesLimit ?? 3),
-      );
-      setAttendanceQrPoints(
-        Math.max(1, companyResult.attendance?.effectiveQrPointsLimit ?? 1),
-      );
+      setAttendanceEmployees(paidEmployees > 0 ? 0 : 1);
+      setAttendanceQrPoints(paidQrPoints > 0 ? 0 : 1);
       setAffiliateCode(
         companyResult.affiliate?.status === "activa"
           ? companyResult.affiliate.code
@@ -183,9 +181,13 @@ export default function RenewSubscriptionPage() {
     };
   }, [company?.monthlyDiscountEligible, enablePos, months, selectedPlan]);
   const attendancePricingPreview = useMemo(() => {
+    const currentEmployees = getPaidAttendanceLimit(company, "employees");
+    const currentQrPoints = getPaidAttendanceLimit(company, "qrPoints");
+    const finalEmployees = currentEmployees + attendanceEmployees;
+    const finalQrPoints = currentQrPoints + attendanceQrPoints;
     const monthly =
-      attendanceEmployees * Number(attendancePricing?.employeeUnitPrice ?? 0) +
-      attendanceQrPoints * Number(attendancePricing?.qrPointUnitPrice ?? 0);
+      finalEmployees * Number(attendancePricing?.employeeUnitPrice ?? 0) +
+      finalQrPoints * Number(attendancePricing?.qrPointUnitPrice ?? 0);
     const list = monthly * attendanceMonths;
     const annualDiscountPercent =
       attendanceMonths === 12
@@ -195,6 +197,10 @@ export default function RenewSubscriptionPage() {
       Math.round(list * (annualDiscountPercent / 100) * 100) / 100;
     return {
       monthly,
+      currentEmployees,
+      currentQrPoints,
+      finalEmployees,
+      finalQrPoints,
       list,
       annualDiscountPercent,
       annualDiscount,
@@ -209,6 +215,7 @@ export default function RenewSubscriptionPage() {
     attendancePricing?.employeeUnitPrice,
     attendancePricing?.qrPointUnitPrice,
     attendanceQrPoints,
+    company,
   ]);
   const preview =
     company && enablePos ? buildPreview(company, planCode, months) : null;
@@ -263,8 +270,8 @@ export default function RenewSubscriptionPage() {
           : undefined,
         attendance: enableAttendance
           ? {
-              employeesLimit: attendanceEmployees,
-              qrPointsLimit: attendanceQrPoints,
+              employeesLimit: attendancePricingPreview.finalEmployees,
+              qrPointsLimit: attendancePricingPreview.finalQrPoints,
               period: attendanceMonths === 12 ? "anual" : "mensual",
               months: attendanceMonths,
             }
@@ -588,18 +595,46 @@ export default function RenewSubscriptionPage() {
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <StepperField
-                      label="Trabajadores"
+                      label="Agregar trabajadores"
                       value={attendanceEmployees}
-                      min={1}
+                      min={0}
                       onChange={setAttendanceEmployees}
                     />
                     <StepperField
-                      label="Puntos QR"
+                      label="Agregar puntos QR"
                       value={attendanceQrPoints}
-                      min={1}
+                      min={0}
                       onChange={setAttendanceQrPoints}
                     />
                   </div>
+                  <div className="mt-3 grid gap-2 rounded-xl bg-[var(--color-input-bg)] p-3 text-xs text-[var(--color-muted-foreground)] sm:grid-cols-3">
+                    <CapacityBox
+                      label="Actual pagado"
+                      value={`${attendancePricingPreview.currentEmployees} trabajadores · ${attendancePricingPreview.currentQrPoints} QR`}
+                    />
+                    <CapacityBox
+                      label="Se agrega"
+                      value={`${attendanceEmployees} trabajadores · ${attendanceQrPoints} QR`}
+                    />
+                    <CapacityBox
+                      label="Quedará"
+                      value={`${attendancePricingPreview.finalEmployees} trabajadores · ${attendancePricingPreview.finalQrPoints} QR`}
+                    />
+                  </div>
+                  {company.attendance?.trial ? (
+                    <p className="mt-2 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700">
+                      La prueba gratis de {company.attendance.employeesLimit}{" "}
+                      trabajadores y {company.attendance.qrPointsLimit} QR no
+                      cuenta como capacidad pagada.
+                    </p>
+                  ) : null}
+                  {attendancePricingPreview.finalEmployees < 1 ||
+                  attendancePricingPreview.finalQrPoints < 1 ? (
+                    <p className="mt-2 rounded-xl bg-red-500/10 p-3 text-xs text-red-600">
+                      El plan de Asistencias debe quedar con al menos 1
+                      trabajador y 1 punto QR.
+                    </p>
+                  ) : null}
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {durations.map((duration) => (
                       <button
@@ -621,7 +656,9 @@ export default function RenewSubscriptionPage() {
                     S/ {attendancePricing?.employeeUnitPrice ?? "0.00"} por
                     trabajador · S/{" "}
                     {attendancePricing?.qrPointUnitPrice ?? "0.00"} por punto QR
-                    · vence {formatDate(attendancePricingPreview.endsAt)}
+                    · total mensual S/{" "}
+                    {attendancePricingPreview.monthly.toFixed(2)} · vence{" "}
+                    {formatDate(attendancePricingPreview.endsAt)}
                   </div>
                   {attendancePricingPreview.annualDiscount > 0 ? (
                     <div className="mt-3 rounded-xl bg-[#10b981]/10 px-3 py-2 text-xs font-circular-bold text-[#059669]">
@@ -706,7 +743,7 @@ export default function RenewSubscriptionPage() {
                   <Summary
                     icon={<QrCodeIcon size={17} />}
                     label="Asistencias"
-                    value={`${attendanceEmployees} trabajadores · ${attendanceQrPoints} QR · S/ ${attendancePricingPreview.total.toFixed(2)}`}
+                    value={`Quedará ${attendancePricingPreview.finalEmployees} trabajadores · ${attendancePricingPreview.finalQrPoints} QR · S/ ${attendancePricingPreview.total.toFixed(2)}`}
                   />
                 ) : null}
                 <Summary
@@ -801,6 +838,11 @@ export default function RenewSubscriptionPage() {
                   company.state !== "activa" ||
                   (!enablePos && !enableAttendance) ||
                   (enablePos && !selectedPlan) ||
+                  Boolean(
+                    enableAttendance &&
+                    (attendancePricingPreview.finalEmployees < 1 ||
+                      attendancePricingPreview.finalQrPoints < 1),
+                  ) ||
                   !manualDiscount.valid ||
                   Boolean(
                     enablePos &&
@@ -838,6 +880,17 @@ function Summary({
         <p className="text-xs text-[var(--color-muted-foreground)]">{label}</p>
         <p className="font-circular-bold">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function CapacityBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p>{label}</p>
+      <p className="mt-0.5 font-circular-bold text-[var(--color-text)]">
+        {value}
+      </p>
     </div>
   );
 }
@@ -962,6 +1015,19 @@ function buildPreview(
     coverageEndsAt: addMonthsClamped(coverageStartsAt, months),
     resultingEndsAt: addMonthsClamped(coverageStartsAt, months),
   };
+}
+
+function getPaidAttendanceLimit(
+  company: PlatformCompany | null,
+  resource: "employees" | "qrPoints",
+) {
+  const attendance = company?.attendance;
+  if (!attendance?.active || attendance.trial || !attendance.effectiveActive) {
+    return 0;
+  }
+  return resource === "employees"
+    ? attendance.effectiveEmployeesLimit
+    : attendance.effectiveQrPointsLimit;
 }
 
 function addMonthsClamped(value: Date, months: number) {
