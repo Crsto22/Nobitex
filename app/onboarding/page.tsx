@@ -104,6 +104,9 @@ export default function OnboardingPage() {
   const branchType: BranchType = productMode.attendanceOnly
     ? "asistencia"
     : "tienda";
+  const setupCompleted = productMode.attendanceOnly
+    ? Boolean(setupStatus?.hasAnyActiveBranch || setupStatus?.hasActiveAttendanceBranch)
+    : Boolean(setupStatus && !setupStatus.requiresBranch);
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
 
@@ -150,14 +153,10 @@ export default function OnboardingPage() {
       );
       return;
     }
-    if (
-      activeStage === "branch" &&
-      !productMode.attendanceOnly &&
-      setupStatus &&
-      !setupStatus.requiresBranch &&
-      !branchCreated
-    ) {
-      router.replace("/dashboard");
+    if (setupCompleted && !branchCreated) {
+      router.replace(
+        productMode.attendanceOnly ? "/asistencias/dashboard" : "/dashboard",
+      );
     }
   }, [
     branchCreated,
@@ -169,7 +168,7 @@ export default function OnboardingPage() {
     isSuperAdmin,
     productMode.attendanceOnly,
     router,
-    setupStatus,
+    setupCompleted,
     activeStage,
   ]);
 

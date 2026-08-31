@@ -47,6 +47,8 @@ export type CreateCompanyPayload = {
 
 export type CompanySetupStatus = {
   hasActiveBranch: boolean;
+  hasActiveAttendanceBranch?: boolean;
+  hasAnyActiveBranch?: boolean;
   requiresBranch: boolean;
 };
 
