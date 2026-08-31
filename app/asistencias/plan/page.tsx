@@ -71,8 +71,8 @@ export default function AsistenciasPlanPage() {
   const { user, companyInfo, currentPlan, refreshPlan } = useAuth();
   const { showToast } = useSystemToast();
   const [activeTab, setActiveTab] = useState<Tab>("plans");
-  const [workers, setWorkers] = useState("1");
-  const [qrPoints, setQrPoints] = useState("1");
+  const [workers, setWorkers] = useState("0");
+  const [qrPoints, setQrPoints] = useState("0");
   const [posPlans, setPosPlans] = useState<PlanDefinition[]>([]);
   const [receipts, setReceipts] = useState<PlatformReceipt[]>([]);
   const [receiptPage, setReceiptPage] = useState(1);
@@ -136,6 +136,9 @@ export default function AsistenciasPlanPage() {
 
   const attendance = currentPlan?.attendance;
   const pricing = currentPlan?.attendancePricing;
+  const attendanceMonthlyPayment = attendance?.trial
+    ? 0
+    : Number(attendance?.monthlyPrice ?? 0);
   const workerUnitPrice = Number(pricing?.employeeUnitPrice ?? 0);
   const qrUnitPrice = Number(pricing?.qrPointUnitPrice ?? 0);
   const workerCount = Math.max(0, Math.trunc(Number(workers) || 0));
@@ -206,7 +209,13 @@ export default function AsistenciasPlanPage() {
         <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <MetricCard
             label="Estado"
-            value={attendance?.effectiveActive ? "Activo" : "Sin contratar"}
+            value={
+              attendance?.trial
+                ? "Prueba"
+                : attendance?.effectiveActive
+                  ? "Activo"
+                  : "Sin contratar"
+            }
             icon={<CalendarBlankIcon size={20} weight="fill" />}
             color={attendance?.effectiveActive ? "#10b981" : "#f59e0b"}
           />
@@ -220,7 +229,7 @@ export default function AsistenciasPlanPage() {
           />
           <MetricCard
             label="Pago mensual"
-            value={formatCurrency(attendance?.monthlyPrice ?? "0")}
+            value={formatCurrency(attendanceMonthlyPayment)}
             icon={<ReceiptIcon size={20} weight="fill" />}
             color="#14b8a6"
           />
