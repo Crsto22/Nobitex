@@ -144,6 +144,7 @@ export default function AsistenciasPlanPage() {
   const workerCount = Math.max(0, Math.trunc(Number(workers) || 0));
   const qrCount = Math.max(0, Math.trunc(Number(qrPoints) || 0));
   const monthlyTotal = workerCount * workerUnitPrice + qrCount * qrUnitPrice;
+  const newMonthlyTotal = attendanceMonthlyPayment + monthlyTotal;
   const includedDocumentQueries = getIncludedDocumentQueries(monthlyTotal);
   const hasPrices = workerUnitPrice > 0 || qrUnitPrice > 0;
   const companyName =
@@ -306,10 +307,18 @@ export default function AsistenciasPlanPage() {
               </div>
 
               <div className="mt-4 rounded-[12px] bg-[var(--color-input-bg)] p-4">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-3">
                   <div>
                     <p className="text-xs text-[var(--color-muted-foreground)]">
-                      Total mensual estimado
+                      Pago mensual actual
+                    </p>
+                    <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
+                      {formatCurrency(attendanceMonthlyPayment)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      Adicionales solicitados
                     </p>
                     <p className="mt-1 text-2xl font-circular-bold text-[var(--color-text)]">
                       {hasPrices
@@ -329,6 +338,16 @@ export default function AsistenciasPlanPage() {
                     </p>
                   </div>
                 </div>
+                <div className="mt-4 rounded-[10px] bg-[var(--color-card)] px-4 py-3">
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    Nuevo total mensual
+                  </p>
+                  <p className="mt-1 text-2xl font-circular-bold text-[var(--color-primary)]">
+                    {hasPrices
+                      ? formatCurrency(String(newMonthlyTotal))
+                      : "A cotizar"}
+                  </p>
+                </div>
                 <a
                   href={buildWhatsAppUrl({
                     companyName,
@@ -337,7 +356,9 @@ export default function AsistenciasPlanPage() {
                     workers: workerCount,
                     qrPoints: qrCount,
                     documentQueries: includedDocumentQueries,
+                    currentMonthlyPayment: attendanceMonthlyPayment,
                     monthlyTotal,
+                    newMonthlyTotal,
                     hasPrices,
                     affiliateCode,
                   })}
@@ -816,7 +837,9 @@ function buildWhatsAppUrl({
   workers,
   qrPoints,
   documentQueries,
+  currentMonthlyPayment,
   monthlyTotal,
+  newMonthlyTotal,
   hasPrices,
   affiliateCode,
 }: {
@@ -826,7 +849,9 @@ function buildWhatsAppUrl({
   workers: number;
   qrPoints: number;
   documentQueries: number;
+  currentMonthlyPayment: number;
   monthlyTotal: number;
+  newMonthlyTotal: number;
   hasPrices: boolean;
   affiliateCode?: string;
 }) {
@@ -841,7 +866,13 @@ function buildWhatsAppUrl({
     `Consultas DNI/RUC incluidas: ${documentQueries.toLocaleString("es-PE")}`,
     affiliateCode ? `Codigo de afiliado: ${affiliateCode}` : "",
     hasPrices
-      ? `Total mensual estimado: ${formatCurrency(String(monthlyTotal))}`
+      ? `Pago mensual actual: ${formatCurrency(String(currentMonthlyPayment))}`
+      : "",
+    hasPrices
+      ? `Adicionales solicitados: ${formatCurrency(String(monthlyTotal))}`
+      : "",
+    hasPrices
+      ? `Nuevo total mensual: ${formatCurrency(String(newMonthlyTotal))}`
       : "",
   ]
     .filter(Boolean)
