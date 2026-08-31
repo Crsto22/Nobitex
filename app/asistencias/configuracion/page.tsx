@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   CheckCircleIcon,
   MagnifyingGlassIcon,
@@ -16,6 +16,7 @@ import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { Button } from "@/components/ui/button";
+import { UbigeoSelect } from "@/components/ui/ubigeo-select";
 import {
   branchesApi,
   type Branch,
@@ -24,19 +25,8 @@ import {
   type BranchType,
 } from "@/lib/api/branches";
 import { useAuth } from "@/lib/auth/auth-provider";
-import peruUbigeos from "@/lib/data/peru-ubigeos.json";
 import { defaultPageSize } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
-
-type PeruUbigeo = {
-  ubigeo: string;
-  distrito: string;
-  provincia: string;
-  departamento: string;
-  label: string;
-};
-
-const ubigeos = peruUbigeos as PeruUbigeo[];
 const pageSize = defaultPageSize;
 const typeConfig = {
   tienda: {
@@ -120,18 +110,6 @@ export default function AsistenciasConfiguracionPage() {
   }, [load]);
 
   const branchUsage = meta.total;
-  const districtOptions = useMemo(
-    () =>
-      ubigeos
-        .filter((item) =>
-          normalize(`${item.label} ${item.ubigeo}`).includes(
-            normalize(form.distrito),
-          ),
-        )
-        .slice(0, 30),
-    [form.distrito],
-  );
-
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
@@ -406,44 +384,17 @@ export default function AsistenciasConfiguracionPage() {
             </label>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-2 text-sm">
-              <span className="font-circular-bold text-[var(--color-text)]">
-                Distrito / ubigeo
-              </span>
-              <input
-                list="attendance-ubigeos"
-                value={form.distrito}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  const selected = ubigeos.find((item) => item.label === value);
-                  setForm((current) => ({
-                    ...current,
-                    distrito: selected?.distrito ?? value,
-                    ubigeo: selected?.ubigeo ?? current.ubigeo,
-                  }));
-                }}
-                placeholder="Buscar distrito"
-                className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-[var(--color-text)] outline-none"
-              />
-              <datalist id="attendance-ubigeos">
-                {districtOptions.map((item) => (
-                  <option key={item.ubigeo} value={item.label} />
-                ))}
-              </datalist>
-            </label>
-            <Field
-              label="Ubigeo"
-              value={form.ubigeo}
-              onChange={(value) =>
-                setForm((current) => ({
-                  ...current,
-                  ubigeo: onlyDigits(value).slice(0, 6),
-                }))
-              }
-              placeholder="150101"
-            />
-          </div>
+          <UbigeoSelect
+            value={form.ubigeo}
+            disabled={saving}
+            onSelect={(item) =>
+              setForm((current) => ({
+                ...current,
+                ubigeo: item.ubigeo,
+                distrito: item.distrito,
+              }))
+            }
+          />
 
           <Field
             label="Direccion"
@@ -543,16 +494,4 @@ function buildPayload(
     esPrincipal: false,
     modoCajaHabilitado: false,
   };
-}
-
-function normalize(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function onlyDigits(value: string) {
-  return value.replace(/\D/g, "");
 }
