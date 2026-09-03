@@ -24,6 +24,8 @@ import {
 } from "@/lib/auth/session";
 import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 
+const supportWhatsAppPhone = "51923328058";
+
 export function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
@@ -50,7 +52,9 @@ export function LoginPage() {
   const shouldShowPasswordToggle =
     isPasswordFocused || passwordValue.length > 0;
   const whatsappMessage = encodeURIComponent("Hola, necesito ayuda con Nuvex.");
-  const whatsappPhone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+  const whatsappPhone = (
+    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP || supportWhatsAppPhone
+  ).replace(
     /\D/g,
     "",
   );
