@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 type Tab = "plans" | "usage" | "receipts";
 
 const receiptPageSize = 10;
+const supportWhatsAppPhone = "51923328058";
 
 const tabs: { key: Tab; label: string; icon: typeof TagIcon }[] = [
   { key: "plans", label: "Planes", icon: TagIcon },
@@ -877,7 +878,9 @@ function buildWhatsAppUrl({
   ]
     .filter(Boolean)
     .join("\n");
-  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+  const phone = (
+    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP || supportWhatsAppPhone
+  ).replace(
     /\D/g,
     "",
   );
@@ -926,7 +929,9 @@ function buildPosPlanWhatsAppUrl({
   ]
     .filter(Boolean)
     .join("\n");
-  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+  const phone = (
+    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP || supportWhatsAppPhone
+  ).replace(
     /\D/g,
     "",
   );

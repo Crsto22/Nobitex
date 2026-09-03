@@ -43,6 +43,7 @@ type Tab = "plans" | "usage" | "receipts";
 type BillingPeriod = "monthly" | "annual";
 
 const receiptPageSize = 10;
+const supportWhatsAppPhone = "51923328058";
 
 const tabs: { key: Tab; label: string; icon: typeof TagIcon }[] = [
   { key: "plans", label: "Planes", icon: TagIcon },
@@ -479,7 +480,9 @@ function AttendanceRequestCard({
   ]
     .filter(Boolean)
     .join("\n");
-  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+  const phone = (
+    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP || supportWhatsAppPhone
+  ).replace(
     /\D/g,
     "",
   );
@@ -1125,7 +1128,9 @@ function buildWhatsAppUrl({
   ]
     .filter(Boolean)
     .join("\n");
-  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
+  const phone = (
+    process.env.NEXT_PUBLIC_NUVEX_WHATSAPP || supportWhatsAppPhone
+  ).replace(
     /\D/g,
     "",
   );
