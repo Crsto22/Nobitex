@@ -77,6 +77,7 @@ import {
   cashRegisterApi,
   type CashRegisterSession,
 } from "@/lib/api/cash-register";
+import { useGlobalBarcodeScanner } from "@/lib/hooks/use-global-barcode-scanner";
 
 const filterPageSize = Math.min(defaultPageSize, 12);
 const emptySaleProductsMeta: SaleProductsResponse["meta"] = {
@@ -1188,6 +1189,13 @@ export default function VentasPage() {
     [addVariantToCart, cartItems, selectedBranch, showToast],
   );
 
+  const { active: scannerActive, toggle: toggleScanner } =
+    useGlobalBarcodeScanner({
+      onScan: (barcode) => {
+        void handleScannedCode(barcode);
+      },
+    });
+
   const handleSaleSuccess = () => {
     setCartItems([]);
     setDiscountValue("");
@@ -1537,7 +1545,7 @@ export default function VentasPage() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px]">
+            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px] lg:grid-cols-[minmax(240px,1fr)_180px_142px_120px_32px]">
             <label className="relative">
               <MagnifyingGlassIcon
                 size={18}
@@ -1573,6 +1581,22 @@ export default function VentasPage() {
                 </span>
               </time>
             </div>
+
+            <button
+              type="button"
+              onClick={toggleScanner}
+              title="Escanear codigo de barras"
+              aria-pressed={scannerActive}
+              className={cn(
+                "hidden h-11 items-center justify-center gap-2 rounded-[16px] px-4 text-sm font-black transition-colors lg:flex",
+                scannerActive
+                  ? "bg-[var(--color-primary)] text-white hover:opacity-90"
+                  : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+              )}
+            >
+              <BarcodeIcon size={18} weight="bold" />
+              Escanear
+            </button>
 
             <div className="hidden h-11 items-center justify-center md:flex">
               <WifiHighIcon
@@ -2038,14 +2062,6 @@ export default function VentasPage() {
             >
               <PlusIcon size={18} weight="bold" />
               Agregar
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsScannerDrawerOpen(true)}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-input-bg)] text-sm font-black text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <BarcodeIcon size={18} weight="bold" />
-              Escanear
             </button>
           </div>
 
