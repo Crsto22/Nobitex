@@ -2063,6 +2063,14 @@ export default function VentasPage() {
               <PlusIcon size={18} weight="bold" />
               Agregar
             </button>
+            <button
+              type="button"
+              onClick={() => setIsScannerDrawerOpen(true)}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-input-bg)] text-sm font-black text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <BarcodeIcon size={18} weight="bold" />
+              Escanear
+            </button>
           </div>
 
           <div className="scrollbar-hidden mt-5 min-h-0 flex-1 overflow-y-auto px-2">
