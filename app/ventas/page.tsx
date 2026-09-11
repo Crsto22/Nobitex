@@ -1545,7 +1545,7 @@ export default function VentasPage() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px] lg:grid-cols-[minmax(240px,1fr)_180px_142px_120px_32px]">
+            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px] lg:grid-cols-[minmax(240px,1fr)_180px_142px_52px_32px]">
             <label className="relative">
               <MagnifyingGlassIcon
                 size={18}
@@ -1586,16 +1586,16 @@ export default function VentasPage() {
               type="button"
               onClick={toggleScanner}
               title="Escanear codigo de barras"
+              aria-label="Escanear codigo de barras"
               aria-pressed={scannerActive}
               className={cn(
-                "hidden h-11 items-center justify-center gap-2 rounded-[16px] px-4 text-sm font-black transition-colors lg:flex",
+                "hidden h-11 w-11 items-center justify-center rounded-[16px] transition-colors lg:flex",
                 scannerActive
                   ? "bg-[var(--color-primary)] text-white hover:opacity-90"
                   : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
               )}
             >
               <BarcodeIcon size={18} weight="bold" />
-              Escanear
             </button>
 
             <div className="hidden h-11 items-center justify-center md:flex">
