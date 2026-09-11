@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import {
   BuildingsIcon,
@@ -11,8 +17,10 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   platformAdminApi,
+  type PlatformCompany,
   type PlatformCompaniesResponse,
   type PlatformCompanyState,
   type PlatformPlanCode,
@@ -37,6 +45,7 @@ const emptyResult: PlatformCompaniesResponse = {
 };
 
 export default function PlatformCompaniesPage() {
+  const { showToast } = useSystemToast();
   const [result, setResult] = useState<PlatformCompaniesResponse>(emptyResult);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -44,6 +53,10 @@ export default function PlatformCompaniesPage() {
   const [state, setState] = useState<PlatformCompanyState | "">("");
   const [planStatus, setPlanStatus] = useState<PlatformPlanStatus | "">("");
   const [isLoading, setIsLoading] = useState(true);
+  const [editingTrial, setEditingTrial] = useState<PlatformCompany | null>(
+    null,
+  );
+  const [savingTrial, setSavingTrial] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadCompanies = useCallback(async () => {
@@ -78,6 +91,40 @@ export default function PlatformCompaniesPage() {
   }, [loadCompanies]);
 
   const resetPage = () => setPage(1);
+
+  const saveTrial = async (endsAt: string) => {
+    if (!editingTrial) return;
+    setSavingTrial(true);
+    try {
+      const updated = await platformAdminApi.updateCompanyTrial(
+        editingTrial.id,
+        { endsAt },
+      );
+      setResult((current) => ({
+        ...current,
+        data: current.data.map((company) =>
+          company.id === updated.id ? updated : company,
+        ),
+      }));
+      setEditingTrial(null);
+      showToast({
+        title: "Prueba actualizada",
+        description: `${updated.name} vence el ${formatDate(updated.endsAt ?? endsAt)}.`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      showToast({
+        title: "No se pudo actualizar",
+        description:
+          requestError instanceof Error
+            ? requestError.message
+            : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setSavingTrial(false);
+    }
+  };
 
   return (
     <DashboardShell headerTitle="Directorio de empresas">
@@ -207,6 +254,15 @@ export default function PlatformCompaniesPage() {
                   >
                     Módulos
                   </Link>
+                  {company.planCode === "prueba" ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditingTrial(company)}
+                      className="text-left text-xs font-circular-bold text-[var(--color-primary)]"
+                    >
+                      Editar prueba
+                    </button>
+                  ) : null}
                 </div>
               </article>
             ))
@@ -221,8 +277,82 @@ export default function PlatformCompaniesPage() {
           isLoading={isLoading}
           onPageChange={setPage}
         />
+        {editingTrial ? (
+          <TrialModal
+            company={editingTrial}
+            saving={savingTrial}
+            onClose={() => setEditingTrial(null)}
+            onSubmit={saveTrial}
+          />
+        ) : null}
       </div>
     </DashboardShell>
+  );
+}
+
+function TrialModal({
+  company,
+  saving,
+  onClose,
+  onSubmit,
+}: {
+  company: PlatformCompany;
+  saving: boolean;
+  onClose: () => void;
+  onSubmit: (endsAt: string) => Promise<void>;
+}) {
+  const [endsAt, setEndsAt] = useState(
+    company.endsAt ? company.endsAt.slice(0, 10) : "",
+  );
+  const valid = Boolean(endsAt);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!valid) return;
+    void onSubmit(endsAt);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md rounded-[14px] bg-[var(--color-card)] p-5 shadow-xl"
+      >
+        <h2 className="text-base font-circular-bold text-[var(--color-text)]">
+          Editar prueba gratis
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+          {company.name}
+        </p>
+        <label className="mt-5 grid gap-1.5 text-sm text-[var(--color-text)]">
+          <span className="font-circular-bold">Fecha final</span>
+          <input
+            required
+            type="date"
+            value={endsAt}
+            onChange={(event) => setEndsAt(event.target.value)}
+            className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+          />
+        </label>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="h-10 rounded-xl bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)] disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !valid}
+            className="h-10 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-60"
+          >
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

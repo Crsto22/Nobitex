@@ -21,6 +21,7 @@ import {
   type UpdatePlatformPlanLimitsPayload,
   type UpdatePlatformPlanModulesPayload,
   type UpdatePlatformPlanPricingPayload,
+  type UpdatePlatformPlanTrialPayload,
 } from "@/lib/api/platform-admin";
 import { ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/intl";
@@ -170,6 +171,32 @@ export default function EditPlanPage() {
     }
   };
 
+  const updateTrial = async (payload: UpdatePlatformPlanTrialPayload) => {
+    if (!plan || plan.code !== "prueba") return;
+    setSaving(true);
+    try {
+      await platformAdminApi.updatePlanTrial(plan.code, payload);
+      await load();
+      showToast({
+        title: "Prueba actualizada",
+        description: `El plan Prueba ahora dura ${payload.trialDays} días.`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      const changed = isConflict(requestError, "PLAN_TRIAL_CHANGED");
+      if (changed) await load();
+      showToast({
+        title: changed ? "La prueba cambió" : "No se pudo actualizar",
+        description: changed
+          ? "Se recargaron los valores. Revisa y confirma nuevamente."
+          : getErrorMessage(requestError),
+        variant: changed ? "warning" : "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const updateLimits = async (payload: UpdatePlatformPlanLimitsPayload) => {
     if (!plan) return;
     setSaving(true);
@@ -296,10 +323,11 @@ export default function EditPlanPage() {
 
             {tab === "pricing" ? (
               <PricingForm
-                key={`${plan.code}-${plan.priceMonthly}-${plan.monthlyDiscountPercent}-${plan.annualDiscountPercent}`}
+                key={`${plan.code}-${plan.priceMonthly}-${plan.monthlyDiscountPercent}-${plan.annualDiscountPercent}-${plan.trialDays}`}
                 plan={plan}
                 saving={saving}
                 onSubmit={updatePricing}
+                onTrialSubmit={updateTrial}
               />
             ) : tab === "limits" ? (
               <LimitsForm
@@ -354,11 +382,14 @@ function PricingForm({
   plan,
   saving,
   onSubmit,
+  onTrialSubmit,
 }: {
   plan: PlatformPlanPricing;
   saving: boolean;
   onSubmit: (payload: UpdatePlatformPlanPricingPayload) => Promise<void>;
+  onTrialSubmit: (payload: UpdatePlatformPlanTrialPayload) => Promise<void>;
 }) {
+  const [trialDays, setTrialDays] = useState(String(plan.trialDays ?? 7));
   const [monthlyPrice, setMonthlyPrice] = useState(plan.priceMonthly);
   const [monthlyDiscount, setMonthlyDiscount] = useState(
     plan.monthlyDiscountPercent,
@@ -387,22 +418,73 @@ function PricingForm({
     annualDiscountValue <= 50;
 
   if (plan.code === "prueba") {
+    const days = Number(trialDays);
+    const trialValid = Number.isInteger(days) && days >= 1 && days <= 365;
+    const submitTrial = (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!trialValid) return;
+      void onTrialSubmit({
+        trialDays: days,
+        expectedUpdatedAt: plan.modulesUpdatedAt,
+      });
+    };
+
     return (
-      <section className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.12)]">
-        <div className="flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-xl bg-[#3b82f6]/10 text-[#2563eb]">
-            <CurrencyCircleDollarIcon size={21} weight="fill" />
-          </span>
-          <div>
-            <p className="font-circular-bold text-[var(--color-text)]">
-              Tarifa fija
-            </p>
-            <p className="text-xl font-circular-bold text-[var(--color-primary)]">
-              S/ 0.00
-            </p>
+      <form
+        onSubmit={submitTrial}
+        className="rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_2px_10px_rgba(21,25,34,0.12)]"
+      >
+        <div className="grid gap-4 sm:grid-cols-[1fr_220px] sm:items-end">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 place-items-center rounded-xl bg-[#3b82f6]/10 text-[#2563eb]">
+              <CurrencyCircleDollarIcon size={21} weight="fill" />
+            </span>
+            <div>
+              <p className="font-circular-bold text-[var(--color-text)]">
+                Duración de prueba
+              </p>
+              <p className="text-sm text-[var(--color-muted-foreground)]">
+                Se aplicará solo a empresas nuevas.
+              </p>
+            </div>
           </div>
+          <label className="grid gap-1.5 text-sm text-[var(--color-text)]">
+            <span className="font-circular-bold">Días</span>
+            <input
+              required
+              type="number"
+              min={1}
+              max={365}
+              step={1}
+              value={trialDays}
+              onChange={(event) => setTrialDays(event.target.value)}
+              className={inputClass}
+            />
+          </label>
         </div>
-      </section>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 place-items-center rounded-xl bg-[#3b82f6]/10 text-[#2563eb]">
+              <CurrencyCircleDollarIcon size={21} weight="fill" />
+            </span>
+            <div>
+              <p className="font-circular-bold text-[var(--color-text)]">
+                Tarifa fija
+              </p>
+              <p className="text-xl font-circular-bold text-[var(--color-primary)]">
+                S/ 0.00
+              </p>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={saving || !trialValid}
+            className="h-10 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-60"
+          >
+            {saving ? "Guardando..." : "Guardar prueba"}
+          </button>
+        </div>
+      </form>
     );
   }
 
@@ -780,9 +862,7 @@ function ModulesForm({
                       }}
                       className="size-4 accent-[var(--color-primary)]"
                     />
-                    <span className="min-w-0 truncate">
-                      {moduleItem.label}
-                    </span>
+                    <span className="min-w-0 truncate">{moduleItem.label}</span>
                   </label>
                 ))}
               </div>

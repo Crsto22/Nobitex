@@ -18,7 +18,9 @@ export type PlatformAuditCategory =
   "company" | "plan" | "admin" | "subscription" | "billing" | "affiliate";
 export type PlatformAuditAction =
   | "company_created"
+  | "company_trial_updated"
   | "plan_changed"
+  | "plan_trial_updated"
   | "plan_pricing_updated"
   | "plan_limits_updated"
   | "plan_modules_updated"
@@ -673,6 +675,11 @@ export type UpdatePlatformPlanPricingPayload = {
   expectedUpdatedAt: string;
 };
 
+export type UpdatePlatformPlanTrialPayload = {
+  trialDays: number;
+  expectedUpdatedAt: string;
+};
+
 export type UpdatePlatformPlanLimitsPayload = PlatformPlanLimits & {
   expectedUpdatedAt: string;
 };
@@ -680,6 +687,10 @@ export type UpdatePlatformPlanLimitsPayload = PlatformPlanLimits & {
 export type UpdatePlatformPlanModulesPayload = {
   moduleKeys: string[];
   expectedUpdatedAt: string;
+};
+
+export type UpdateCompanyTrialPayload = {
+  endsAt: string;
 };
 
 export type PlatformAdminDashboardResponse = {
@@ -798,6 +809,16 @@ export const platformAdminApi = {
     );
   },
 
+  updateCompanyTrial(id: string, payload: UpdateCompanyTrialPayload) {
+    return authFetch<PlatformCompany>(
+      `/platform-admin/companies/${encodeURIComponent(id)}/trial`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
   getAttendancePricing() {
     return authFetch<PlatformAttendancePricing>(
       "/platform-admin/attendance-pricing",
@@ -873,6 +894,16 @@ export const platformAdminApi = {
   ) {
     return authFetch<PlatformPlanPricing>(
       `/platform-admin/plans/${encodeURIComponent(code)}/pricing`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  updatePlanTrial(code: "prueba", payload: UpdatePlatformPlanTrialPayload) {
+    return authFetch<PlatformPlanPricing>(
+      `/platform-admin/plans/${encodeURIComponent(code)}/trial`,
       {
         method: "PATCH",
         body: JSON.stringify(payload),
