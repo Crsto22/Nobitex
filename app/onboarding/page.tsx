@@ -48,6 +48,7 @@ const initialBranch = {
 
 const includedAttendanceEmployees = 5;
 const includedAttendanceQrPoints = 1;
+const defaultPosTrialDays = 30;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -69,6 +70,7 @@ export default function OnboardingPage() {
   const [isSavingBranch, setIsSavingBranch] = useState(false);
   const [branchError, setBranchError] = useState("");
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
+  const [posTrialDays, setPosTrialDays] = useState<number | null>(null);
   const [attendancePricing, setAttendancePricing] =
     useState<AttendancePricing | null>(null);
   const [requestedEmployees, setRequestedEmployees] = useState(0);
@@ -117,6 +119,8 @@ export default function OnboardingPage() {
     void Promise.all([plansApi.findAll(), plansApi.attendancePricing()])
       .then(([catalog, pricing]) => {
         if (!mounted) return;
+        const pruebaPlan = catalog.find((plan) => plan.code === "prueba");
+        setPosTrialDays(pruebaPlan?.trialDays ?? null);
         setPlans(catalog.filter(isPosPlan));
         setAttendancePricing(pricing);
       })
@@ -336,6 +340,7 @@ export default function OnboardingPage() {
           <PosPlanStep
             plans={plans}
             companyName={companyName}
+            trialDays={posTrialDays ?? defaultPosTrialDays}
             onUseTrial={goAfterPosPlan}
           />
         ) : null}
@@ -528,10 +533,12 @@ export default function OnboardingPage() {
 function PosPlanStep({
   plans,
   companyName,
+  trialDays,
   onUseTrial,
 }: {
   plans: PlanDefinition[];
   companyName?: string | null;
+  trialDays: number;
   onUseTrial: () => void;
 }) {
   return (
@@ -544,7 +551,7 @@ function PosPlanStep({
       <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <PlanChoiceCard
           title="Prueba"
-          description="Conoce todas las funciones de Nuvex durante 7 dias."
+          description={`Conoce todas las funciones de Nuvex durante ${trialDays} días gratis.`}
           price="S/ 0.00"
           current
           color="#2563eb"
@@ -559,7 +566,7 @@ function PosPlanStep({
           features={["Ventas POS", "Caja", "Catalogo, stock y Kardex"]}
           action={
             <PrimaryButton type="button" onClick={onUseTrial}>
-              7 dias de prueba
+              {trialDays} días gratis
             </PrimaryButton>
           }
         />

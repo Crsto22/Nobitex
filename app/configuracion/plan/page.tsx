@@ -44,6 +44,7 @@ type BillingPeriod = "monthly" | "annual";
 
 const receiptPageSize = 10;
 const supportWhatsAppPhone = "51923328058";
+const defaultPosTrialDays = 30;
 
 const tabs: { key: Tab; label: string; icon: typeof TagIcon }[] = [
   { key: "plans", label: "Planes", icon: TagIcon },
@@ -138,7 +139,7 @@ export default function PlanPage() {
     setError("");
     try {
       const [catalog] = await Promise.all([plansApi.findAll(), refreshPlan()]);
-      setPlans(catalog);
+      setPlans(catalog.filter((plan) => plan.code !== "prueba"));
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -615,7 +616,9 @@ function PlanCard({
         {plan.name}
       </h3>
       <p className="mt-1 min-h-10 text-xs leading-5 text-[var(--color-muted-foreground)]">
-        {getPlanDescription(plan.code)}
+        {plan.code === "prueba"
+          ? `Conoce todas las funciones de Nuvex durante ${plan.trialDays ?? defaultPosTrialDays} días gratis.`
+          : getPlanDescription(plan.code)}
       </p>
       <p className="mt-2 text-2xl font-extrabold text-[var(--color-text)] text-fixed-2xl">
         {formatCurrency(amount)}
@@ -709,7 +712,7 @@ function PlanCard({
       <div className="mt-auto pt-6">
         {plan.code === "prueba" ? (
           <div className="flex h-11 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-sm font-bold text-[var(--color-muted-foreground)]">
-            7 días de prueba
+            {plan.trialDays ?? defaultPosTrialDays} días gratis
           </div>
         ) : (
           <a
