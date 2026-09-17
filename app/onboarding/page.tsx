@@ -3,16 +3,20 @@
 import Image from "next/image";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import type { Icon } from "@phosphor-icons/react";
 import {
+  BarcodeIcon,
   BuildingsIcon,
   CheckCircleIcon,
   DatabaseIcon,
   MapPinIcon,
   PackageIcon,
   QrCodeIcon,
+  ReceiptIcon,
   StorefrontIcon,
   TagIcon,
   UsersIcon,
+  XCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { LoadingScreen } from "@/components/loading-screen";
@@ -38,6 +42,17 @@ type OnboardingStage =
   | "catalog"
   | "product";
 type CatalogKind = "category" | "brand";
+
+type PlanCapability = {
+  label: string;
+  value: string;
+  icon: Icon;
+};
+
+type PlanFeatureItem = {
+  label: string;
+  included: boolean;
+};
 
 const initialBranch = {
   nombre: "",
@@ -292,8 +307,8 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-dvh overflow-y-auto bg-[var(--color-background)] px-4 py-6 sm:px-6 lg:py-10">
-      <div className="mx-auto w-full max-w-5xl">
+    <main className="min-h-dvh overflow-y-auto bg-[var(--color-background)] px-3 py-6 sm:px-4 lg:px-6 lg:py-10">
+      <div className="mx-auto w-full max-w-7xl">
         <header className="mb-6 flex items-center justify-between gap-4">
           <Image
             src="/Logo/Nuvex.png"
@@ -548,29 +563,36 @@ function PosPlanStep({
         title="Elige tu plan POS"
         badge="Primer paso"
       />
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="mt-6 grid gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-5">
         <PlanChoiceCard
           title="Prueba"
           description={`Conoce todas las funciones de Nuvex durante ${trialDays} días gratis.`}
           price="S/ 0.00"
           current
-          color="#2563eb"
           capabilities={[
-            ["Tiendas", "1"],
-            ["Almacenes", "5"],
-            ["Usuarios", "1"],
-            ["Productos", "50"],
-            ["Comprobantes", "100 / prueba"],
-            ["Consultas DNI/RUC", "20 / prueba"],
+            { label: "Tiendas", value: "1", icon: StorefrontIcon },
+            { label: "Almacenes", value: "5", icon: BuildingsIcon },
+            { label: "Usuarios", value: "1", icon: UsersIcon },
+            { label: "Productos", value: "50", icon: PackageIcon },
+            { label: "Comprobantes", value: "100 / prueba", icon: ReceiptIcon },
+            {
+              label: "Consultas DNI/RUC",
+              value: "20 / prueba",
+              icon: DatabaseIcon,
+            },
           ]}
-          features={["Ventas POS", "Caja", "Catalogo, stock y Kardex"]}
+          features={[
+            { label: "Ventas POS", included: true },
+            { label: "Caja", included: true },
+            { label: "Catalogo, stock y Kardex", included: true },
+          ]}
           action={
             <PrimaryButton type="button" onClick={onUseTrial}>
               {trialDays} días gratis
             </PrimaryButton>
           }
         />
-        {plans.slice(0, 4).map((plan, index) => (
+        {plans.slice(0, 4).map((plan) => (
           <PlanChoiceCard
             key={plan.code}
             title={plan.name}
@@ -578,9 +600,8 @@ function PosPlanStep({
             price={formatCurrency(plan.priceMonthly)}
             period="/ mes"
             popular={plan.code === "emprendedor"}
-            color={["#14b8a6", "#10b981", "#f59e0b", "#8b5cf6"][index] ?? "#14b8a6"}
             capabilities={getPosCapabilities(plan)}
-            features={getPosFeatures(plan)}
+            features={getPosFeatureItems(plan)}
             action={
               <WhatsAppButton
                 href={buildWhatsAppUrl([
@@ -632,13 +653,28 @@ function AttendancePlanStep({
           description="Controla tus primeras marcaciones sin costo inicial."
           price="S/ 0.00"
           current
-          color="#14b8a6"
           capabilities={[
-            ["Trabajadores", String(includedAttendanceEmployees)],
-            ["Puntos QR", String(includedAttendanceQrPoints)],
-            ["Consultas DNI/RUC", "20 / prueba"],
+            {
+              label: "Trabajadores",
+              value: String(includedAttendanceEmployees),
+              icon: UsersIcon,
+            },
+            {
+              label: "Puntos QR",
+              value: String(includedAttendanceQrPoints),
+              icon: QrCodeIcon,
+            },
+            {
+              label: "Consultas DNI/RUC",
+              value: "20 / prueba",
+              icon: DatabaseIcon,
+            },
           ]}
-          features={["Marcaje QR", "Dashboard de asistencia", "Reportes"]}
+          features={[
+            { label: "Marcaje QR", included: true },
+            { label: "Dashboard de asistencia", included: true },
+            { label: "Reportes", included: true },
+          ]}
           action={
             <PrimaryButton type="button" onClick={onUseTrial}>
               7 dias de prueba
@@ -744,7 +780,6 @@ function PlanChoiceCard({
   period,
   current,
   popular,
-  color = "#14b8a6",
   capabilities,
   features,
   action,
@@ -755,95 +790,115 @@ function PlanChoiceCard({
   period?: string;
   current?: boolean;
   popular?: boolean;
-  color?: string;
-  capabilities: [string, string][];
-  features: string[];
+  capabilities: PlanCapability[];
+  features: PlanFeatureItem[];
   action: ReactNode;
 }) {
   return (
     <article
-      className={`relative flex min-h-[560px] flex-col rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm ring-1 ${
-        popular ? "ring-2 ring-[var(--color-primary)]" : "ring-[var(--color-border)]"
+      className={`relative flex flex-col rounded-3xl bg-[var(--color-card)] p-5 transition-shadow ${
+        popular
+          ? "border-2 border-[var(--color-primary)] shadow-2xl"
+          : "border border-[var(--color-border)] shadow-sm hover:border-[var(--color-primary)]"
       }`}
     >
       {popular ? (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-primary)] px-3 py-1 text-[10px] font-circular-bold text-white">
-          Mas popular
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-primary)] px-4 py-1 text-xs font-circular-bold text-white shadow-lg">
+          Más popular
         </span>
       ) : null}
+
       <div className="flex items-start justify-between gap-3">
-        <span
-          className="grid size-11 place-items-center rounded-[12px]"
-          style={{ backgroundColor: `${color}18`, color }}
-        >
-          <TagIcon size={20} weight="fill" />
-        </span>
+        <h3 className="text-xl font-circular-bold text-[var(--color-primary)]">
+          {title}
+        </h3>
         {current ? (
-          <span className="rounded-full bg-[#10b981]/10 px-3 py-1 text-[10px] font-circular-bold text-[#059669]">
+          <span className="shrink-0 rounded-full bg-[#10b981]/10 px-3 py-1 text-[10px] font-circular-bold text-[#059669]">
             Plan actual
           </span>
         ) : null}
       </div>
-
-      <h3 className="mt-4 text-lg font-circular-bold text-[var(--color-text)]">
-        {title}
-      </h3>
       {description ? (
-        <p className="mt-1 min-h-10 text-xs leading-5 text-[var(--color-muted-foreground)]">
+        <p className="mt-1 min-h-12 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
           {description}
         </p>
       ) : null}
-      <p className="mt-2 text-2xl font-circular-bold text-[var(--color-text)]">
-        {price}
+      <div className="mt-3 flex flex-wrap items-baseline gap-1">
+        <span className="text-2xl font-circular-bold text-[var(--color-text)] md:text-3xl">
+          {price}
+        </span>
         {period ? (
-          <span className="ml-1 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+          <span className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
             {period}
           </span>
         ) : null}
-      </p>
+      </div>
 
       <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-        <p className="mb-3 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
-          CAPACIDAD INCLUIDA
+        <p className="mb-3 text-[11px] font-circular-bold uppercase tracking-wide text-[var(--color-primary)]">
+          Capacidad incluida
         </p>
-        <div className="space-y-2">
-          {capabilities.map(([label, value]) => (
-            <p key={label} className="flex items-center gap-2 text-[11px]">
-              <DatabaseIcon
-                size={14}
-                weight="fill"
-                className="text-[var(--color-muted-foreground)]"
-              />
-              <span className="min-w-0 flex-1 text-[var(--color-muted-foreground)]">
-                {label}
-              </span>
-              <span className="font-circular-bold text-[var(--color-text)]">
-                {value}
-              </span>
-            </p>
+        <div className="space-y-2.5">
+          {capabilities.map((item) => (
+            <PlanDetail key={item.label} {...item} />
           ))}
         </div>
       </div>
 
       <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-        <p className="mb-3 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
-          FUNCIONALIDADES
+        <p className="mb-3 text-[11px] font-circular-bold uppercase tracking-wide text-[var(--color-primary)]">
+          Funcionalidades
         </p>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {features.map((item) => (
-            <p key={item} className="flex items-start gap-2 text-[11px] leading-4 text-[var(--color-text)]">
-            <CheckCircleIcon
-              size={14}
-              weight="fill"
-              className="mt-px shrink-0 text-[#10b981]"
-            />
-            {item}
-          </p>
+            <PlanFeature key={item.label} {...item} />
           ))}
         </div>
       </div>
-      <div className="mt-auto pt-5">{action}</div>
+
+      <div className="mt-auto w-full pt-5 [&>*]:w-full">{action}</div>
     </article>
+  );
+}
+
+function PlanDetail({ icon: IconComponent, label, value }: PlanCapability) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <IconComponent
+        size={15}
+        weight="bold"
+        className="shrink-0 text-[var(--color-muted-foreground)]"
+      />
+      <span className="min-w-0 flex-1 text-[var(--color-muted-foreground)]">
+        {label}
+      </span>
+      <span className="text-right font-circular-bold text-[var(--color-text)]">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function PlanFeature({ label, included }: PlanFeatureItem) {
+  const FeatureIcon = included ? CheckCircleIcon : XCircleIcon;
+
+  return (
+    <div
+      className={`flex items-center gap-2 text-xs ${
+        included
+          ? "text-[var(--color-text)]"
+          : "text-[var(--color-muted-foreground)]"
+      }`}
+    >
+      <FeatureIcon
+        size={15}
+        weight="fill"
+        className={
+          included ? "shrink-0 text-[#10b981]" : "shrink-0 text-[#cbd5e1]"
+        }
+      />
+      <span>{label}</span>
+    </div>
   );
 }
 
@@ -1074,36 +1129,91 @@ function isPosPlan(plan: PlanDefinition) {
   ].includes(plan.code);
 }
 
-function getPosCapabilities(plan: PlanDefinition): [string, string][] {
+function getPosCapabilities(plan: PlanDefinition): PlanCapability[] {
   return [
-    ["Tiendas", formatPlanLimit(plan.limits.branches)],
-    ["Almacenes", formatPlanLimit(plan.limits.warehouses)],
-    ["Usuarios", formatPlanLimit(plan.limits.users)],
-    ["Productos", formatPlanLimit(plan.limits.products)],
-    ["Comprobantes", `${formatPlanLimit(plan.limits.documents)} / mes`],
-    ["Consultas DNI/RUC", `${formatPlanLimit(plan.limits.documentQueries)} / mes`],
-    ["Imagenes de productos", formatBytes(plan.limits.storageBytes)],
+    {
+      label: "Tiendas",
+      value: formatPlanLimit(plan.limits.branches),
+      icon: StorefrontIcon,
+    },
+    {
+      label: "Almacenes",
+      value: formatPlanLimit(plan.limits.warehouses),
+      icon: BuildingsIcon,
+    },
+    {
+      label: "Usuarios",
+      value: formatPlanLimit(plan.limits.users),
+      icon: UsersIcon,
+    },
+    {
+      label: "Productos",
+      value: formatPlanLimit(plan.limits.products),
+      icon: PackageIcon,
+    },
+    {
+      label: "Variantes",
+      value: formatPlanLimit(plan.limits.variants),
+      icon: BarcodeIcon,
+    },
+    {
+      label: "Comprobantes",
+      value: `${formatPlanLimit(plan.limits.documents)} / mes`,
+      icon: ReceiptIcon,
+    },
+    {
+      label: "Consultas DNI/RUC",
+      value: `${formatPlanLimit(plan.limits.documentQueries)} / mes`,
+      icon: DatabaseIcon,
+    },
   ];
 }
 
-function getPosFeatures(plan: PlanDefinition): string[] {
-  const features = [
-    ["Facturacion electronica", "comprobantes"],
-    ["Ventas POS", "ventas-pos"],
-    ["Caja", "caja"],
-    ["Cotizaciones y clientes", "cotizaciones"],
-    ["Catalogo, stock y Kardex", "stock-kardex"],
-    ["Administracion de usuarios", "usuarios"],
-    ["Reportes de ventas y productos", "reportes-ventas"],
-  ] as const;
-
-  const included = features
-    .filter(([, moduleKey]) => plan.moduleKeys.includes(moduleKey))
-    .map(([label]) => label);
+function getPosFeatureItems(plan: PlanDefinition): PlanFeatureItem[] {
+  const keys = new Set(plan.moduleKeys);
 
   return [
-    ...included,
-    plan.code === "empresarial" ? "Soporte prioritario" : "Soporte estandar",
+    {
+      label: "Facturacion electronica",
+      included: keys.has("comprobantes"),
+    },
+    { label: "Ventas POS", included: keys.has("ventas-pos") },
+    { label: "Caja", included: keys.has("caja") },
+    {
+      label: "Cotizaciones y clientes",
+      included: keys.has("cotizaciones") && keys.has("clientes"),
+    },
+    {
+      label: "Catalogo, stock y Kardex",
+      included: keys.has("productos") && keys.has("stock-kardex"),
+    },
+    {
+      label: "Administracion de usuarios",
+      included: keys.has("usuarios"),
+    },
+    {
+      label: "Reportes de ventas y productos",
+      included: keys.has("reportes-ventas") && keys.has("reportes-productos"),
+    },
+    {
+      label: "Reporte de clientes",
+      included: keys.has("reportes-clientes"),
+    },
+    {
+      label: "Reporte de usuarios",
+      included: keys.has("reportes-usuarios"),
+    },
+    {
+      label: "GRE y conductores",
+      included: keys.has("gre-remitente") && keys.has("conductores"),
+    },
+    {
+      label:
+        plan.code === "empresarial"
+          ? "Soporte prioritario"
+          : "Soporte estandar",
+      included: true,
+    },
   ];
 }
 
@@ -1125,13 +1235,6 @@ function getPlanDescription(code: PlanDefinition["code"]) {
 function formatPlanLimit(value: number | null) {
   if (value === null || value < 0) return "Ilimitado";
   return value.toLocaleString("es-PE");
-}
-
-function formatBytes(value: number) {
-  if (value >= 1024 * 1024 * 1024) {
-    return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
-  }
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function buildWhatsAppUrl(lines: string[]) {
