@@ -1198,6 +1198,7 @@ export default function VentasPage() {
 
   const handleSaleSuccess = () => {
     setCartItems([]);
+    setSelectedClient(null);
     setDiscountValue("");
     setSaleNote("");
     setIsDiscountEditorOpen(false);
