@@ -1,12 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import type { Icon } from "@phosphor-icons/react";
 import {
   BarcodeIcon,
   BuildingsIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
   CheckCircleIcon,
   DatabaseIcon,
   MapPinIcon,
@@ -556,6 +564,38 @@ function PosPlanStep({
   trialDays: number;
   onUseTrial: () => void;
 }) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [slide, setSlide] = useState(0);
+  const visiblePlans = plans.slice(0, 4);
+  const totalCards = visiblePlans.length + 1;
+
+  const handleCarouselScroll = () => {
+    const container = carouselRef.current;
+    if (!container) return;
+    let closest = 0;
+    let minDistance = Infinity;
+    Array.from(container.children).forEach((child, index) => {
+      const element = child as HTMLElement;
+      const distance = Math.abs(element.offsetLeft - container.scrollLeft);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = index;
+      }
+    });
+    setSlide(closest);
+  };
+
+  const scrollToCard = (index: number) => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const target = Math.max(0, Math.min(totalCards - 1, index));
+    const child = container.children[target] as HTMLElement | undefined;
+    if (child) {
+      container.scrollTo({ left: child.offsetLeft, behavior: "smooth" });
+    }
+    setSlide(target);
+  };
+
   return (
     <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
       <SectionTitle
@@ -563,57 +603,90 @@ function PosPlanStep({
         title="Elige tu plan POS"
         badge="Primer paso"
       />
-      <div className="mt-6 grid gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-5">
-        <PlanChoiceCard
-          title="Prueba"
-          description={`Conoce todas las funciones de Nuvex durante ${trialDays} días gratis.`}
-          price="S/ 0.00"
-          current
-          capabilities={[
-            { label: "Tiendas", value: "1", icon: StorefrontIcon },
-            { label: "Almacenes", value: "5", icon: BuildingsIcon },
-            { label: "Usuarios", value: "1", icon: UsersIcon },
-            { label: "Productos", value: "50", icon: PackageIcon },
-            { label: "Comprobantes", value: "100 / prueba", icon: ReceiptIcon },
-            {
-              label: "Consultas DNI/RUC",
-              value: "20 / prueba",
-              icon: DatabaseIcon,
-            },
-          ]}
-          features={[
-            { label: "Ventas POS", included: true },
-            { label: "Caja", included: true },
-            { label: "Catalogo, stock y Kardex", included: true },
-          ]}
-          action={
-            <PrimaryButton type="button" onClick={onUseTrial}>
-              {trialDays} días gratis
-            </PrimaryButton>
-          }
-        />
-        {plans.slice(0, 4).map((plan) => (
+      <div
+        ref={carouselRef}
+        onScroll={handleCarouselScroll}
+        className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:pb-0 xl:grid-cols-5"
+      >
+        <div className="flex w-[82%] shrink-0 snap-center md:w-auto md:shrink">
           <PlanChoiceCard
-            key={plan.code}
-            title={plan.name}
-            description={getPlanDescription(plan.code)}
-            price={formatCurrency(plan.priceMonthly)}
-            period="/ mes"
-            popular={plan.code === "emprendedor"}
-            capabilities={getPosCapabilities(plan)}
-            features={getPosFeatureItems(plan)}
-            action={
-              <WhatsAppButton
-                href={buildWhatsAppUrl([
-                  "Hola, quiero solicitar un plan POS para Nuvex.",
-                  `Empresa: ${companyName ?? "-"}`,
-                  `Plan: ${plan.name}`,
-                  `Precio mensual: ${formatCurrency(plan.priceMonthly)}`,
-                ])}
-              />
-            }
+            title="Prueba"
+            description={`Conoce todas las funciones de Nuvex durante ${trialDays} días gratis.`}
+            price="S/ 0.00"
+            capabilities={[
+              { label: "Tiendas", value: "1", icon: StorefrontIcon },
+              { label: "Almacenes", value: "5", icon: BuildingsIcon },
+              { label: "Usuarios", value: "1", icon: UsersIcon },
+              { label: "Productos", value: "50", icon: PackageIcon },
+              {
+                label: "Comprobantes",
+                value: "100 / prueba",
+                icon: ReceiptIcon,
+              },
+              {
+                label: "Consultas DNI/RUC",
+                value: "20 / prueba",
+                icon: DatabaseIcon,
+              },
+            ]}
+            features={[
+              { label: "Ventas POS", included: true },
+              { label: "Caja", included: true },
+              { label: "Catalogo, stock y Kardex", included: true },
+            ]}
+            actionLabel={`${trialDays} días gratis`}
+            actionVariant="primary"
+            onSelect={onUseTrial}
           />
+        </div>
+        {visiblePlans.map((plan) => (
+          <div
+            key={plan.code}
+            className="flex w-[82%] shrink-0 snap-center md:w-auto md:shrink"
+          >
+            <PlanChoiceCard
+              title={plan.name}
+              description={getPlanDescription(plan.code)}
+              price={formatCurrency(plan.priceMonthly)}
+              period="/ mes"
+              popular={plan.code === "emprendedor"}
+              capabilities={getPosCapabilities(plan)}
+              features={getPosFeatureItems(plan)}
+              actionLabel="Solicitar por WhatsApp"
+              actionVariant="whatsapp"
+              href={buildWhatsAppUrl([
+                "Hola, quiero solicitar un plan POS para Nuvex.",
+                `Empresa: ${companyName ?? "-"}`,
+                `Plan: ${plan.name}`,
+                `Precio mensual: ${formatCurrency(plan.priceMonthly)}`,
+              ])}
+            />
+          </div>
         ))}
+      </div>
+
+      <div className="mt-2 flex items-center justify-center gap-4 md:hidden">
+        <button
+          type="button"
+          aria-label="Plan anterior"
+          onClick={() => scrollToCard(slide - 1)}
+          disabled={slide === 0}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-primary)] text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <CaretLeftIcon size={18} weight="bold" />
+        </button>
+        <span className="text-sm font-circular-bold text-[var(--color-primary)]">
+          {slide + 1} / {totalCards}
+        </span>
+        <button
+          type="button"
+          aria-label="Plan siguiente"
+          onClick={() => scrollToCard(slide + 1)}
+          disabled={slide >= totalCards - 1}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-primary)] text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <CaretRightIcon size={18} weight="bold" />
+        </button>
       </div>
     </section>
   );
@@ -652,7 +725,6 @@ function AttendancePlanStep({
           title="Prueba"
           description="Controla tus primeras marcaciones sin costo inicial."
           price="S/ 0.00"
-          current
           capabilities={[
             {
               label: "Trabajadores",
@@ -675,11 +747,9 @@ function AttendancePlanStep({
             { label: "Dashboard de asistencia", included: true },
             { label: "Reportes", included: true },
           ]}
-          action={
-            <PrimaryButton type="button" onClick={onUseTrial}>
-              7 dias de prueba
-            </PrimaryButton>
-          }
+          actionLabel="7 dias de prueba"
+          actionVariant="primary"
+          onSelect={onUseTrial}
         />
 
         <div className="rounded-[8px] bg-[var(--color-input-bg)] p-4">
@@ -778,46 +848,43 @@ function PlanChoiceCard({
   description,
   price,
   period,
-  current,
   popular,
   capabilities,
   features,
-  action,
+  actionLabel,
+  actionVariant,
+  href,
+  onSelect,
 }: {
   title: string;
   description?: string;
   price: string;
   period?: string;
-  current?: boolean;
   popular?: boolean;
   capabilities: PlanCapability[];
   features: PlanFeatureItem[];
-  action: ReactNode;
+  actionLabel: string;
+  actionVariant: "primary" | "whatsapp";
+  href?: string;
+  onSelect?: () => void;
 }) {
-  return (
-    <article
-      className={`relative flex flex-col rounded-3xl bg-[var(--color-card)] p-5 transition-shadow ${
-        popular
-          ? "border-2 border-[var(--color-primary)] shadow-2xl"
-          : "border border-[var(--color-border)] shadow-sm hover:border-[var(--color-primary)]"
-      }`}
-    >
+  const rootClassName = `group relative flex w-full cursor-pointer flex-col rounded-3xl bg-[var(--color-card)] p-5 text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 ${
+    popular
+      ? "border-2 border-[var(--color-primary)] shadow-2xl"
+      : "border border-[var(--color-border)] shadow-sm hover:border-[var(--color-primary)]"
+  }`;
+
+  const content = (
+    <>
       {popular ? (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-primary)] px-4 py-1 text-xs font-circular-bold text-white shadow-lg">
           Más popular
         </span>
       ) : null}
 
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="text-xl font-circular-bold text-[var(--color-primary)]">
-          {title}
-        </h3>
-        {current ? (
-          <span className="shrink-0 rounded-full bg-[#10b981]/10 px-3 py-1 text-[10px] font-circular-bold text-[#059669]">
-            Plan actual
-          </span>
-        ) : null}
-      </div>
+      <h3 className="text-xl font-circular-bold text-[var(--color-primary)]">
+        {title}
+      </h3>
       {description ? (
         <p className="mt-1 min-h-12 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
           {description}
@@ -856,8 +923,44 @@ function PlanChoiceCard({
         </div>
       </div>
 
-      <div className="mt-auto w-full pt-5 [&>*]:w-full">{action}</div>
-    </article>
+      <span
+        className={`mt-auto flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-circular-bold text-white ${
+          actionVariant === "whatsapp"
+            ? "bg-[#16a34a]"
+            : "bg-[var(--color-primary)]"
+        }`}
+      >
+        {actionVariant === "whatsapp" ? (
+          <Image
+            src="/svg/redes-sociales/whatsapp.svg"
+            alt=""
+            width={18}
+            height={18}
+            className="h-4 w-4"
+          />
+        ) : null}
+        {actionLabel}
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={rootClassName}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onSelect} className={rootClassName}>
+      {content}
+    </button>
   );
 }
 
