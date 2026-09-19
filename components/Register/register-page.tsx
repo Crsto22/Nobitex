@@ -14,12 +14,6 @@ import {
   EyeSlashIcon,
   IdentificationCardIcon,
   KeyIcon,
-  PackageIcon,
-  QrCodeIcon,
-  SneakerIcon,
-  ShoppingCartSimpleIcon,
-  StorefrontIcon,
-  TShirtIcon,
   UserIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -71,25 +65,19 @@ const catalogProfileOptions = [
     value: "ropa",
     label: "Ropa",
     description: "Tallas XS a XXL",
-    icon: TShirtIcon,
+    image: "/icons/SISTEMA/ropa.png",
   },
   {
     value: "calzado",
     label: "Calzado",
     description: "Tallas 24 a 48",
-    icon: SneakerIcon,
-  },
-  {
-    value: "ropa_calzado",
-    label: "Ropa y calzado",
-    description: "Ambos catálogos",
-    icon: ShoppingCartSimpleIcon,
+    image: "/icons/SISTEMA/zapatilla.png",
   },
   {
     value: "otros",
     label: "Otros",
     description: "Configúralo después",
-    icon: PackageIcon,
+    image: "/icons/SISTEMA/bodega.png",
   },
 ] as const;
 
@@ -98,19 +86,13 @@ const productModeOptions = [
     value: "pos",
     label: "POS",
     description: "Ventas, stock, caja y comprobantes",
-    icon: StorefrontIcon,
+    image: "/icons/SISTEMA/caja.png",
   },
   {
     value: "attendance",
     label: "Asistencias",
     description: "Marcajes, trabajadores y puntos QR",
-    icon: QrCodeIcon,
-  },
-  {
-    value: "both",
-    label: "POS + Asistencias",
-    description: "Ventas y control de personal juntos",
-    icon: ShoppingCartSimpleIcon,
+    image: "/icons/SISTEMA/asistencias.png",
   },
 ] as const;
 
@@ -139,7 +121,7 @@ type CompanyFormData = {
   comoConocio: string;
 };
 
-type ProductMode = (typeof productModeOptions)[number]["value"];
+type ProductMode = "pos" | "attendance" | "both";
 
 export function RegisterPage() {
   const router = useRouter();
@@ -1032,16 +1014,67 @@ type CompanyStepProps = {
 };
 
 function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
+  const posSelected =
+    companyData.productMode === "pos" || companyData.productMode === "both";
+  const attendanceSelected =
+    companyData.productMode === "attendance" ||
+    companyData.productMode === "both";
+
+  const toggleMode = (mode: "pos" | "attendance") => {
+    const nextPos = mode === "pos" ? !posSelected : posSelected;
+    const nextAttendance =
+      mode === "attendance" ? !attendanceSelected : attendanceSelected;
+    const nextProductMode: ProductMode | "" =
+      nextPos && nextAttendance
+        ? "both"
+        : nextPos
+          ? "pos"
+          : nextAttendance
+            ? "attendance"
+            : "";
+
+    updateCompanyValue("productMode", nextProductMode);
+  };
+
+  const ropaSelected =
+    companyData.catalogProfile === "ropa" ||
+    companyData.catalogProfile === "ropa_calzado";
+  const calzadoSelected =
+    companyData.catalogProfile === "calzado" ||
+    companyData.catalogProfile === "ropa_calzado";
+
+  const toggleCatalog = (value: "ropa" | "calzado") => {
+    const nextRopa = value === "ropa" ? !ropaSelected : ropaSelected;
+    const nextCalzado =
+      value === "calzado" ? !calzadoSelected : calzadoSelected;
+    const nextCatalogProfile: CompanyCatalogProfile | "" =
+      nextRopa && nextCalzado
+        ? "ropa_calzado"
+        : nextRopa
+          ? "ropa"
+          : nextCalzado
+            ? "calzado"
+            : "";
+
+    updateCompanyValue("catalogProfile", nextCatalogProfile);
+  };
+
+  const otrosSelected = companyData.catalogProfile === "otros";
+
+  const toggleOtros = () => {
+    updateCompanyValue("catalogProfile", otrosSelected ? "" : "otros");
+  };
+
   return (
     <>
       <fieldset>
         <legend className="text-sm font-circular-bold text-[var(--color-text)]">
           ¿Qué quieres usar?
         </legend>
-        <div className="mt-2 grid gap-3 lg:grid-cols-3">
+        <div className="mt-2 grid gap-3 lg:grid-cols-2">
           {productModeOptions.map((option) => {
-            const selected = companyData.productMode === option.value;
-            const Icon = option.icon;
+            const selected =
+              option.value === "pos" ? posSelected : attendanceSelected;
 
             return (
               <label
@@ -1053,25 +1086,20 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
                 }`}
               >
                 <input
-                  type="radio"
+                  type="checkbox"
                   name="productMode"
                   value={option.value}
                   checked={selected}
-                  onChange={() =>
-                    updateCompanyValue("productMode", option.value)
-                  }
+                  onChange={() => toggleMode(option.value)}
                   className="sr-only"
-                  required
                 />
-                <span
-                  className={`grid size-10 shrink-0 place-items-center rounded-xl ${
-                    selected
-                      ? "bg-white/15"
-                      : "bg-[var(--color-card)] text-[var(--color-primary)]"
-                  }`}
-                >
-                  <Icon size={22} weight="fill" />
-                </span>
+                <Image
+                  src={option.image}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="size-12 shrink-0 object-contain"
+                />
                 <span className="min-w-0">
                   <span className="block text-sm font-circular-bold">
                     {option.label}
@@ -1104,10 +1132,14 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
           <legend className="text-sm font-circular-bold text-[var(--color-text)]">
             ¿Qué productos venderás?
           </legend>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {catalogProfileOptions.map((option) => {
-              const selected = companyData.catalogProfile === option.value;
-              const Icon = option.icon;
+              const isOtros = option.value === "otros";
+              const selected = isOtros
+                ? otrosSelected
+                : option.value === "ropa"
+                  ? ropaSelected
+                  : calzadoSelected;
 
               return (
                 <label
@@ -1119,24 +1151,22 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
                   }`}
                 >
                   <input
-                    type="radio"
+                    type="checkbox"
                     name="catalogProfile"
                     value={option.value}
                     checked={selected}
                     onChange={() =>
-                      updateCompanyValue("catalogProfile", option.value)
+                      isOtros ? toggleOtros() : toggleCatalog(option.value)
                     }
                     className="sr-only"
                   />
-                  <span
-                    className={`grid size-10 shrink-0 place-items-center rounded-xl ${
-                      selected
-                        ? "bg-white/15"
-                        : "bg-[var(--color-card)] text-[var(--color-primary)]"
-                    }`}
-                  >
-                    <Icon size={22} weight="fill" />
-                  </span>
+                  <Image
+                    src={option.image}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="size-12 shrink-0 object-contain"
+                  />
                   <span className="min-w-0">
                     <span className="block text-sm font-circular-bold">
                       {option.label}

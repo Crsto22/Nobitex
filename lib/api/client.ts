@@ -1,6 +1,10 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ??
-  "http://localhost:3000";
+function normalizeApiBaseUrl(value?: string): string {
+  const base = value?.trim().replace(/\/+$/, "");
+  if (!base) return "";
+  return /^https?:\/\//i.test(base) ? base : `https://${base}`;
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 
 const getCache = new Map<string, { expiresAt: number; value: unknown }>();
 const inFlightGets = new Map<string, Promise<unknown>>();
