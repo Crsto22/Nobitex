@@ -65,19 +65,19 @@ const catalogProfileOptions = [
     value: "ropa",
     label: "Ropa",
     description: "Tallas XS a XXL",
-    image: "/icons/SISTEMA/ropa.png",
+    image: "/icons/ropa.png",
   },
   {
     value: "calzado",
     label: "Calzado",
     description: "Tallas 24 a 48",
-    image: "/icons/SISTEMA/zapatilla.png",
+    image: "/icons/zapatilla.png",
   },
   {
     value: "otros",
     label: "Otros",
     description: "Configúralo después",
-    image: "/icons/SISTEMA/bodega.png",
+    image: "/icons/bodega.png",
   },
 ] as const;
 
@@ -86,13 +86,13 @@ const productModeOptions = [
     value: "pos",
     label: "POS",
     description: "Ventas, stock, caja y comprobantes",
-    image: "/icons/SISTEMA/caja.png",
+    image: "/icons/caja.png",
   },
   {
     value: "attendance",
     label: "Asistencias",
     description: "Marcajes, trabajadores y puntos QR",
-    image: "/icons/SISTEMA/asistencias.png",
+    image: "/icons/asistencias.png",
   },
 ] as const;
 
