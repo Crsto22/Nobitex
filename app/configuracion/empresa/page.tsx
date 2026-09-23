@@ -3,6 +3,7 @@
 import { NativeSelect } from "@/components/ui/select";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   BuildingIcon,
@@ -10,6 +11,7 @@ import {
   CaretDownIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
+  CrownIcon,
   EnvelopeSimpleIcon,
   FileTextIcon,
   IdentificationCardIcon,
@@ -93,6 +95,8 @@ export function EmpresaPageContent({
 }) {
   const { showToast } = useSystemToast();
   const { updateCompanyInfo, currentPlan } = useAuth();
+  const planCode = currentPlan?.plan.code;
+  const isSunatLocked = !planCode || planCode === "prueba";
   const [activeTab, setActiveTab] = useState<ActiveTab>("empresa");
   const [company, setCompany] = useState<Company | null>(null);
   const [sunatConfig, setSunatConfig] = useState<SunatConfig | null>(null);
@@ -790,73 +794,82 @@ export function EmpresaPageContent({
             </div>
           </form>
         ) : (
-          <form className="space-y-4" onSubmit={handleSunatSubmit}>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              <StatusTile
-                icon={<ShieldCheckIcon size={22} weight="fill" />}
-                label="Facturacion electronica"
-                value={sunatForm.activo ? "Activa" : "Inactiva"}
-                ok={sunatForm.activo}
-              />
-              <StatusTile
-                icon={<KeyIcon size={22} weight="fill" />}
-                label="Credenciales SOL"
-                value={
-                  sunatConfig?.usuarioSolConfigurado &&
-                  sunatConfig.claveSolConfigurada
-                    ? "Configuradas"
-                    : "Pendientes"
-                }
-                ok={
-                  Boolean(sunatConfig?.usuarioSolConfigurado) &&
-                  Boolean(sunatConfig?.claveSolConfigurada)
-                }
-              />
-              <StatusTile
-                icon={<FileTextIcon size={22} weight="fill" />}
-                label="Certificado digital"
-                value={
-                  sunatConfig?.certificadoConfigurado ? "Subido" : "Pendiente"
-                }
-                ok={Boolean(sunatConfig?.certificadoConfigurado)}
-              />
-            </div>
+          <div className="relative">
+            <form
+              className={cn(
+                "space-y-4 transition duration-200",
+                isSunatLocked && "pointer-events-none select-none blur-sm",
+              )}
+              onSubmit={isSunatLocked ? preventSubmit : handleSunatSubmit}
+              aria-hidden={isSunatLocked}
+              inert={isSunatLocked ? true : undefined}
+            >
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                <StatusTile
+                  icon={<ShieldCheckIcon size={22} weight="fill" />}
+                  label="Facturacion electronica"
+                  value={sunatForm.activo ? "Activa" : "Inactiva"}
+                  ok={sunatForm.activo}
+                />
+                <StatusTile
+                  icon={<KeyIcon size={22} weight="fill" />}
+                  label="Credenciales SOL"
+                  value={
+                    sunatConfig?.usuarioSolConfigurado &&
+                    sunatConfig.claveSolConfigurada
+                      ? "Configuradas"
+                      : "Pendientes"
+                  }
+                  ok={
+                    Boolean(sunatConfig?.usuarioSolConfigurado) &&
+                    Boolean(sunatConfig?.claveSolConfigurada)
+                  }
+                />
+                <StatusTile
+                  icon={<FileTextIcon size={22} weight="fill" />}
+                  label="Certificado digital"
+                  value={
+                    sunatConfig?.certificadoConfigurado ? "Subido" : "Pendiente"
+                  }
+                  ok={Boolean(sunatConfig?.certificadoConfigurado)}
+                />
+              </div>
 
-            <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
-              <div className="space-y-4 p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                      Conexion SUNAT
-                    </h3>
-                    <p className="mt-1 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-                      Los secretos se reemplazan solo si escribes un nuevo
-                      valor.
-                    </p>
+              <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
+                <div className="space-y-4 p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                        Conexion SUNAT
+                      </h3>
+                      <p className="mt-1 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+                        Los secretos se reemplazan solo si escribes un nuevo
+                        valor.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSunatForm((current) => ({
+                          ...current,
+                          activo: !current.activo,
+                        }))
+                      }
+                      className={cn(
+                        "flex h-9 items-center gap-2 rounded-[12px] px-4 text-xs font-circular-bold transition-colors",
+                        sunatForm.activo
+                          ? "bg-[#10b981] text-white"
+                          : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      {sunatForm.activo ? (
+                        <CheckCircleIcon size={16} weight="bold" />
+                      ) : (
+                        <WarningCircleIcon size={16} weight="bold" />
+                      )}
+                      {sunatForm.activo ? "Activo" : "Inactivo"}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSunatForm((current) => ({
-                        ...current,
-                        activo: !current.activo,
-                      }))
-                    }
-                    className={cn(
-                      "flex h-9 items-center gap-2 rounded-[12px] px-4 text-xs font-circular-bold transition-colors",
-                      sunatForm.activo
-                        ? "bg-[#10b981] text-white"
-                        : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                    )}
-                  >
-                    {sunatForm.activo ? (
-                      <CheckCircleIcon size={16} weight="bold" />
-                    ) : (
-                      <WarningCircleIcon size={16} weight="bold" />
-                    )}
-                    {sunatForm.activo ? "Activo" : "Inactivo"}
-                  </button>
-                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <SelectField
@@ -866,7 +879,7 @@ export function EmpresaPageContent({
                     disabled={isSunatSubmitting}
                     options={[
                       { label: "BETA", value: "BETA" },
-                      ...(currentPlan?.plan.code === "prueba"
+                      ...(planCode === "prueba"
                         ? []
                         : [{ label: "PRODUCCION", value: "PRODUCCION" }]),
                     ]}
@@ -1100,12 +1113,33 @@ export function EmpresaPageContent({
                     : "Subir certificado"}
                 </button>
               </aside>
-            </section>
-          </form>
+              </section>
+            </form>
+
+            {isSunatLocked ? (
+              <div className="absolute inset-0 z-10 flex min-h-[360px] items-center justify-center p-4">
+                <Link
+                  href="/configuracion/plan"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-card)] px-6 text-sm font-circular-bold text-[var(--color-text)] shadow-[0_14px_42px_rgba(21,25,34,0.22)] ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-button-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
+                >
+                  <CrownIcon
+                    size={18}
+                    weight="fill"
+                    className="text-[#eab308]"
+                  />
+                  Mejorar plan
+                </Link>
+              </div>
+            ) : null}
+          </div>
         )}
       </div>
     </DashboardShell>
   );
+}
+
+function preventSubmit(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 }
 
 function TabButton({

@@ -43,7 +43,9 @@ type AuthContextValue = {
   completeAuth: (payload: AuthSessionPayload) => void;
   refreshSession: () => Promise<string | null>;
   refreshPlan: () => Promise<CurrentPlanResponse | null>;
-  refreshSetupStatus: () => Promise<CompanySetupStatus | null>;
+  refreshSetupStatus: (
+    options?: RefreshOptions,
+  ) => Promise<CompanySetupStatus | null>;
   logout: () => Promise<void>;
   updateCompanyInfo: (info: CompanyInfo) => void;
 };

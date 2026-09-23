@@ -255,7 +255,7 @@ export default function OnboardingPage() {
         modoCajaHabilitado: false,
       });
       setBranchCreated(true);
-      await refreshSetupStatus();
+      await refreshSetupStatus({ force: true });
       showToast({
         title: branchType === "asistencia" ? "Sede creada" : "Sucursal creada",
         description:
