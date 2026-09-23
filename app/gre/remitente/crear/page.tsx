@@ -8,8 +8,10 @@ import {
   type FormEvent,
 } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowRightIcon,
+  CrownIcon,
   FloppyDiskIcon,
   MagnifyingGlassIcon,
   MinusIcon,
@@ -34,6 +36,8 @@ import {
   type GuiaCatalogoVehiculo,
 } from "@/lib/api/guia-remision";
 import { productsApi, type ProductResponse } from "@/lib/api/products";
+import { useAuth } from "@/lib/auth/auth-provider";
+import { cn } from "@/lib/utils";
 
 function getDefaultForm() {
   return {
@@ -90,6 +94,9 @@ function getErrorMessage(error: unknown) {
 export default function CrearGuiaRemisionPage() {
   const router = useRouter();
   const toast = useSystemToast();
+  const { currentPlan } = useAuth();
+  const planCode = currentPlan?.plan.code;
+  const isPlanLocked = !planCode || planCode === "prueba";
 
   const [form, setForm] = useState(() => getDefaultForm());
   const [details, setDetails] = useState<DraftDetail[]>([
@@ -406,7 +413,15 @@ export default function CrearGuiaRemisionPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <div className="relative">
+          <form
+            className={cn(
+              isPlanLocked && "pointer-events-none select-none blur-sm",
+            )}
+            onSubmit={isPlanLocked ? preventSubmit : handleSubmit}
+            aria-hidden={isPlanLocked}
+            inert={isPlanLocked ? true : undefined}
+          >
           <div className="grid items-start gap-4 xl:grid-cols-[3fr_2.5fr]">
             <div className="space-y-4 xl:order-1">
               <div className="grid gap-4 md:grid-cols-2">
@@ -1235,10 +1250,31 @@ export default function CrearGuiaRemisionPage() {
               </section>
             </div>
           </div>
-        </form>
+          </form>
+
+          {isPlanLocked ? (
+            <div className="absolute inset-0 z-10 flex min-h-[360px] items-center justify-center p-4">
+              <Link
+                href="/configuracion/plan"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-card)] px-6 text-sm font-circular-bold text-[var(--color-text)] shadow-[0_14px_42px_rgba(21,25,34,0.22)] ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-button-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
+              >
+                <CrownIcon
+                  size={18}
+                  weight="fill"
+                  className="text-[#eab308]"
+                />
+                Mejorar plan
+              </Link>
+            </div>
+          ) : null}
+        </div>
       </div>
     </DashboardShell>
   );
+}
+
+function preventSubmit(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 }
 
 function InputField(props: {
