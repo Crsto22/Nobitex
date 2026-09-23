@@ -402,6 +402,17 @@ export default function CrearGuiaRemisionPage() {
       }}
     >
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 transition-colors duration-200 lg:px-6">
+        {isPlanLocked ? (
+          <div className="pointer-events-none sticky top-0 z-20 -mb-[calc(100dvh-4rem)] flex h-[calc(100dvh-4rem)] items-center justify-center p-4">
+            <Link
+              href="/configuracion/plan"
+              className="pointer-events-auto inline-flex h-12 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-card)] px-6 text-sm font-circular-bold text-[var(--color-text)] shadow-[0_14px_42px_rgba(21,25,34,0.22)] ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-button-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
+            >
+              <CrownIcon size={18} weight="fill" className="text-[#eab308]" />
+              Mejorar plan
+            </Link>
+          </div>
+        ) : null}
         <div>
           <div>
             <h1 className="text-2xl font-circular-bold text-[var(--color-text)] text-fixed-2xl">
@@ -413,15 +424,14 @@ export default function CrearGuiaRemisionPage() {
           </div>
         </div>
 
-        <div className="relative">
-          <form
-            className={cn(
-              isPlanLocked && "pointer-events-none select-none blur-sm",
-            )}
-            onSubmit={isPlanLocked ? preventSubmit : handleSubmit}
-            aria-hidden={isPlanLocked}
-            inert={isPlanLocked ? true : undefined}
-          >
+        <form
+          className={cn(
+            isPlanLocked && "pointer-events-none select-none blur-sm",
+          )}
+          onSubmit={isPlanLocked ? preventSubmit : handleSubmit}
+          aria-hidden={isPlanLocked}
+          inert={isPlanLocked ? true : undefined}
+        >
           <div className="grid items-start gap-4 xl:grid-cols-[3fr_2.5fr]">
             <div className="space-y-4 xl:order-1">
               <div className="grid gap-4 md:grid-cols-2">
@@ -1251,23 +1261,6 @@ export default function CrearGuiaRemisionPage() {
             </div>
           </div>
           </form>
-
-          {isPlanLocked ? (
-            <div className="absolute inset-0 z-10 flex min-h-[360px] items-center justify-center p-4">
-              <Link
-                href="/configuracion/plan"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] bg-[var(--color-card)] px-6 text-sm font-circular-bold text-[var(--color-text)] shadow-[0_14px_42px_rgba(21,25,34,0.22)] ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-button-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
-              >
-                <CrownIcon
-                  size={18}
-                  weight="fill"
-                  className="text-[#eab308]"
-                />
-                Mejorar plan
-              </Link>
-            </div>
-          ) : null}
-        </div>
       </div>
     </DashboardShell>
   );
