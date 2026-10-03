@@ -114,7 +114,6 @@ const moduleGroups = [
       "empresa",
       "metodos-pago",
       "mi-cuenta",
-      "plan",
     ],
   },
   {
@@ -135,8 +134,12 @@ const moduleGroups = [
   },
 ];
 
+const configurablePlanModules = sidebarModules.filter(
+  (moduleItem) => moduleItem.key !== "plan",
+);
+
 const moduleByKey = new Map(
-  sidebarModules.map((moduleItem) => [moduleItem.key, moduleItem]),
+  configurablePlanModules.map((moduleItem) => [moduleItem.key, moduleItem]),
 );
 
 export default function EditPlanPage() {
@@ -812,7 +815,9 @@ function ModulesForm({
   saving: boolean;
   onSubmit: (payload: UpdatePlatformPlanModulesPayload) => Promise<void>;
 }) {
-  const [selected, setSelected] = useState(() => new Set(plan.moduleKeys));
+  const [selected, setSelected] = useState(
+    () => new Set(plan.moduleKeys.filter((key) => moduleByKey.has(key))),
+  );
   const enabledCount = selected.size;
 
   const setGroup = (keys: string[], enabled: boolean) => {
@@ -854,7 +859,7 @@ function ModulesForm({
             type="button"
             onClick={() =>
               setSelected(
-                new Set(sidebarModules.map((item) => item.key)),
+                new Set(configurablePlanModules.map((item) => item.key)),
               )
             }
             className="h-9 rounded-xl bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-primary)]"
