@@ -737,7 +737,7 @@ function PlanCard({
   ];
 
   return (
-    <article className="grid grid-cols-1 gap-4 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.35fr)_minmax(130px,0.8fr)_minmax(170px,1fr)_minmax(170px,1.2fr)_minmax(135px,0.85fr)_120px] md:items-center">
+    <article className="grid grid-cols-1 gap-4 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.35fr)_minmax(130px,0.8fr)_minmax(170px,1fr)_minmax(170px,1.2fr)_minmax(135px,0.85fr)_minmax(145px,0.9fr)] md:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={cn(
@@ -753,9 +753,8 @@ function PlanCard({
             {plan.name}
           </p>
           <p className="text-xs text-[var(--color-muted-foreground)]">
-            {plan.trialDays
-              ? `${plan.trialDays} días de prueba`
-              : `${plan.moduleKeys.length} módulos incluidos`}
+            {plan.trialDays ? `${plan.trialDays} días de prueba · ` : ""}
+            {plan.moduleKeys.length} módulos incluidos
           </p>
         </div>
       </div>
@@ -834,6 +833,12 @@ function PlanCard({
           className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-xs font-circular-bold text-white"
         >
           <PencilSimpleIcon size={15} weight="bold" /> Editar plan
+        </Link>
+        <Link
+          href={`/superadmin/planes/${plan.code}?tab=modules`}
+          className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] px-3 text-xs font-circular-bold text-[var(--color-primary)]"
+        >
+          <StackIcon size={15} weight="bold" /> Editar módulos
         </Link>
       </div>
     </article>

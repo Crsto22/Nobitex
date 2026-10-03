@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { useParams } from "next/navigation";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+} from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   CheckCircleIcon,
   CurrencyCircleDollarIcon,
@@ -25,7 +31,7 @@ import {
 } from "@/lib/api/platform-admin";
 import { ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/intl";
-import { assignableSidebarModules } from "@/lib/navigation/sidebar-modules";
+import { sidebarModules } from "@/lib/navigation/sidebar-modules";
 import { cn } from "@/lib/utils";
 
 const planCodes: PlatformPlanCode[] = [
@@ -102,20 +108,57 @@ const moduleGroups = [
   },
   {
     label: "Configuración",
-    keys: ["sucursales", "usuarios", "empresa", "metodos-pago", "mi-cuenta"],
+    keys: [
+      "sucursales",
+      "usuarios",
+      "empresa",
+      "metodos-pago",
+      "mi-cuenta",
+      "plan",
+    ],
+  },
+  {
+    label: "Asistencias",
+    keys: [
+      "asistencias-dashboard",
+      "asistencias-personal",
+      "asistencias-marcajes",
+      "asistencias-historial-marcaciones",
+      "asistencias-turnos",
+      "asistencias-puntos-qr",
+      "asistencias-reportes",
+      "asistencias-plan",
+      "asistencias-configuracion",
+      "asistencias-empresa",
+      "asistencias-mi-cuenta",
+    ],
   },
 ];
 
 const moduleByKey = new Map(
-  assignableSidebarModules.map((moduleItem) => [moduleItem.key, moduleItem]),
+  sidebarModules.map((moduleItem) => [moduleItem.key, moduleItem]),
 );
 
 export default function EditPlanPage() {
+  return (
+    <Suspense fallback={<EditPlanPageFallback />}>
+      <EditPlanPageContent />
+    </Suspense>
+  );
+}
+
+function EditPlanPageContent() {
   const params = useParams<{ code: string }>();
+  const searchParams = useSearchParams();
   const { showToast } = useSystemToast();
   const code = params.code as PlatformPlanCode;
   const [plan, setPlan] = useState<PlatformPlanPricing | null>(null);
-  const [tab, setTab] = useState<"pricing" | "limits" | "modules">("pricing");
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<"pricing" | "limits" | "modules">(
+    requestedTab === "limits" || requestedTab === "modules"
+      ? requestedTab
+      : "pricing",
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -346,6 +389,22 @@ export default function EditPlanPage() {
             )}
           </div>
         )}
+      </main>
+    </DashboardShell>
+  );
+}
+
+function EditPlanPageFallback() {
+  return (
+    <DashboardShell
+      headerTitle="Editar plan"
+      headerParent={{ label: "Catálogo de planes", href: "/superadmin/planes" }}
+    >
+      <main className="h-[calc(100dvh-4rem)] bg-[var(--color-background)] p-4 lg:px-6 lg:py-5">
+        <div className="mx-auto max-w-5xl space-y-4">
+          <div className="h-24 animate-pulse rounded-[14px] bg-[var(--color-card)]" />
+          <div className="h-96 animate-pulse rounded-[14px] bg-[var(--color-card)]" />
+        </div>
       </main>
     </DashboardShell>
   );
@@ -795,7 +854,7 @@ function ModulesForm({
             type="button"
             onClick={() =>
               setSelected(
-                new Set(assignableSidebarModules.map((item) => item.key)),
+                new Set(sidebarModules.map((item) => item.key)),
               )
             }
             className="h-9 rounded-xl bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-primary)]"
@@ -843,6 +902,12 @@ function ModulesForm({
                   {allSelected ? "Quitar" : "Agregar"}
                 </button>
               </div>
+              {group.label === "Asistencias" ? (
+                <p className="mb-3 rounded-lg bg-[#f59e0b]/10 px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+                  Estos módulos solo estarán disponibles cuando la empresa tenga
+                  una suscripción de Asistencias vigente.
+                </p>
+              ) : null}
               <div className="grid gap-2 sm:grid-cols-2">
                 {modules.map((moduleItem) => (
                   <label
