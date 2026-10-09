@@ -25,6 +25,8 @@ import { CatalogSelector } from "@/components/ProductCreate/catalog-selector";
 import { ColorButton } from "@/components/ProductCreate/color-button";
 import { ImagePreviewModal } from "@/components/ProductCreate/image-preview-modal";
 import { ProductColorImagesCarousel } from "@/components/ProductCreate/product-color-images-carousel";
+import { QuickBrandModal } from "@/components/ProductCreate/quick-brand-modal";
+import { QuickCategoryModal } from "@/components/ProductCreate/quick-category-modal";
 import { QuickColorModal } from "@/components/ProductCreate/quick-color-modal";
 import { QuickSizeModal } from "@/components/ProductCreate/quick-size-modal";
 import { StockScopeSelector } from "@/components/ProductCreate/stock-scope-selector";
@@ -49,6 +51,7 @@ import {
   VariantCard,
 } from "@/components/ProductCreate/variant-card";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { BarcodeScannerDrawer } from "@/components/Ventas/barcode-scanner-drawer";
 import { Select } from "@/components/ui/select";
 import { brandsApi, type Brand } from "@/lib/api/brands";
 import { branchesApi, type Branch } from "@/lib/api/branches";
@@ -122,14 +125,26 @@ function CrearProductoPageContent() {
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCreatingSize, setIsCreatingSize] = useState(false);
   const [isCreatingColor, setIsCreatingColor] = useState(false);
+  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [quickCreateError, setQuickCreateError] = useState("");
+  const [catalogCreateError, setCatalogCreateError] = useState("");
   const [newSizeName, setNewSizeName] = useState("");
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#111827");
+  const [newBrand, setNewBrand] = useState({ name: "", active: true });
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    description: "",
+    active: true,
+  });
   const [autoSku, setAutoSku] = useState(true);
   const [autoBarcode, setAutoBarcode] = useState(true);
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const [selectedStockBranches, setSelectedStockBranches] = useState<string[]>(
     [],
   );
@@ -187,6 +202,39 @@ function CrearProductoPageContent() {
   const colorImagesRef = useRef<Record<string, ProductColorImage>>({});
   const pendingColorImageRef = useRef<PendingColorImage | null>(null);
   const stockSelectionInitializedRef = useRef(false);
+  const barcodeScanTargetRef = useRef<((code: string) => void) | null>(null);
+
+  const openBarcodeScanner = useCallback(
+    (applyCode: (code: string) => void) => {
+      barcodeScanTargetRef.current = applyCode;
+      setIsBarcodeScannerOpen(true);
+    },
+    [],
+  );
+
+  const closeBarcodeScanner = useCallback(() => {
+    barcodeScanTargetRef.current = null;
+    setIsBarcodeScannerOpen(false);
+  }, []);
+
+  const handleBarcodeDetected = useCallback(
+    (code: string) => {
+      const applyCode = barcodeScanTargetRef.current;
+      if (!applyCode) return false;
+
+      applyCode(code);
+      barcodeScanTargetRef.current = null;
+      setIsBarcodeScannerOpen(false);
+      showToast({
+        title: "Codigo de barras escaneado",
+        description: code,
+        variant: "success",
+      });
+
+      return "success" as const;
+    },
+    [showToast],
+  );
 
   const loadSizes = useCallback(
     async (targetPage = 1, append = false) => {
@@ -1004,6 +1052,18 @@ function CrearProductoPageContent() {
     setIsColorModalOpen(true);
   };
 
+  const openBrandModal = () => {
+    setNewBrand({ name: "", active: true });
+    setCatalogCreateError("");
+    setIsBrandModalOpen(true);
+  };
+
+  const openCategoryModal = () => {
+    setNewCategory({ name: "", description: "", active: true });
+    setCatalogCreateError("");
+    setIsCategoryModalOpen(true);
+  };
+
   const createSize = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setQuickCreateError("");
@@ -1079,6 +1139,76 @@ function CrearProductoPageContent() {
       setQuickCreateError(message);
     } finally {
       setIsCreatingColor(false);
+    }
+  };
+
+  const createBrand = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCatalogCreateError("");
+
+    const nombre = newBrand.name.trim();
+    if (!nombre) {
+      setCatalogCreateError("Ingresa el nombre de la marca.");
+      return;
+    }
+
+    setIsCreatingBrand(true);
+    try {
+      const brand = await brandsApi.create({
+        nombre,
+        activo: newBrand.active,
+      });
+      setCatalogBrands((current) => mergeById([brand], current));
+      setFormData((current) => ({ ...current, brand: brand.id }));
+      setIsBrandModalOpen(false);
+      showToast({
+        title: "Marca creada",
+        description: `${brand.nombre} quedo seleccionada en el producto.`,
+        variant: "success",
+      });
+    } catch (error) {
+      setCatalogCreateError(
+        error instanceof Error ? error.message : "No se pudo crear la marca.",
+      );
+    } finally {
+      setIsCreatingBrand(false);
+    }
+  };
+
+  const createCategory = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCatalogCreateError("");
+
+    const nombre = newCategory.name.trim();
+    const descripcion = newCategory.description.trim();
+    if (!nombre) {
+      setCatalogCreateError("Ingresa el nombre de la categoria.");
+      return;
+    }
+
+    setIsCreatingCategory(true);
+    try {
+      const category = await categoriesApi.create({
+        nombre,
+        descripcion: descripcion || null,
+        activo: newCategory.active,
+      });
+      setCatalogCategories((current) => mergeById([category], current));
+      setFormData((current) => ({ ...current, category: category.id }));
+      setIsCategoryModalOpen(false);
+      showToast({
+        title: "Categoria creada",
+        description: `${category.nombre} quedo seleccionada en el producto.`,
+        variant: "success",
+      });
+    } catch (error) {
+      setCatalogCreateError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo crear la categoria.",
+      );
+    } finally {
+      setIsCreatingCategory(false);
     }
   };
 
@@ -1496,6 +1626,8 @@ function CrearProductoPageContent() {
                     placeholder="Seleccionar"
                     label="Marca"
                     searchable
+                    actionLabel="Crear marca"
+                    onAction={openBrandModal}
                   />
                   <Select
                     options={catalogCategories.map((category) => ({
@@ -1510,6 +1642,8 @@ function CrearProductoPageContent() {
                     label="Categoria"
                     searchable
                     required
+                    actionLabel="Crear categoria"
+                    onAction={openCategoryModal}
                   />
                   <Select
                     options={sunatUnitOptions}
@@ -1596,9 +1730,7 @@ function CrearProductoPageContent() {
 
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-                  {productType === "normal"
-                    ? "DATOS"
-                    : "PRODUCTOS VARIANTES"}
+                  {productType === "normal" ? "DATOS" : "PRODUCTOS VARIANTES"}
                 </p>
 
                 {productType === "normal" ? (
@@ -1611,6 +1743,7 @@ function CrearProductoPageContent() {
                     shouldCollapseAutoCodes={shouldCollapseAutoCodes}
                     autoSku={autoSku}
                     autoBarcode={autoBarcode}
+                    onScanBarcode={openBarcodeScanner}
                     simple
                     initialValues={loadedVariantData[normalVariant.id]}
                     isUnavailable={
@@ -1666,6 +1799,7 @@ function CrearProductoPageContent() {
                                 }
                                 autoSku={autoSku}
                                 autoBarcode={autoBarcode}
+                                onScanBarcode={openBarcodeScanner}
                                 allowPriceEdit
                                 defaultPriceEditorOpen={hasCustomPrices}
                                 initialValues={initialValues}
@@ -1720,6 +1854,13 @@ function CrearProductoPageContent() {
         onClose={() => setIsSizeModalOpen(false)}
         onSubmit={createSize}
       />
+      <BarcodeScannerDrawer
+        isOpen={isBarcodeScannerOpen}
+        onClose={closeBarcodeScanner}
+        onDetected={handleBarcodeDetected}
+        mode="capture"
+        title="Escanear codigo de barras"
+      />
       <QuickColorModal
         isOpen={isColorModalOpen}
         isSaving={isCreatingColor}
@@ -1730,6 +1871,40 @@ function CrearProductoPageContent() {
         onHexChange={setNewColorHex}
         onClose={() => setIsColorModalOpen(false)}
         onSubmit={createColor}
+      />
+      <QuickBrandModal
+        isOpen={isBrandModalOpen}
+        isSaving={isCreatingBrand}
+        name={newBrand.name}
+        active={newBrand.active}
+        error={catalogCreateError}
+        onNameChange={(name) =>
+          setNewBrand((current) => ({ ...current, name }))
+        }
+        onActiveChange={(active) =>
+          setNewBrand((current) => ({ ...current, active }))
+        }
+        onClose={() => setIsBrandModalOpen(false)}
+        onSubmit={createBrand}
+      />
+      <QuickCategoryModal
+        isOpen={isCategoryModalOpen}
+        isSaving={isCreatingCategory}
+        name={newCategory.name}
+        description={newCategory.description}
+        active={newCategory.active}
+        error={catalogCreateError}
+        onNameChange={(name) =>
+          setNewCategory((current) => ({ ...current, name }))
+        }
+        onDescriptionChange={(description) =>
+          setNewCategory((current) => ({ ...current, description }))
+        }
+        onActiveChange={(active) =>
+          setNewCategory((current) => ({ ...current, active }))
+        }
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSubmit={createCategory}
       />
       <ImagePreviewModal
         pendingImage={pendingColorImage}

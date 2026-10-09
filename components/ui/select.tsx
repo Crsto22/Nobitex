@@ -4,6 +4,7 @@ import {
   CaretDownIcon,
   CheckIcon,
   MagnifyingGlassIcon,
+  PlusIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import {
@@ -40,6 +41,8 @@ type SelectProps = {
   required?: boolean;
   disabled?: boolean;
   fixedMenu?: boolean;
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
 export function Select({
@@ -56,6 +59,8 @@ export function Select({
   required = false,
   disabled = false,
   fixedMenu = false,
+  actionLabel,
+  onAction,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -142,6 +147,11 @@ export function Select({
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
+  };
+
+  const handleAction = () => {
+    setIsOpen(false);
+    onAction?.();
   };
 
   return (
@@ -255,6 +265,18 @@ export function Select({
                   </div>
                 )}
               </div>
+              {actionLabel && onAction ? (
+                <div className="mt-1 border-t border-[var(--color-border)] pt-1">
+                  <button
+                    type="button"
+                    onClick={handleAction}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+                  >
+                    <PlusIcon size={16} weight="bold" />
+                    <span>{actionLabel}</span>
+                  </button>
+                </div>
+              ) : null}
             </div>
           );
           return fixedMenu ? createPortal(menu, document.body) : menu;

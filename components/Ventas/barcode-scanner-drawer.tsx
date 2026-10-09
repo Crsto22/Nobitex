@@ -31,23 +31,28 @@ export type ScannerRecentItem = {
   size?: string;
 };
 
-export type ScannerResult = "success" | "not_found" | "out_of_stock" | false | void;
+export type ScannerResult =
+  "success" | "not_found" | "out_of_stock" | false | void;
 
 type BarcodeScannerDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
-  total: string;
-  cartTotalQuantity: number;
-  recentItems: ScannerRecentItem[];
+  total?: string;
+  cartTotalQuantity?: number;
+  recentItems?: ScannerRecentItem[];
   onDetected: (code: string) => Promise<ScannerResult> | ScannerResult;
+  mode?: "sales" | "capture";
+  title?: string;
 };
 
 function playScanBeep() {
   const AudioContextClass =
     window.AudioContext ??
-    (window as typeof window & {
-      webkitAudioContext?: typeof AudioContext;
-    }).webkitAudioContext;
+    (
+      window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }
+    ).webkitAudioContext;
   if (!AudioContextClass) return;
 
   const audioContext = new AudioContextClass();
@@ -88,11 +93,14 @@ function scannerErrorMessage(error: unknown) {
 export function BarcodeScannerDrawer({
   isOpen,
   onClose,
-  total,
-  cartTotalQuantity,
-  recentItems,
+  total = "",
+  cartTotalQuantity = 0,
+  recentItems = [],
   onDetected,
+  mode = "sales",
+  title = "Escanear",
 }: BarcodeScannerDrawerProps) {
+  const isCaptureMode = mode === "capture";
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const lastCodeRef = useRef("");
@@ -110,13 +118,16 @@ export function BarcodeScannerDrawer({
     window.setTimeout(() => setScanFeedback(null), 700);
   }, []);
 
-  const addRecentItem = useCallback((code: string) => {
-    void Promise.resolve(onDetectedRef.current(code)).then((result) => {
-      if (result === false) return;
+  const addRecentItem = useCallback(
+    (code: string) => {
+      void Promise.resolve(onDetectedRef.current(code)).then((result) => {
+        if (result === false) return;
 
-      flashFeedback(result ?? "success");
-    });
-  }, [flashFeedback]);
+        flashFeedback(result ?? "success");
+      });
+    },
+    [flashFeedback],
+  );
 
   useEffect(() => {
     onDetectedRef.current = onDetected;
@@ -156,7 +167,10 @@ export function BarcodeScannerDrawer({
           if (!code) return;
 
           const now = Date.now();
-          if (code === lastCodeRef.current && now - lastScanAtRef.current < 1400) {
+          if (
+            code === lastCodeRef.current &&
+            now - lastScanAtRef.current < 1400
+          ) {
             return;
           }
 
@@ -205,23 +219,25 @@ export function BarcodeScannerDrawer({
       <div className="relative flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-card)] p-4 pb-5 animate-in slide-in-from-bottom-2 duration-200">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
-            Escanear
+            {title}
           </h2>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Ver carrito"
-              className="relative flex h-9 items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] pl-3 pr-4 text-white transition-colors hover:opacity-90"
-            >
-              <ShoppingCartSimpleIcon size={17} weight="bold" />
-              <span className="text-xs font-circular-bold">{total}</span>
-              {cartTotalQuantity > 0 ? (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef4444] px-1 text-[9px] font-circular-bold text-white">
-                  {cartTotalQuantity}
-                </span>
-              ) : null}
-            </button>
+            {!isCaptureMode ? (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Ver carrito"
+                className="relative flex h-9 items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] pl-3 pr-4 text-white transition-colors hover:opacity-90"
+              >
+                <ShoppingCartSimpleIcon size={17} weight="bold" />
+                <span className="text-xs font-circular-bold">{total}</span>
+                {cartTotalQuantity > 0 ? (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef4444] px-1 text-[9px] font-circular-bold text-white">
+                    {cartTotalQuantity}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onClose}
@@ -283,71 +299,84 @@ export function BarcodeScannerDrawer({
         <div className="mt-3 flex h-10 items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)]">
           <BarcodeIcon size={18} weight="bold" />
           <span className="min-w-0 truncate font-circular-regular">
-            {lastCode ? `Ultimo codigo: ${lastCode}` : "Apunta al codigo de barras"}
+            {lastCode
+              ? `Ultimo codigo: ${lastCode}`
+              : "Apunta al codigo de barras"}
           </span>
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 overflow-hidden">
-          <h3 className="px-1 text-sm font-black text-[var(--color-text)]">
-            Ultimos escaneados
-          </h3>
-          <div className="scrollbar-hidden mt-3 max-h-full space-y-3 overflow-y-auto pr-1">
-            {recentItems.length === 0 ? (
-              <div className="flex h-28 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] px-4 text-center text-sm font-circular-regular text-[var(--color-muted-foreground)]">
-                Aun no hay productos escaneados
-              </div>
-            ) : (
-              recentItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-[48px_1fr_auto] items-center gap-3 rounded-[14px] bg-[var(--color-input-bg)] p-3"
-                >
-                  <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-[12px] bg-[var(--color-card)]">
-                    <Image
-                      src={item.image ?? productPlaceholderImage}
-                      alt={item.name}
-                      width={48}
-                      height={48}
-                      unoptimized
-                      className={cn(
-                        "h-full w-full object-contain",
-                        !item.image && "p-1.5 opacity-45 grayscale",
-                      )}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-[var(--color-text)]">
-                      {item.name}
-                    </p>
-                    <div className="mt-1 flex min-w-0 items-center gap-2 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-                      {item.colorHex ? (
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: item.colorHex }}
-                        />
-                      ) : null}
-                      <span className="truncate">
-                        {item.size ? `${item.size} · ` : ""}
-                        {item.code}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-sm font-circular-bold text-[var(--color-muted-foreground)]">
-                    {item.price}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => addRecentItem(item.code)}
-                    className="col-span-full mt-1 flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] text-sm font-circular-bold text-white transition-colors hover:opacity-90"
-                  >
-                    <ShoppingCartSimpleIcon size={17} weight="bold" />
-                    Agregar producto
-                  </button>
-                </div>
-              ))
-            )}
+        {isCaptureMode ? (
+          <div className="mt-4 flex min-h-0 flex-1 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] px-6 text-center">
+            <div className="flex max-w-xs flex-col items-center gap-3 text-[var(--color-muted-foreground)]">
+              <BarcodeIcon size={38} weight="duotone" />
+              <p className="text-sm font-circular-regular">
+                El codigo detectado se colocara automaticamente en el producto.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 min-h-0 flex-1 overflow-hidden">
+            <h3 className="px-1 text-sm font-black text-[var(--color-text)]">
+              Ultimos escaneados
+            </h3>
+            <div className="scrollbar-hidden mt-3 max-h-full space-y-3 overflow-y-auto pr-1">
+              {recentItems.length === 0 ? (
+                <div className="flex h-28 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] px-4 text-center text-sm font-circular-regular text-[var(--color-muted-foreground)]">
+                  Aun no hay productos escaneados
+                </div>
+              ) : (
+                recentItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="grid grid-cols-[48px_1fr_auto] items-center gap-3 rounded-[14px] bg-[var(--color-input-bg)] p-3"
+                  >
+                    <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-[12px] bg-[var(--color-card)]">
+                      <Image
+                        src={item.image ?? productPlaceholderImage}
+                        alt={item.name}
+                        width={48}
+                        height={48}
+                        unoptimized
+                        className={cn(
+                          "h-full w-full object-contain",
+                          !item.image && "p-1.5 opacity-45 grayscale",
+                        )}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-[var(--color-text)]">
+                        {item.name}
+                      </p>
+                      <div className="mt-1 flex min-w-0 items-center gap-2 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+                        {item.colorHex ? (
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: item.colorHex }}
+                          />
+                        ) : null}
+                        <span className="truncate">
+                          {item.size ? `${item.size} · ` : ""}
+                          {item.code}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-circular-bold text-[var(--color-muted-foreground)]">
+                      {item.price}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addRecentItem(item.code)}
+                      className="col-span-full mt-1 flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] text-sm font-circular-bold text-white transition-colors hover:opacity-90"
+                    >
+                      <ShoppingCartSimpleIcon size={17} weight="bold" />
+                      Agregar producto
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
