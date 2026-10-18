@@ -70,6 +70,7 @@ const moduleGroups = [
       "cotizaciones",
       "entregas-pendientes",
       "clientes",
+      "cuentas-cobrar",
       "historial-ventas",
       "historial-cotizaciones",
       "comprobantes",
