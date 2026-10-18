@@ -58,6 +58,11 @@ const planColors: Record<
     soft: "bg-[#06b6d4]/10",
     solid: "bg-[#06b6d4]",
   },
+  impulsa: {
+    text: "text-[#be123c]",
+    soft: "bg-[#e11d48]/10",
+    solid: "bg-[#e11d48]",
+  },
   emprendedor: {
     text: "text-[#059669]",
     soft: "bg-[#10b981]/10",
@@ -724,7 +729,7 @@ function PlanCard({
   companyCount: number;
   totalCompanies: number;
 }) {
-  const colors = planColors[plan.code];
+  const colors = planColors[plan.code] ?? planColors.basico;
   const share = totalCompanies > 0 ? (companyCount / totalCompanies) * 100 : 0;
   const limits = [
     `${plan.limits.users.toLocaleString("es-PE")} usuarios`,

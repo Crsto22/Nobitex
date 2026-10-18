@@ -70,6 +70,7 @@ import {
 const pageSize = 12;
 const paidPlanCodes = [
   "basico",
+  "impulsa",
   "emprendedor",
   "crecimiento",
   "empresarial",
@@ -1921,6 +1922,7 @@ function getPlanLabel(code: PlatformPlanCode) {
   return {
     prueba: "Prueba",
     basico: "Básico",
+    impulsa: "Impulsa",
     emprendedor: "Emprende",
     crecimiento: "Crece",
     empresarial: "Escala",

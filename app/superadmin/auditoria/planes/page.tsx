@@ -53,6 +53,7 @@ const emptyResult: PlatformAuditResponse = {
 const planNames: Record<PlatformPlanCode, string> = {
   prueba: "Prueba",
   basico: "Básico",
+  impulsa: "Impulsa",
   emprendedor: "Emprende",
   crecimiento: "Crece",
   empresarial: "Escala",

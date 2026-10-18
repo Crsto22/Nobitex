@@ -4,6 +4,7 @@ import type { PlanDefinition } from "@/lib/api/plans";
 export type PlatformPlanCode =
   | "prueba"
   | "basico"
+  | "impulsa"
   | "emprendedor"
   | "crecimiento"
   | "empresarial"

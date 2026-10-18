@@ -1323,6 +1323,7 @@ function getPosFeatureItems(plan: PlanDefinition): PlanFeatureItem[] {
 function getPlanDescription(code: PlanDefinition["code"]) {
   return {
     basico: "Para una tienda que empieza a ordenar sus ventas e inventario.",
+    impulsa: "Para negocios que necesitan mas capacidad para seguir creciendo.",
     emprendedor: "Para negocios en crecimiento con equipo y mas capacidad.",
     crecimiento: "Para operaciones consolidadas que necesitan control total.",
     empresarial: "Para empresas con alto volumen y multiples tiendas.",

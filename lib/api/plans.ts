@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/api/client";
 export type PlanCode =
   | "prueba"
   | "basico"
+  | "impulsa"
   | "emprendedor"
   | "crecimiento"
   | "empresarial"

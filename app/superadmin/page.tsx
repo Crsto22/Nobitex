@@ -452,6 +452,7 @@ function PlanBadge({ code, name }: { code: PlatformPlanCode; name: string }) {
   const colors: Record<PlatformPlanCode, string> = {
     prueba: "bg-[#2563eb]/10 text-[#2563eb]",
     basico: "bg-[#06b6d4]/10 text-[#0891b2]",
+    impulsa: "bg-[#e11d48]/10 text-[#be123c]",
     emprendedor: "bg-[#10b981]/10 text-[#059669]",
     crecimiento: "bg-[#f59e0b]/10 text-[#d97706]",
     empresarial: "bg-[#8b5cf6]/10 text-[#7c3aed]",

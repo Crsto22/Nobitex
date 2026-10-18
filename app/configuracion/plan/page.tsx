@@ -746,6 +746,7 @@ function getPlanDescription(code: PlanDefinition["code"]) {
   return {
     prueba: "Conoce todas las funciones de Nuvex durante 7 días.",
     basico: "Para una tienda que empieza a ordenar sus ventas e inventario.",
+    impulsa: "Para negocios que necesitan más capacidad para seguir creciendo.",
     emprendedor: "Para negocios en crecimiento con equipo y más capacidad.",
     crecimiento: "Para operaciones consolidadas que necesitan control total.",
     empresarial: "Para empresas con alto volumen y múltiples tiendas.",

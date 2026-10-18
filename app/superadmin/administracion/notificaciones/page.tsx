@@ -42,6 +42,7 @@ const emptyResult: ManualNotificationsResponse = {
 const planOptions: Array<{ code: PlatformPlanCode; label: string }> = [
   { code: "prueba", label: "Prueba" },
   { code: "basico", label: "Básico" },
+  { code: "impulsa", label: "Impulsa" },
   { code: "emprendedor", label: "Emprende" },
   { code: "crecimiento", label: "Crece" },
   { code: "empresarial", label: "Escala" },
