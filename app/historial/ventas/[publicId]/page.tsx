@@ -966,6 +966,86 @@ export default function VentaDetallePage() {
           </div>
         </div>
 
+        {venta.cuentaPorCobrar ? (
+          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-[var(--color-text)]">
+                  Venta al crédito
+                </p>
+                <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                  Adelanto {formatPrice(venta.cuentaPorCobrar.adelanto)} · Saldo
+                  pendiente {formatPrice(venta.cuentaPorCobrar.saldoPendiente)}
+                </p>
+              </div>
+              <Link
+                href={`/cuentas-por-cobrar?account=${venta.cuentaPorCobrar.publicId}`}
+                className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[var(--color-primary)] px-3 text-xs font-circular-bold text-white"
+              >
+                Ver cuenta por cobrar
+                <CaretRightIcon size={14} weight="bold" />
+              </Link>
+            </div>
+            {venta.sunat.estado === "rechazado" ? (
+              <div className="mt-4 flex gap-2 rounded-xl bg-[#ef4444]/10 p-3 text-xs text-[#b91c1c]">
+                <WarningCircleIcon
+                  size={17}
+                  weight="fill"
+                  className="shrink-0"
+                />
+                SUNAT rechazó el comprobante; la deuda comercial continúa
+                vigente.
+              </div>
+            ) : null}
+            <div className="mt-4 space-y-2">
+              {venta.cuentaPorCobrar.cuotas.map((cuota) => (
+                <div
+                  key={cuota.numero}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-card)] px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                      Cuota {cuota.numero}
+                    </p>
+                    <p
+                      className={cn(
+                        "text-xs",
+                        cuota.vencida
+                          ? "text-[#dc2626]"
+                          : "text-[var(--color-muted-foreground)]",
+                      )}
+                    >
+                      Vence {formatDate(cuota.fechaVencimiento)} ·{" "}
+                      {cuota.vencida
+                        ? "Vencida"
+                        : cuota.estado.replaceAll("_", " ")}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-[var(--color-text)]">
+                      {formatPrice(cuota.saldo)}
+                    </p>
+                    <p className="text-[10px] text-[var(--color-muted-foreground)]">
+                      de {formatPrice(cuota.montoOriginal)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] px-5 py-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-[var(--color-muted-foreground)]">
+                Forma de pago
+              </span>
+              <span className="rounded-full bg-[#10b981]/10 px-3 py-1 text-xs font-circular-bold text-[#047857]">
+                Contado
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Pagos */}
         {venta.pagos.length > 0 && (
           <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">

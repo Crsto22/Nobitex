@@ -123,6 +123,14 @@ export type CreateSalePago = {
   referencia?: string;
 };
 
+export type VentaFormaPago = "CONTADO" | "CREDITO";
+
+export type CreateSaleCreditInstallment = {
+  numero: number;
+  monto: string;
+  fechaVencimiento: string;
+};
+
 export type CreateSalePayload = {
   requestId?: string;
   tipoComprobante: VentaTipoComprobante;
@@ -133,7 +141,9 @@ export type CreateSalePayload = {
   descuentoTipo?: VentaDescuentoTipo;
   descuentoValor?: string;
   detalles: CreateSaleDetalle[];
+  formaPago: VentaFormaPago;
   pagos: CreateSalePago[];
+  credito?: { cuotas: CreateSaleCreditInstallment[] };
   observaciones?: string;
 };
 
@@ -188,6 +198,8 @@ export type VentaDetalleResponse = {
 
 export type VentaPagoResponse = {
   id: string;
+  publicId: string;
+  origen: "venta" | "cobranza";
   monto: string;
   montoRecibido: string | null;
   vuelto: string;
@@ -203,6 +215,27 @@ export type VentaPagoResponse = {
   };
 };
 
+export type VentaCuentaPorCobrarResponse = {
+  publicId: string;
+  totalVenta: string;
+  adelanto: string;
+  saldoInicial: string;
+  saldoPendiente: string;
+  saldoFavor: string;
+  estado:
+    "pendiente" | "parcial" | "pagada" | "anulacion_pendiente" | "anulada";
+  vencida: boolean;
+  cuotas: Array<{
+    numero: number;
+    fechaVencimiento: string;
+    montoOriginal: string;
+    montoPagado: string;
+    saldo: string;
+    estado: "pendiente" | "parcial" | "pagada" | "anulada";
+    vencida: boolean;
+  }>;
+};
+
 export type VentaResponse = {
   publicId: string;
   codigoInterno: string;
@@ -216,7 +249,7 @@ export type VentaResponse = {
   fechaEntrega: string | null;
   estadoEntrega: "pendiente" | "parcial" | "entregada";
   moneda: string;
-  formaPago: string;
+  formaPago: VentaFormaPago;
   subtotal: string;
   descuentoTipo: string | null;
   descuentoValor: string | null;
@@ -276,6 +309,7 @@ export type VentaResponse = {
   } | null;
   detalles: VentaDetalleResponse[];
   pagos: VentaPagoResponse[];
+  cuentaPorCobrar: VentaCuentaPorCobrarResponse | null;
 };
 
 export type VentaAnnulResponse =

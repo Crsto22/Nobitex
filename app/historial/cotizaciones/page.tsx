@@ -1011,6 +1011,7 @@ export default function HistorialCotizacionesPage() {
 
       {convertModal.quote ? (
         <ChargeModal
+          allowCredit={false}
           isOpen={convertModal.open}
           title="Convertir a venta"
           wide

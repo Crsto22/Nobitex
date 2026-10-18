@@ -94,6 +94,12 @@ export const sidebarSections: SidebarSection[] = [
         icon: UsersThreeIcon,
         route: "/clientes",
       },
+      {
+        key: "cuentas-cobrar",
+        label: "Cuentas por cobrar",
+        icon: CreditCardIcon,
+        route: "/cuentas-por-cobrar",
+      },
     ],
   },
   {

@@ -799,6 +799,7 @@ export default function CotizacionDetallePage() {
 
       {quotation ? (
         <ChargeModal
+          allowCredit={false}
           isOpen={convertModalOpen}
           title="Convertir a venta"
           wide
