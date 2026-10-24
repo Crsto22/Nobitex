@@ -19,6 +19,7 @@ import {
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { TurnstileWidget } from "@/components/Turnstile/turnstile-widget";
+import { trackMetaEvent } from "@/components/analytics/meta-pixel";
 import { Button } from "@/components/ui/button";
 import { authApi } from "@/lib/api/auth";
 import { companyApi, type CompanyCatalogProfile } from "@/lib/api/company";
@@ -441,6 +442,10 @@ export function RegisterPage() {
         token,
       );
       completeAuth(response);
+      trackMetaEvent("CompleteRegistration", {
+        content_name: "nuvex_trial",
+        status: "completed",
+      });
       window.sessionStorage.removeItem(ONBOARDING_TOKEN_STORAGE_KEY);
       window.sessionStorage.removeItem(ONBOARDING_USER_STORAGE_KEY);
       setActivationProgress(0);
@@ -535,10 +540,11 @@ export function RegisterPage() {
                 >
                   <div>
                     <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
-                      Crea tu cuenta
+                      Prueba Nuvex gratis 30 días
                     </h1>
                     <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
-                      Completa tus datos para registrar tu acceso en Nuvex.
+                      Controla ventas, stock y facturación electrónica desde un
+                      solo lugar. Crea tu cuenta para comenzar.
                     </p>
                     <StepProgress currentStep={currentStep} steps={steps} />
                   </div>

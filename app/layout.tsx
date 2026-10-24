@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { AppProviders } from "@/components/app-providers";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -66,6 +67,7 @@ export default function RootLayout({
       </head>
       <body>
         <AppProviders>{children}</AppProviders>
+        <MetaPixel />
       </body>
     </html>
   );
