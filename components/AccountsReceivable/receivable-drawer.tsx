@@ -13,7 +13,9 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import {
   accountsReceivableApi,
@@ -218,14 +220,21 @@ export function ReceivableDrawer({
     >
       <aside
         className={cn(
-          "flex w-full flex-col bg-[var(--color-card)]",
+          "flex w-full flex-col",
           isPage
-            ? "mx-auto max-w-6xl rounded-[18px] shadow-sm"
-            : "ml-auto h-full max-w-2xl shadow-2xl animate-in slide-in-from-right duration-200",
+            ? "bg-transparent"
+            : "ml-auto h-full max-w-2xl bg-[var(--color-card)] shadow-2xl animate-in slide-in-from-right duration-200",
         )}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-[var(--color-border)] p-5">
+        <header
+          className={cn(
+            "flex items-center justify-between",
+            isPage
+              ? "rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm"
+              : "border-b border-[var(--color-border)] p-5",
+          )}
+        >
           <div>
             <p className="text-xs font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
               Cuenta por cobrar
@@ -248,8 +257,8 @@ export function ReceivableDrawer({
 
         <div
           className={cn(
-            "min-h-0 flex-1 p-5",
-            isPage ? "overflow-visible" : "overflow-y-auto",
+            "min-h-0 flex-1",
+            isPage ? "overflow-visible pt-4" : "overflow-y-auto p-5",
           )}
         >
           {loading || !account ? (
@@ -260,210 +269,219 @@ export function ReceivableDrawer({
               />
             </div>
           ) : (
-            <div className="space-y-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-lg font-black text-[var(--color-text)]">
-                    {account.cliente.razonSocial ||
-                      account.cliente.nombre ||
-                      "Cliente"}
-                  </p>
-                  <p className="text-xs uppercase text-[var(--color-muted-foreground)]">
-                    {account.cliente.tipoDocumento}:{" "}
-                    {account.cliente.numeroDocumento}
-                    {account.sucursal ? ` · ${account.sucursal.nombre}` : ""}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-circular-bold",
-                    account.estado === "pagada"
-                      ? "bg-[#10b981]/10 text-[#047857]"
-                      : account.estado === "anulada"
-                        ? "bg-[#ef4444]/10 text-[#dc2626]"
-                        : "bg-[#f59e0b]/10 text-[#b45309]",
-                  )}
-                >
-                  {account.vencida && account.estado !== "pagada"
-                    ? "Vencida"
-                    : statusLabels[account.estado]}
-                </span>
-              </div>
-
-              {account.venta.sunatEstado === "rechazado" ? (
-                <div className="flex gap-3 rounded-[14px] bg-[#ef4444]/10 p-4 text-sm text-[#b91c1c]">
-                  <WarningCircleIcon
-                    size={20}
-                    weight="fill"
-                    className="shrink-0"
-                  />
-                  SUNAT rechazó el comprobante. La deuda comercial continúa
-                  vigente.
-                </div>
-              ) : null}
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  ["Total", account.totalVenta],
-                  ["Adelanto", account.adelanto],
-                  ["Pendiente", account.saldoPendiente],
-                  ["Saldo a favor", account.saldoFavor],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="rounded-[14px] bg-[var(--color-input-bg)] p-3"
-                  >
-                    <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-                      {label}
+            <div className="space-y-4">
+              <section className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
+                      Cliente
                     </p>
-                    <p className="mt-1 text-sm font-black text-[var(--color-text)]">
-                      {money(value)}
+                    <p className="text-lg font-black text-[var(--color-text)]">
+                      {account.cliente.razonSocial ||
+                        account.cliente.nombre ||
+                        "Cliente"}
+                    </p>
+                    <p className="text-xs uppercase text-[var(--color-muted-foreground)]">
+                      {account.cliente.tipoDocumento}:{" "}
+                      {account.cliente.numeroDocumento}
+                      {account.sucursal ? ` · ${account.sucursal.nombre}` : ""}
                     </p>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href={`/historial/ventas/${account.venta.publicId}`}
-                  className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-4 text-xs font-circular-bold text-[var(--color-text)]"
-                >
-                  <ArrowSquareOutIcon size={16} /> Ver venta
-                </Link>
-                {canCollect ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowPayment((current) => !current)}
-                    className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white"
+                  <span
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-circular-bold",
+                      account.estado === "pagada"
+                        ? "bg-[#10b981]/10 text-[#047857]"
+                        : account.estado === "anulada"
+                          ? "bg-[#ef4444]/10 text-[#dc2626]"
+                          : "bg-[#f59e0b]/10 text-[#b45309]",
+                    )}
                   >
-                    <CreditCardIcon size={16} /> Registrar abono
-                  </button>
+                    {account.vencida && account.estado !== "pagada"
+                      ? "Vencida"
+                      : statusLabels[account.estado]}
+                  </span>
+                </div>
+
+                {account.venta.sunatEstado === "rechazado" ? (
+                  <div className="mt-4 flex gap-3 rounded-[14px] bg-[#ef4444]/10 p-4 text-sm text-[#b91c1c]">
+                    <WarningCircleIcon
+                      size={20}
+                      weight="fill"
+                      className="shrink-0"
+                    />
+                    SUNAT rechazó el comprobante. La deuda comercial continúa
+                    vigente.
+                  </div>
                 ) : null}
-              </div>
 
-              {showPayment && canCollect ? (
-                <div
-                  className="fixed inset-0 z-[80] flex items-end justify-center overflow-y-auto bg-black/45 p-0 animate-in fade-in duration-200 sm:items-center sm:p-4"
-                  onMouseDown={() => setShowPayment(false)}
-                >
-                  <section
-                    className="w-full max-w-2xl space-y-3 rounded-t-[22px] bg-[var(--color-card)] p-5 shadow-2xl sm:rounded-[20px]"
-                    onMouseDown={(event) => event.stopPropagation()}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-black text-[var(--color-text)]">
-                          Registrar abono
-                        </h3>
-                        <p className="text-xs text-[var(--color-muted-foreground)]">
-                          Saldo pendiente: {money(account.saldoPendiente)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowPayment(false)}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-input-bg)]"
-                        aria-label="Cerrar registro de abono"
-                      >
-                        <XIcon size={17} weight="bold" />
-                      </button>
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    ["Total", account.totalVenta],
+                    ["Adelanto", account.adelanto],
+                    ["Pendiente", account.saldoPendiente],
+                    ["Saldo a favor", account.saldoFavor],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-[14px] bg-[var(--color-input-bg)] p-3"
+                    >
+                      <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+                        {label}
+                      </p>
+                      <p className="mt-1 text-sm font-black text-[var(--color-text)]">
+                        {money(value)}
+                      </p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Select
-                        label="Método de pago"
-                        value={methodId}
-                        onChange={(value) => {
-                          setMethodId(value);
-                          setReceived(
-                            methods.find((method) => method.id === value)
-                              ?.permiteVuelto
-                              ? amount
-                              : "",
-                          );
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    href={`/historial/ventas/${account.venta.publicId}`}
+                    className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-4 text-xs font-circular-bold text-[var(--color-text)]"
+                  >
+                    <ArrowSquareOutIcon size={16} /> Ver venta
+                  </Link>
+                  {canCollect ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowPayment((current) => !current)}
+                      className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white"
+                    >
+                      <CreditCardIcon size={16} /> Registrar abono
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+
+              <Modal
+                isOpen={Boolean(showPayment && canCollect)}
+                onClose={() => setShowPayment(false)}
+                title="Registrar abono"
+                description={`Registra un pago para ${account.venta.correlativo}.`}
+                size="lg"
+              >
+                <div className="space-y-4">
+                  <div className="rounded-[16px] bg-[var(--color-input-bg)] p-4">
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      Saldo pendiente
+                    </p>
+                    <p className="mt-1 text-xl font-black text-[var(--color-text)]">
+                      {money(account.saldoPendiente)}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      label="Método de pago"
+                      value={methodId}
+                      onChange={(value) => {
+                        setMethodId(value);
+                        setReceived(
+                          methods.find((method) => method.id === value)
+                            ?.permiteVuelto
+                            ? amount
+                            : "",
+                        );
+                      }}
+                      options={methods.map((method) => ({
+                        label: method.nombre,
+                        value: method.id,
+                      }))}
+                    />
+                    <Select
+                      label="Sucursal"
+                      value={branchId}
+                      onChange={setBranchId}
+                      options={branches.map((branch) => ({
+                        label: branch.nombre,
+                        value: branch.id,
+                      }))}
+                    />
+                    <label>
+                      <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
+                        Monto aplicado
+                      </span>
+                      <input
+                        type="number"
+                        min="0.01"
+                        max={account.saldoPendiente}
+                        step="0.01"
+                        value={amount}
+                        onChange={(event) => {
+                          setAmount(event.target.value);
+                          if (selectedMethod?.permiteVuelto) {
+                            setReceived(event.target.value);
+                          }
                         }}
-                        options={methods.map((method) => ({
-                          label: method.nombre,
-                          value: method.id,
-                        }))}
-                        fixedMenu
+                        className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
                       />
-                      <Select
-                        label="Sucursal"
-                        value={branchId}
-                        onChange={setBranchId}
-                        options={branches.map((branch) => ({
-                          label: branch.nombre,
-                          value: branch.id,
-                        }))}
-                        fixedMenu
-                      />
+                    </label>
+                    {selectedMethod?.permiteVuelto ? (
                       <label>
-                        <span className="mb-2 block text-sm text-[#4e5671]">
-                          Monto aplicado
+                        <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
+                          Monto recibido
                         </span>
                         <input
                           type="number"
-                          min="0.01"
-                          max={account.saldoPendiente}
+                          min={amount || "0"}
                           step="0.01"
-                          value={amount}
-                          onChange={(event) => {
-                            setAmount(event.target.value);
-                            if (selectedMethod?.permiteVuelto) {
-                              setReceived(event.target.value);
-                            }
-                          }}
-                          className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
+                          value={received}
+                          onChange={(event) => setReceived(event.target.value)}
+                          className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
                         />
                       </label>
-                      {selectedMethod?.permiteVuelto ? (
-                        <label>
-                          <span className="mb-2 block text-sm text-[#4e5671]">
-                            Monto recibido
-                          </span>
-                          <input
-                            type="number"
-                            min={amount || "0"}
-                            step="0.01"
-                            value={received}
-                            onChange={(event) =>
-                              setReceived(event.target.value)
-                            }
-                            className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
-                          />
-                        </label>
-                      ) : null}
-                    </div>
+                    ) : null}
+                  </div>
+
+                  <label>
+                    <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
+                      Referencia (opcional)
+                    </span>
                     <input
                       value={reference}
                       onChange={(event) => setReference(event.target.value)}
-                      placeholder="Referencia (opcional)"
-                      className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
+                      placeholder="Número de operación o nota"
+                      className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
                     />
-                    {selectedMethod?.permiteVuelto &&
-                    receivedValue >= amountValue ? (
-                      <p className="text-xs font-circular-bold text-[#047857]">
-                        Vuelto: {money(receivedValue - amountValue)}
-                      </p>
-                    ) : null}
-                    <button
+                  </label>
+
+                  {selectedMethod?.permiteVuelto &&
+                  receivedValue >= amountValue ? (
+                    <div className="rounded-[14px] bg-[#10b981]/10 px-4 py-3 text-sm font-circular-bold text-[#047857]">
+                      Vuelto: {money(receivedValue - amountValue)}
+                    </div>
+                  ) : null}
+
+                  <div className="flex gap-3 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowPayment(false)}
+                      disabled={submitting}
+                      className="h-11 flex-1 rounded-[14px] border-transparent bg-[var(--color-input-bg)] text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
                       type="button"
                       disabled={paymentInvalid || submitting}
                       onClick={registerPayment}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#10b981] text-sm font-black text-white disabled:opacity-50"
+                      className="h-11 flex-1 rounded-[14px] bg-[var(--color-primary)] text-sm font-circular-bold text-white hover:opacity-90"
                     >
                       {submitting ? (
                         <SpinnerGapIcon size={17} className="animate-spin" />
                       ) : (
-                        <CheckCircleIcon size={17} />
+                        <CheckCircleIcon size={17} weight="bold" />
                       )}
                       Confirmar abono
-                    </button>
-                  </section>
+                    </Button>
+                  </div>
                 </div>
-              ) : null}
+              </Modal>
 
-              <section>
+              <section className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-black text-[var(--color-text)]">
                   Cronograma
                 </h3>
@@ -507,7 +525,7 @@ export function ReceivableDrawer({
                 </div>
               </section>
 
-              <section>
+              <section className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-black text-[var(--color-text)]">
                   Historial de pagos
                 </h3>
