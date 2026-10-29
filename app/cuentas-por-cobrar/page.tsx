@@ -226,88 +226,99 @@ export default function AccountsReceivablePage() {
       label: "Saldo pendiente",
       value: money(summary.totalPendiente),
       icon: WalletIcon,
-      color: "text-[#f59e0b]",
+      iconColor: "text-[#f59e0b]",
+      iconBackground: "bg-[#f59e0b]/10",
     },
     {
       label: "Saldo vencido",
       value: money(summary.totalVencido),
       icon: ClockCountdownIcon,
-      color: "text-[#ef4444]",
+      iconColor: "text-[#ef4444]",
+      iconBackground: "bg-[#ef4444]/10",
     },
     {
       label: "Por vencer",
       value: money(summary.totalPorVencer),
       icon: CurrencyCircleDollarIcon,
-      color: "text-[#3b82f6]",
+      iconColor: "text-[#3b82f6]",
+      iconBackground: "bg-[#3b82f6]/10",
     },
     {
       label: "Cobrado este mes",
       value: money(summary.cobradoMes),
       icon: CreditCardIcon,
-      color: "text-[#10b981]",
+      iconColor: "text-[#10b981]",
+      iconBackground: "bg-[#10b981]/10",
     },
     {
       label: "Clientes con deuda",
       value: String(summary.clientesConDeuda),
       icon: UserCircleIcon,
-      color: "text-[var(--color-primary)]",
+      iconColor: "text-[var(--color-primary)]",
+      iconBackground: "bg-[var(--color-primary)]/10",
     },
   ];
 
   return (
-    <DashboardShell>
-      <div className="space-y-5 p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black text-[var(--color-text)]">
-              Cuentas por cobrar
-            </h1>
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              Controla cuotas, vencimientos y abonos de tus clientes.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setRefreshKey((value) => value + 1)}
-            className="flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-4 text-xs font-circular-bold"
-          >
-            <ArrowClockwiseIcon
-              size={16}
-              className={cn(loading && "animate-spin")}
-            />{" "}
-            Actualizar
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <DashboardShell headerTitle="Cuentas por cobrar">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
           {cards.map((card) => (
             <div
               key={card.label}
-              className="rounded-[18px] bg-[var(--color-card)] p-4 shadow-sm ring-1 ring-[var(--color-border)]"
+              className="flex min-h-24 items-center gap-3 rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm"
             >
-              <card.icon size={20} weight="duotone" className={card.color} />
-              <p className="mt-3 text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-                {card.label}
-              </p>
-              <p className="mt-1 text-lg font-black text-[var(--color-text)]">
-                {card.value}
-              </p>
+              <div
+                className={cn(
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                  card.iconBackground,
+                )}
+              >
+                <card.icon
+                  size={22}
+                  weight="fill"
+                  className={card.iconColor}
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-[var(--color-muted-foreground)]">
+                  {card.label}
+                </p>
+                <p className="mt-1 truncate text-xl font-circular-bold leading-none text-[var(--color-text)]">
+                  {card.value}
+                </p>
+              </div>
             </div>
           ))}
         </div>
 
         <div className="space-y-3 rounded-[18px] bg-[var(--color-card)] p-4 shadow-sm ring-1 ring-[var(--color-border)]">
-          <div className="relative">
-            <MagnifyingGlassIcon
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-            />
-            <input
-              value={search}
-              onChange={(event) => updateFilter(setSearch, event.target.value)}
-              placeholder="Buscar cliente, documento o comprobante"
-              className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] pl-10 pr-3 text-sm outline-none"
-            />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="relative min-w-0 flex-1">
+              <MagnifyingGlassIcon
+                size={18}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+              />
+              <input
+                value={search}
+                onChange={(event) =>
+                  updateFilter(setSearch, event.target.value)
+                }
+                placeholder="Buscar cliente, documento o comprobante"
+                className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] pl-10 pr-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setRefreshKey((value) => value + 1)}
+              className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <ArrowClockwiseIcon
+                size={16}
+                className={cn(loading && "animate-spin")}
+              />
+              Actualizar
+            </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Select
