@@ -30,6 +30,7 @@ type Props = {
   publicId: string | null;
   onClose: () => void;
   onChanged: (account: Receivable) => void;
+  variant?: "drawer" | "page";
 };
 
 const statusLabels = {
@@ -59,7 +60,12 @@ function dateTime(value: string) {
   }).format(new Date(value));
 }
 
-export function ReceivableDrawer({ publicId, onClose, onChanged }: Props) {
+export function ReceivableDrawer({
+  publicId,
+  onClose,
+  onChanged,
+  variant = "drawer",
+}: Props) {
   const { showToast } = useSystemToast();
   const [account, setAccount] = useState<Receivable | null>(null);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -116,6 +122,8 @@ export function ReceivableDrawer({ publicId, onClose, onChanged }: Props) {
   }, [publicId, showToast]);
 
   if (!publicId) return null;
+
+  const isPage = variant === "page";
 
   const selectedMethod = methods.find((item) => item.id === methodId);
   const amountValue = Number(amount);
@@ -204,9 +212,17 @@ export function ReceivableDrawer({ publicId, onClose, onChanged }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/35" onMouseDown={onClose}>
+    <div
+      className={cn(isPage ? "w-full" : "fixed inset-0 z-50 bg-black/35")}
+      onMouseDown={isPage ? undefined : onClose}
+    >
       <aside
-        className="ml-auto flex h-full w-full max-w-2xl flex-col bg-[var(--color-card)] shadow-2xl animate-in slide-in-from-right duration-200"
+        className={cn(
+          "flex w-full flex-col bg-[var(--color-card)]",
+          isPage
+            ? "mx-auto max-w-6xl rounded-[18px] shadow-sm"
+            : "ml-auto h-full max-w-2xl shadow-2xl animate-in slide-in-from-right duration-200",
+        )}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-[var(--color-border)] p-5">
@@ -218,17 +234,24 @@ export function ReceivableDrawer({ publicId, onClose, onChanged }: Props) {
               {account?.venta.correlativo ?? "Cargando..."}
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-input-bg)]"
-            aria-label="Cerrar detalle"
-          >
-            <XIcon size={18} weight="bold" />
-          </button>
+          {!isPage ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-input-bg)]"
+              aria-label="Cerrar detalle"
+            >
+              <XIcon size={18} weight="bold" />
+            </button>
+          ) : null}
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div
+          className={cn(
+            "min-h-0 flex-1 p-5",
+            isPage ? "overflow-visible" : "overflow-y-auto",
+          )}
+        >
           {loading || !account ? (
             <div className="flex h-64 items-center justify-center">
               <SpinnerGapIcon
@@ -319,100 +342,125 @@ export function ReceivableDrawer({ publicId, onClose, onChanged }: Props) {
               </div>
 
               {showPayment && canCollect ? (
-                <section className="space-y-3 rounded-[16px] border border-[var(--color-primary)]/25 p-4">
-                  <h3 className="text-sm font-black text-[var(--color-text)]">
-                    Nuevo abono
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Select
-                      label="Método de pago"
-                      value={methodId}
-                      onChange={(value) => {
-                        setMethodId(value);
-                        setReceived(
-                          methods.find((method) => method.id === value)
-                            ?.permiteVuelto
-                            ? amount
-                            : "",
-                        );
-                      }}
-                      options={methods.map((method) => ({
-                        label: method.nombre,
-                        value: method.id,
-                      }))}
-                      fixedMenu
-                    />
-                    <Select
-                      label="Sucursal"
-                      value={branchId}
-                      onChange={setBranchId}
-                      options={branches.map((branch) => ({
-                        label: branch.nombre,
-                        value: branch.id,
-                      }))}
-                      fixedMenu
-                    />
-                    <label>
-                      <span className="mb-2 block text-sm text-[#4e5671]">
-                        Monto aplicado
-                      </span>
-                      <input
-                        type="number"
-                        min="0.01"
-                        max={account.saldoPendiente}
-                        step="0.01"
-                        value={amount}
-                        onChange={(event) => {
-                          setAmount(event.target.value);
-                          if (selectedMethod?.permiteVuelto) {
-                            setReceived(event.target.value);
-                          }
+                <div
+                  className="fixed inset-0 z-[80] flex items-end justify-center overflow-y-auto bg-black/45 p-0 animate-in fade-in duration-200 sm:items-center sm:p-4"
+                  onMouseDown={() => setShowPayment(false)}
+                >
+                  <section
+                    className="w-full max-w-2xl space-y-3 rounded-t-[22px] bg-[var(--color-card)] p-5 shadow-2xl sm:rounded-[20px]"
+                    onMouseDown={(event) => event.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-black text-[var(--color-text)]">
+                          Registrar abono
+                        </h3>
+                        <p className="text-xs text-[var(--color-muted-foreground)]">
+                          Saldo pendiente: {money(account.saldoPendiente)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowPayment(false)}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-input-bg)]"
+                        aria-label="Cerrar registro de abono"
+                      >
+                        <XIcon size={17} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Select
+                        label="Método de pago"
+                        value={methodId}
+                        onChange={(value) => {
+                          setMethodId(value);
+                          setReceived(
+                            methods.find((method) => method.id === value)
+                              ?.permiteVuelto
+                              ? amount
+                              : "",
+                          );
                         }}
-                        className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
+                        options={methods.map((method) => ({
+                          label: method.nombre,
+                          value: method.id,
+                        }))}
+                        fixedMenu
                       />
-                    </label>
-                    {selectedMethod?.permiteVuelto ? (
+                      <Select
+                        label="Sucursal"
+                        value={branchId}
+                        onChange={setBranchId}
+                        options={branches.map((branch) => ({
+                          label: branch.nombre,
+                          value: branch.id,
+                        }))}
+                        fixedMenu
+                      />
                       <label>
                         <span className="mb-2 block text-sm text-[#4e5671]">
-                          Monto recibido
+                          Monto aplicado
                         </span>
                         <input
                           type="number"
-                          min={amount || "0"}
+                          min="0.01"
+                          max={account.saldoPendiente}
                           step="0.01"
-                          value={received}
-                          onChange={(event) => setReceived(event.target.value)}
+                          value={amount}
+                          onChange={(event) => {
+                            setAmount(event.target.value);
+                            if (selectedMethod?.permiteVuelto) {
+                              setReceived(event.target.value);
+                            }
+                          }}
                           className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
                         />
                       </label>
+                      {selectedMethod?.permiteVuelto ? (
+                        <label>
+                          <span className="mb-2 block text-sm text-[#4e5671]">
+                            Monto recibido
+                          </span>
+                          <input
+                            type="number"
+                            min={amount || "0"}
+                            step="0.01"
+                            value={received}
+                            onChange={(event) =>
+                              setReceived(event.target.value)
+                            }
+                            className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                    <input
+                      value={reference}
+                      onChange={(event) => setReference(event.target.value)}
+                      placeholder="Referencia (opcional)"
+                      className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
+                    />
+                    {selectedMethod?.permiteVuelto &&
+                    receivedValue >= amountValue ? (
+                      <p className="text-xs font-circular-bold text-[#047857]">
+                        Vuelto: {money(receivedValue - amountValue)}
+                      </p>
                     ) : null}
-                  </div>
-                  <input
-                    value={reference}
-                    onChange={(event) => setReference(event.target.value)}
-                    placeholder="Referencia (opcional)"
-                    className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm outline-none"
-                  />
-                  {selectedMethod?.permiteVuelto &&
-                  receivedValue >= amountValue ? (
-                    <p className="text-xs font-circular-bold text-[#047857]">
-                      Vuelto: {money(receivedValue - amountValue)}
-                    </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={paymentInvalid || submitting}
-                    onClick={registerPayment}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#10b981] text-sm font-black text-white disabled:opacity-50"
-                  >
-                    {submitting ? (
-                      <SpinnerGapIcon size={17} className="animate-spin" />
-                    ) : (
-                      <CheckCircleIcon size={17} />
-                    )}
-                    Confirmar abono
-                  </button>
-                </section>
+                    <button
+                      type="button"
+                      disabled={paymentInvalid || submitting}
+                      onClick={registerPayment}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#10b981] text-sm font-black text-white disabled:opacity-50"
+                    >
+                      {submitting ? (
+                        <SpinnerGapIcon size={17} className="animate-spin" />
+                      ) : (
+                        <CheckCircleIcon size={17} />
+                      )}
+                      Confirmar abono
+                    </button>
+                  </section>
+                </div>
               ) : null}
 
               <section>

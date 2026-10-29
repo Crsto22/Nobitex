@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowClockwiseIcon,
   CalendarIcon,
@@ -8,13 +9,13 @@ import {
   CreditCardIcon,
   CurrencyCircleDollarIcon,
   EyeIcon,
+  FunnelIcon,
   MagnifyingGlassIcon,
   ReceiptIcon,
   UserCircleIcon,
   WalletIcon,
 } from "@phosphor-icons/react/ssr";
 
-import { ReceivableDrawer } from "@/components/AccountsReceivable/receivable-drawer";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { UserAvatar } from "@/components/UserAvatar/user-avatar";
@@ -101,6 +102,7 @@ function status(account: Receivable) {
 }
 
 export default function AccountsReceivablePage() {
+  const router = useRouter();
   const { showToast } = useSystemToast();
   const [items, setItems] = useState<Receivable[]>([]);
   const [summary, setSummary] = useState(emptySummary);
@@ -122,20 +124,7 @@ export default function AccountsReceivablePage() {
   });
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
-    null,
-  );
-
-  useEffect(() => {
-    const readAccount = () => {
-      setSelectedAccountId(
-        new URLSearchParams(window.location.search).get("account"),
-      );
-    };
-    readAccount();
-    window.addEventListener("popstate", readAccount);
-    return () => window.removeEventListener("popstate", readAccount);
-  }, []);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -208,18 +197,17 @@ export default function AccountsReceivablePage() {
   };
 
   const openAccount = (publicId: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("account", publicId);
-    window.history.pushState(null, "", url);
-    setSelectedAccountId(publicId);
+    router.push(`/cuentas-por-cobrar/${publicId}`);
   };
 
-  const closeAccount = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("account");
-    window.history.pushState(null, "", url);
-    setSelectedAccountId(null);
-  };
+  const activeFilters = [
+    clientId,
+    branchId,
+    selectedStatus,
+    situation,
+    from,
+    to,
+  ].filter(Boolean).length;
 
   const cards = [
     {
@@ -274,11 +262,7 @@ export default function AccountsReceivablePage() {
                   card.iconBackground,
                 )}
               >
-                <card.icon
-                  size={22}
-                  weight="fill"
-                  className={card.iconColor}
-                />
+                <card.icon size={22} weight="fill" className={card.iconColor} />
               </div>
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-[var(--color-muted-foreground)]">
@@ -310,20 +294,41 @@ export default function AccountsReceivablePage() {
                 className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none transition-colors focus:ring-2 focus:ring-[var(--color-primary)]/20"
               />
             </label>
-            <button
-              type="button"
-              onClick={() => setRefreshKey((value) => value + 1)}
-              className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <ArrowClockwiseIcon
-                size={16}
-                weight="bold"
-                className={cn(loading && "animate-spin")}
-              />
-              Actualizar
-            </button>
+            <div className="grid grid-cols-2 gap-3 sm:flex">
+              <button
+                type="button"
+                onClick={() => setShowFilters((current) => !current)}
+                className={cn(
+                  "flex h-11 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-circular-bold transition-colors lg:hidden",
+                  showFilters || activeFilters > 0
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                )}
+                aria-expanded={showFilters}
+              >
+                <FunnelIcon size={16} weight="bold" />
+                Filtros{activeFilters > 0 ? ` (${activeFilters})` : ""}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRefreshKey((value) => value + 1)}
+                className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <ArrowClockwiseIcon
+                  size={16}
+                  weight="bold"
+                  className={cn(loading && "animate-spin")}
+                />
+                Actualizar
+              </button>
+            </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={cn(
+              "gap-3 sm:grid-cols-2 lg:grid lg:grid-cols-4",
+              showFilters ? "grid" : "hidden",
+            )}
+          >
             <Select
               value={clientId}
               onChange={(value) => updateFilter(setClientId, value)}
@@ -447,7 +452,8 @@ export default function AccountsReceivablePage() {
                         {clientName(account)}
                       </p>
                       <p className="truncate text-xs text-[var(--color-muted-foreground)]">
-                        {account.cliente.tipoDocumento.toUpperCase()} {account.cliente.numeroDocumento || "Sin documento"}
+                        {account.cliente.tipoDocumento.toUpperCase()}{" "}
+                        {account.cliente.numeroDocumento || "Sin documento"}
                       </p>
                     </div>
                   </div>
@@ -538,12 +544,6 @@ export default function AccountsReceivablePage() {
           </div>
         </div>
       </div>
-
-      <ReceivableDrawer
-        publicId={selectedAccountId}
-        onClose={closeAccount}
-        onChanged={() => setRefreshKey((value) => value + 1)}
-      />
     </DashboardShell>
   );
 }
