@@ -232,7 +232,7 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
       width={160}
       height={160}
       unoptimized
-      className="h-full  rounded-xl object-contain drop-shadow-[0_10px_12px_rgba(31,36,42,0.16)]"
+      className="h-full max-w-full rounded-xl object-contain"
     />
   );
 }
@@ -244,7 +244,7 @@ function ProductPlaceholderImage({ className }: { className?: string }) {
       width={96}
       height={96}
       alt="Producto sin imagen"
-      className={cn("object-contain grayscale opacity-35", className)}
+      className={cn("rounded-xl object-contain grayscale opacity-35", className)}
     />
   );
 }

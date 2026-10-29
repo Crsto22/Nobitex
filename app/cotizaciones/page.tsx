@@ -61,6 +61,7 @@ import {
 import { sizesApi, type Size } from "@/lib/api/sizes";
 import { defaultPageSize } from "@/lib/pagination";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { useGlobalBarcodeScanner } from "@/lib/hooks/use-global-barcode-scanner";
 import { useAuth } from "@/lib/auth/auth-provider";
 
 const productPlaceholderImage = "/Logo/Nuvex.png";
@@ -142,7 +143,7 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
       width={160}
       height={160}
       unoptimized
-      className="h-full w-full object-contain drop-shadow-[0_10px_12px_rgba(31,36,42,0.16)]"
+      className="h-full w-full rounded-xl object-contain"
     />
   );
 }
@@ -154,7 +155,7 @@ function ProductPlaceholderImage({ className }: { className?: string }) {
       width={96}
       height={96}
       alt="Producto sin imagen"
-      className={cn("object-contain grayscale opacity-35", className)}
+      className={cn("rounded-xl object-contain grayscale opacity-35", className)}
     />
   );
 }
@@ -899,6 +900,13 @@ export default function CotizacionesPage() {
     [addVariantToCart, cartItems, selectedBranch, toast],
   );
 
+  const { active: scannerActive, toggle: toggleScanner } =
+    useGlobalBarcodeScanner({
+      onScan: (barcode) => {
+        void handleScannedCode(barcode);
+      },
+    });
+
   const handleSaveQuotation = async () => {
     if (cartItems.length === 0 || isSavingQuotation) {
       return;
@@ -1025,7 +1033,7 @@ export default function CotizacionesPage() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px]">
+            <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-3 md:grid-cols-[minmax(240px,1fr)_180px_142px_32px] lg:grid-cols-[minmax(240px,1fr)_180px_142px_52px_32px]">
             <label className="relative">
               <MagnifyingGlassIcon
                 size={18}
@@ -1061,6 +1069,22 @@ export default function CotizacionesPage() {
                 </span>
               </time>
             </div>
+
+            <button
+              type="button"
+              onClick={toggleScanner}
+              title="Escanear codigo de barras"
+              aria-label="Escanear codigo de barras"
+              aria-pressed={scannerActive}
+              className={cn(
+                "hidden h-11 w-11 items-center justify-center rounded-[16px] transition-colors lg:flex",
+                scannerActive
+                  ? "bg-[var(--color-primary)] text-white hover:opacity-90"
+                  : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+              )}
+            >
+              <BarcodeIcon size={18} weight="bold" />
+            </button>
 
             <div className="hidden h-11 items-center justify-center md:flex">
               <WifiHighIcon

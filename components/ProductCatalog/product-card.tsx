@@ -120,7 +120,7 @@ export function ProductCard({
             width={112}
             height={112}
             unoptimized
-            className="h-full  rounded-xl object-contain drop-shadow-[0_10px_12px_rgba(31,36,42,0.16)]"
+            className="h-full max-w-full rounded-xl object-contain"
           />
         ) : (
           <Image
@@ -128,7 +128,7 @@ export function ProductCard({
             width={96}
             height={96}
             alt="Producto sin imagen"
-            className="h-20 w-20 object-contain grayscale opacity-35"
+            className="h-20 w-20 rounded-xl object-contain grayscale opacity-35"
           />
         )}
         {product.tipo === "variantes" ? <div
@@ -157,7 +157,9 @@ export function ProductCard({
                   )}
                   style={{
                     backgroundColor: color.hex,
-                    "--tw-ring-color": isSelected ? color.hex : "transparent",
+                    "--tw-ring-color": isSelected
+                      ? "var(--color-text)"
+                      : "transparent",
                   } as React.CSSProperties}
                   title={`${color.name} · Stock ${color.stock}`}
                   aria-label={`Ver color ${color.name}`}

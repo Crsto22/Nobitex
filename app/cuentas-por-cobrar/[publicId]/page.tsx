@@ -17,7 +17,7 @@ export default function ReceivableDetailPage() {
         href: "/cuentas-por-cobrar",
       }}
     >
-      <div className="content-scrollbar h-[calc(100dvh-4rem)] overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:p-6">
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] flex-col overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:p-6">
         <ReceivableDrawer
           publicId={params.publicId}
           variant="page"

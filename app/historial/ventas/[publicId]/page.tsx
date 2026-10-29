@@ -979,7 +979,7 @@ export default function VentaDetallePage() {
                 </p>
               </div>
               <Link
-                href={`/cuentas-por-cobrar?account=${venta.cuentaPorCobrar.publicId}`}
+                href={`/cuentas-por-cobrar/${venta.cuentaPorCobrar.publicId}`}
                 className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[var(--color-primary)] px-3 text-xs font-circular-bold text-white"
               >
                 Ver cuenta por cobrar

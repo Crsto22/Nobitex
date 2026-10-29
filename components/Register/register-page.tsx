@@ -5,16 +5,22 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
 import {
-  CaretDownIcon,
   CheckCircleIcon,
+  DotsThreeCircleIcon,
   EnvelopeSimpleIcon,
   EyeIcon,
   EyeSlashIcon,
+  FacebookLogoIcon,
+  GoogleLogoIcon,
   IdentificationCardIcon,
+  InstagramLogoIcon,
   KeyIcon,
+  ShareNetworkIcon,
+  TiktokLogoIcon,
   UserIcon,
+  WhatsappLogoIcon,
+  YoutubeLogoIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -51,14 +57,54 @@ const passwordRequirements = [
 ];
 
 const discoveryOptions = [
-  ["instagram", "Instagram"],
-  ["tiktok", "TikTok"],
-  ["facebook", "Facebook"],
-  ["youtube", "YouTube"],
-  ["google", "Google"],
-  ["whatsapp", "WhatsApp"],
-  ["recomendacion", "Recomendacion"],
-  ["otro", "Otro"],
+  {
+    value: "instagram",
+    label: "Instagram",
+    icon: InstagramLogoIcon,
+    color: "#E4405F",
+  },
+  {
+    value: "tiktok",
+    label: "TikTok",
+    icon: TiktokLogoIcon,
+    color: "#010101",
+  },
+  {
+    value: "facebook",
+    label: "Facebook",
+    icon: FacebookLogoIcon,
+    color: "#1877F2",
+  },
+  {
+    value: "youtube",
+    label: "YouTube",
+    icon: YoutubeLogoIcon,
+    color: "#FF0000",
+  },
+  {
+    value: "google",
+    label: "Google",
+    icon: GoogleLogoIcon,
+    color: "#4285F4",
+  },
+  {
+    value: "whatsapp",
+    label: "WhatsApp",
+    icon: WhatsappLogoIcon,
+    color: "#25D366",
+  },
+  {
+    value: "recomendacion",
+    label: "Recomendación",
+    icon: ShareNetworkIcon,
+    color: "#101d69",
+  },
+  {
+    value: "otro",
+    label: "Otro",
+    icon: DotsThreeCircleIcon,
+    color: "#64748b",
+  },
 ] as const;
 
 const catalogProfileOptions = [
@@ -540,7 +586,7 @@ export function RegisterPage() {
                 >
                   <div>
                     <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
-                      Prueba Nuvex gratis 30 días
+                      Prueba Nuvex gratis 14 días
                     </h1>
                     <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
                       Controla ventas, stock y facturación electrónica desde un
@@ -1321,179 +1367,61 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
         />
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <RegisterInput
-          id="business-address"
-          label="Direccion"
-          name="direccion"
-          value={companyData.direccion}
-          onValueChange={(value) => updateCompanyValue("direccion", value)}
-          placeholder="Lima, Peru"
-          required={false}
-          icon={<IdentificationCardIcon size={24} weight="fill" />}
-        />
+      <RegisterInput
+        id="business-address"
+        label="Direccion"
+        name="direccion"
+        value={companyData.direccion}
+        onValueChange={(value) => updateCompanyValue("direccion", value)}
+        placeholder="Lima, Peru"
+        required={false}
+        icon={<IdentificationCardIcon size={24} weight="fill" />}
+      />
 
-        <RegisterSelect
-          id="business-source"
-          label="Como nos conociste"
-          value={companyData.comoConocio}
-          onValueChange={(value) => updateCompanyValue("comoConocio", value)}
-          options={discoveryOptions}
-        />
-      </div>
+      <fieldset>
+        <legend className="text-sm font-circular-bold text-[var(--color-text)]">
+          Como nos conociste
+        </legend>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {discoveryOptions.map((option) => {
+            const Icon = option.icon;
+            const selected = companyData.comoConocio === option.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() =>
+                  updateCompanyValue("comoConocio", option.value)
+                }
+                aria-pressed={selected}
+                className={`flex items-center gap-2 rounded-[12px] border px-3 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10"
+                    : "border-[var(--color-border)] bg-[var(--color-input-bg)] hover:border-[var(--color-primary)]/40"
+                }`}
+              >
+                <Icon
+                  size={22}
+                  weight="fill"
+                  className="shrink-0"
+                  style={{ color: option.color }}
+                />
+                <span
+                  className={`min-w-0 truncate text-xs font-circular-bold ${
+                    selected
+                      ? "text-[var(--color-primary)]"
+                      : "text-[var(--color-text)]"
+                  }`}
+                >
+                  {option.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
     </>
-  );
-}
-
-type RegisterSelectProps = {
-  id: string;
-  label: string;
-  value: string;
-  onValueChange: (value: string) => void;
-  options: readonly (readonly [string, string])[];
-};
-
-function RegisterSelect({
-  id,
-  label,
-  value,
-  onValueChange,
-  options,
-}: RegisterSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState({
-    left: 0,
-    top: 0,
-    width: 0,
-    maxHeight: 240,
-  });
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const currentOption = options.find(([optionValue]) => optionValue === value);
-
-  const updateMenuPosition = () => {
-    const button = buttonRef.current;
-
-    if (!button) {
-      return;
-    }
-
-    const rect = button.getBoundingClientRect();
-    const gap = 8;
-    const spaceBelow = window.innerHeight - rect.bottom - gap;
-    const spaceAbove = rect.top - gap;
-    const opensBelow = spaceBelow >= 220 || spaceBelow >= spaceAbove;
-    const maxHeight = Math.max(
-      140,
-      Math.min(260, opensBelow ? spaceBelow : spaceAbove),
-    );
-
-    setMenuStyle({
-      left: rect.left,
-      top: opensBelow ? rect.bottom + gap : rect.top - maxHeight - gap,
-      width: rect.width,
-      maxHeight,
-    });
-  };
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    updateMenuPosition();
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-
-      if (
-        buttonRef.current?.contains(target) ||
-        menuRef.current?.contains(target)
-      ) {
-        return;
-      }
-
-      setIsOpen(false);
-    };
-
-    window.addEventListener("resize", updateMenuPosition);
-    window.addEventListener("scroll", updateMenuPosition, true);
-    document.addEventListener("pointerdown", handlePointerDown);
-
-    return () => {
-      window.removeEventListener("resize", updateMenuPosition);
-      window.removeEventListener("scroll", updateMenuPosition, true);
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [isOpen]);
-
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
-      >
-        {label}
-      </label>
-      <div>
-        <button
-          id={id}
-          ref={buttonRef}
-          type="button"
-          onClick={() => {
-            updateMenuPosition();
-            setIsOpen((currentValue) => !currentValue);
-          }}
-          className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-left text-sm font-circular-regular text-[var(--color-input-text)] outline-none transition-colors hover:bg-[var(--color-button-hover)] focus:ring-2 focus:ring-[var(--color-primary)]/20 xl:h-12"
-        >
-          <span className="min-w-0 truncate">{currentOption?.[1]}</span>
-          <CaretDownIcon
-            size={16}
-            weight="bold"
-            className={`shrink-0 text-[var(--color-muted-foreground)] transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-
-        {isOpen &&
-          createPortal(
-            <div
-              ref={menuRef}
-              className="fixed z-[9999] overflow-y-auto rounded-xl bg-[var(--color-card)] p-1 shadow-[0_16px_40px_rgba(16,29,105,0.18)] ring-1 ring-[var(--color-border)]"
-              style={{
-                left: menuStyle.left,
-                top: menuStyle.top,
-                width: menuStyle.width,
-                maxHeight: menuStyle.maxHeight,
-              }}
-            >
-              {options.map(([optionValue, labelText]) => {
-                const isSelected = value === optionValue;
-
-                return (
-                  <button
-                    key={optionValue}
-                    type="button"
-                    onClick={() => {
-                      onValueChange(optionValue);
-                      setIsOpen(false);
-                    }}
-                    className={`font-circular-regular flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-bold transition-colors ${
-                      isSelected
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-                    }`}
-                  >
-                    <span className="min-w-0 truncate">{labelText}</span>
-                  </button>
-                );
-              })}
-            </div>,
-            document.body,
-          )}
-      </div>
-    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { PackageIcon } from "@phosphor-icons/react/ssr";
 
@@ -96,6 +96,26 @@ export function SaleProductCard({
   const isNormal = product.tipo === "normal";
   const productStock = colors.reduce((total, color) => total + color.stock, 0);
 
+  const rowRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [priceOverflows, setPriceOverflows] = useState(false);
+
+  useEffect(() => {
+    const row = rowRef.current;
+    const measure = measureRef.current;
+    if (!row || !measure) return;
+
+    const update = () => {
+      setPriceOverflows(measure.scrollWidth > row.clientWidth + 1);
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(row);
+    observer.observe(measure);
+    return () => observer.disconnect();
+  }, [selectedVariant?.precioVenta, stock]);
+
   if (!hasAvailableSaleProductStock(product, cartQuantities)) return null;
 
   const addSelected = () => {
@@ -119,6 +139,25 @@ export function SaleProductCard({
         productStock <= 0 && "cursor-not-allowed opacity-60",
       )}
     >
+      <div
+        ref={measureRef}
+        aria-hidden="true"
+        className="pointer-events-none invisible absolute left-0 top-0 flex w-max items-center gap-2 whitespace-nowrap"
+      >
+        <span className="text-sm font-circular-bold">
+          S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
+        </span>
+        <span
+          className={cn(
+            "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px]",
+            stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
+          )}
+        >
+          <PackageIcon size={14} weight="bold" />
+          {stock}
+        </span>
+      </div>
+
       {productStock <= 0 ? (
         <span className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 rounded-lg bg-[#ef4444] px-3 py-1 text-xs font-circular-bold text-white">
           Agotado
@@ -133,7 +172,7 @@ export function SaleProductCard({
             width={112}
             height={112}
             unoptimized
-            className="h-full w-full rounded-xl object-contain drop-shadow-[0_10px_12px_rgba(31,36,42,0.16)]"
+            className="h-full max-w-full rounded-xl object-contain"
           />
         ) : (
           <Image
@@ -141,7 +180,7 @@ export function SaleProductCard({
             width={96}
             height={96}
             alt="Producto sin imagen"
-            className="h-20 w-20 object-contain grayscale opacity-35"
+            className="h-20 w-20 rounded-xl object-contain grayscale opacity-35"
           />
         )}
         {!isNormal && selectedVariant ? (
@@ -152,10 +191,21 @@ export function SaleProductCard({
             {selectedVariant.talla.nombre}
           </span>
         ) : null}
+        {priceOverflows ? (
+          <span
+            className={cn(
+              "font-sora-extrabold absolute right-0 top-0 z-10 flex h-6 items-center gap-1 rounded-full px-2 text-xs text-white shadow-sm",
+              stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
+            )}
+          >
+            <PackageIcon size={12} weight="bold" />
+            {stock}
+          </span>
+        ) : null}
       </div>
 
       {!isNormal ? (
-        <div className="relative z-10 mt-2 flex items-start justify-between gap-2">
+        <div className="relative z-10 mt-2 flex flex-col items-start gap-1.5">
           <div className="flex min-w-0 flex-wrap gap-1.5">
             {colors.map((item) => (
               <button
@@ -177,7 +227,7 @@ export function SaleProductCard({
                     backgroundColor: item.color.hex,
                     "--tw-ring-color":
                       selectedColor?.id === item.id
-                        ? item.color.hex
+                        ? "var(--color-text)"
                         : "transparent",
                   } as React.CSSProperties
                 }
@@ -186,7 +236,7 @@ export function SaleProductCard({
               />
             ))}
           </div>
-          <div className="flex min-w-0 flex-wrap justify-end gap-1">
+          <div className="flex min-w-0 flex-wrap gap-1">
             {selectedColor?.variants.map((variant) => {
               const remaining = Math.max(
                 0,
@@ -239,19 +289,27 @@ export function SaleProductCard({
           {selectedVariant.color.nombre}
         </p>
       ) : null}
-      <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+      <div
+        ref={rowRef}
+        className={cn(
+          "mt-auto flex items-center pt-3",
+          priceOverflows ? "justify-start" : "justify-between gap-2",
+        )}
+      >
         <span className="truncate text-sm font-circular-bold text-[var(--color-muted-foreground)]">
           S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
         </span>
-        <span
-          className={cn(
-            "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
-            stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
-          )}
-        >
-          <PackageIcon size={14} weight="bold" />
-          {stock}
-        </span>
+        {priceOverflows ? null : (
+          <span
+            className={cn(
+              "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
+              stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
+            )}
+          >
+            <PackageIcon size={14} weight="bold" />
+            {stock}
+          </span>
+        )}
       </div>
     </article>
   );

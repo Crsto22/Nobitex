@@ -571,7 +571,7 @@ export function Sidebar({
                             : "0px",
                         }}
                       >
-                        <div className="sidebar-section-children ml-5 flex flex-col gap-1">
+                        <div className="sidebar-section-children relative ml-5 flex flex-col gap-1 pl-2 before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-[var(--color-border)] before:content-['']">
                           {section.children.map((item) => {
                             const Icon = item.icon;
                             const isActive = isChildActive(item);

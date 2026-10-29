@@ -65,7 +65,7 @@ export type Receivable = {
     referencia: string | null;
     estado: "activo" | "anulado";
     createdAt: string;
-    metodoPago: { id: string; nombre: string };
+    metodoPago: { id: string; nombre: string; codigo?: string | null };
     creadoPor: { id: string; nombre: string } | null;
     cuotas: Array<{ numero: number; monto: string }>;
   }>;
