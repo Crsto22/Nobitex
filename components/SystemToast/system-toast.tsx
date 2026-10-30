@@ -16,7 +16,7 @@ import {
   XIcon,
   XCircleIcon,
   SpinnerGapIcon,
-  EyeIcon,
+  TicketIcon,
 } from "@phosphor-icons/react/ssr";
 
 type ToastVariant = "success" | "error" | "warning" | "info" | "loading";
@@ -161,17 +161,18 @@ export function SystemToastProvider({ children }: { children: ReactNode }) {
                     {toast.description}
                   </p>
                 )}
-                {toast.action ? (
-                  <Link
-                    href={toast.action.href}
-                    onClick={() => removeToast(toast.id)}
-                    className="mt-3 inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/75 px-3 text-xs font-circular-bold shadow-sm ring-1 ring-black/5 transition hover:bg-white"
-                  >
-                    <EyeIcon size={15} weight="bold" />
-                    {toast.action.label}
-                  </Link>
-                ) : null}
               </div>
+              {toast.action ? (
+                <Link
+                  href={toast.action.href}
+                  onClick={() => removeToast(toast.id)}
+                  aria-label={toast.action.label}
+                  title={toast.action.label}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm ring-1 ring-black/5 transition hover:bg-white hover:shadow-md"
+                >
+                  <TicketIcon size={18} weight="fill" />
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => removeToast(toast.id)}
