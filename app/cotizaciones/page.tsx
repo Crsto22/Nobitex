@@ -947,6 +947,10 @@ export default function CotizacionesPage() {
         description: `Correlativo: ${quotation.correlativo} - Total: ${formatPrice(Number(quotation.total))}`,
         variant: "success",
         duration: 5000,
+        action: {
+          label: "Ver cotización",
+          href: `/historial/cotizaciones/${quotation.publicId}`,
+        },
       });
 
       setCartItems([]);

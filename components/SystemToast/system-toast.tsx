@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   createContext,
   useCallback,
@@ -15,6 +16,7 @@ import {
   XIcon,
   XCircleIcon,
   SpinnerGapIcon,
+  EyeIcon,
 } from "@phosphor-icons/react/ssr";
 
 type ToastVariant = "success" | "error" | "warning" | "info" | "loading";
@@ -24,10 +26,15 @@ type ToastInput = {
   description?: string;
   variant?: ToastVariant;
   duration?: number;
+  action?: {
+    label: string;
+    href: string;
+  };
 };
 
-type ToastItem = Required<ToastInput> & {
+type ToastItem = Required<Omit<ToastInput, "action">> & {
   id: string;
+  action?: ToastInput["action"];
 };
 
 type SystemToastContextValue = {
@@ -99,6 +106,7 @@ export function SystemToastProvider({ children }: { children: ReactNode }) {
       description = "",
       variant = "info",
       duration: userDuration,
+      action,
     }: ToastInput) => {
       const id =
         typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -110,7 +118,7 @@ export function SystemToastProvider({ children }: { children: ReactNode }) {
 
       setToasts((currentToasts) => [
         ...currentToasts,
-        { id, title, description, variant, duration },
+        { id, title, description, variant, duration, action },
       ]);
 
       if (variant !== "loading") {
@@ -153,6 +161,16 @@ export function SystemToastProvider({ children }: { children: ReactNode }) {
                     {toast.description}
                   </p>
                 )}
+                {toast.action ? (
+                  <Link
+                    href={toast.action.href}
+                    onClick={() => removeToast(toast.id)}
+                    className="mt-3 inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/75 px-3 text-xs font-circular-bold shadow-sm ring-1 ring-black/5 transition hover:bg-white"
+                  >
+                    <EyeIcon size={15} weight="bold" />
+                    {toast.action.label}
+                  </Link>
+                ) : null}
               </div>
               <button
                 type="button"

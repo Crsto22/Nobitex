@@ -625,6 +625,10 @@ export function ChargeModal({
         description: `Correlativo: ${venta.correlativo} — Total: ${formatPrice(Number(venta.total))} — ${sunatMessage}`,
         variant: "success",
         duration: 5000,
+        action: {
+          label: "Ver venta",
+          href: `/historial/ventas/${venta.publicId}`,
+        },
       });
       onSaleSuccess(venta);
       requestIdRef.current = null;
