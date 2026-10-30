@@ -117,8 +117,8 @@ function parseAmount(value: string) {
 }
 
 const noteTypeLabels: Record<string, string> = {
-  nota: "Nota de Venta",
-  nota_venta: "Nota de Venta",
+  nota: "N.VENTA",
+  nota_venta: "N.VENTA",
   boleta: "Boleta",
   factura: "Factura",
 };
@@ -656,14 +656,15 @@ export function ChargeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/35 px-4 py-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/35 px-0 py-0 animate-in fade-in duration-200 md:items-start md:px-4 md:py-6">
       <div
         className={cn(
-          "flex max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-[24px] bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.28)] ring-1 ring-[var(--color-border)] animate-in zoom-in-95 duration-200",
+          "flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[24px] rounded-b-none bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.28)] ring-1 ring-[var(--color-border)] animate-in slide-in-from-bottom fade-in duration-300 md:max-h-[calc(100dvh-3rem)] md:rounded-[24px] md:slide-in-from-bottom-0 md:zoom-in-95 md:duration-200",
           wide ? "max-w-4xl" : "max-w-2xl",
         )}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-[var(--color-border)] md:hidden" />
         <div className="flex shrink-0 items-start justify-between gap-4 p-5 pb-0">
           <div>
             <h2 className="text-lg font-black text-[var(--color-text)] text-fixed-lg">
@@ -708,15 +709,16 @@ export function ChargeModal({
                           : "Sin documento"}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsClientPickerOpen(true)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[var(--color-primary)] shadow-sm transition-colors hover:bg-[var(--color-button-hover)]"
+                      aria-label="Cambiar o actualizar cliente"
+                      title="Cambiar o actualizar cliente"
+                    >
+                      <NotePencilIcon size={16} weight="bold" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsClientPickerOpen(true)}
-                    className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-3 text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
-                  >
-                    <NotePencilIcon size={16} weight="bold" />
-                    Cambiar o actualizar
-                  </button>
                   {isInvoiceClientInvalid ? (
                     <div className="mt-3 rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
                       Para emitir factura selecciona un cliente con RUC de 11
@@ -887,6 +889,37 @@ export function ChargeModal({
                   </div>
                 ) : null}
               </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <ToggleButton
+                  active={pickupLater}
+                  onClick={() => setPickupLater((current) => !current)}
+                >
+                  <span className="min-w-0 text-left">
+                    <span className="block text-sm font-circular-bold text-[var(--color-text)]">
+                      Recogera despues
+                    </span>
+                  </span>
+                </ToggleButton>
+
+                {pickupLater ? (
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <CalendarInput
+                      label="Recoger hasta (opcional)"
+                      value={pickupUntil}
+                      onChange={setPickupUntil}
+                      popoverAlign="left"
+                      popoverFixed
+                    />
+
+                    {isPickupClientInvalid ? (
+                      <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                        Selecciona un cliente con DNI o RUC valido.
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="flex flex-col gap-4">
@@ -942,7 +975,7 @@ export function ChargeModal({
                       className={cn(
                         "flex h-11 items-center justify-center gap-2 rounded-[14px] text-xs font-circular-bold transition-colors",
                         isCredit
-                          ? "bg-[#f59e0b] text-white"
+                          ? "bg-[var(--color-secondary)] text-white"
                           : "bg-[var(--color-input-bg)] text-[var(--color-text)]",
                         !creditAvailable && "cursor-not-allowed opacity-55",
                       )}
@@ -960,7 +993,7 @@ export function ChargeModal({
               ) : null}
 
               {isCredit ? (
-                <div className="space-y-4 rounded-[16px] border border-[#f59e0b]/35 bg-[#f59e0b]/5 p-4">
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <label>
                       <span className="mb-1 block text-xs font-circular-bold text-[var(--color-muted-foreground)]">
@@ -987,7 +1020,7 @@ export function ChargeModal({
                       <span className="mb-1 block text-xs font-circular-bold text-[var(--color-muted-foreground)]">
                         Saldo pendiente
                       </span>
-                      <div className="flex h-11 items-center rounded-[12px] bg-white px-3 text-sm font-black text-[#b45309] ring-1 ring-[#f59e0b]/25">
+                      <div className="flex h-11 items-center rounded-[12px] bg-white px-3 text-sm font-black text-[var(--color-secondary)] ring-1 ring-[var(--color-secondary)]/25">
                         {formatPrice(creditBalance)}
                       </div>
                     </div>
@@ -1010,37 +1043,6 @@ export function ChargeModal({
                 </div>
               ) : null}
 
-              <div>
-                <ToggleButton
-                  active={pickupLater}
-                  onClick={() => setPickupLater((current) => !current)}
-                >
-                  <span className="min-w-0 text-left">
-                    <span className="block text-sm font-circular-bold text-[var(--color-text)]">
-                      Recogera despues
-                    </span>
-                  </span>
-                </ToggleButton>
-
-                {pickupLater ? (
-                  <div className="mt-3 space-y-3">
-                    <CalendarInput
-                      label="Recoger hasta (opcional)"
-                      value={pickupUntil}
-                      onChange={setPickupUntil}
-                      popoverAlign="left"
-                      popoverFixed
-                    />
-
-                    {isPickupClientInvalid ? (
-                      <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
-                        Selecciona un cliente con DNI o RUC valido.
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-
               {isCredit ? (
                 <div className="space-y-3 rounded-[16px] bg-[var(--color-input-bg)] p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -1048,11 +1050,8 @@ export function ChargeModal({
                       <p className="text-sm font-black text-[var(--color-text)]">
                         Cronograma de cuotas
                       </p>
-                      <p className="text-xs text-[var(--color-muted-foreground)]">
-                        Puedes ajustar cada fecha e importe.
-                      </p>
                     </div>
-                    <span className="rounded-full bg-[#f59e0b]/15 px-3 py-1 text-xs font-circular-bold text-[#b45309]">
+                    <span className="rounded-full bg-[var(--color-secondary)]/15 px-3 py-1 text-xs font-circular-bold text-[var(--color-secondary)]">
                       {installmentCount}{" "}
                       {installmentCount === 1 ? "cuota" : "cuotas"}
                     </span>
@@ -1094,7 +1093,7 @@ export function ChargeModal({
                         className={cn(
                           "h-9 rounded-[10px] text-xs font-circular-bold",
                           installmentCount === count
-                            ? "bg-[#f59e0b] text-white"
+                            ? "bg-[var(--color-secondary)] text-white"
                             : "bg-[var(--color-card)] text-[var(--color-text)]",
                         )}
                       >
@@ -1108,7 +1107,7 @@ export function ChargeModal({
                         key={installment.numero}
                         className="grid grid-cols-[32px_1fr_105px] items-end gap-2 rounded-[12px] bg-[var(--color-card)] p-2"
                       >
-                        <span className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#f59e0b]/15 text-xs font-black text-[#b45309]">
+                        <span className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-secondary)]/15 text-xs font-black text-[var(--color-secondary)]">
                           {installment.numero}
                         </span>
                         <CalendarInput
@@ -1202,15 +1201,21 @@ export function ChargeModal({
                     <div className="grid grid-cols-2 gap-2">
                       {paymentMethods.map((method) => {
                         const config = getPaymentMethodConfig(method.nombre);
+                        const isSelected = selectedMethod?.id === method.id;
                         return (
                           <button
                             key={method.id}
                             type="button"
                             onClick={() => setSelectedMethod(method)}
                             className={cn(
-                              "flex h-16 items-center gap-2 rounded-[14px] px-3 text-sm font-circular-bold transition-colors duration-150",
-                              selectedMethod?.id === method.id
-                                ? "bg-[var(--color-primary)] text-white shadow-md scale-[0.98]"
+                              "flex h-16 items-center gap-2 rounded-[14px] px-3 text-sm font-circular-bold transition-all duration-150",
+                              isSelected
+                                ? cn(
+                                    config
+                                      ? config.bgColor
+                                      : "bg-[var(--color-primary)]",
+                                    "text-white shadow-md scale-[0.98]",
+                                  )
                                 : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
                             )}
                           >
@@ -1619,43 +1624,50 @@ export function ChargeModal({
                       : `Falta ${formatPrice(remaining)}`}
                 </div>
               )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  disabled={isSubmitting}
-                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ArrowLeftIcon size={16} />
-                  Volver
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!canConfirm || isSubmitting}
-                  className="font-circular-bold flex h-12 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] transition-colors hover:bg-[#f2670a] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-                >
-                  {isSubmitting ? (
-                    <SpinnerGapIcon
-                      size={18}
-                      weight="bold"
-                      className="animate-spin"
-                    />
-                  ) : (
-                    <CreditCardIcon size={18} weight="bold" />
-                  )}
-                  {isSubmitting
-                    ? "Procesando..."
-                    : (submitTitle ??
-                      (isCredit
-                        ? "Registrar venta al crédito"
-                        : hasEntries
-                          ? "Confirmar venta"
-                          : `Cobrar ${formatPrice(total)}`))}
-                </button>
-              </div>
             </div>
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-card)] px-5 py-4">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowLeftIcon size={16} />
+              Volver
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canConfirm || isSubmitting}
+              className={cn(
+                "font-circular-bold flex h-12 flex-1 items-center justify-center gap-2 rounded-[14px] text-sm font-black text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none",
+                isCredit
+                  ? "bg-[var(--color-secondary)] shadow-[0_8px_18px_rgba(253,116,26,0.3)] hover:opacity-90"
+                  : "bg-[var(--color-primary)] shadow-[0_8px_18px_rgba(16,29,105,0.28)] hover:opacity-90",
+              )}
+            >
+              {isSubmitting ? (
+                <SpinnerGapIcon
+                  size={18}
+                  weight="bold"
+                  className="animate-spin"
+                />
+              ) : (
+                <CreditCardIcon size={18} weight="bold" />
+              )}
+              {isSubmitting
+                ? "Procesando..."
+                : (submitTitle ??
+                  (isCredit
+                    ? "Registrar venta al crédito"
+                    : hasEntries
+                      ? "Confirmar venta"
+                      : `Cobrar ${formatPrice(total)}`))}
+            </button>
           </div>
         </div>
       </div>

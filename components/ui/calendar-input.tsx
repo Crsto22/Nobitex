@@ -112,6 +112,7 @@ export function CalendarInput({
   const controlId = useId();
   const [viewDate, setViewDate] = useState(selectedDate ?? new Date());
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const minDate = parseDateOnly(min, mode);
   const maxDate = parseDateOnly(max, mode);
   const today = toDateOnly(new Date());
@@ -147,9 +148,19 @@ export function CalendarInput({
       const width = Math.min(304, window.innerWidth - 32);
       const alignedLeft =
         popoverAlign === "left" ? rect.left : rect.right - width;
+      const popoverHeight =
+        popoverRef.current?.offsetHeight ?? (mode === "month" ? 240 : 340);
+      const spaceBelow = window.innerHeight - rect.bottom - 16;
+      const spaceAbove = rect.top - 16;
+      const openUp = spaceBelow < popoverHeight && spaceAbove > spaceBelow;
 
       setFixedPosition({
-        top: rect.bottom + 8,
+        top: openUp
+          ? Math.max(16, rect.top - popoverHeight - 8)
+          : Math.min(
+              rect.bottom + 8,
+              window.innerHeight - popoverHeight - 16,
+            ),
         left: Math.max(16, Math.min(alignedLeft, window.innerWidth - width - 16)),
         width,
       });
@@ -162,7 +173,7 @@ export function CalendarInput({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, popoverAlign, popoverFixed]);
+  }, [isOpen, mode, popoverAlign, popoverFixed]);
 
   const goToMonth = (amount: number) => {
     setViewDate((current) => {
@@ -246,6 +257,7 @@ export function CalendarInput({
 
       {isOpen && !disabled ? (
         <div
+          ref={popoverRef}
           style={popoverFixed && fixedPosition ? fixedPosition : undefined}
           className={cn(
             "w-[min(19rem,calc(100vw-2rem))] rounded-[20px] bg-[var(--color-card)] p-3 shadow-[0_18px_48px_rgba(15,23,42,0.2)] ring-1 ring-[var(--color-border)] animate-in fade-in zoom-in-95 duration-200",
