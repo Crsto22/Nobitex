@@ -656,10 +656,16 @@ export function ChargeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/35 px-0 py-0 animate-in fade-in duration-200 md:items-start md:px-4 md:py-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-0 py-0 md:items-start md:px-4 md:py-6">
+      <button
+        type="button"
+        aria-label="Cerrar cobro"
+        onClick={handleClose}
+        className="absolute inset-0 bg-black/45 animate-in fade-in duration-200"
+      />
       <div
         className={cn(
-          "flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[24px] rounded-b-none bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.28)] ring-1 ring-[var(--color-border)] animate-in slide-in-from-bottom fade-in duration-300 md:max-h-[calc(100dvh-3rem)] md:rounded-[24px] md:slide-in-from-bottom-0 md:zoom-in-95 md:duration-200",
+          "relative flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.28)] ring-1 ring-[var(--color-border)] animate-in slide-in-from-bottom-2 duration-200 md:h-auto md:max-h-[calc(100dvh-3rem)] md:rounded-[24px] md:slide-in-from-bottom-0 md:zoom-in-95",
           wide ? "max-w-4xl" : "max-w-2xl",
         )}
         onClick={(e) => e.stopPropagation()}
