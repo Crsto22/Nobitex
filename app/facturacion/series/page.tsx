@@ -369,10 +369,18 @@ export default function SeriesPage() {
 
       setPage(targetPage);
       await refreshSeries(targetPage);
+      const syncFailed = savedSerie.billingSync?.status === "ERROR";
       showToast({
-        title: modal.editing ? "Serie actualizada" : "Serie creada",
-        description: `${savedSerie.serie} quedo guardada correctamente.`,
-        variant: "success",
+        title: syncFailed
+          ? "Serie guardada, sincronizacion pendiente"
+          : modal.editing
+            ? "Serie actualizada"
+            : "Serie creada",
+        description: syncFailed
+          ? savedSerie.billingSync?.message ??
+            "No se pudo sincronizar la serie con Billing."
+          : `${savedSerie.serie} quedo guardada y sincronizada correctamente.`,
+        variant: syncFailed ? "error" : "success",
       });
       closeModal();
     } catch (error) {
@@ -397,10 +405,18 @@ export default function SeriesPage() {
         activo: !serie.activo,
       });
       await refreshSeries();
+      const syncFailed = updated.billingSync?.status === "ERROR";
       showToast({
-        title: updated.activo ? "Serie activada" : "Serie inactivada",
-        description: updated.serie,
-        variant: "success",
+        title: syncFailed
+          ? "Serie actualizada, sincronizacion pendiente"
+          : updated.activo
+            ? "Serie activada"
+            : "Serie inactivada",
+        description: syncFailed
+          ? updated.billingSync?.message ??
+            "No se pudo sincronizar la serie con Billing."
+          : updated.serie,
+        variant: syncFailed ? "error" : "success",
       });
     } catch (error) {
       const message =

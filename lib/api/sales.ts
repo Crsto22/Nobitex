@@ -448,6 +448,10 @@ export type SerieComprobante = {
   sucursales: { id: string; nombre: string }[];
   activo: boolean;
   createdAt: string;
+  billingSync?: {
+    status: "SYNCED" | "SKIPPED" | "ERROR";
+    message?: string;
+  };
 };
 
 export type SeriesQuery = {
