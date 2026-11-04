@@ -14,6 +14,7 @@ import {
   EyeIcon,
   DownloadSimpleIcon,
   ArrowsClockwiseIcon,
+  PaperPlaneTiltIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -297,6 +298,9 @@ export default function HistorialVentasPage() {
     type: "boleta" | "factura";
   }>({ open: false, venta: null, type: "boleta" });
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
+  const [retryingSunatBajaId, setRetryingSunatBajaId] = useState<
+    string | null
+  >(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
   const toast = useSystemToast();
@@ -354,6 +358,39 @@ export default function HistorialVentasPage() {
 
   const handleConvertSuccess = () => {
     loadVentas();
+  };
+
+  const handleRetrySunatBaja = async (venta: VentaResponse) => {
+    if (retryingSunatBajaId) return;
+
+    setRetryingSunatBajaId(venta.publicId);
+    const loadingId = toast.showToast({
+      title: "Reintentando baja SUNAT...",
+      description: venta.correlativo,
+      variant: "loading",
+    });
+
+    try {
+      await salesApi.retrySunatBaja(venta.publicId);
+      setOpenMenuId(null);
+      loadVentas();
+      toast.dismissToast(loadingId);
+      toast.showToast({
+        title: "Reintento de baja registrado",
+        description: "La solicitud se procesara nuevamente.",
+        variant: "success",
+      });
+    } catch (error: unknown) {
+      toast.dismissToast(loadingId);
+      toast.showToast({
+        title: "No se pudo reintentar la baja",
+        description:
+          error instanceof Error ? error.message : "Intentalo nuevamente",
+        variant: "error",
+      });
+    } finally {
+      setRetryingSunatBajaId(null);
+    }
   };
 
   const handleDownloadPdf = async (venta: VentaResponse) => {
@@ -883,6 +920,19 @@ export default function HistorialVentasPage() {
                             {showBajaAction ? "Dar de baja" : "Anular venta"}
                           </button>
                         )}
+                        {venta.sunatBaja.estado === "error_definitivo" ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleRetrySunatBaja(venta)}
+                            disabled={retryingSunatBajaId === venta.publicId}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <PaperPlaneTiltIcon size={16} weight="bold" />
+                            {retryingSunatBajaId === venta.publicId
+                              ? "Reintentando..."
+                              : "Reintentar baja"}
+                          </button>
+                        ) : null}
                         {showConvertAction ? (
                           <>
                             <button

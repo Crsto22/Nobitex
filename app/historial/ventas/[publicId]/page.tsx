@@ -31,6 +31,7 @@ import {
 } from "@/lib/api/sales";
 import { AnnulSaleModal } from "@/components/Ventas/annul-sale-modal";
 import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { documentFileName } from "@/lib/document-file-name";
 
 const statusConfig: Record<
@@ -304,6 +305,7 @@ export default function VentaDetallePage() {
   const [isSunatOpen, setIsSunatOpen] = useState(false);
   const [isSunatBajaOpen, setIsSunatBajaOpen] = useState(false);
   const [isRetryingSunat, setIsRetryingSunat] = useState(false);
+  const [isRetryingSunatBaja, setIsRetryingSunatBaja] = useState(false);
   const [isConsultingSunatBaja, setIsConsultingSunatBaja] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingTicket, setIsDownloadingTicket] = useState(false);
@@ -313,6 +315,7 @@ export default function VentaDetallePage() {
   const [downloadingSunatBajaFile, setDownloadingSunatBajaFile] = useState<
     "xml" | "cdr" | null
   >(null);
+  const toast = useSystemToast();
 
   useEffect(() => {
     if (!publicId) return;
@@ -422,6 +425,41 @@ export default function VentaDetallePage() {
       setVenta(updatedVenta);
     } finally {
       setIsConsultingSunatBaja(false);
+    }
+  };
+
+  const handleRetrySunatBaja = async () => {
+    if (!venta || isRetryingSunatBaja) {
+      return;
+    }
+
+    setIsRetryingSunatBaja(true);
+    const loadingId = toast.showToast({
+      title: "Reintentando baja SUNAT...",
+      description: venta.correlativo,
+      variant: "loading",
+    });
+
+    try {
+      await salesApi.retrySunatBaja(venta.publicId);
+      const updatedVenta = await salesApi.findOne(venta.publicId);
+      setVenta(updatedVenta);
+      toast.dismissToast(loadingId);
+      toast.showToast({
+        title: "Reintento de baja registrado",
+        description: "La solicitud se procesara nuevamente.",
+        variant: "success",
+      });
+    } catch (error: unknown) {
+      toast.dismissToast(loadingId);
+      toast.showToast({
+        title: "No se pudo reintentar la baja",
+        description:
+          error instanceof Error ? error.message : "Intentalo nuevamente",
+        variant: "error",
+      });
+    } finally {
+      setIsRetryingSunatBaja(false);
     }
   };
 
@@ -644,6 +682,19 @@ export default function VentaDetallePage() {
                         {isConsultingSunatBaja
                           ? "Consultando..."
                           : "Consultar baja"}
+                      </button>
+                    ) : null}
+                    {venta.sunatBaja.estado === "error_definitivo" ? (
+                      <button
+                        type="button"
+                        onClick={handleRetrySunatBaja}
+                        disabled={isRetryingSunatBaja}
+                        className="flex h-9 items-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-3 text-xs font-circular-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        <PaperPlaneTiltIcon size={15} weight="bold" />
+                        {isRetryingSunatBaja
+                          ? "Reintentando..."
+                          : "Reintentar baja"}
                       </button>
                     ) : null}
                   </>

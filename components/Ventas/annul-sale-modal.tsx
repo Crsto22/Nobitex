@@ -24,6 +24,7 @@ export function AnnulSaleModal({
   onAnnulSuccess,
 }: AnnulSaleModalProps) {
   const [razon, setRazon] = useState("");
+  const [documentNotDelivered, setDocumentNotDelivered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useSystemToast();
   const isBajaMode = mode === "baja";
@@ -56,7 +57,14 @@ export function AnnulSaleModal({
       };
 
   const handleSubmit = async () => {
-    if (!razon.trim()) return;
+    const trimmedReason = razon.trim();
+    if (
+      trimmedReason.length < 3 ||
+      trimmedReason.length > 100 ||
+      (isBajaMode && !documentNotDelivered)
+    ) {
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -67,7 +75,11 @@ export function AnnulSaleModal({
     });
 
     try {
-      const venta = await salesApi.annul(publicId, razon.trim());
+      const venta = await salesApi.annul(
+        publicId,
+        trimmedReason,
+        isBajaMode ? false : undefined,
+      );
       toast.dismissToast(loadingId);
       toast.showToast({
         title: copy.successTitle,
@@ -77,6 +89,7 @@ export function AnnulSaleModal({
       });
       await onAnnulSuccess(venta);
       setRazon("");
+      setDocumentNotDelivered(false);
       onClose();
     } catch (error: unknown) {
       const message =
@@ -96,6 +109,7 @@ export function AnnulSaleModal({
   const handleClose = () => {
     if (isSubmitting) return;
     setRazon("");
+    setDocumentNotDelivered(false);
     onClose();
   };
 
@@ -138,9 +152,30 @@ export function AnnulSaleModal({
             onChange={(e) => setRazon(e.target.value)}
             placeholder={copy.placeholder}
             rows={3}
+            minLength={3}
+            maxLength={100}
             disabled={isSubmitting}
             className="h-24 w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[#ef4444]/20 disabled:opacity-50"
           />
+
+          {isBajaMode ? (
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[14px] bg-[#ef4444]/5 p-3 text-xs text-[var(--color-text)] ring-1 ring-[#ef4444]/15">
+              <input
+                type="checkbox"
+                checked={documentNotDelivered}
+                onChange={(event) =>
+                  setDocumentNotDelivered(event.target.checked)
+                }
+                disabled={isSubmitting}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[#ef4444] disabled:opacity-50"
+              />
+              <span>
+                Confirmo que el comprobante no fue entregado ni puesto a
+                disposicion del cliente. Si ya fue entregado, corresponde
+                emitir una nota de credito.
+              </span>
+            </label>
+          ) : null}
 
           <div className="mt-4 flex gap-3">
             <button
@@ -154,7 +189,12 @@ export function AnnulSaleModal({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!razon.trim() || isSubmitting}
+              disabled={
+                razon.trim().length < 3 ||
+                razon.trim().length > 100 ||
+                (isBajaMode && !documentNotDelivered) ||
+                isSubmitting
+              }
               className="flex h-12 flex-[2] items-center justify-center gap-2 rounded-[14px] bg-[#ef4444] text-sm font-black text-white shadow-[0_8px_18px_rgba(239,68,68,0.3)] transition-colors hover:bg-[#dc2626] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
             >
               {isSubmitting ? (

@@ -689,16 +689,28 @@ export const salesApi = {
     return authBlobFetch(`/sales/${publicId}/sunat/cdr`);
   },
 
-  annul(publicId: string, razon: string) {
+  annul(publicId: string, razon: string, documentDelivered?: boolean) {
     return authFetch<VentaAnnulResponse>(`/sales/${publicId}/annul`, {
       method: "PATCH",
-      body: JSON.stringify({ razon }),
+      body: JSON.stringify({
+        razon,
+        ...(documentDelivered === undefined ? {} : { documentDelivered }),
+      }),
     });
   },
 
   consultSunatBajaTicket(publicId: string) {
     return authFetch<VentaAnnulResponse>(
       `/sales/${publicId}/sunat/baja/consultar-ticket`,
+      {
+        method: "POST",
+      },
+    );
+  },
+
+  retrySunatBaja(publicId: string) {
+    return authFetch<VentaAnnulResponse>(
+      `/sales/${publicId}/sunat/baja/retry`,
       {
         method: "POST",
       },
