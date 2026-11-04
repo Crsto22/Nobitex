@@ -103,6 +103,25 @@ export type UpdateSunatConfigPayload = {
   activo?: boolean;
 };
 
+export type BillingEnvironment = "BETA" | "PRODUCTION";
+
+export type BillingConfig = {
+  enabled: boolean;
+  configured: boolean;
+  environment: BillingEnvironment;
+  tenantId: string | null;
+  applicationId: string | null;
+  status: "PENDING" | "READY" | "ERROR" | "DISABLED";
+  lastError: string | null;
+  lastSyncedAt: string | null;
+  apiKeys: Record<BillingEnvironment, boolean>;
+  webhooks: Record<BillingEnvironment, boolean>;
+  credentials: Record<BillingEnvironment, boolean>;
+  certificates: Record<BillingEnvironment, boolean>;
+  establishments: number;
+  series: number;
+};
+
 export const companyApi = {
   async getCompany() {
     return authFetch<Company>("/company");
@@ -154,6 +173,61 @@ export const companyApi = {
   async deleteSunatCertificate() {
     return authFetch<SunatConfig>("/company/sunat-config/certificate", {
       method: "DELETE",
+    });
+  },
+
+  async getBillingConfig() {
+    return authFetch<BillingConfig>("/company/billing-config");
+  },
+
+  async provisionBilling(environment: BillingEnvironment) {
+    return authFetch<BillingConfig>("/company/billing-config/provision", {
+      method: "POST",
+      body: JSON.stringify({ environment }),
+    });
+  },
+
+  async updateBillingCredentials(
+    environment: BillingEnvironment,
+    payload: {
+      solUsername?: string;
+      solPassword?: string;
+      clientId?: string;
+      clientSecret?: string;
+      active?: boolean;
+    },
+  ) {
+    return authFetch(`/company/billing-config/${environment}/credentials`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async uploadBillingCertificate(
+    environment: BillingEnvironment,
+    file: File,
+    password: string,
+  ) {
+    const body = new FormData();
+    body.append("certificate", file);
+    body.append("password", password);
+    return authFetch(
+      `/company/billing-config/${environment}/certificate`,
+      { method: "PUT", body },
+    );
+  },
+
+  async deleteBillingCertificate(environment: BillingEnvironment) {
+    return authFetch(
+      `/company/billing-config/${environment}/certificate`,
+      { method: "DELETE" },
+    );
+  },
+
+  async setBillingEnabled(enabled: boolean) {
+    return authFetch<BillingConfig>("/company/billing-config/enabled", {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
     });
   },
 

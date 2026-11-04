@@ -29,10 +29,11 @@ import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   companyApi,
   type Company,
+  type BillingConfig,
+  type BillingEnvironment,
   type SunatAmbiente,
   type SunatConfig,
   type UpdateCompanyPayload,
-  type UpdateSunatConfigPayload,
 } from "@/lib/api/company";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { setStoredCompanyInfo } from "@/lib/auth/session";
@@ -100,6 +101,7 @@ export function EmpresaPageContent({
   const [activeTab, setActiveTab] = useState<ActiveTab>("empresa");
   const [company, setCompany] = useState<Company | null>(null);
   const [sunatConfig, setSunatConfig] = useState<SunatConfig | null>(null);
+  const [billingConfig, setBillingConfig] = useState<BillingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConvertingToRuc, setIsConvertingToRuc] = useState(false);
@@ -113,6 +115,7 @@ export function EmpresaPageContent({
   const [certificatePassword, setCertificatePassword] = useState("");
   const [form, setForm] = useState(defaultForm);
   const [sunatForm, setSunatForm] = useState<SunatForm>(defaultSunatForm);
+  const billingEnvironment = toBillingEnvironment(sunatForm.ambiente);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const certificateInputRef = useRef<HTMLInputElement>(null);
 
@@ -122,10 +125,14 @@ export function EmpresaPageContent({
       attendanceMode
         ? Promise.resolve<SunatConfig | null>(null)
         : companyApi.getSunatConfig(),
+      attendanceMode
+        ? Promise.resolve<BillingConfig | null>(null)
+        : companyApi.getBillingConfig(),
     ])
-      .then(([companyData, sunatData]) => {
+      .then(([companyData, sunatData, billingData]) => {
         setCompany(companyData);
         setSunatConfig(sunatData);
+        setBillingConfig(billingData);
         setForm({
           nombreComercial: companyData.nombreComercial,
           razonSocial: companyData.razonSocial ?? "",
@@ -137,7 +144,14 @@ export function EmpresaPageContent({
           distrito: "",
         });
         if (sunatData) {
-          setSunatForm(toSunatForm(sunatData));
+          setSunatForm({
+            ...toSunatForm(sunatData),
+            ambiente:
+              billingData?.environment === "PRODUCTION"
+                ? "PRODUCCION"
+                : sunatData.ambiente,
+            activo: billingData?.enabled ?? sunatData.activo,
+          });
         }
 
         if (companyData.logoUrl) {
@@ -276,37 +290,45 @@ export function EmpresaPageContent({
       return;
     }
 
-    const payload: UpdateSunatConfigPayload = {
-      ambiente: sunatForm.ambiente,
-      activo: sunatForm.activo,
-      igvPorcentaje,
-    };
-
-    if (sunatForm.usuarioSol.trim()) {
-      payload.usuarioSol = sunatForm.usuarioSol.trim();
-    }
-
-    if (sunatForm.claveSol.trim()) {
-      payload.claveSol = sunatForm.claveSol.trim();
-    }
-
-    if (sunatForm.clientId.trim()) {
-      payload.clientId = sunatForm.clientId.trim();
-    }
-
-    if (sunatForm.clientSecret.trim()) {
-      payload.clientSecret = sunatForm.clientSecret.trim();
-    }
-
     setIsSunatSubmitting(true);
 
     try {
-      const updated = await companyApi.updateSunatConfig(payload);
+      const environment = toBillingEnvironment(sunatForm.ambiente);
+      let billing = await companyApi.provisionBilling(environment);
+      await companyApi.updateBillingCredentials(environment, {
+        ...(sunatForm.usuarioSol.trim()
+          ? { solUsername: sunatForm.usuarioSol.trim() }
+          : {}),
+        ...(sunatForm.claveSol.trim()
+          ? { solPassword: sunatForm.claveSol.trim() }
+          : {}),
+        ...(sunatForm.clientId.trim()
+          ? { clientId: sunatForm.clientId.trim() }
+          : {}),
+        ...(sunatForm.clientSecret.trim()
+          ? { clientSecret: sunatForm.clientSecret.trim() }
+          : {}),
+        active: sunatForm.activo,
+      });
+      billing = await companyApi.setBillingEnabled(sunatForm.activo);
+      setBillingConfig(billing);
+      const updated = await companyApi.updateSunatConfig({
+        ambiente: sunatForm.ambiente,
+        activo: false,
+        igvPorcentaje,
+      });
       setSunatConfig(updated);
-      setSunatForm(toSunatForm(updated));
+      setSunatForm((current) => ({
+        ...toSunatForm(updated),
+        activo: billing.enabled,
+        usuarioSol: "",
+        claveSol: "",
+        clientId: "",
+        clientSecret: "",
+      }));
       showToast({
         title: "Conexion SUNAT actualizada",
-        description: "La configuracion tributaria quedo guardada.",
+        description: "Nuvex Billing quedo sincronizado para esta empresa.",
         variant: "success",
       });
     } catch (error) {
@@ -373,12 +395,18 @@ export function EmpresaPageContent({
     setIsCertificateSubmitting(true);
 
     try {
-      const updated = await companyApi.uploadSunatCertificate(
+      const environment = toBillingEnvironment(sunatForm.ambiente);
+      if (!billingConfig?.configured) {
+        const provisioned = await companyApi.provisionBilling(environment);
+        setBillingConfig(provisioned);
+      }
+      await companyApi.uploadBillingCertificate(
+        environment,
         certificateFile,
         certificatePassword.trim(),
       );
-      setSunatConfig(updated);
-      setSunatForm(toSunatForm(updated));
+      const refreshed = await companyApi.getBillingConfig();
+      setBillingConfig(refreshed);
       setCertificateFile(null);
       setCertificatePassword("");
       showToast({
@@ -407,9 +435,9 @@ export function EmpresaPageContent({
     setIsCertificateSubmitting(true);
 
     try {
-      const updated = await companyApi.deleteSunatCertificate();
-      setSunatConfig(updated);
-      setSunatForm(toSunatForm(updated));
+      await companyApi.deleteBillingCertificate(billingEnvironment);
+      const refreshed = await companyApi.getBillingConfig();
+      setBillingConfig(refreshed);
       setCertificateFile(null);
       setCertificatePassword("");
       showToast({
@@ -808,30 +836,32 @@ export function EmpresaPageContent({
                 <StatusTile
                   icon={<ShieldCheckIcon size={22} weight="fill" />}
                   label="Facturacion electronica"
-                  value={sunatForm.activo ? "Activa" : "Inactiva"}
-                  ok={sunatForm.activo}
+                  value={billingConfig?.enabled ? "Activa" : "Inactiva"}
+                  ok={Boolean(billingConfig?.enabled)}
                 />
                 <StatusTile
                   icon={<KeyIcon size={22} weight="fill" />}
                   label="Credenciales SOL"
                   value={
-                    sunatConfig?.usuarioSolConfigurado &&
-                    sunatConfig.claveSolConfigurada
+                    billingConfig?.credentials[billingEnvironment]
                       ? "Configuradas"
                       : "Pendientes"
                   }
-                  ok={
-                    Boolean(sunatConfig?.usuarioSolConfigurado) &&
-                    Boolean(sunatConfig?.claveSolConfigurada)
-                  }
+                  ok={Boolean(
+                    billingConfig?.credentials[billingEnvironment],
+                  )}
                 />
                 <StatusTile
                   icon={<FileTextIcon size={22} weight="fill" />}
                   label="Certificado digital"
                   value={
-                    sunatConfig?.certificadoConfigurado ? "Subido" : "Pendiente"
+                    billingConfig?.certificates[billingEnvironment]
+                      ? "Subido"
+                      : "Pendiente"
                   }
-                  ok={Boolean(sunatConfig?.certificadoConfigurado)}
+                  ok={Boolean(
+                    billingConfig?.certificates[billingEnvironment],
+                  )}
                 />
               </div>
 
@@ -1551,6 +1581,12 @@ function toSunatForm(config: SunatConfig): SunatForm {
     clientId: "",
     clientSecret: "",
   };
+}
+
+function toBillingEnvironment(
+  environment: SunatAmbiente,
+): BillingEnvironment {
+  return environment === "PRODUCCION" ? "PRODUCTION" : "BETA";
 }
 
 function formatFileSize(size: number | null | undefined) {

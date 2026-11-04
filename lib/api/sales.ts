@@ -243,6 +243,7 @@ export type VentaResponse = {
   serie: string;
   numero: number;
   correlativo: string;
+  correlativoFiscal: string | null;
   estado: VentaEstado;
   recojoPosterior: boolean;
   recojoHasta: string | null;
@@ -279,6 +280,23 @@ export type VentaResponse = {
     enviadoAt: string | null;
     respondidoAt: string | null;
   };
+  billing: {
+    documentId: string | null;
+    environment: "BETA" | "PRODUCTION";
+    status:
+      | "QUEUED"
+      | "PROCESSING"
+      | "ACCEPTED"
+      | "ACCEPTED_WITH_OBSERVATIONS"
+      | "REJECTED"
+      | "RETRY_SCHEDULED"
+      | "FAILED"
+      | null;
+    observations: unknown;
+    lastError: string | null;
+    attempts: number;
+    updatedAt: string | null;
+  } | null;
   sunatBaja: VentaSunatBajaResponse;
   observaciones: string | null;
   anuladoAt: string | null;
