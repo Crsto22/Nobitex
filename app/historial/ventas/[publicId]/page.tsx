@@ -808,6 +808,18 @@ export default function VentaDetallePage() {
                     </p>
                   </div>
                 ) : null}
+
+                {venta.billing?.lastError &&
+                venta.billing.lastError !== venta.sunat.mensaje ? (
+                  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/20">
+                    <p className="text-[10px] font-circular-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                      Error de facturacion
+                    </p>
+                    <p className="mt-1 break-words text-sm text-red-700 dark:text-red-300">
+                      {venta.billing.lastError}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
