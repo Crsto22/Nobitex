@@ -427,6 +427,7 @@ export type ComprobantesQuery = HistoryPeriodQuery & {
   search?: string;
   tipoComprobante?: Extract<VentaTipoComprobante, "factura" | "boleta">;
   sunatEstado?: ComprobanteSunatEstado;
+  noteEligibility?: "credit" | "debit";
 };
 
 export type ComprobantesResponse = VentasResponse & {
@@ -647,6 +648,10 @@ export const salesApi = {
 
     if (query.sunatEstado) {
       params.set("sunatEstado", query.sunatEstado);
+    }
+
+    if (query.noteEligibility) {
+      params.set("noteEligibility", query.noteEligibility);
     }
 
     const queryString = params.toString();

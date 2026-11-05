@@ -49,16 +49,6 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Intentalo nuevamente";
 }
 
-function isEligibleSale(sale: VentaResponse) {
-  const type = sale.tipoComprobante;
-  const billingStatus = sale.billing?.status;
-  return (
-    (type === "factura" || type === "boleta") &&
-    Boolean(sale.cliente) &&
-    (billingStatus === "ACCEPTED" || billingStatus === "ACCEPTED_WITH_OBSERVATIONS")
-  );
-}
-
 export default function NuevaNotaDebitoPage() {
   const router = useRouter();
   const toast = useSystemToast();
@@ -86,11 +76,6 @@ export default function NuevaNotaDebitoPage() {
       ? "nota_debito_factura"
       : "nota_debito_boleta";
 
-  const availableSales = useMemo(
-    () => sales.filter(isEligibleSale),
-    [sales],
-  );
-
   const loadSales = useCallback(
     (options: RequestInit = {}) => {
       setIsLoadingSales(true);
@@ -101,6 +86,7 @@ export default function NuevaNotaDebitoPage() {
             limit: 50,
             ...historyPeriod,
             search: search.trim() || undefined,
+            noteEligibility: "debit",
           },
           options,
         )
@@ -275,12 +261,12 @@ export default function NuevaNotaDebitoPage() {
                 <p className="py-6 text-center text-sm text-[var(--color-muted-foreground)]">
                   Cargando...
                 </p>
-              ) : availableSales.length === 0 ? (
+              ) : sales.length === 0 ? (
                 <p className="py-6 text-center text-sm text-[var(--color-muted-foreground)]">
                   No hay comprobantes aceptados
                 </p>
               ) : (
-                availableSales.map((sale) => (
+                sales.map((sale) => (
                   <button
                     key={sale.publicId}
                     type="button"

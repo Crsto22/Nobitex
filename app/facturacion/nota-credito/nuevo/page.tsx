@@ -89,6 +89,7 @@ export default function NuevaNotaCreditoPage() {
             limit: 10,
             ...historyPeriod,
             search: search.trim() || undefined,
+            noteEligibility: "credit",
           },
           options,
         )
