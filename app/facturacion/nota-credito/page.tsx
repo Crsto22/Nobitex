@@ -370,11 +370,9 @@ export default function NotaCreditoPage() {
             items.map((note) => {
               const status = statusConfig[note.sunat.estado];
               const StatusIcon = status.icon;
-              const pdfAvailable =
+              const retryAvailable =
                 !note.billing ||
-                ["ACCEPTED", "ACCEPTED_WITH_OBSERVATIONS"].includes(
-                  note.billing.status,
-                );
+                ["RETRY_SCHEDULED", "FAILED"].includes(note.billing.status);
               return (
                 <div
                   key={note.publicId}
@@ -449,7 +447,7 @@ export default function NotaCreditoPage() {
                         <MenuButton
                           icon={PaperPlaneTiltIcon}
                           label="Enviar a SUNAT"
-                          disabled={busyId === note.publicId || !pdfAvailable}
+                          disabled={busyId === note.publicId || !retryAvailable}
                           onClick={() => handleRetry(note.publicId)}
                         />
                         <MenuButton

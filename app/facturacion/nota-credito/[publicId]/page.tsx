@@ -220,9 +220,9 @@ export default function CreditNoteDetailPage() {
   }
 
   const status = statusConfig[note.sunat.estado];
-  const pdfAvailable =
+  const retryAvailable =
     !note.billing ||
-    ["ACCEPTED", "ACCEPTED_WITH_OBSERVATIONS"].includes(note.billing.status);
+    ["RETRY_SCHEDULED", "FAILED"].includes(note.billing.status);
   const creator = note.creadoPor
     ? `${note.creadoPor.nombre} ${note.creadoPor.apellido}`.trim()
     : "Sistema";
@@ -250,7 +250,7 @@ export default function CreditNoteDetailPage() {
             <button
               type="button"
               onClick={() => void retry()}
-              disabled={Boolean(busy) || !pdfAvailable}
+              disabled={Boolean(busy) || !retryAvailable}
               className="flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold disabled:opacity-50"
             >
               <PaperPlaneTiltIcon size={16} /> Enviar SUNAT
