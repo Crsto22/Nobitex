@@ -62,6 +62,8 @@ const typeLabels: Record<VentaTipoComprobante, string> = {
   guia_remision: "GRE",
   nota_credito_factura: "N/C FACTURA",
   nota_credito_boleta: "N/C BOLETA",
+  nota_debito_factura: "N/D FACTURA",
+  nota_debito_boleta: "N/D BOLETA",
 };
 
 const paymentConfig: Record<
@@ -299,9 +301,9 @@ export default function HistorialVentasPage() {
     type: "boleta" | "factura";
   }>({ open: false, venta: null, type: "boleta" });
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
-  const [retryingSunatBajaId, setRetryingSunatBajaId] = useState<
-    string | null
-  >(null);
+  const [retryingSunatBajaId, setRetryingSunatBajaId] = useState<string | null>(
+    null,
+  );
   const statusRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
   const toast = useSystemToast();
@@ -314,32 +316,39 @@ export default function HistorialVentasPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const loadVentas = useCallback((options: RequestInit = {}) => {
-    setIsLoading(true);
+  const loadVentas = useCallback(
+    (options: RequestInit = {}) => {
+      setIsLoading(true);
 
-    salesApi
-      .findAll({
-        page,
-        limit: 10,
-        ...historyPeriod,
-        search: debouncedSearchTerm || undefined,
-        estado: selectedStatus === "todos" ? undefined : selectedStatus,
-        tipoComprobante: selectedType === "todos" ? undefined : selectedType,
-      }, options)
-      .then((response) => {
-        setVentas(response.data);
-        setMeta(response.meta);
-      })
-      .catch(() => {
-        if (options.signal?.aborted) return;
-        setVentas([]);
-        setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
-      })
-      .finally(() => {
-        if (options.signal?.aborted) return;
-        setIsLoading(false);
-      });
-  }, [page, debouncedSearchTerm, selectedStatus, selectedType, historyPeriod]);
+      salesApi
+        .findAll(
+          {
+            page,
+            limit: 10,
+            ...historyPeriod,
+            search: debouncedSearchTerm || undefined,
+            estado: selectedStatus === "todos" ? undefined : selectedStatus,
+            tipoComprobante:
+              selectedType === "todos" ? undefined : selectedType,
+          },
+          options,
+        )
+        .then((response) => {
+          setVentas(response.data);
+          setMeta(response.meta);
+        })
+        .catch(() => {
+          if (options.signal?.aborted) return;
+          setVentas([]);
+          setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
+        })
+        .finally(() => {
+          if (options.signal?.aborted) return;
+          setIsLoading(false);
+        });
+    },
+    [page, debouncedSearchTerm, selectedStatus, selectedType, historyPeriod],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -580,95 +589,103 @@ export default function HistorialVentasPage() {
           </div>
 
           <div className="flex gap-2 sm:gap-3">
-            <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={statusRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsStatusOpen(!isStatusOpen);
-                setIsTypeOpen(false);
-              }}
-              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            <div
+              className="relative flex-1 sm:w-[160px] sm:flex-none"
+              ref={statusRef}
             >
-              <span className="truncate">
-                {selectedStatus === "todos"
-                  ? "Todos"
-                  : statusConfig[selectedStatus as VentaEstado]?.label}
-              </span>
-              <CaretDownIcon
-                size={16}
-                className="shrink-0 text-[var(--color-muted-foreground)]"
-              />
-            </button>
-            {isStatusOpen && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setSelectedStatus(option.value as VentaEstado | "todos");
-                      setPage(1);
-                      setIsStatusOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
-                      selectedStatus === option.value
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStatusOpen(!isStatusOpen);
+                  setIsTypeOpen(false);
+                }}
+                className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <span className="truncate">
+                  {selectedStatus === "todos"
+                    ? "Todos"
+                    : statusConfig[selectedStatus as VentaEstado]?.label}
+                </span>
+                <CaretDownIcon
+                  size={16}
+                  className="shrink-0 text-[var(--color-muted-foreground)]"
+                />
+              </button>
+              {isStatusOpen && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStatus(
+                          option.value as VentaEstado | "todos",
+                        );
+                        setPage(1);
+                        setIsStatusOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
+                        selectedStatus === option.value
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={typeRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsTypeOpen(!isTypeOpen);
-                setIsStatusOpen(false);
-              }}
-              className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            <div
+              className="relative flex-1 sm:w-[160px] sm:flex-none"
+              ref={typeRef}
             >
-              <span className="truncate">
-                {selectedType === "todos"
-                  ? "Tipo"
-                  : typeLabels[selectedType as VentaTipoComprobante]}
-              </span>
-              <CaretDownIcon
-                size={16}
-                className="shrink-0 text-[var(--color-muted-foreground)]"
-              />
-            </button>
-            {isTypeOpen && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
-                {typeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setSelectedType(
-                        option.value as VentaTipoComprobante | "todos",
-                      );
-                      setPage(1);
-                      setIsTypeOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
-                      selectedType === option.value
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTypeOpen(!isTypeOpen);
+                  setIsStatusOpen(false);
+                }}
+                className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <span className="truncate">
+                  {selectedType === "todos"
+                    ? "Tipo"
+                    : typeLabels[selectedType as VentaTipoComprobante]}
+                </span>
+                <CaretDownIcon
+                  size={16}
+                  className="shrink-0 text-[var(--color-muted-foreground)]"
+                />
+              </button>
+              {isTypeOpen && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                  {typeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedType(
+                          option.value as VentaTipoComprobante | "todos",
+                        );
+                        setPage(1);
+                        setIsTypeOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-circular-regular transition-colors",
+                        selectedType === option.value
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

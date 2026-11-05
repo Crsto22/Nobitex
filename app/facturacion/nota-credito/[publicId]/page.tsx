@@ -148,7 +148,10 @@ export default function CreditNoteDetailPage() {
             : await creditNotesApi.downloadSunatCdr(note.publicId);
       downloadBlob(
         blob,
-        documentFileName(note.correlativo, kind === "cdr" ? "zip" : kind),
+        documentFileName(
+          note.correlativo ?? note.publicId,
+          kind === "cdr" ? "zip" : kind,
+        ),
       );
     } catch (error) {
       toast.showToast({
@@ -217,6 +220,9 @@ export default function CreditNoteDetailPage() {
   }
 
   const status = statusConfig[note.sunat.estado];
+  const pdfAvailable =
+    !note.billing ||
+    ["ACCEPTED", "ACCEPTED_WITH_OBSERVATIONS"].includes(note.billing.status);
   const creator = note.creadoPor
     ? `${note.creadoPor.nombre} ${note.creadoPor.apellido}`.trim()
     : "Sistema";
@@ -231,7 +237,7 @@ export default function CreditNoteDetailPage() {
             </div>
             <div>
               <p className="text-lg font-circular-bold text-[var(--color-text)]">
-                {note.correlativo}
+                {note.correlativo ?? "Procesando correlativo"}
               </p>
               <p className="text-xs text-[var(--color-muted-foreground)]">
                 {note.tipoComprobante === "nota_credito_factura"
@@ -244,7 +250,7 @@ export default function CreditNoteDetailPage() {
             <button
               type="button"
               onClick={() => void retry()}
-              disabled={Boolean(busy)}
+              disabled={Boolean(busy) || !pdfAvailable}
               className="flex h-10 items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold disabled:opacity-50"
             >
               <PaperPlaneTiltIcon size={16} /> Enviar SUNAT
@@ -412,6 +418,10 @@ export default function CreditNoteDetailPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Info label="Codigo" value={note.sunat.codigo ?? "-"} />
+              <Info
+                label="Proveedor fiscal"
+                value={note.billing ? "Nuvex Billing" : "Emisor anterior"}
+              />
               <Info label="Hash" value={note.sunat.hash ?? "-"} />
               <Info
                 label="Enviado"
@@ -427,6 +437,11 @@ export default function CreditNoteDetailPage() {
                   value={note.sunat.mensaje ?? "Sin respuesta SUNAT"}
                 />
               </div>
+              {note.billing?.lastError ? (
+                <div className="sm:col-span-2">
+                  <Info label="Ultimo error" value={note.billing.lastError} />
+                </div>
+              ) : null}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button

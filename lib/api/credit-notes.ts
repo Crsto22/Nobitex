@@ -28,13 +28,13 @@ export type CreateCreditNotePayload = {
 
 export type CreditNoteResponse = {
   publicId: string;
-  correlativo: string;
+  correlativo: string | null;
   tipoComprobante: Extract<
     VentaTipoComprobante,
     "nota_credito_factura" | "nota_credito_boleta"
   >;
   serie: string;
-  numero: number;
+  numero: number | null;
   codigoMotivo: string;
   descripcionMotivo: string;
   moneda: string;
@@ -58,6 +58,22 @@ export type CreditNoteResponse = {
     enviadoAt: string | null;
     respondidoAt: string | null;
   };
+  billing: {
+    provider: "NUVEX_BILLING";
+    documentId: string | null;
+    environment: "BETA" | "PRODUCTION";
+    status:
+      | "QUEUED"
+      | "PROCESSING"
+      | "ACCEPTED"
+      | "ACCEPTED_WITH_OBSERVATIONS"
+      | "REJECTED"
+      | "RETRY_SCHEDULED"
+      | "FAILED";
+    lastError: string | null;
+    attempts: number;
+    updatedAt: string | null;
+  } | null;
   ventaReferencia: {
     publicId: string;
     correlativo: string;

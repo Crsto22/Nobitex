@@ -139,6 +139,12 @@ export const sidebarSections: SidebarSection[] = [
         route: "/facturacion/nota-credito",
       },
       {
+        key: "nota-debito",
+        label: "Nota de debito",
+        icon: FileTextIcon,
+        route: "/facturacion/nota-debito",
+      },
+      {
         key: "series",
         label: "Series",
         icon: ListBulletsIcon,

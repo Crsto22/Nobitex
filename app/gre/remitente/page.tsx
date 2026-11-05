@@ -39,8 +39,11 @@ import { Select } from "@/components/ui/select";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { branchesApi, type Branch } from "@/lib/api/branches";
 import {
+  getGuiaDocumentoRelacionadoOptions,
+  GUIA_REMISION_MOTIVO_OPTIONS,
   guiaRemisionApi,
   guiaRemisionCatalogosApi,
+  isGuiaDocumentoRelacionadoRequired,
   type CreateGuiaRemisionDetalle,
   type CreateGuiaRemisionPayload,
   type GuiaCatalogoParticipante,
@@ -61,13 +64,17 @@ function getDefaultCreateForm() {
     sucursalPartidaId: "",
     sucursalLlegadaId: "",
     fechaInicioTraslado: new Date().toISOString().slice(0, 10),
+    fechaEntregaTransportista: new Date().toISOString().slice(0, 10),
     motivoTraslado: "04",
+    descripcionMotivo: "",
+    modalidadTransporte: "02" as "01" | "02",
     pesoBrutoTotal: "1.000",
     numeroBultos: "1",
     destinatarioTipoDoc: "6",
     destinatarioNroDoc: "",
     destinatarioRazonSocial: "",
     conductorId: "",
+    transportistaId: "",
     vehiculoId: "",
     documentoTipo: "",
     documentoSerie: "",
@@ -92,16 +99,6 @@ function createDraftDetail(): DraftDetail {
 
 type CreateGuiaForm = ReturnType<typeof getDefaultCreateForm>;
 
-const motivoOptions = [
-  { label: "Traslado entre establecimientos", value: "04" },
-  { label: "Venta", value: "01" },
-  { label: "Compra", value: "02" },
-  { label: "Venta con entrega a terceros", value: "03" },
-  { label: "Consignacion", value: "05" },
-  { label: "Devolucion", value: "06" },
-  { label: "Otros", value: "13" },
-];
-
 const estadoOptions: { label: string; value: EstadoFilter }[] = [
   { label: "Todos", value: "todos" },
   { label: "Borrador", value: "borrador" },
@@ -117,6 +114,7 @@ const sunatOptions: { label: string; value: SunatFilter }[] = [
   { label: "Por enviar", value: "pendiente_envio" },
   { label: "Enviando", value: "enviando" },
   { label: "Pendiente CDR", value: "pendiente_cdr" },
+  { label: "Validada en BETA", value: "validado_beta" },
   { label: "Aceptado", value: "aceptado" },
   { label: "Observado", value: "observado" },
   { label: "Rechazado", value: "rechazado" },
@@ -173,6 +171,7 @@ const sunatStatusConfig: Record<
   pendiente_envio: { label: "Por enviar", dot: "bg-[#3b82f6]" },
   enviando: { label: "Enviando", dot: "bg-[#3b82f6]" },
   pendiente_cdr: { label: "Pendiente CDR", dot: "bg-[#f59e0b]" },
+  validado_beta: { label: "Validada en BETA", dot: "bg-[#0ea5e9]" },
   aceptado: { label: "Aceptado", dot: "bg-[#10b981]" },
   observado: { label: "Observado", dot: "bg-[#f59e0b]" },
   rechazado: { label: "Rechazado", dot: "bg-[#ef4444]" },
@@ -225,6 +224,10 @@ function getTransportLabel(guia: GuiaRemisionResponse) {
   return conductorName || "Sin transporte";
 }
 
+function getGuiaDisplayNumber(guia: GuiaRemisionResponse) {
+  return guia.correlativo || "Correlativo pendiente";
+}
+
 function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -266,8 +269,9 @@ export default function GuiasRemisionPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [createError, setCreateError] = useState("");
-  const [createForm, setCreateForm] =
-    useState<CreateGuiaForm>(() => getDefaultCreateForm());
+  const [createForm, setCreateForm] = useState<CreateGuiaForm>(() =>
+    getDefaultCreateForm(),
+  );
   const [details, setDetails] = useState<DraftDetail[]>([
     { ...defaultDetail, uiId: "initial" },
   ]);
@@ -275,8 +279,18 @@ export default function GuiasRemisionPage() {
   const [conductores, setConductores] = useState<GuiaCatalogoParticipante[]>(
     [],
   );
+  const [transportistas, setTransportistas] = useState<
+    GuiaCatalogoParticipante[]
+  >([]);
   const [vehiculos, setVehiculos] = useState<GuiaCatalogoVehiculo[]>([]);
   const [isCatalogLoading, setIsCatalogLoading] = useState(false);
+  const [manualVoidGuia, setManualVoidGuia] =
+    useState<GuiaRemisionResponse | null>(null);
+  const [manualVoidMode, setManualVoidMode] = useState<"request" | "confirm">(
+    "request",
+  );
+  const [manualVoidValue, setManualVoidValue] = useState("");
+  const [manualVoidError, setManualVoidError] = useState("");
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -287,35 +301,41 @@ export default function GuiasRemisionPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const loadGuias = useCallback((options: RequestInit = {}) => {
-    setIsLoading(true);
+  const loadGuias = useCallback(
+    (options: RequestInit = {}) => {
+      setIsLoading(true);
 
-    guiaRemisionApi
-      .findAll({
-        page,
-        limit: 10,
-        q: debouncedSearchTerm || undefined,
-        estado: selectedEstado === "todos" ? undefined : selectedEstado,
-        sunatEstado: selectedSunat === "todos" ? undefined : selectedSunat,
-      }, options)
-      .then((response) => {
-        setGuias(response.data);
-        setMeta(response.meta);
-      })
-      .catch((error: unknown) => {
-        if (options.signal?.aborted) return;
-        setGuias([]);
-        setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
-        toast.showToast({
-          title: "No se pudieron cargar las guias",
-          description: getErrorMessage(error),
-          variant: "error",
+      guiaRemisionApi
+        .findAll(
+          {
+            page,
+            limit: 10,
+            q: debouncedSearchTerm || undefined,
+            estado: selectedEstado === "todos" ? undefined : selectedEstado,
+            sunatEstado: selectedSunat === "todos" ? undefined : selectedSunat,
+          },
+          options,
+        )
+        .then((response) => {
+          setGuias(response.data);
+          setMeta(response.meta);
+        })
+        .catch((error: unknown) => {
+          if (options.signal?.aborted) return;
+          setGuias([]);
+          setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
+          toast.showToast({
+            title: "No se pudieron cargar las guias",
+            description: getErrorMessage(error),
+            variant: "error",
+          });
+        })
+        .finally(() => {
+          if (!options.signal?.aborted) setIsLoading(false);
         });
-      })
-      .finally(() => {
-        if (!options.signal?.aborted) setIsLoading(false);
-      });
-  }, [debouncedSearchTerm, page, selectedEstado, selectedSunat, toast]);
+    },
+    [debouncedSearchTerm, page, selectedEstado, selectedSunat, toast],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -343,28 +363,41 @@ export default function GuiasRemisionPage() {
           tipo: "conductor",
           activo: true,
         }),
+        guiaRemisionCatalogosApi.findParticipantes({
+          limit: 100,
+          tipo: "transportista",
+          activo: true,
+        }),
         guiaRemisionCatalogosApi.findVehiculos({ limit: 100, activo: true }),
       ])
-        .then(([branchesResponse, driversResponse, vehiclesResponse]) => {
-          if (!isMounted) return;
-          const commercialBranches = branchesResponse.data.filter(
-            (branch) => branch.tipo !== "asistencia",
-          );
-          setBranches(commercialBranches);
-          setConductores(driversResponse.data);
-          setVehiculos(vehiclesResponse.data);
-          const defaultBranch =
-            commercialBranches.find((branch) => branch.esPrincipal) ??
-            commercialBranches[0];
-          setCreateForm((current) => ({
-            ...current,
-            sucursalId: current.sucursalId || defaultBranch?.id || "",
-            sucursalPartidaId:
-              current.sucursalPartidaId || defaultBranch?.id || "",
-            sucursalLlegadaId:
-              current.sucursalLlegadaId || defaultBranch?.id || "",
-          }));
-        })
+        .then(
+          ([
+            branchesResponse,
+            driversResponse,
+            carriersResponse,
+            vehiclesResponse,
+          ]) => {
+            if (!isMounted) return;
+            const commercialBranches = branchesResponse.data.filter(
+              (branch) => branch.tipo !== "asistencia",
+            );
+            setBranches(commercialBranches);
+            setConductores(driversResponse.data);
+            setTransportistas(carriersResponse.data);
+            setVehiculos(vehiclesResponse.data);
+            const defaultBranch =
+              commercialBranches.find((branch) => branch.esPrincipal) ??
+              commercialBranches[0];
+            setCreateForm((current) => ({
+              ...current,
+              sucursalId: current.sucursalId || defaultBranch?.id || "",
+              sucursalPartidaId:
+                current.sucursalPartidaId || defaultBranch?.id || "",
+              sucursalLlegadaId:
+                current.sucursalLlegadaId || defaultBranch?.id || "",
+            }));
+          },
+        )
         .catch((error: unknown) => {
           if (!isMounted) return;
           toast.showToast({
@@ -433,8 +466,11 @@ export default function GuiasRemisionPage() {
 
     setWorkingId(guia.publicId);
     const loadingId = toast.showToast({
-      title: "Programando envio SUNAT...",
-      description: guia.correlativo,
+      title:
+        guia.billing?.environment === "BETA"
+          ? "Programando validacion BETA..."
+          : "Programando envio SUNAT...",
+      description: getGuiaDisplayNumber(guia),
       variant: "loading",
     });
 
@@ -442,8 +478,14 @@ export default function GuiasRemisionPage() {
       await guiaRemisionApi.emitir(guia.publicId);
       toast.dismissToast(loadingId);
       toast.showToast({
-        title: "Envio programado",
-        description: guia.correlativo,
+        title:
+          guia.billing?.environment === "BETA"
+            ? "Validacion programada"
+            : "Envio programado",
+        description:
+          guia.billing?.environment === "BETA"
+            ? "Se programo la validacion interna BETA; no se enviara a SUNAT."
+            : getGuiaDisplayNumber(guia),
         variant: "success",
       });
       loadGuias();
@@ -466,7 +508,7 @@ export default function GuiasRemisionPage() {
     setWorkingId(guia.publicId);
     const loadingId = toast.showToast({
       title: "Consultando CDR...",
-      description: guia.correlativo,
+      description: getGuiaDisplayNumber(guia),
       variant: "loading",
     });
 
@@ -475,7 +517,7 @@ export default function GuiasRemisionPage() {
       toast.dismissToast(loadingId);
       toast.showToast({
         title: "Consulta programada",
-        description: guia.correlativo,
+        description: getGuiaDisplayNumber(guia),
         variant: "success",
       });
       loadGuias();
@@ -502,7 +544,7 @@ export default function GuiasRemisionPage() {
     setDownloadingId(downloadKey);
     const loadingId = toast.showToast({
       title: "Preparando descarga...",
-      description: guia.correlativo,
+      description: getGuiaDisplayNumber(guia),
       variant: "loading",
     });
 
@@ -515,7 +557,10 @@ export default function GuiasRemisionPage() {
             : await guiaRemisionApi.downloadSunatCdr(guia.publicId);
       const extension =
         artifact === "pdf" ? "pdf" : artifact === "xml" ? "xml" : "zip";
-      const fileName = documentFileName(guia.correlativo, extension);
+      const fileName = documentFileName(
+        guia.correlativo || `GRE-${guia.publicId}`,
+        extension,
+      );
 
       downloadBlob(blob, fileName);
       toast.dismissToast(loadingId);
@@ -534,6 +579,84 @@ export default function GuiasRemisionPage() {
     } finally {
       setDownloadingId(null);
       setOpenMenuId(null);
+    }
+  };
+
+  const openManualVoid = (
+    guia: GuiaRemisionResponse,
+    mode: "request" | "confirm",
+  ) => {
+    setManualVoidGuia(guia);
+    setManualVoidMode(mode);
+    setManualVoidValue("");
+    setManualVoidError("");
+    setOpenMenuId(null);
+  };
+
+  const closeManualVoid = () => {
+    if (workingId) return;
+    setManualVoidGuia(null);
+    setManualVoidValue("");
+    setManualVoidError("");
+  };
+
+  const handleManualVoid = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!manualVoidGuia || workingId) return;
+
+    const value = manualVoidValue.trim();
+    if (value.length < 3) {
+      setManualVoidError(
+        manualVoidMode === "request"
+          ? "Indica el motivo de la baja."
+          : "Indica la referencia o constancia generada en SUNAT SOL.",
+      );
+      return;
+    }
+
+    setWorkingId(manualVoidGuia.publicId);
+    const loadingId = toast.showToast({
+      title:
+        manualVoidMode === "request"
+          ? "Registrando solicitud de baja..."
+          : "Confirmando baja manual...",
+      description: getGuiaDisplayNumber(manualVoidGuia),
+      variant: "loading",
+    });
+
+    try {
+      if (manualVoidMode === "request") {
+        await guiaRemisionApi.requestManualVoid(manualVoidGuia.publicId, value);
+      } else {
+        await guiaRemisionApi.confirmManualVoid(manualVoidGuia.publicId, value);
+      }
+      toast.dismissToast(loadingId);
+      toast.showToast({
+        title:
+          manualVoidMode === "request"
+            ? "Baja pendiente en SUNAT SOL"
+            : "Baja manual confirmada",
+        description:
+          manualVoidMode === "request"
+            ? "Realiza la baja en SOL y luego registra la constancia."
+            : getGuiaDisplayNumber(manualVoidGuia),
+        variant: "success",
+      });
+      setManualVoidGuia(null);
+      setManualVoidValue("");
+      setManualVoidError("");
+      loadGuias();
+    } catch (error: unknown) {
+      toast.dismissToast(loadingId);
+      const message = getErrorMessage(error);
+      setManualVoidError(message);
+      toast.showToast({
+        title: "No se pudo actualizar la baja",
+        description: message,
+        variant: "error",
+      });
+    } finally {
+      setWorkingId(null);
     }
   };
 
@@ -573,23 +696,49 @@ export default function GuiasRemisionPage() {
       setCreateError("Completa documento y razon social del destinatario.");
       return;
     }
-    if (!createForm.conductorId || !createForm.vehiculoId) {
-      setCreateError("Selecciona conductor y placa.");
+    if (
+      createForm.modalidadTransporte === "02" &&
+      (!createForm.conductorId || !createForm.vehiculoId)
+    ) {
+      setCreateError("El transporte privado requiere conductor y placa.");
+      return;
+    }
+    if (
+      createForm.modalidadTransporte === "01" &&
+      !createForm.transportistaId
+    ) {
+      setCreateError("El transporte publico requiere un transportista.");
       return;
     }
     if (!cleanDetails.length) {
       setCreateError("Agrega al menos un detalle.");
       return;
     }
+    if (
+      createForm.motivoTraslado === "13" &&
+      !createForm.descripcionMotivo.trim()
+    ) {
+      setCreateError("Describe el motivo de traslado.");
+      return;
+    }
+    if (
+      isGuiaDocumentoRelacionadoRequired(createForm.motivoTraslado) &&
+      (!createForm.documentoTipo || !createForm.documentoNumero.trim())
+    ) {
+      setCreateError(
+        "El motivo seleccionado requiere un documento relacionado.",
+      );
+      return;
+    }
 
     const documentosRelacionados =
-      createForm.documentoTipo &&
-      createForm.documentoSerie.trim() &&
-      createForm.documentoNumero.trim()
+      createForm.documentoTipo && createForm.documentoNumero.trim()
         ? [
             {
               tipoDocumento: createForm.documentoTipo,
-              serie: createForm.documentoSerie.trim().toUpperCase(),
+              ...(createForm.documentoSerie.trim()
+                ? { serie: createForm.documentoSerie.trim().toUpperCase() }
+                : {}),
               numero: createForm.documentoNumero.trim(),
             },
           ]
@@ -599,7 +748,13 @@ export default function GuiasRemisionPage() {
       sucursalId: createForm.sucursalId,
       fechaInicioTraslado: createForm.fechaInicioTraslado,
       motivoTraslado: createForm.motivoTraslado,
-      modalidadTransporte: "02",
+      ...(createForm.descripcionMotivo.trim()
+        ? { descripcionMotivo: createForm.descripcionMotivo.trim() }
+        : {}),
+      modalidadTransporte: createForm.modalidadTransporte,
+      ...(createForm.modalidadTransporte === "01"
+        ? { fechaEntregaTransportista: createForm.fechaEntregaTransportista }
+        : {}),
       pesoBrutoTotal: createForm.pesoBrutoTotal,
       unidadPeso: "KGM",
       numeroBultos: createForm.numeroBultos
@@ -613,8 +768,12 @@ export default function GuiasRemisionPage() {
       destinatarioRazonSocial: createForm.destinatarioRazonSocial.trim(),
       detalles: cleanDetails,
       documentosRelacionados,
-      catalogoParticipanteIds: [createForm.conductorId],
-      catalogoVehiculoIds: [createForm.vehiculoId],
+      catalogoParticipanteIds:
+        createForm.modalidadTransporte === "01"
+          ? [createForm.transportistaId]
+          : [createForm.conductorId],
+      catalogoVehiculoIds:
+        createForm.modalidadTransporte === "02" ? [createForm.vehiculoId] : [],
       emitirDirectamente: createForm.emitirDirectamente,
     };
 
@@ -630,7 +789,7 @@ export default function GuiasRemisionPage() {
       toast.dismissToast(loadingId);
       toast.showToast({
         title: "Guia creada",
-        description: created.correlativo,
+        description: getGuiaDisplayNumber(created),
         variant: "success",
       });
       closeCreateModal();
@@ -701,49 +860,55 @@ export default function GuiasRemisionPage() {
           </div>
 
           <div className="flex gap-2 sm:gap-3">
-            <div className="relative flex-1 sm:w-[180px] sm:flex-none" ref={estadoRef}>
-            <FilterDropdown
-              label={
-                selectedEstado === "todos"
-                  ? "Estado guia"
-                  : estadoGuiaConfig[selectedEstado].label
-              }
-              open={isEstadoOpen}
-              onToggle={() => {
-                setIsEstadoOpen(!isEstadoOpen);
-                setIsSunatOpen(false);
-              }}
-              options={estadoOptions}
-              selected={selectedEstado}
-              onSelect={(value) => {
-                setSelectedEstado(value as EstadoFilter);
-                setPage(1);
-                setIsEstadoOpen(false);
-              }}
-            />
-          </div>
+            <div
+              className="relative flex-1 sm:w-[180px] sm:flex-none"
+              ref={estadoRef}
+            >
+              <FilterDropdown
+                label={
+                  selectedEstado === "todos"
+                    ? "Estado guia"
+                    : estadoGuiaConfig[selectedEstado].label
+                }
+                open={isEstadoOpen}
+                onToggle={() => {
+                  setIsEstadoOpen(!isEstadoOpen);
+                  setIsSunatOpen(false);
+                }}
+                options={estadoOptions}
+                selected={selectedEstado}
+                onSelect={(value) => {
+                  setSelectedEstado(value as EstadoFilter);
+                  setPage(1);
+                  setIsEstadoOpen(false);
+                }}
+              />
+            </div>
 
-          <div className="relative flex-1 sm:w-[180px] sm:flex-none" ref={sunatRef}>
-            <FilterDropdown
-              label={
-                selectedSunat === "todos"
-                  ? "Estado SUNAT"
-                  : sunatStatusConfig[selectedSunat].label
-              }
-              open={isSunatOpen}
-              onToggle={() => {
-                setIsSunatOpen(!isSunatOpen);
-                setIsEstadoOpen(false);
-              }}
-              options={sunatOptions}
-              selected={selectedSunat}
-              onSelect={(value) => {
-                setSelectedSunat(value as SunatFilter);
-                setPage(1);
-                setIsSunatOpen(false);
-              }}
-            />
-          </div>
+            <div
+              className="relative flex-1 sm:w-[180px] sm:flex-none"
+              ref={sunatRef}
+            >
+              <FilterDropdown
+                label={
+                  selectedSunat === "todos"
+                    ? "Estado SUNAT"
+                    : sunatStatusConfig[selectedSunat].label
+                }
+                open={isSunatOpen}
+                onToggle={() => {
+                  setIsSunatOpen(!isSunatOpen);
+                  setIsEstadoOpen(false);
+                }}
+                options={sunatOptions}
+                selected={selectedSunat}
+                onSelect={(value) => {
+                  setSelectedSunat(value as SunatFilter);
+                  setPage(1);
+                  setIsSunatOpen(false);
+                }}
+              />
+            </div>
           </div>
 
           <Link
@@ -800,10 +965,13 @@ export default function GuiasRemisionPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-                        {guia.correlativo}
+                        {getGuiaDisplayNumber(guia)}
                       </p>
                       <p className="text-[10px] font-circular-regular text-[var(--color-muted-foreground)]">
                         GRE Remitente
+                        {guia.billing?.environment
+                          ? ` · ${guia.billing.environment}`
+                          : ""}
                       </p>
                     </div>
                   </div>
@@ -903,6 +1071,12 @@ export default function GuiasRemisionPage() {
                       />
                       {sunatStatus.label}
                     </span>
+                    {guia.void?.status === "MANUAL_ACTION_REQUIRED" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-circular-bold text-[#d97706]">
+                        <WarningCircleIcon size={12} weight="fill" />
+                        Baja pendiente en SOL
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="relative col-span-2 flex items-center justify-end md:col-span-1 md:justify-end">
@@ -934,12 +1108,15 @@ export default function GuiasRemisionPage() {
                           disabled={
                             Boolean(workingId) ||
                             guia.sunat.estado === "aceptado" ||
+                            guia.sunat.estado === "validado_beta" ||
                             guia.estado === "anulada"
                           }
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <PaperPlaneTiltIcon size={16} weight="bold" />
-                          Enviar a SUNAT
+                          {guia.billing?.environment === "BETA"
+                            ? "Validar en BETA"
+                            : "Enviar a SUNAT"}
                         </button>
                         <button
                           type="button"
@@ -953,7 +1130,9 @@ export default function GuiasRemisionPage() {
                         <button
                           type="button"
                           onClick={() => handleDownload(guia, "pdf")}
-                          disabled={Boolean(downloadingId)}
+                          disabled={
+                            Boolean(downloadingId) || !guia.sunat.pdfDisponible
+                          }
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <PrinterIcon size={16} weight="bold" />
@@ -981,9 +1160,48 @@ export default function GuiasRemisionPage() {
                           <FilePdfIcon size={16} weight="bold" />
                           Descargar CDR
                         </button>
+                        {guia.sunat.estado === "aceptado" &&
+                        !guia.void?.status ? (
+                          <button
+                            type="button"
+                            onClick={() => openManualVoid(guia, "request")}
+                            disabled={Boolean(workingId)}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[#d97706] transition-colors hover:bg-[#f59e0b]/10 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <WarningCircleIcon size={16} weight="bold" />
+                            Solicitar baja manual
+                          </button>
+                        ) : null}
+                        {guia.void?.status === "MANUAL_ACTION_REQUIRED" ? (
+                          <button
+                            type="button"
+                            onClick={() => openManualVoid(guia, "confirm")}
+                            disabled={Boolean(workingId)}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[#d97706] transition-colors hover:bg-[#f59e0b]/10 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <CheckCircleIcon size={16} weight="bold" />
+                            Confirmar baja en SOL
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
+                  {guia.sunat.estado === "validado_beta" ? (
+                    <div className="col-span-2 rounded-[10px] bg-[#0ea5e9]/10 px-3 py-2 text-xs text-[#0369a1] md:col-span-7">
+                      Validacion interna BETA completada. Esta GRE no fue
+                      enviada ni aceptada por SUNAT.
+                    </div>
+                  ) : null}
+                  {guia.billing?.lastError ||
+                  guia.sunat.estado === "rechazado" ||
+                  guia.sunat.estado === "error_transitorio" ||
+                  guia.sunat.estado === "error_definitivo" ? (
+                    <div className="col-span-2 rounded-[10px] bg-[#ef4444]/10 px-3 py-2 text-xs text-[#dc2626] md:col-span-7">
+                      {guia.billing?.lastError ||
+                        guia.sunat.mensaje ||
+                        "No se pudo procesar la GRE."}
+                    </div>
+                  ) : null}
                 </div>
               );
             })
@@ -1098,7 +1316,7 @@ export default function GuiasRemisionPage() {
                   motivoTraslado: value,
                 }))
               }
-              options={motivoOptions}
+              options={[...GUIA_REMISION_MOTIVO_OPTIONS]}
             />
             <InputField
               id="gre-weight"
@@ -1125,6 +1343,21 @@ export default function GuiasRemisionPage() {
               }
             />
           </div>
+
+          {createForm.motivoTraslado === "13" && (
+            <InputField
+              id="gre-reason-description"
+              label="Descripcion del motivo"
+              value={createForm.descripcionMotivo}
+              disabled={isSubmittingCreate}
+              onChange={(value) =>
+                setCreateForm((current) => ({
+                  ...current,
+                  descripcionMotivo: value.slice(0, 255),
+                }))
+              }
+            />
+          )}
 
           <div className="grid gap-4 sm:grid-cols-[130px_1fr]">
             <Select
@@ -1170,37 +1403,90 @@ export default function GuiasRemisionPage() {
             }
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Select
-              label="Conductor"
-              value={createForm.conductorId}
-              onChange={(value) =>
-                setCreateForm((current) => ({ ...current, conductorId: value }))
-              }
-              options={conductores.map((driver) => ({
-                label:
-                  [driver.nombres, driver.apellidos]
-                    .filter(Boolean)
-                    .join(" ") || driver.numeroDocumento,
-                value: driver.publicId,
-              }))}
-              placeholder={isCatalogLoading ? "Cargando..." : "Seleccionar"}
-              searchable
-            />
-            <Select
-              label="Placa"
-              value={createForm.vehiculoId}
-              onChange={(value) =>
-                setCreateForm((current) => ({ ...current, vehiculoId: value }))
-              }
-              options={vehiculos.map((vehicle) => ({
-                label: vehicle.placa,
-                value: vehicle.publicId,
-              }))}
-              placeholder={isCatalogLoading ? "Cargando..." : "Seleccionar"}
-              searchable
-            />
-          </div>
+          <Select
+            label="Modalidad de transporte"
+            value={createForm.modalidadTransporte}
+            onChange={(value) =>
+              setCreateForm((current) => ({
+                ...current,
+                modalidadTransporte: value as "01" | "02",
+              }))
+            }
+            options={[
+              { label: "Privado - conductor propio", value: "02" },
+              { label: "Publico - empresa transportista", value: "01" },
+            ]}
+          />
+
+          {createForm.modalidadTransporte === "02" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                label="Conductor"
+                value={createForm.conductorId}
+                onChange={(value) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    conductorId: value,
+                  }))
+                }
+                options={conductores.map((driver) => ({
+                  label:
+                    [driver.nombres, driver.apellidos]
+                      .filter(Boolean)
+                      .join(" ") || driver.numeroDocumento,
+                  value: driver.publicId,
+                }))}
+                placeholder={isCatalogLoading ? "Cargando..." : "Seleccionar"}
+                searchable
+              />
+              <Select
+                label="Placa"
+                value={createForm.vehiculoId}
+                onChange={(value) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    vehiculoId: value,
+                  }))
+                }
+                options={vehiculos.map((vehicle) => ({
+                  label: vehicle.placa,
+                  value: vehicle.publicId,
+                }))}
+                placeholder={isCatalogLoading ? "Cargando..." : "Seleccionar"}
+                searchable
+              />
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                label="Transportista"
+                value={createForm.transportistaId}
+                onChange={(value) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    transportistaId: value,
+                  }))
+                }
+                options={transportistas.map((carrier) => ({
+                  label: carrier.razonSocial || carrier.numeroDocumento,
+                  value: carrier.publicId,
+                }))}
+                placeholder={isCatalogLoading ? "Cargando..." : "Seleccionar"}
+                searchable
+              />
+              <CalendarInput
+                label="Entrega al transportista"
+                value={createForm.fechaEntregaTransportista}
+                disabled={isSubmittingCreate}
+                onChange={(value) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    fechaEntregaTransportista: value,
+                  }))
+                }
+              />
+            </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -1306,22 +1592,26 @@ export default function GuiasRemisionPage() {
                 }))
               }
               options={[
-                { label: "Sin documento", value: "" },
-                { label: "Factura", value: "01" },
-                { label: "Boleta", value: "03" },
-                { label: "Nota venta", value: "04" },
+                ...(!isGuiaDocumentoRelacionadoRequired(
+                  createForm.motivoTraslado,
+                )
+                  ? [{ label: "Sin documento", value: "" }]
+                  : []),
+                ...getGuiaDocumentoRelacionadoOptions(
+                  createForm.motivoTraslado,
+                ),
               ]}
             />
             <InputField
               id="gre-doc-serie"
               label="Serie"
               value={createForm.documentoSerie}
-              maxLength={4}
+              maxLength={20}
               disabled={isSubmittingCreate}
               onChange={(value) =>
                 setCreateForm((current) => ({
                   ...current,
-                  documentoSerie: value.toUpperCase().slice(0, 4),
+                  documentoSerie: value.toUpperCase().slice(0, 20),
                 }))
               }
             />
@@ -1333,7 +1623,7 @@ export default function GuiasRemisionPage() {
               onChange={(value) =>
                 setCreateForm((current) => ({
                   ...current,
-                  documentoNumero: value.replace(/\D/g, ""),
+                  documentoNumero: value.slice(0, 100),
                 }))
               }
             />
@@ -1356,9 +1646,14 @@ export default function GuiasRemisionPage() {
             />
           </label>
 
-          <label className="flex items-center justify-between rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3">
-            <span className="text-sm font-circular-regular text-[var(--color-text)]">
-              Emitir directamente
+          <label className="flex items-center justify-between gap-4 rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3">
+            <span>
+              <span className="block text-sm font-circular-regular text-[var(--color-text)]">
+                Emitir directamente
+              </span>
+              <span className="block text-xs text-[var(--color-muted-foreground)]">
+                PRODUCCION envia a SUNAT; BETA solo valida internamente
+              </span>
             </span>
             <input
               type="checkbox"
@@ -1391,6 +1686,72 @@ export default function GuiasRemisionPage() {
             </Button>
             <Button type="submit" disabled={isSubmittingCreate}>
               {isSubmittingCreate ? "Creando..." : "Crear guia"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(manualVoidGuia)}
+        onClose={closeManualVoid}
+        title={
+          manualVoidMode === "request"
+            ? "Baja manual de GRE"
+            : "Confirmar baja en SUNAT SOL"
+        }
+        size="sm"
+      >
+        <form onSubmit={handleManualVoid} className="space-y-4">
+          <div className="rounded-[12px] border border-[#f59e0b]/30 bg-[#f59e0b]/10 px-4 py-3 text-sm text-[#b45309]">
+            {manualVoidMode === "request" ? (
+              <>
+                La baja de una GRE aceptada se realiza manualmente en SUNAT SOL.
+                Esta accion solo registrara que el tramite queda pendiente.
+              </>
+            ) : (
+              <>
+                Confirma este paso unicamente despues de completar la baja en
+                SUNAT SOL. Nuvex guardara la referencia para trazabilidad.
+              </>
+            )}
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-circular-bold text-[var(--color-text)]">
+              {manualVoidMode === "request"
+                ? "Motivo de la baja"
+                : "Referencia o constancia SOL"}
+            </span>
+            <textarea
+              value={manualVoidValue}
+              onChange={(event) => setManualVoidValue(event.target.value)}
+              disabled={Boolean(workingId)}
+              maxLength={manualVoidMode === "request" ? 500 : 120}
+              className="min-h-24 w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+          </label>
+
+          {manualVoidError ? (
+            <p className="rounded-[12px] bg-[#ef4444]/10 px-3 py-2 text-sm text-[#dc2626]">
+              {manualVoidError}
+            </p>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeManualVoid}
+              disabled={Boolean(workingId)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={Boolean(workingId)}>
+              {workingId
+                ? "Guardando..."
+                : manualVoidMode === "request"
+                  ? "Registrar pendiente"
+                  : "Confirmar baja"}
             </Button>
           </div>
         </form>

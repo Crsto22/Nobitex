@@ -31,6 +31,7 @@ const moduleGroups = [
       "historial-cotizaciones",
       "comprobantes",
       "nota-credito",
+      "nota-debito",
       "series",
     ],
   },

@@ -28,8 +28,11 @@ import { Select } from "@/components/ui/select";
 import { UbigeoSelect, type PeruUbigeo } from "@/components/ui/ubigeo-select";
 import { branchesApi, type Branch } from "@/lib/api/branches";
 import {
+  getGuiaDocumentoRelacionadoOptions,
+  GUIA_REMISION_MOTIVO_OPTIONS,
   guiaRemisionApi,
   guiaRemisionCatalogosApi,
+  isGuiaDocumentoRelacionadoRequired,
   type CreateGuiaRemisionDetalle,
   type CreateGuiaRemisionPayload,
   type GuiaCatalogoParticipante,
@@ -45,7 +48,9 @@ function getDefaultForm() {
     sucursalPartidaId: "",
     sucursalLlegadaId: "",
     fechaInicioTraslado: new Date().toISOString().slice(0, 10),
+    fechaEntregaTransportista: new Date().toISOString().slice(0, 10),
     motivoTraslado: "04",
+    modalidadTransporte: "02" as "01" | "02",
     descripcionMotivo: "",
     pesoBrutoTotal: "1.000",
     numeroBultos: "1",
@@ -53,6 +58,7 @@ function getDefaultForm() {
     destinatarioNroDoc: "",
     destinatarioRazonSocial: "",
     conductorId: "",
+    transportistaId: "",
     vehiculoId: "",
     documentoTipo: "",
     documentoSerie: "",
@@ -77,16 +83,6 @@ const defaultDetail: CreateGuiaRemisionDetalle = {
 };
 type DraftDetail = CreateGuiaRemisionDetalle & { uiId: string };
 
-const motivoOptions = [
-  { label: "Traslado entre establecimientos", value: "04" },
-  { label: "Venta", value: "01" },
-  { label: "Compra", value: "02" },
-  { label: "Venta con entrega a terceros", value: "03" },
-  { label: "Consignacion", value: "05" },
-  { label: "Devolucion", value: "06" },
-  { label: "Otros", value: "13" },
-];
-
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Intentalo nuevamente";
 }
@@ -106,6 +102,9 @@ export default function CrearGuiaRemisionPage() {
   const [conductores, setConductores] = useState<GuiaCatalogoParticipante[]>(
     [],
   );
+  const [transportistas, setTransportistas] = useState<
+    GuiaCatalogoParticipante[]
+  >([]);
   const [vehiculos, setVehiculos] = useState<GuiaCatalogoVehiculo[]>([]);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,7 +117,12 @@ export default function CrearGuiaRemisionPage() {
 
   const isMotivoTrasladoInterno = form.motivoTraslado === "04";
   const requiereDestinatario = form.motivoTraslado !== "04";
-  const requiereDocumentoRelacionado = form.motivoTraslado !== "04";
+  const requiereDocumentoRelacionado = isGuiaDocumentoRelacionadoRequired(
+    form.motivoTraslado,
+  );
+  const documentoRelacionadoOptions = getGuiaDocumentoRelacionadoOptions(
+    form.motivoTraslado,
+  );
   const requiereDescripcionMotivo = form.motivoTraslado === "13";
 
   const productSearchSucursalId =
@@ -134,30 +138,45 @@ export default function CrearGuiaRemisionPage() {
         tipo: "conductor",
         activo: true,
       }),
+      guiaRemisionCatalogosApi.findParticipantes({
+        limit: 100,
+        tipo: "transportista",
+        activo: true,
+      }),
       guiaRemisionCatalogosApi.findVehiculos({ limit: 100, activo: true }),
     ])
-      .then(([branchesResponse, driversResponse, vehiclesResponse]) => {
-        if (!isMounted) return;
+      .then(
+        ([
+          branchesResponse,
+          driversResponse,
+          carriersResponse,
+          vehiclesResponse,
+        ]) => {
+          if (!isMounted) return;
 
-        setBranches(
-          branchesResponse.data.filter((branch) => branch.tipo !== "asistencia"),
-        );
-        setConductores(driversResponse.data);
-        setVehiculos(vehiclesResponse.data);
+          setBranches(
+            branchesResponse.data.filter(
+              (branch) => branch.tipo !== "asistencia",
+            ),
+          );
+          setConductores(driversResponse.data);
+          setTransportistas(carriersResponse.data);
+          setVehiculos(vehiclesResponse.data);
 
-        const defaultBranch =
-          branchesResponse.data.find((branch) => branch.esPrincipal) ??
-          branchesResponse.data[0];
+          const defaultBranch =
+            branchesResponse.data.find((branch) => branch.esPrincipal) ??
+            branchesResponse.data[0];
 
-        setForm((current) => ({
-          ...current,
-          sucursalId: current.sucursalId || defaultBranch?.id || "",
-          sucursalPartidaId:
-            current.sucursalPartidaId || defaultBranch?.id || "",
-          sucursalLlegadaId:
-            current.sucursalLlegadaId || defaultBranch?.id || "",
-        }));
-      })
+          setForm((current) => ({
+            ...current,
+            sucursalId: current.sucursalId || defaultBranch?.id || "",
+            sucursalPartidaId:
+              current.sucursalPartidaId || defaultBranch?.id || "",
+            sucursalLlegadaId:
+              current.sucursalLlegadaId || defaultBranch?.id || "",
+          }));
+        },
+      )
       .catch((error: unknown) => {
         if (!isMounted) return;
         toast.showToast({
@@ -305,8 +324,15 @@ export default function CrearGuiaRemisionPage() {
       }
     }
 
-    if (!form.conductorId || !form.vehiculoId) {
-      setFormError("Selecciona conductor y placa.");
+    if (
+      form.modalidadTransporte === "02" &&
+      (!form.conductorId || !form.vehiculoId)
+    ) {
+      setFormError("El transporte privado requiere conductor y placa.");
+      return;
+    }
+    if (form.modalidadTransporte === "01" && !form.transportistaId) {
+      setFormError("El transporte publico requiere un transportista.");
       return;
     }
 
@@ -320,15 +346,22 @@ export default function CrearGuiaRemisionPage() {
       return;
     }
 
-    const documentosRelacionados =
+    if (
       requiereDocumentoRelacionado &&
-      form.documentoTipo &&
-      form.documentoSerie.trim() &&
-      form.documentoNumero.trim()
+      (!form.documentoTipo || !form.documentoNumero.trim())
+    ) {
+      setFormError("El motivo seleccionado requiere un documento relacionado.");
+      return;
+    }
+
+    const documentosRelacionados =
+      form.documentoTipo && form.documentoNumero.trim()
         ? [
             {
               tipoDocumento: form.documentoTipo,
-              serie: form.documentoSerie.trim().toUpperCase(),
+              ...(form.documentoSerie.trim()
+                ? { serie: form.documentoSerie.trim().toUpperCase() }
+                : {}),
               numero: form.documentoNumero.trim(),
             },
           ]
@@ -341,7 +374,10 @@ export default function CrearGuiaRemisionPage() {
       ...(form.descripcionMotivo.trim()
         ? { descripcionMotivo: form.descripcionMotivo.trim() }
         : {}),
-      modalidadTransporte: "02",
+      modalidadTransporte: form.modalidadTransporte,
+      ...(form.modalidadTransporte === "01"
+        ? { fechaEntregaTransportista: form.fechaEntregaTransportista }
+        : {}),
       pesoBrutoTotal: form.pesoBrutoTotal,
       unidadPeso: "KGM",
       numeroBultos: form.numeroBultos ? Number(form.numeroBultos) : undefined,
@@ -355,8 +391,12 @@ export default function CrearGuiaRemisionPage() {
       destinatarioRazonSocial: form.destinatarioRazonSocial.trim(),
       detalles: cleanDetails,
       documentosRelacionados,
-      catalogoParticipanteIds: [form.conductorId],
-      catalogoVehiculoIds: [form.vehiculoId],
+      catalogoParticipanteIds:
+        form.modalidadTransporte === "01"
+          ? [form.transportistaId]
+          : [form.conductorId],
+      catalogoVehiculoIds:
+        form.modalidadTransporte === "02" ? [form.vehiculoId] : [],
       emitirDirectamente: form.emitirDirectamente,
     };
 
@@ -372,7 +412,7 @@ export default function CrearGuiaRemisionPage() {
       toast.dismissToast(loadingId);
       toast.showToast({
         title: "Guia creada",
-        description: created.correlativo,
+        description: created.correlativo || "Correlativo pendiente",
         variant: "success",
       });
       router.push("/gre/remitente");
@@ -491,7 +531,7 @@ export default function CrearGuiaRemisionPage() {
                           : {}),
                       }))
                     }
-                    options={motivoOptions}
+                    options={[...GUIA_REMISION_MOTIVO_OPTIONS]}
                   />
 
                   {!isMotivoTrasladoInterno && (
@@ -527,7 +567,7 @@ export default function CrearGuiaRemisionPage() {
                         Emitir directamente
                       </span>
                       <span className="block text-xs text-[var(--color-muted-foreground)]">
-                        Se enviara a SUNAT al registrar
+                        PRODUCCION envia a SUNAT; BETA solo valida internamente
                       </span>
                     </div>
                     <input
@@ -550,54 +590,97 @@ export default function CrearGuiaRemisionPage() {
                     Tipo de transporte
                   </h2>
 
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-3.5">
-                    <UserIcon
-                      size={20}
-                      weight="bold"
-                      className="text-[var(--color-primary)]"
-                    />
-                    <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                      Privado
-                    </p>
-                    <p className="text-[11px] text-[var(--color-muted-foreground)]">
-                      Conductor propio
-                    </p>
-                  </div>
-
                   <Select
-                    label="Conductor"
-                    value={form.conductorId}
+                    label="Modalidad"
+                    value={form.modalidadTransporte}
                     onChange={(value) =>
-                      setForm((c) => ({ ...c, conductorId: value }))
+                      setForm((c) => ({
+                        ...c,
+                        modalidadTransporte: value as "01" | "02",
+                      }))
                     }
-                    options={conductores.map((driver) => ({
-                      label:
-                        [driver.nombres, driver.apellidos]
-                          .filter(Boolean)
-                          .join(" ") || driver.numeroDocumento,
-                      value: driver.publicId,
-                    }))}
-                    placeholder={
-                      isCatalogLoading ? "Cargando..." : "Seleccionar"
-                    }
-                    searchable
+                    options={[
+                      { label: "Privado - conductor propio", value: "02" },
+                      { label: "Publico - empresa transportista", value: "01" },
+                    ]}
                   />
 
-                  <Select
-                    label="Placa del vehiculo"
-                    value={form.vehiculoId}
-                    onChange={(value) =>
-                      setForm((c) => ({ ...c, vehiculoId: value }))
-                    }
-                    options={vehiculos.map((vehicle) => ({
-                      label: vehicle.placa,
-                      value: vehicle.publicId,
-                    }))}
-                    placeholder={
-                      isCatalogLoading ? "Cargando..." : "Seleccionar"
-                    }
-                    searchable
-                  />
+                  {form.modalidadTransporte === "02" ? (
+                    <>
+                      <div className="flex items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-3">
+                        <UserIcon
+                          size={20}
+                          weight="bold"
+                          className="text-[var(--color-primary)]"
+                        />
+                        <span className="text-sm font-circular-bold text-[var(--color-text)]">
+                          Transporte privado
+                        </span>
+                      </div>
+                      <Select
+                        label="Conductor"
+                        value={form.conductorId}
+                        onChange={(value) =>
+                          setForm((c) => ({ ...c, conductorId: value }))
+                        }
+                        options={conductores.map((driver) => ({
+                          label:
+                            [driver.nombres, driver.apellidos]
+                              .filter(Boolean)
+                              .join(" ") || driver.numeroDocumento,
+                          value: driver.publicId,
+                        }))}
+                        placeholder={
+                          isCatalogLoading ? "Cargando..." : "Seleccionar"
+                        }
+                        searchable
+                      />
+                      <Select
+                        label="Placa del vehiculo"
+                        value={form.vehiculoId}
+                        onChange={(value) =>
+                          setForm((c) => ({ ...c, vehiculoId: value }))
+                        }
+                        options={vehiculos.map((vehicle) => ({
+                          label: vehicle.placa,
+                          value: vehicle.publicId,
+                        }))}
+                        placeholder={
+                          isCatalogLoading ? "Cargando..." : "Seleccionar"
+                        }
+                        searchable
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Select
+                        label="Transportista"
+                        value={form.transportistaId}
+                        onChange={(value) =>
+                          setForm((c) => ({ ...c, transportistaId: value }))
+                        }
+                        options={transportistas.map((carrier) => ({
+                          label: carrier.razonSocial || carrier.numeroDocumento,
+                          value: carrier.publicId,
+                        }))}
+                        placeholder={
+                          isCatalogLoading ? "Cargando..." : "Seleccionar"
+                        }
+                        searchable
+                      />
+                      <CalendarInput
+                        label="Entrega al transportista"
+                        value={form.fechaEntregaTransportista}
+                        disabled={isSubmitting}
+                        onChange={(value) =>
+                          setForm((c) => ({
+                            ...c,
+                            fechaEntregaTransportista: value,
+                          }))
+                        }
+                      />
+                    </>
+                  )}
                 </section>
               </div>
 
@@ -896,14 +979,16 @@ export default function CrearGuiaRemisionPage() {
                 </section>
               )}
 
-              {requiereDocumentoRelacionado && (
+              {form.motivoTraslado !== "04" && (
                 <section className="space-y-4 rounded-[16px] bg-[var(--color-sidebar-bg)] p-4 shadow-sm">
                   <div>
                     <h2 className="text-base font-circular-bold text-[var(--color-text)]">
                       Documento relacionado
                     </h2>
                     <p className="text-xs text-[var(--color-muted-foreground)]">
-                      Opcional para sustentar la operacion.
+                      {requiereDocumentoRelacionado
+                        ? "Obligatorio para este motivo de traslado."
+                        : "Opcional para sustentar la operacion."}
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-3">
@@ -914,22 +999,22 @@ export default function CrearGuiaRemisionPage() {
                         setForm((c) => ({ ...c, documentoTipo: value }))
                       }
                       options={[
-                        { label: "Sin documento", value: "" },
-                        { label: "Factura", value: "01" },
-                        { label: "Boleta", value: "03" },
-                        { label: "Nota venta", value: "04" },
+                        ...(!requiereDocumentoRelacionado
+                          ? [{ label: "Sin documento", value: "" }]
+                          : []),
+                        ...documentoRelacionadoOptions,
                       ]}
                     />
                     <InputField
                       id="gre-doc-serie"
                       label="Serie"
                       value={form.documentoSerie}
-                      maxLength={4}
+                      maxLength={20}
                       disabled={isSubmitting}
                       onChange={(value) =>
                         setForm((c) => ({
                           ...c,
-                          documentoSerie: value.toUpperCase().slice(0, 4),
+                          documentoSerie: value.toUpperCase().slice(0, 20),
                         }))
                       }
                     />
@@ -941,7 +1026,7 @@ export default function CrearGuiaRemisionPage() {
                       onChange={(value) =>
                         setForm((c) => ({
                           ...c,
-                          documentoNumero: value.replace(/\D/g, ""),
+                          documentoNumero: value.slice(0, 100),
                         }))
                       }
                     />
@@ -1260,7 +1345,7 @@ export default function CrearGuiaRemisionPage() {
               </section>
             </div>
           </div>
-          </form>
+        </form>
       </div>
     </DashboardShell>
   );

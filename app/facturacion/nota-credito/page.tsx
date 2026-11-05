@@ -221,7 +221,10 @@ export default function NotaCreditoPage() {
             : await creditNotesApi.downloadSunatCdr(publicId);
       downloadBlob(
         blob,
-        documentFileName(note.correlativo, kind === "cdr" ? "zip" : kind),
+        documentFileName(
+          note.correlativo ?? note.publicId,
+          kind === "cdr" ? "zip" : kind,
+        ),
       );
       setOpenMenuId(null);
     } catch (error) {
@@ -328,8 +331,8 @@ export default function NotaCreditoPage() {
                 setIsStatusOpen(false);
               }}
               label={
-                typeOptions.find((item) => item.value === selectedType)?.label ??
-                "Tipo"
+                typeOptions.find((item) => item.value === selectedType)
+                  ?.label ?? "Tipo"
               }
               options={typeOptions}
               selected={selectedType}
@@ -367,6 +370,11 @@ export default function NotaCreditoPage() {
             items.map((note) => {
               const status = statusConfig[note.sunat.estado];
               const StatusIcon = status.icon;
+              const pdfAvailable =
+                !note.billing ||
+                ["ACCEPTED", "ACCEPTED_WITH_OBSERVATIONS"].includes(
+                  note.billing.status,
+                );
               return (
                 <div
                   key={note.publicId}
@@ -374,7 +382,7 @@ export default function NotaCreditoPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-                      {note.correlativo}
+                      {note.correlativo ?? "Procesando correlativo"}
                     </p>
                     <p className="text-[10px] text-[var(--color-muted-foreground)]">
                       Ref: {note.ventaReferencia.correlativo}
@@ -441,7 +449,7 @@ export default function NotaCreditoPage() {
                         <MenuButton
                           icon={PaperPlaneTiltIcon}
                           label="Enviar a SUNAT"
-                          disabled={busyId === note.publicId}
+                          disabled={busyId === note.publicId || !pdfAvailable}
                           onClick={() => handleRetry(note.publicId)}
                         />
                         <MenuButton

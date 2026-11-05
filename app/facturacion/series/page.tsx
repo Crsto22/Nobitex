@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   CaretDownIcon,
   CheckCircleIcon,
@@ -63,6 +69,14 @@ const typeConfig: Record<
     label: "N/C Boleta",
     badge: "bg-[#0ea5e9]/10 text-[#0284c7]",
   },
+  nota_debito_factura: {
+    label: "N/D Factura",
+    badge: "bg-[#f97316]/10 text-[#ea580c]",
+  },
+  nota_debito_boleta: {
+    label: "N/D Boleta",
+    badge: "bg-[#f59e0b]/10 text-[#d97706]",
+  },
 };
 
 const seriesTypeOptions = [
@@ -72,6 +86,8 @@ const seriesTypeOptions = [
   { label: "Guia Remision", value: "guia_remision" },
   { label: "N/C Factura", value: "nota_credito_factura" },
   { label: "N/C Boleta", value: "nota_credito_boleta" },
+  { label: "N/D Factura", value: "nota_debito_factura" },
+  { label: "N/D Boleta", value: "nota_debito_boleta" },
 ];
 const typeOptions = [{ label: "Todos", value: "todos" }, ...seriesTypeOptions];
 
@@ -103,7 +119,10 @@ function formatDate(iso: string) {
 }
 
 function normalizeSerie(value: string) {
-  return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 4);
 }
 
 export default function SeriesPage() {
@@ -119,7 +138,12 @@ export default function SeriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBranchesLoading, setIsBranchesLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [modal, setModal] = useState<{ isOpen: boolean; editing: SerieComprobante | null; form: SeriesForm; error: string }>({
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    editing: SerieComprobante | null;
+    form: SeriesForm;
+    error: string;
+  }>({
     isOpen: false,
     editing: null,
     form: defaultForm,
@@ -289,7 +313,9 @@ export default function SeriesPage() {
       setMeta(response.meta);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "No se pudieron cargar series.";
+        error instanceof Error
+          ? error.message
+          : "No se pudieron cargar series.";
       setSeries([]);
       setMeta({ page: 1, limit: 10, total: 0, totalPages: 1 });
       showToast({
@@ -312,13 +338,13 @@ export default function SeriesPage() {
       isOpen: true,
       editing: serie,
       form: {
-      tipoComprobante: serie.tipoComprobante,
-      serie: serie.serie,
-      activo: serie.activo,
-      esPrincipal: serie.esPrincipal,
-      alcance: serie.aplicaTodasSucursales ? "todas" : "especificas",
-      sucursalIds: serie.sucursales.map((sucursal) => sucursal.id),
-    },
+        tipoComprobante: serie.tipoComprobante,
+        serie: serie.serie,
+        activo: serie.activo,
+        esPrincipal: serie.esPrincipal,
+        alcance: serie.aplicaTodasSucursales ? "todas" : "especificas",
+        sucursalIds: serie.sucursales.map((sucursal) => sucursal.id),
+      },
       error: "",
     });
     setOpenMenuId(null);
@@ -343,8 +369,14 @@ export default function SeriesPage() {
       return;
     }
 
-    if (modal.form.alcance === "especificas" && modal.form.sucursalIds.length === 0) {
-      setModal((prev) => ({ ...prev, error: "Selecciona al menos una sucursal." }));
+    if (
+      modal.form.alcance === "especificas" &&
+      modal.form.sucursalIds.length === 0
+    ) {
+      setModal((prev) => ({
+        ...prev,
+        error: "Selecciona al menos una sucursal.",
+      }));
       return;
     }
 
@@ -355,7 +387,8 @@ export default function SeriesPage() {
         esPrincipal: modal.form.esPrincipal,
         activo: modal.form.activo,
         aplicaTodasSucursales: modal.form.alcance === "todas",
-        sucursalIds: modal.form.alcance === "todas" ? [] : modal.form.sucursalIds,
+        sucursalIds:
+          modal.form.alcance === "todas" ? [] : modal.form.sucursalIds,
       };
 
       const savedSerie = modal.editing
@@ -377,8 +410,8 @@ export default function SeriesPage() {
             ? "Serie actualizada"
             : "Serie creada",
         description: syncFailed
-          ? savedSerie.billingSync?.message ??
-            "No se pudo sincronizar la serie con Billing."
+          ? (savedSerie.billingSync?.message ??
+            "No se pudo sincronizar la serie con Billing.")
           : `${savedSerie.serie} quedo guardada y sincronizada correctamente.`,
         variant: syncFailed ? "error" : "success",
       });
@@ -413,14 +446,16 @@ export default function SeriesPage() {
             ? "Serie activada"
             : "Serie inactivada",
         description: syncFailed
-          ? updated.billingSync?.message ??
-            "No se pudo sincronizar la serie con Billing."
+          ? (updated.billingSync?.message ??
+            "No se pudo sincronizar la serie con Billing.")
           : updated.serie,
         variant: syncFailed ? "error" : "success",
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "No se pudo cambiar el estado.";
+        error instanceof Error
+          ? error.message
+          : "No se pudo cambiar el estado.";
       showToast({
         title: "No se pudo actualizar",
         description: message,
@@ -502,84 +537,95 @@ export default function SeriesPage() {
           </div>
 
           <div className="flex gap-2 sm:gap-3">
-            <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={typeRef}>
-            <DropdownButton
-              label={
-                selectedType === "todos"
-                  ? "Tipo"
-                  : typeConfig[selectedType].label
-              }
-              isOpen={isTypeOpen}
-              onClick={() => {
-                setIsTypeOpen(!isTypeOpen);
-                setIsEstadoOpen(false);
-                setIsBranchOpen(false);
-              }}
-            />
-            {isTypeOpen && (
-              <DropdownMenu
-                options={typeOptions}
-                selectedValue={selectedType}
-                onSelect={(value) => {
-                  setSelectedType(value as VentaTipoComprobante | "todos");
-                  setPage(1);
-                  setIsTypeOpen(false);
-                }}
-              />
-            )}
-          </div>
-
-          <div className="relative flex-1 sm:w-[160px] sm:flex-none" ref={estadoRef}>
-            <DropdownButton
-              label={
-                selectedEstado === "todos"
-                  ? "Estado"
-                  : selectedEstado === "activo"
-                    ? "Activo"
-                    : "Inactivo"
-              }
-              isOpen={isEstadoOpen}
-              onClick={() => {
-                setIsEstadoOpen(!isEstadoOpen);
-                setIsTypeOpen(false);
-                setIsBranchOpen(false);
-              }}
-            />
-            {isEstadoOpen && (
-              <DropdownMenu
-                options={estadoOptions}
-                selectedValue={selectedEstado}
-                onSelect={(value) => {
-                  setSelectedEstado(value as EstadoFilter);
-                  setPage(1);
+            <div
+              className="relative flex-1 sm:w-[160px] sm:flex-none"
+              ref={typeRef}
+            >
+              <DropdownButton
+                label={
+                  selectedType === "todos"
+                    ? "Tipo"
+                    : typeConfig[selectedType].label
+                }
+                isOpen={isTypeOpen}
+                onClick={() => {
+                  setIsTypeOpen(!isTypeOpen);
                   setIsEstadoOpen(false);
-                }}
-              />
-            )}
-          </div>
-
-          <div className="relative flex-1 sm:w-[180px] sm:flex-none" ref={branchRef}>
-            <DropdownButton
-              label={selectedBranch === "todos" ? "Sucursal" : selectedBranchLabel}
-              isOpen={isBranchOpen}
-              onClick={() => {
-                setIsBranchOpen(!isBranchOpen);
-                setIsTypeOpen(false);
-                setIsEstadoOpen(false);
-              }}
-            />
-            {isBranchOpen && (
-              <DropdownMenu
-                options={branchOptions}
-                selectedValue={selectedBranch}
-                onSelect={(value) => {
-                  setSelectedBranch(value);
-                  setPage(1);
                   setIsBranchOpen(false);
                 }}
               />
-            )}
-          </div>
+              {isTypeOpen && (
+                <DropdownMenu
+                  options={typeOptions}
+                  selectedValue={selectedType}
+                  onSelect={(value) => {
+                    setSelectedType(value as VentaTipoComprobante | "todos");
+                    setPage(1);
+                    setIsTypeOpen(false);
+                  }}
+                />
+              )}
+            </div>
+
+            <div
+              className="relative flex-1 sm:w-[160px] sm:flex-none"
+              ref={estadoRef}
+            >
+              <DropdownButton
+                label={
+                  selectedEstado === "todos"
+                    ? "Estado"
+                    : selectedEstado === "activo"
+                      ? "Activo"
+                      : "Inactivo"
+                }
+                isOpen={isEstadoOpen}
+                onClick={() => {
+                  setIsEstadoOpen(!isEstadoOpen);
+                  setIsTypeOpen(false);
+                  setIsBranchOpen(false);
+                }}
+              />
+              {isEstadoOpen && (
+                <DropdownMenu
+                  options={estadoOptions}
+                  selectedValue={selectedEstado}
+                  onSelect={(value) => {
+                    setSelectedEstado(value as EstadoFilter);
+                    setPage(1);
+                    setIsEstadoOpen(false);
+                  }}
+                />
+              )}
+            </div>
+
+            <div
+              className="relative flex-1 sm:w-[180px] sm:flex-none"
+              ref={branchRef}
+            >
+              <DropdownButton
+                label={
+                  selectedBranch === "todos" ? "Sucursal" : selectedBranchLabel
+                }
+                isOpen={isBranchOpen}
+                onClick={() => {
+                  setIsBranchOpen(!isBranchOpen);
+                  setIsTypeOpen(false);
+                  setIsEstadoOpen(false);
+                }}
+              />
+              {isBranchOpen && (
+                <DropdownMenu
+                  options={branchOptions}
+                  selectedValue={selectedBranch}
+                  onSelect={(value) => {
+                    setSelectedBranch(value);
+                    setPage(1);
+                    setIsBranchOpen(false);
+                  }}
+                />
+              )}
+            </div>
           </div>
 
           <button
@@ -745,7 +791,13 @@ export default function SeriesPage() {
                 options={seriesTypeOptions}
                 value={modal.form.tipoComprobante}
                 onChange={(value) =>
-                  setModal((prev) => ({ ...prev, form: { ...prev.form, tipoComprobante: value as VentaTipoComprobante, } }))
+                  setModal((prev) => ({
+                    ...prev,
+                    form: {
+                      ...prev.form,
+                      tipoComprobante: value as VentaTipoComprobante,
+                    },
+                  }))
                 }
                 placeholder="Seleccionar tipo"
                 label="Tipo de comprobante"
@@ -760,7 +812,10 @@ export default function SeriesPage() {
                 maxLength={4}
                 disabled={isSubmitting || Boolean(modal.editing)}
                 onChange={(value) =>
-                  setModal((prev) => ({ ...prev, form: { ...prev.form, serie: normalizeSerie(value), } }))
+                  setModal((prev) => ({
+                    ...prev,
+                    form: { ...prev.form, serie: normalizeSerie(value) },
+                  }))
                 }
               />
             </div>
@@ -773,7 +828,10 @@ export default function SeriesPage() {
                 ]}
                 value={modal.form.activo ? "activo" : "inactivo"}
                 onChange={(value) =>
-                  setModal((prev) => ({ ...prev, form: { ...prev.form, activo: value === "activo", } }))
+                  setModal((prev) => ({
+                    ...prev,
+                    form: { ...prev.form, activo: value === "activo" },
+                  }))
                 }
                 placeholder="Seleccionar estado"
                 label="Estado"
@@ -803,7 +861,10 @@ export default function SeriesPage() {
                 type="checkbox"
                 checked={modal.form.esPrincipal}
                 onChange={(event) =>
-                  setModal((prev) => ({ ...prev, form: { ...prev.form, esPrincipal: event.target.checked, } }))
+                  setModal((prev) => ({
+                    ...prev,
+                    form: { ...prev.form, esPrincipal: event.target.checked },
+                  }))
                 }
                 disabled={isSubmitting}
                 className="h-5 w-5 accent-[var(--color-primary)]"
@@ -831,7 +892,10 @@ export default function SeriesPage() {
                   selected={modal.form.alcance === "especificas"}
                   disabled={isSubmitting || branches.length === 0}
                   onClick={() =>
-                    setModal((prev) => ({ ...prev, form: { ...prev.form, alcance: "especificas", } }))
+                    setModal((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, alcance: "especificas" },
+                    }))
                   }
                 />
               </div>

@@ -81,7 +81,9 @@ export type VentaTipoComprobante =
   | "boleta"
   | "guia_remision"
   | "nota_credito_factura"
-  | "nota_credito_boleta";
+  | "nota_credito_boleta"
+  | "nota_debito_factura"
+  | "nota_debito_boleta";
 export type VentaEstado = "pendiente" | "completada" | "anulada" | "nc_emitida";
 export type VentaDescuentoTipo = "porcentaje" | "monto";
 export type VentaSunatBajaEstado =

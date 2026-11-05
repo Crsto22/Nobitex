@@ -67,33 +67,46 @@ export default function NuevaNotaCreditoPage() {
   const selectedMotive = motiveOptions.find(
     (item) => item.value === codigoMotivo,
   )!;
+  const availableMotiveOptions = useMemo(
+    () =>
+      selectedSale?.tipoComprobante === "boleta"
+        ? motiveOptions.filter((option) => option.value !== "02")
+        : motiveOptions,
+    [selectedSale?.tipoComprobante],
+  );
   const noteSerieType =
     selectedSale?.tipoComprobante === "factura"
       ? "nota_credito_factura"
       : "nota_credito_boleta";
 
-  const loadSales = useCallback((options: RequestInit = {}) => {
-    setIsLoadingSales(true);
-    salesApi
-      .findComprobantes({
-        page: 1,
-        limit: 10,
-        ...historyPeriod,
-        search: search.trim() || undefined,
-      }, options)
-      .then((response) => setSales(response.data))
-      .catch((error) => {
-        if (options.signal?.aborted) return;
-        toast.showToast({
-          title: "No se pudieron cargar comprobantes",
-          description: getErrorMessage(error),
-          variant: "error",
+  const loadSales = useCallback(
+    (options: RequestInit = {}) => {
+      setIsLoadingSales(true);
+      salesApi
+        .findComprobantes(
+          {
+            page: 1,
+            limit: 10,
+            ...historyPeriod,
+            search: search.trim() || undefined,
+          },
+          options,
+        )
+        .then((response) => setSales(response.data))
+        .catch((error) => {
+          if (options.signal?.aborted) return;
+          toast.showToast({
+            title: "No se pudieron cargar comprobantes",
+            description: getErrorMessage(error),
+            variant: "error",
+          });
+        })
+        .finally(() => {
+          if (!options.signal?.aborted) setIsLoadingSales(false);
         });
-      })
-      .finally(() => {
-        if (!options.signal?.aborted) setIsLoadingSales(false);
-      });
-  }, [historyPeriod, search, toast]);
+    },
+    [historyPeriod, search, toast],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -254,6 +267,12 @@ export default function NuevaNotaCreditoPage() {
                     type="button"
                     onClick={() => {
                       setSelectedSale(sale);
+                      if (
+                        sale.tipoComprobante === "boleta" &&
+                        codigoMotivo === "02"
+                      ) {
+                        setCodigoMotivo("06");
+                      }
                       setQuantities(
                         Object.fromEntries(
                           sale.detalles.map((detail) => [
@@ -342,7 +361,7 @@ export default function NuevaNotaCreditoPage() {
                       }
                       className="h-11 w-full rounded-[12px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text)] outline-none"
                     >
-                      {motiveOptions.map((option) => (
+                      {availableMotiveOptions.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>

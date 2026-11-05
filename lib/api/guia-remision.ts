@@ -1,28 +1,102 @@
 import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
 
 export type GuiaRemisionEstado =
-  | "borrador"
-  | "emitida"
-  | "aceptada"
-  | "rechazada"
-  | "anulada";
+  "borrador" | "emitida" | "aceptada" | "rechazada" | "anulada";
 
 export type GuiaRemisionSunatEstado =
   | "no_aplica"
   | "pendiente_envio"
   | "enviando"
   | "pendiente_cdr"
+  | "validado_beta"
   | "aceptado"
   | "observado"
   | "rechazado"
   | "error_transitorio"
   | "error_definitivo";
 
+export const GUIA_REMISION_MOTIVO_OPTIONS = [
+  { label: "Venta", value: "01" },
+  { label: "Compra", value: "02" },
+  { label: "Venta con entrega a terceros", value: "03" },
+  { label: "Traslado entre establecimientos", value: "04" },
+  { label: "Consignacion", value: "05" },
+  { label: "Devolucion", value: "06" },
+  { label: "Recojo de bienes transformados", value: "07" },
+  { label: "Importacion", value: "08" },
+  { label: "Exportacion", value: "09" },
+  { label: "Otros", value: "13" },
+  { label: "Venta sujeta a confirmacion del comprador", value: "14" },
+  { label: "Traslado de bienes para transformacion", value: "17" },
+  { label: "Traslado por emisor itinerante", value: "18" },
+  { label: "Traslado de mercancia extranjera", value: "19" },
+] as const;
+
+export const GUIA_REMISION_DOCUMENTO_RELACIONADO_OPTIONS = [
+  { label: "Factura", value: "01" },
+  { label: "Boleta de venta", value: "03" },
+  { label: "Liquidacion de compra", value: "04" },
+  { label: "Guia de remision remitente", value: "09" },
+  { label: "Ticket o cinta de maquina registradora", value: "12" },
+  { label: "Comprobante de operaciones - Ley 29972", value: "48" },
+  { label: "Constancia de deposito IVAP", value: "49" },
+  { label: "Declaracion Aduanera de Mercancias (DAM)", value: "50" },
+  { label: "Declaracion Simplificada (DS)", value: "52" },
+  { label: "Resolucion de adjudicacion de bienes - SUNAT", value: "71" },
+  { label: "Resolucion de comiso de bienes - SUNAT", value: "72" },
+  { label: "Guia de transporte forestal o de fauna - SERFOR", value: "73" },
+  { label: "Guia de transito - SUCAMEC", value: "74" },
+  { label: "Autorizacion de saneamiento ambiental - MINSA", value: "75" },
+  { label: "Autorizacion para manejo y recojo de residuos", value: "76" },
+  { label: "Certificado fitosanitario", value: "77" },
+  {
+    label: "Registro de usuarios y transportistas de alcohol etilico",
+    value: "78",
+  },
+  { label: "Constancia de deposito - Detraccion", value: "80" },
+  { label: "Codigo de autorizacion SCOP", value: "81" },
+  { label: "Manifiesto de carga (MC)", value: "91" },
+  { label: "Cita u orden de entrega del terminal portuario", value: "92" },
+] as const;
+
+export function isGuiaDocumentoRelacionadoRequired(motivo: string) {
+  return ["08", "09", "19"].includes(motivo);
+}
+
+export function getGuiaDocumentoRelacionadoOptions(motivo: string) {
+  const allowed =
+    motivo === "08" || motivo === "09"
+      ? new Set(["50", "52"])
+      : motivo === "19"
+        ? new Set(["50", "52", "91", "92"])
+        : motivo === "13"
+          ? new Set(
+              GUIA_REMISION_DOCUMENTO_RELACIONADO_OPTIONS.map(
+                (option) => option.value,
+              ).filter((value) => value !== "91" && value !== "92"),
+            )
+          : new Set(
+              GUIA_REMISION_DOCUMENTO_RELACIONADO_OPTIONS.map(
+                (option) => option.value,
+              ).filter(
+                (value) =>
+                  value !== "50" &&
+                  value !== "52" &&
+                  value !== "91" &&
+                  value !== "92",
+              ),
+            );
+
+  return GUIA_REMISION_DOCUMENTO_RELACIONADO_OPTIONS.filter((option) =>
+    allowed.has(option.value),
+  );
+}
+
 export type GuiaRemisionResponse = {
   publicId: string;
   serie: string;
-  numero: number;
-  correlativo: string;
+  numero: number | null;
+  correlativo: string | null;
   fechaEmision: string;
   fechaInicioTraslado: string;
   fechaEntregaTransportista: string | null;
@@ -63,6 +137,20 @@ export type GuiaRemisionResponse = {
     enviadoAt: string | null;
     respondidoAt: string | null;
   };
+  billing: {
+    documentId: string | null;
+    environment: "BETA" | "PRODUCTION" | null;
+    status: string | null;
+    updatedAt: string | null;
+    lastError: string | null;
+    attempts: number;
+  } | null;
+  void: {
+    status: "MANUAL_ACTION_REQUIRED" | "CONFIRMED" | null;
+    reference: string | null;
+    requestedAt: string | null;
+    confirmedAt: string | null;
+  } | null;
   sucursal: {
     id: string;
     nombre: string;
@@ -79,7 +167,7 @@ export type GuiaRemisionResponse = {
   }[];
   documentosRelacionados: {
     tipoDocumento: string;
-    serie: string;
+    serie: string | null;
     numero: string;
   }[];
   participantes: {
@@ -148,7 +236,7 @@ export type CreateGuiaRemisionPayload = {
   detalles: CreateGuiaRemisionDetalle[];
   documentosRelacionados?: {
     tipoDocumento: string;
-    serie: string;
+    serie?: string;
     numero: string;
   }[];
   catalogoParticipanteIds?: string[];
@@ -280,15 +368,35 @@ export const guiaRemisionApi = {
   },
 
   emitir(publicId: string) {
-    return authFetch<GuiaRemisionResponse>(`/guia-remision/${publicId}/emitir`, {
-      method: "POST",
-    });
+    return authFetch<GuiaRemisionResponse>(
+      `/guia-remision/${publicId}/emitir`,
+      {
+        method: "POST",
+      },
+    );
   },
 
   consultarCdr(publicId: string) {
     return authFetch<GuiaRemisionResponse>(
       `/guia-remision/${publicId}/consultar-cdr`,
       { method: "POST" },
+    );
+  },
+
+  requestManualVoid(publicId: string, razon: string) {
+    return authFetch<GuiaRemisionResponse>(`/guia-remision/${publicId}/void`, {
+      method: "POST",
+      body: JSON.stringify({ razon }),
+    });
+  },
+
+  confirmManualVoid(publicId: string, referenciaSol: string) {
+    return authFetch<GuiaRemisionResponse>(
+      `/guia-remision/${publicId}/void/confirm`,
+      {
+        method: "POST",
+        body: JSON.stringify({ referenciaSol }),
+      },
     );
   },
 
@@ -366,10 +474,7 @@ export const guiaRemisionCatalogosApi = {
     );
   },
 
-  updateVehiculo(
-    publicId: string,
-    payload: UpdateGuiaCatalogoVehiculoPayload,
-  ) {
+  updateVehiculo(publicId: string, payload: UpdateGuiaCatalogoVehiculoPayload) {
     return authFetch<GuiaCatalogoVehiculo>(
       `/guia-remision/catalogos/vehiculos/${publicId}`,
       {
