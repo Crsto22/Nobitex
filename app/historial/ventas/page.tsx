@@ -35,6 +35,7 @@ import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { HistoryPeriodFilter } from "@/components/History/history-period-filter";
 import { defaultHistoryPeriod } from "@/lib/history-period";
 import { documentFileName } from "@/lib/document-file-name";
+import { canRetrySunatBaja } from "@/lib/sunat-baja-retry";
 
 const statusConfig: Record<
   VentaEstado,
@@ -920,7 +921,7 @@ export default function HistorialVentasPage() {
                             {showBajaAction ? "Dar de baja" : "Anular venta"}
                           </button>
                         )}
-                        {venta.sunatBaja.estado === "error_definitivo" ? (
+                        {canRetrySunatBaja(venta.sunatBaja) ? (
                           <button
                             type="button"
                             onClick={() => void handleRetrySunatBaja(venta)}

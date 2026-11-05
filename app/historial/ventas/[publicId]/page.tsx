@@ -33,6 +33,7 @@ import { AnnulSaleModal } from "@/components/Ventas/annul-sale-modal";
 import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { documentFileName } from "@/lib/document-file-name";
+import { canRetrySunatBaja } from "@/lib/sunat-baja-retry";
 
 const statusConfig: Record<
   VentaEstado,
@@ -684,7 +685,7 @@ export default function VentaDetallePage() {
                           : "Consultar baja"}
                       </button>
                     ) : null}
-                    {venta.sunatBaja.estado === "error_definitivo" ? (
+                    {canRetrySunatBaja(venta.sunatBaja) ? (
                       <button
                         type="button"
                         onClick={handleRetrySunatBaja}
