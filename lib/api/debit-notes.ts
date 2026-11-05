@@ -1,4 +1,8 @@
 import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
+import {
+  appendHistoryPeriod,
+  type HistoryPeriodQuery,
+} from "@/lib/history-period";
 
 export type DebitNoteStatus =
   | "pendiente_envio"
@@ -75,6 +79,25 @@ export type DebitNoteResponse = {
     lastError: string | null;
     attempts: number;
   };
+  createdAt: string;
+};
+
+export type DebitNotesResponse = {
+  data: DebitNoteResponse[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  summary: {
+    aceptados: number;
+    porEnviar: number;
+    observados: number;
+    rechazados: number;
+    errores: number;
+    montoAceptado: string;
+  };
 };
 
 export type CreateDebitNotePayload = {
@@ -99,24 +122,29 @@ function query(values: Record<string, string | number | undefined>) {
   return params.size ? `?${params.toString()}` : "";
 }
 
+export type DebitNotesQuery = HistoryPeriodQuery & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sunatEstado?: DebitNoteStatus;
+  tipoComprobante?: "nota_debito_factura" | "nota_debito_boleta";
+};
+
 export const debitNotesApi = {
-  findAll(
-    values: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      sunatEstado?: string;
-      tipoComprobante?: string;
-      periodo?: string;
-      desde?: string;
-      hasta?: string;
-    } = {},
-  ) {
-    return authFetch<{
-      data: DebitNoteResponse[];
-      total: number;
-      page: number;
-    }>(`/debit-notes${query(values)}`);
+  findAll(query: DebitNotesQuery = {}) {
+    const params = new URLSearchParams();
+    appendHistoryPeriod(params, query);
+    if (query.page) params.set("page", String(query.page));
+    if (query.limit) params.set("limit", String(query.limit));
+    if (query.search?.trim()) params.set("search", query.search.trim());
+    if (query.sunatEstado) params.set("sunatEstado", query.sunatEstado);
+    if (query.tipoComprobante) {
+      params.set("tipoComprobante", query.tipoComprobante);
+    }
+    const value = params.toString();
+    return authFetch<DebitNotesResponse>(
+      `/debit-notes${value ? `?${value}` : ""}`,
+    );
   },
   eligibleSales(search = "") {
     return authFetch<EligibleDebitSale[]>(

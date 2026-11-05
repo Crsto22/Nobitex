@@ -1,228 +1,641 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { RefObject } from "react";
 import {
+  CalendarIcon,
+  CaretDownIcon,
   CheckCircleIcon,
+  CloudArrowUpIcon,
+  DotsThreeVerticalIcon,
+  FileCodeIcon,
+  FilePdfIcon,
+  EyeIcon,
   MagnifyingGlassIcon,
-  NoteIcon,
-  PlusIcon,
+  PaperPlaneTiltIcon,
+  ReceiptIcon,
   WarningCircleIcon,
   XCircleIcon,
 } from "@phosphor-icons/react/ssr";
+
+import { formatDate } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
-import { NativeSelect } from "@/components/ui/select";
-import { debitNotesApi, type DebitNoteResponse } from "@/lib/api/debit-notes";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
+import {
+  debitNotesApi,
+  type DebitNoteResponse,
+  type DebitNoteStatus,
+  type DebitNotesResponse,
+} from "@/lib/api/debit-notes";
+import { cn } from "@/lib/utils";
+import { HistoryPeriodFilter } from "@/components/History/history-period-filter";
+import { defaultHistoryPeriod } from "@/lib/history-period";
+import { documentFileName } from "@/lib/document-file-name";
+
+type StatusFilter = DebitNoteStatus | "todos";
+type TypeFilter =
+  | "nota_debito_factura"
+  | "nota_debito_boleta"
+  | "todos";
+
+const defaultSummary: DebitNotesResponse["summary"] = {
+  aceptados: 0,
+  porEnviar: 0,
+  observados: 0,
+  rechazados: 0,
+  errores: 0,
+  montoAceptado: "0",
+};
+
+const statusConfig: Record<
+  DebitNoteStatus,
+  { label: string; bg: string; text: string; icon: typeof CheckCircleIcon }
+> = {
+  pendiente_envio: {
+    label: "Por enviar",
+    bg: "bg-[#3b82f6]/10",
+    text: "text-[#1d4ed8]",
+    icon: CloudArrowUpIcon,
+  },
+  enviando: {
+    label: "Enviando",
+    bg: "bg-[#3b82f6]/10",
+    text: "text-[#1d4ed8]",
+    icon: CloudArrowUpIcon,
+  },
+  pendiente_cdr: {
+    label: "Pendiente CDR",
+    bg: "bg-[#f59e0b]/10",
+    text: "text-[#b45309]",
+    icon: WarningCircleIcon,
+  },
+  aceptado: {
+    label: "Aceptado",
+    bg: "bg-[#10b981]",
+    text: "text-white",
+    icon: CheckCircleIcon,
+  },
+  observado: {
+    label: "Observado",
+    bg: "bg-[#f59e0b]/10",
+    text: "text-[#b45309]",
+    icon: WarningCircleIcon,
+  },
+  rechazado: {
+    label: "Rechazado",
+    bg: "bg-[#ef4444]",
+    text: "text-white",
+    icon: XCircleIcon,
+  },
+  error_transitorio: {
+    label: "Error transitorio",
+    bg: "bg-[#f59e0b]/10",
+    text: "text-[#b45309]",
+    icon: WarningCircleIcon,
+  },
+  error_definitivo: {
+    label: "Error definitivo",
+    bg: "bg-[#ef4444]",
+    text: "text-white",
+    icon: XCircleIcon,
+  },
+};
+
+const statusOptions: { label: string; value: StatusFilter }[] = [
+  { label: "Todos", value: "todos" },
+  { label: "Aceptado", value: "aceptado" },
+  { label: "Por enviar", value: "pendiente_envio" },
+  { label: "Observado", value: "observado" },
+  { label: "Rechazado", value: "rechazado" },
+  { label: "Error", value: "error_definitivo" },
+];
+
+const typeOptions: { label: string; value: TypeFilter }[] = [
+  { label: "Todos", value: "todos" },
+  { label: "N/D Factura", value: "nota_debito_factura" },
+  { label: "N/D Boleta", value: "nota_debito_boleta" },
+];
+
+function formatMoney(amount: string) {
+  const value = Number(amount);
+  return `S/${Number.isFinite(value) ? value.toFixed(2) : "0.00"}`;
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Intentalo nuevamente";
+}
 
 export default function NotaDebitoPage() {
-  const [notes, setNotes] = useState<DebitNoteResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [type, setType] = useState("");
+  const router = useRouter();
+  const toast = useSystemToast();
+  const statusRef = useRef<HTMLDivElement>(null);
+  const typeRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<DebitNoteResponse[]>([]);
+  const [summary, setSummary] =
+    useState<DebitNotesResponse["summary"]>(defaultSummary);
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [historyPeriod, setHistoryPeriod] = useState(defaultHistoryPeriod);
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("todos");
+  const [selectedType, setSelectedType] = useState<TypeFilter>("todos");
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isTypeOpen, setIsTypeOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      debitNotesApi
-        .findAll({
-          search,
-          sunatEstado: status || undefined,
-          tipoComprobante: type || undefined,
-          limit: 50,
-        })
-        .then((response) => setNotes(response.data))
-        .finally(() => setLoading(false));
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [search, status, type]);
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
 
-  const counters = useMemo(
-    () => ({
-      accepted: notes.filter((item) => item.sunat.estado === "aceptado").length,
-      pending: notes.filter((item) =>
-        ["pendiente_envio", "enviando", "pendiente_cdr"].includes(
-          item.sunat.estado,
+  const loadData = useCallback(() => {
+    setIsLoading(true);
+    debitNotesApi
+      .findAll({
+        page,
+        limit: 10,
+        ...historyPeriod,
+        search: debouncedSearchTerm || undefined,
+        sunatEstado: selectedStatus === "todos" ? undefined : selectedStatus,
+        tipoComprobante: selectedType === "todos" ? undefined : selectedType,
+      })
+      .then((response) => {
+        setItems(response.data);
+        setSummary(response.summary);
+        setMeta(response.meta);
+      })
+      .catch((error) =>
+        toast.showToast({
+          title: "No se pudieron cargar las notas",
+          description: getErrorMessage(error),
+          variant: "error",
+        }),
+      )
+      .finally(() => setIsLoading(false));
+  }, [
+    debouncedSearchTerm,
+    page,
+    selectedStatus,
+    selectedType,
+    historyPeriod,
+    toast,
+  ]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(loadData, 0);
+    return () => window.clearTimeout(timeout);
+  }, [loadData]);
+
+  const handleDownload = async (
+    note: DebitNoteResponse,
+    kind: "pdf" | "xml" | "cdr",
+  ) => {
+    const { publicId } = note;
+    setBusyId(publicId);
+    try {
+      const blob =
+        kind === "pdf"
+          ? await debitNotesApi.pdf(publicId)
+          : kind === "xml"
+            ? await debitNotesApi.xml(publicId)
+            : await debitNotesApi.cdr(publicId);
+      downloadBlob(
+        blob,
+        documentFileName(
+          note.correlativo ?? note.publicId,
+          kind === "cdr" ? "zip" : kind,
         ),
-      ).length,
-      observed: notes.filter((item) => item.sunat.estado === "observado")
-        .length,
-      errors: notes.filter((item) =>
-        ["rechazado", "error_transitorio", "error_definitivo"].includes(
-          item.sunat.estado,
-        ),
-      ).length,
-    }),
-    [notes],
-  );
-  const cards = [
-    [
-      "Aceptadas",
-      counters.accepted,
-      CheckCircleIcon,
-      "text-[#059669] bg-[#10b981]/10",
-    ],
-    [
-      "Por enviar",
-      counters.pending,
-      NoteIcon,
-      "text-[#2563eb] bg-[#3b82f6]/10",
-    ],
-    [
-      "Observadas",
-      counters.observed,
-      WarningCircleIcon,
-      "text-[#d97706] bg-[#f59e0b]/10",
-    ],
-    [
-      "Rechazadas / error",
-      counters.errors,
-      XCircleIcon,
-      "text-[#dc2626] bg-[#ef4444]/10",
-    ],
-  ] as const;
+      );
+      setOpenMenuId(null);
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo descargar",
+        description: getErrorMessage(error),
+        variant: "error",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleRetry = async (publicId: string) => {
+    setBusyId(publicId);
+    try {
+      await debitNotesApi.retry(publicId);
+      toast.showToast({ title: "Envio programado", variant: "success" });
+      loadData();
+      setOpenMenuId(null);
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo reenviar",
+        description: getErrorMessage(error),
+        variant: "error",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <DashboardShell headerTitle="Notas de Debito">
-      <main className="content-scrollbar h-[calc(100dvh-4rem)] overflow-y-auto bg-[var(--color-background)] p-4 lg:p-6">
-        <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {cards.map(([label, value, Icon, tone]) => (
-            <article
-              key={label}
-              className="flex items-center gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.10)]"
-            >
-              <span
-                className={`grid size-11 place-items-center rounded-xl ${tone}`}
-              >
-                <Icon size={21} weight="fill" />
-              </span>
-              <div>
-                <p className="text-xl font-circular-bold text-[var(--color-text)]">
-                  {value}
-                </p>
-                <p className="text-xs text-[var(--color-muted-foreground)]">
-                  {label}
-                </p>
-              </div>
-            </article>
-          ))}
-        </section>
+      <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+          <SummaryCard
+            icon={CheckCircleIcon}
+            label="Aceptadas SUNAT"
+            value={summary.aceptados}
+            color="text-[#10b981]"
+          />
+          <SummaryCard
+            icon={CloudArrowUpIcon}
+            label="Por enviar"
+            value={summary.porEnviar}
+            color="text-[#3b82f6]"
+          />
+          <SummaryCard
+            icon={WarningCircleIcon}
+            label="Observadas/Error"
+            value={summary.observados + summary.errores}
+            color="text-[#f59e0b]"
+          />
+          <SummaryCard
+            icon={ReceiptIcon}
+            label="Monto aceptado"
+            value={formatMoney(summary.montoAceptado)}
+            color="text-[var(--color-primary)]"
+          />
+        </div>
 
-        <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
-          <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="relative min-w-0 flex-1">
-              <MagnifyingGlassIcon
-                size={18}
-                className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por numero o cliente..."
-                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm outline-none"
-              />
-            </div>
-            <NativeSelect
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-            >
-              <option value="">Todos los estados</option>
-              <option value="pendiente_envio">Por enviar</option>
-              <option value="aceptado">Aceptado</option>
-              <option value="observado">Observado</option>
-              <option value="rechazado">Rechazado</option>
-              <option value="error_definitivo">Error</option>
-            </NativeSelect>
-            <NativeSelect
-              value={type}
-              onChange={(event) => setType(event.target.value)}
-            >
-              <option value="">Todos los tipos</option>
-              <option value="nota_debito_factura">N/D Factura</option>
-              <option value="nota_debito_boleta">N/D Boleta</option>
-            </NativeSelect>
-            <Link
-              href="/facturacion/nota-debito/nuevo"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white"
-            >
-              <PlusIcon size={18} weight="bold" />
-              Nueva nota de debito
-            </Link>
+        <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 sm:flex-row sm:items-center lg:-mx-6 lg:px-6 dark:bg-[var(--color-background)]">
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon
+              size={18}
+              className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-placeholder)]"
+            />
+            <input
+              type="text"
+              placeholder="Buscar por nota, comprobante ref., cliente o documento..."
+              aria-label="Buscar por nota, comprobante ref., cliente o documento..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 pl-11 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            />
           </div>
 
-          {loading ? (
-            <div className="grid min-h-72 place-items-center text-sm text-[var(--color-muted-foreground)]">
-              Cargando notas de debito...
-            </div>
-          ) : notes.length === 0 ? (
-            <div className="grid min-h-72 place-items-center rounded-[14px] bg-[var(--color-input-bg)] text-center">
-              <div>
-                <NoteIcon
-                  size={30}
-                  className="mx-auto text-[var(--color-primary)]"
-                  weight="fill"
-                />
-                <h2 className="mt-3 font-circular-bold">
-                  Aun no hay notas de debito
-                </h2>
-                <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                  Las notas emitidas apareceran aqui.
-                </p>
-              </div>
-            </div>
+          <div className="flex gap-2 sm:gap-3">
+            <FilterSelect
+              refEl={statusRef}
+              open={isStatusOpen}
+              onToggle={() => {
+                setIsStatusOpen((value) => !value);
+                setIsTypeOpen(false);
+              }}
+              label={
+                selectedStatus === "todos"
+                  ? "Estado SUNAT"
+                  : statusConfig[selectedStatus].label
+              }
+              options={statusOptions}
+              selected={selectedStatus}
+              onSelect={(value) => {
+                setSelectedStatus(value as StatusFilter);
+                setPage(1);
+                setIsStatusOpen(false);
+              }}
+            />
+            <FilterSelect
+              refEl={typeRef}
+              open={isTypeOpen}
+              onToggle={() => {
+                setIsTypeOpen((value) => !value);
+                setIsStatusOpen(false);
+              }}
+              label={
+                typeOptions.find((item) => item.value === selectedType)
+                  ?.label ?? "Tipo"
+              }
+              options={typeOptions}
+              selected={selectedType}
+              onSelect={(value) => {
+                setSelectedType(value as TypeFilter);
+                setPage(1);
+                setIsTypeOpen(false);
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => router.push("/facturacion/nota-debito/nuevo")}
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white transition-colors hover:bg-[var(--color-primary)]/90 sm:w-auto"
+          >
+            Nueva Nota de Debito
+          </button>
+        </div>
+
+        <HistoryPeriodFilter
+          value={historyPeriod}
+          onChange={(value) => {
+            setHistoryPeriod(value);
+            setPage(1);
+          }}
+        />
+
+        <div className="space-y-3 pr-1 pb-2">
+          {isLoading ? (
+            <EmptyState text="Cargando notas de debito..." />
+          ) : items.length === 0 ? (
+            <EmptyState text="No se encontraron notas de debito" />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[780px] text-left text-sm">
-                <thead className="text-xs text-[var(--color-muted-foreground)]">
-                  <tr className="border-b border-[var(--color-border)]">
-                    <th className="p-3">Nota</th>
-                    <th className="p-3">Comprobante afectado</th>
-                    <th className="p-3">Cliente</th>
-                    <th className="p-3">Total</th>
-                    <th className="p-3">Estado</th>
-                    <th className="p-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {notes.map((note) => (
-                    <tr
-                      key={note.publicId}
-                      className="border-b border-[var(--color-border)]/60"
+            items.map((note) => {
+              const status = statusConfig[note.sunat.estado];
+              const StatusIcon = status.icon;
+              const retryAvailable = ["RETRY_SCHEDULED", "FAILED"].includes(
+                note.billing.status,
+              );
+              return (
+                <div
+                  key={note.publicId}
+                  className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-[14px] bg-[var(--color-card)] p-3 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] sm:p-4 md:grid-cols-[155px_minmax(220px,1.4fr)_125px_135px_135px_40px] md:items-center md:gap-3 md:gap-y-0"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+                      {note.correlativo ?? "Procesando correlativo"}
+                    </p>
+                    <p className="text-[10px] text-[var(--color-muted-foreground)]">
+                      Ref: {note.ventaReferencia.correlativo}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-[var(--color-text)]">
+                      {note.cliente.nombre}
+                    </p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      DOC: {note.cliente.documento ?? "-"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text)]">
+                    <CalendarIcon
+                      size={14}
+                      className="text-[var(--color-muted-foreground)]"
+                    />
+                    {formatDate(note.createdAt)}
+                  </div>
+                  <span
+                    className={cn(
+                      "inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-circular-bold",
+                      status.bg,
+                      status.text,
+                    )}
+                  >
+                    <StatusIcon size={14} weight="fill" />
+                    {status.label}
+                  </span>
+                  <div className="text-left md:text-right">
+                    <p className="text-[10px] text-[var(--color-muted-foreground)]">
+                      Total
+                    </p>
+                    <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                      {formatMoney(note.total)}
+                    </p>
+                  </div>
+                  <div className="relative col-span-2 flex items-center justify-end md:col-span-1 md:justify-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenMenuId(
+                          openMenuId === note.publicId ? null : note.publicId,
+                        )
+                      }
+                      className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-primary)]"
+                      aria-label="Mas opciones"
                     >
-                      <td className="p-3 font-circular-bold">
-                        {note.correlativo ?? "Procesando"}
-                      </td>
-                      <td className="p-3">
-                        {note.ventaReferencia.correlativo}
-                      </td>
-                      <td className="p-3">{note.cliente.nombre}</td>
-                      <td className="p-3 font-circular-bold">
-                        S/{" "}
-                        {note.detalles
-                          .reduce((sum, item) => sum + Number(item.importe), 0)
-                          .toFixed(2)}
-                      </td>
-                      <td className="p-3">
-                        <span className="rounded-full bg-[var(--color-input-bg)] px-3 py-1 text-xs">
-                          {note.sunat.estado.replaceAll("_", " ")}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <Link
-                          href={`/facturacion/nota-debito/${note.publicId}`}
-                          className="text-sm font-circular-bold text-[var(--color-primary)]"
-                        >
-                          Ver detalle
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      <DotsThreeVerticalIcon size={20} weight="bold" />
+                    </button>
+                    {openMenuId === note.publicId ? (
+                      <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                        <MenuButton
+                          icon={EyeIcon}
+                          label="Ver detalle"
+                          onClick={() =>
+                            router.push(
+                              `/facturacion/nota-debito/${note.publicId}`,
+                            )
+                          }
+                        />
+                        <MenuButton
+                          icon={PaperPlaneTiltIcon}
+                          label="Enviar a SUNAT"
+                          disabled={busyId === note.publicId || !retryAvailable}
+                          onClick={() => handleRetry(note.publicId)}
+                        />
+                        <MenuButton
+                          icon={FilePdfIcon}
+                          label="Descargar PDF"
+                          disabled={busyId === note.publicId}
+                          onClick={() => handleDownload(note, "pdf")}
+                        />
+                        <MenuButton
+                          icon={FileCodeIcon}
+                          label="Descargar XML"
+                          disabled={
+                            busyId === note.publicId ||
+                            !note.sunat.archivosDisponibles
+                          }
+                          onClick={() => handleDownload(note, "xml")}
+                        />
+                        <MenuButton
+                          icon={FileCodeIcon}
+                          label="Descargar CDR"
+                          disabled={
+                            busyId === note.publicId ||
+                            !note.sunat.archivosDisponibles
+                          }
+                          onClick={() => handleDownload(note, "cdr")}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })
           )}
-        </section>
-      </main>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Mostrando {items.length} de {meta.total} notas de debito
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              className="h-8 rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs text-[var(--color-text)] disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <span className="flex h-8 min-w-8 items-center justify-center rounded-[8px] bg-[var(--color-primary)] px-2 text-xs font-circular-bold text-white">
+              {page}
+            </span>
+            <button
+              type="button"
+              disabled={page >= meta.totalPages}
+              onClick={() => setPage((value) => value + 1)}
+              className="h-8 rounded-[8px] bg-[var(--color-input-bg)] px-3 text-xs text-[var(--color-text)] disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </div>
     </DashboardShell>
+  );
+}
+
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: typeof CheckCircleIcon;
+  label: string;
+  value: string | number;
+  color: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-input-bg)]">
+          <Icon size={22} weight="fill" className={color} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+            {label}
+          </p>
+          <p className="text-2xl leading-none text-[var(--color-text)] font-circular-bold">
+            {value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterSelect({
+  refEl,
+  open,
+  onToggle,
+  label,
+  options,
+  selected,
+  onSelect,
+}: {
+  refEl: RefObject<HTMLDivElement | null>;
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+  options: { label: string; value: string }[];
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div ref={refEl} className="relative flex-1 sm:w-[170px] sm:flex-none">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+      >
+        <span className="truncate">{label}</span>
+        <CaretDownIcon
+          size={16}
+          className="shrink-0 text-[var(--color-muted-foreground)]"
+        />
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onSelect(option.value)}
+              className={cn(
+                "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
+                selected === option.value
+                  ? "bg-[var(--color-primary)] text-white"
+                  : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MenuButton({
+  icon: Icon,
+  label,
+  disabled,
+  onClick,
+}: {
+  icon: typeof FilePdfIcon;
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <Icon size={16} weight="bold" />
+      {label}
+    </button>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="flex min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
+      <div className="text-center">
+        <ReceiptIcon
+          size={48}
+          weight="light"
+          className="mx-auto text-[var(--color-muted-foreground)]"
+        />
+        <p className="mt-3 text-sm font-black text-[var(--color-text)]">
+          {text}
+        </p>
+      </div>
+    </div>
   );
 }
