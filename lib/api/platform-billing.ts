@@ -11,10 +11,41 @@ export type PlatformReceiptStatus =
   | "anulacion_pendiente"
   | "anulado";
 
+export type BillingEnvironment = "BETA" | "PRODUCTION";
+export type BillingIntegrationStatus = "PENDING" | "READY" | "ERROR";
+export type BillingDocumentStatus =
+  | "RECEIVED"
+  | "VALIDATING"
+  | "QUEUED"
+  | "PROCESSING"
+  | "ACCEPTED"
+  | "ACCEPTED_WITH_OBSERVATIONS"
+  | "REJECTED"
+  | "RETRY_SCHEDULED"
+  | "FAILED"
+  | "VOIDED";
+
+export type PlatformBillingIntegration = {
+  enabled: boolean;
+  configured: boolean;
+  tenantId: string | null;
+  applicationId: string | null;
+  establishmentId: string | null;
+  status: BillingIntegrationStatus;
+  lastError: string | null;
+  lastSyncedAt: string | null;
+  apiKeys: Record<BillingEnvironment, boolean>;
+  webhooks: Record<BillingEnvironment, boolean>;
+  credentials: Record<BillingEnvironment, boolean>;
+  certificates: Record<BillingEnvironment, boolean>;
+  series?: number;
+};
+
 export type PlatformReceipt = {
   id: string;
   company: { id: string; name: string };
   type: PlatformReceiptType;
+  number?: number | null;
   correlativo: string;
   issuedAt: string;
   receiver: {
@@ -28,6 +59,12 @@ export type PlatformReceipt = {
   total: string;
   currency: "PEN";
   status: PlatformReceiptStatus;
+  provider?: "LEGACY" | "NUVEX_BILLING";
+  billingDocumentId?: string | null;
+  billingEnvironment?: BillingEnvironment | null;
+  billingStatus?: BillingDocumentStatus | null;
+  billingUpdatedAt?: string | null;
+  billingLastError?: string | null;
   sunatCode: string | null;
   sunatMessage: string | null;
   downloads: {
@@ -74,6 +111,7 @@ export type PlatformIssuerConfig = {
   solPasswordConfigured: boolean;
   certificate: { name: string; sizeBytes: number; uploadedAt: string } | null;
   updatedAt: string | null;
+  billing?: PlatformBillingIntegration;
 };
 
 export type PlatformSeries = {
@@ -82,6 +120,11 @@ export type PlatformSeries = {
   series: string;
   currentNumber: number;
   active: boolean;
+  billing?: {
+    environment: BillingEnvironment;
+    fiscalSeriesId: string | null;
+    synced: boolean;
+  };
 };
 
 export type PlatformSeriesResponse = {
@@ -124,8 +167,6 @@ export const platformBillingApi = {
       address: string;
       ubigeo: string;
       environment: "BETA" | "PRODUCCION";
-      solUser: string;
-      solPassword: string;
       igvPercent: number;
       active: boolean;
     }>,
@@ -135,13 +176,47 @@ export const platformBillingApi = {
       body: JSON.stringify(payload),
     });
   },
-  uploadCertificate(file: File, certificatePassword: string) {
+  provisionIssuer(environment: BillingEnvironment) {
+    return authFetch<PlatformBillingIntegration>(
+      "/platform-admin/billing/issuer/provision",
+      {
+        method: "POST",
+        body: JSON.stringify({ environment }),
+      },
+    );
+  },
+  updateIssuerCredentials(
+    environment: BillingEnvironment,
+    payload: { solUsername: string; solPassword: string },
+  ) {
+    return authFetch<unknown>(
+      `/platform-admin/billing/issuer/${environment}/credentials`,
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+  uploadCertificate(
+    environment: BillingEnvironment,
+    file: File,
+    certificatePassword: string,
+  ) {
     const body = new FormData();
     body.append("certificate", file);
-    body.append("certificatePassword", certificatePassword);
-    return authFetch<PlatformIssuerConfig>(
-      "/platform-admin/billing/issuer/certificate",
-      { method: "POST", body },
+    body.append("password", certificatePassword);
+    return authFetch<unknown>(
+      `/platform-admin/billing/issuer/${environment}/certificate`,
+      { method: "PUT", body },
+    );
+  },
+  deleteCertificate(environment: BillingEnvironment) {
+    return authFetch<unknown>(
+      `/platform-admin/billing/issuer/${environment}/certificate`,
+      { method: "DELETE" },
+    );
+  },
+  setIssuerEnabled(enabled: boolean) {
+    return authFetch<PlatformBillingIntegration>(
+      "/platform-admin/billing/issuer/enabled",
+      { method: "PUT", body: JSON.stringify({ enabled }) },
     );
   },
   findSeries(
@@ -215,6 +290,15 @@ export const platformBillingApi = {
   cancel(id: string, reason: string) {
     return authFetch<PlatformReceipt>(
       `/platform-admin/billing/receipts/${encodeURIComponent(id)}/cancel`,
+      {
+        method: "POST",
+        body: JSON.stringify({ requestId: crypto.randomUUID(), reason }),
+      },
+    );
+  },
+  createCreditNote(id: string, reason: string) {
+    return authFetch<PlatformReceipt>(
+      `/platform-admin/billing/receipts/${encodeURIComponent(id)}/credit-note`,
       {
         method: "POST",
         body: JSON.stringify({ requestId: crypto.randomUUID(), reason }),

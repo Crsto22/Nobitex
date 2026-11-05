@@ -37,6 +37,7 @@ import {
 import {
   downloadBlob,
   platformBillingApi,
+  type BillingDocumentStatus,
   type PlatformReceipt,
   type PlatformReceiptStatus,
   type PlatformReceiptType,
@@ -90,6 +91,52 @@ const statusConfig: Record<
   },
 };
 
+const billingStatusConfig: Record<
+  BillingDocumentStatus,
+  { label: string; className: string }
+> = {
+  RECEIVED: {
+    label: "Recibido por Billing",
+    className: "bg-[#3b82f6]/10 text-[#1d4ed8]",
+  },
+  VALIDATING: {
+    label: "Validando",
+    className: "bg-[#3b82f6]/10 text-[#1d4ed8]",
+  },
+  QUEUED: {
+    label: "En cola",
+    className: "bg-[#f59e0b]/10 text-[#b45309]",
+  },
+  PROCESSING: {
+    label: "Procesando SUNAT",
+    className: "bg-[#8b5cf6]/10 text-[#6d28d9]",
+  },
+  ACCEPTED: {
+    label: "Aceptado SUNAT",
+    className: "bg-[#10b981] text-white",
+  },
+  ACCEPTED_WITH_OBSERVATIONS: {
+    label: "Aceptado con observaciones",
+    className: "bg-[#f59e0b]/10 text-[#b45309]",
+  },
+  REJECTED: {
+    label: "Rechazado SUNAT",
+    className: "bg-[#ef4444] text-white",
+  },
+  RETRY_SCHEDULED: {
+    label: "Reintento programado",
+    className: "bg-[#f59e0b]/10 text-[#b45309]",
+  },
+  FAILED: {
+    label: "Error Billing",
+    className: "bg-[#ef4444]/10 text-[#dc2626]",
+  },
+  VOIDED: {
+    label: "Anulado SUNAT",
+    className: "bg-[#64748b]/10 text-[#475569]",
+  },
+};
+
 const methods: PlatformSubscriptionPaymentMethod[] = [
   "yape",
   "plin",
@@ -118,6 +165,8 @@ export default function PlatformReceiptsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCharge, setShowCharge] = useState(false);
   const [receiptToCancel, setReceiptToCancel] =
+    useState<PlatformReceipt | null>(null);
+  const [receiptForCreditNote, setReceiptForCreditNote] =
     useState<PlatformReceipt | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -232,6 +281,35 @@ export default function PlatformReceiptsPage() {
   const requestCancellation = (row: PlatformReceipt) => {
     setOpenMenuId(null);
     setReceiptToCancel(row);
+  };
+
+  const requestCreditNote = (row: PlatformReceipt) => {
+    setOpenMenuId(null);
+    setReceiptForCreditNote(row);
+  };
+
+  const createCreditNote = async (reason: string) => {
+    if (!receiptForCreditNote) return;
+    try {
+      await platformBillingApi.createCreditNote(
+        receiptForCreditNote.id,
+        reason,
+      );
+      const correlativo = receiptForCreditNote.correlativo;
+      setReceiptForCreditNote(null);
+      await loadReceipts();
+      showToast({
+        title: "Nota de credito registrada",
+        description: `Se genero para ${correlativo}.`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      showToast({
+        title: "No se pudo emitir la nota de credito",
+        description: getErrorMessage(requestError),
+        variant: "error",
+      });
+    }
   };
 
   const cancelReceipt = async (reason: string) => {
@@ -388,6 +466,7 @@ export default function PlatformReceiptsPage() {
                 onDownload={download}
                 onDownloadCancellation={downloadCancellation}
                 onRetry={retry}
+                onCreditNote={requestCreditNote}
                 onCredit={requestCancellation}
               />
             ))
@@ -439,6 +518,13 @@ export default function PlatformReceiptsPage() {
           receipt={receiptToCancel}
           onClose={() => setReceiptToCancel(null)}
           onConfirm={cancelReceipt}
+        />
+      ) : null}
+      {receiptForCreditNote ? (
+        <CreditNoteModal
+          receipt={receiptForCreditNote}
+          onClose={() => setReceiptForCreditNote(null)}
+          onConfirm={createCreditNote}
         />
       ) : null}
     </DashboardShell>
@@ -507,6 +593,7 @@ function ReceiptRow({
   onDownload,
   onDownloadCancellation,
   onRetry,
+  onCreditNote,
   onCredit,
 }: {
   row: PlatformReceipt;
@@ -521,9 +608,13 @@ function ReceiptRow({
     kind: "xml" | "cdr",
   ) => Promise<void>;
   onRetry: (row: PlatformReceipt) => Promise<void>;
+  onCreditNote: (row: PlatformReceipt) => void;
   onCredit: (row: PlatformReceipt) => void;
 }) {
-  const status = statusConfig[row.status];
+  const status =
+    row.provider === "NUVEX_BILLING" && row.billingStatus
+      ? billingStatusConfig[row.billingStatus]
+      : statusConfig[row.status];
 
   return (
     <article className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(125px,0.9fr)_minmax(170px,1.3fr)_minmax(110px,0.85fr)_minmax(150px,1.2fr)_minmax(120px,0.85fr)_minmax(100px,0.8fr)_32px] md:items-center md:gap-3 xl:gap-5">
@@ -536,7 +627,8 @@ function ReceiptRow({
             {row.correlativo}
           </p>
           <p className="text-[10px] text-[var(--color-muted-foreground)]">
-            {typeLabels[row.type]}
+            {typeLabels[row.type]} ·{" "}
+            {row.provider === "NUVEX_BILLING" ? "BILLING" : "HISTORICO"}
           </p>
         </div>
       </div>
@@ -587,14 +679,29 @@ function ReceiptRow({
       </div>
 
       <div className="flex md:justify-center">
-        <span
-          className={cn(
-            "inline-flex rounded-full px-3 py-1 text-xs font-circular-bold",
-            status.className,
-          )}
-        >
-          {status.label}
-        </span>
+        <div className="min-w-0 text-center">
+          <span
+            className={cn(
+              "inline-flex rounded-full px-3 py-1 text-xs font-circular-bold",
+              status.className,
+            )}
+          >
+            {status.label}
+          </span>
+          {row.billingEnvironment ? (
+            <p className="mt-1 text-[10px] text-[var(--color-muted-foreground)]">
+              {row.billingEnvironment}
+            </p>
+          ) : null}
+          {row.billingLastError ? (
+            <p
+              className="mt-1 max-w-36 truncate text-[10px] text-[#dc2626]"
+              title={row.billingLastError}
+            >
+              {row.billingLastError}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="md:text-right">
@@ -651,6 +758,7 @@ function ReceiptRow({
               />
             ) : null}
             {row.status === "error" ||
+            row.billingStatus === "FAILED" ||
             row.cancellation?.state === "error_transitorio" ||
             row.cancellation?.state === "error_definitivo" ? (
               <MenuAction
@@ -660,16 +768,25 @@ function ReceiptRow({
               />
             ) : null}
             {row.status === "aceptado" && row.type !== "nota_credito" ? (
-              <MenuAction
-                icon={<XCircleIcon size={16} weight="bold" />}
-                label={
-                  row.type === "nota_venta"
-                    ? "Anular nota de venta"
-                    : "Dar de baja en SUNAT"
-                }
-                danger
-                onClick={() => void onCredit(row)}
-              />
+              <>
+                {row.type === "boleta" || row.type === "factura" ? (
+                  <MenuAction
+                    icon={<FileTextIcon size={16} weight="bold" />}
+                    label="Emitir nota de credito"
+                    onClick={() => onCreditNote(row)}
+                  />
+                ) : null}
+                <MenuAction
+                  icon={<XCircleIcon size={16} weight="bold" />}
+                  label={
+                    row.type === "nota_venta"
+                      ? "Anular nota de venta"
+                      : "Dar de baja en SUNAT"
+                  }
+                  danger
+                  onClick={() => void onCredit(row)}
+                />
+              </>
             ) : null}
           </div>
         ) : null}
@@ -716,6 +833,104 @@ function MenuAction({
       {icon}
       {label}
     </button>
+  );
+}
+
+function CreditNoteModal({
+  receipt,
+  onClose,
+  onConfirm,
+}: {
+  receipt: PlatformReceipt;
+  onClose: () => void;
+  onConfirm: (reason: string) => Promise<void>;
+}) {
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const normalizedReason = reason.trim();
+    if (normalizedReason.length < 3) return;
+    setSaving(true);
+    try {
+      await onConfirm(normalizedReason);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] grid place-items-center bg-black/45 p-4 animate-in fade-in duration-200">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-lg rounded-[14px] bg-[var(--color-card)] p-5 shadow-[0_12px_36px_rgba(21,25,34,0.24)] animate-in zoom-in-95 duration-200"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+              <FileTextIcon size={22} weight="fill" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-lg font-circular-bold text-[var(--color-text)]">
+                Emitir nota de credito
+              </h2>
+              <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+                {receipt.correlativo} · {receipt.company.name}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="Cerrar"
+            className="grid size-8 shrink-0 place-items-center rounded-lg hover:bg-[var(--color-button-hover)] disabled:opacity-50"
+          >
+            <XIcon size={18} />
+          </button>
+        </div>
+
+        <div className="mt-5 rounded-xl bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-text)]">
+          Se emitira una nota de credito completa vinculada a este comprobante.
+          La boleta o factura original permanecera en el historial.
+        </div>
+
+        <label className="mt-4 grid gap-1.5 text-sm">
+          <span className="font-circular-bold text-[var(--color-text)]">
+            Motivo de la nota de credito
+          </span>
+          <textarea
+            required
+            minLength={3}
+            maxLength={300}
+            rows={3}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            className="w-full resize-none rounded-xl bg-[var(--color-input-bg)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            placeholder="Ingresa el motivo (minimo 3 caracteres)"
+          />
+        </label>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="h-10 rounded-lg bg-[var(--color-input-bg)] px-4 text-sm font-circular-bold text-[var(--color-text)] disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving || reason.trim().length < 3}
+            className="h-10 rounded-lg bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white disabled:opacity-50"
+          >
+            {saving ? "Emitiendo..." : "Emitir nota de credito"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

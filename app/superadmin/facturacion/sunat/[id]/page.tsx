@@ -214,6 +214,7 @@ export default function PlatformCompanySunatDetailPage() {
         ) : detail ? (
           <div className="space-y-4">
             <HeaderPanel detail={detail} />
+            <BillingIntegrationPanel detail={detail} />
             <ReadinessPanel detail={detail} />
 
             <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
@@ -442,6 +443,7 @@ export default function PlatformCompanySunatDetailPage() {
 }
 
 function HeaderPanel({ detail }: { detail: PlatformSunatCompanyDetail }) {
+  const billingReady = detail.billing?.status === "READY";
   return (
     <section className="flex flex-col gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -452,23 +454,108 @@ function HeaderPanel({ detail }: { detail: PlatformSunatCompanyDetail }) {
           <span
             className={cn(
               "rounded-full px-2.5 py-1 text-xs font-circular-bold",
-              detail.readiness.ready
+              billingReady || (!detail.billing && detail.readiness.ready)
                 ? "bg-[#10b981]/10 text-[#047857]"
-                : "bg-[#f59e0b]/10 text-[#d97706]",
+                : detail.billing?.status === "ERROR"
+                  ? "bg-[#ef4444]/10 text-[#dc2626]"
+                  : "bg-[#f59e0b]/10 text-[#d97706]",
             )}
           >
-            {detail.readiness.ready ? "Lista para emitir" : "Pendiente"}
+            {detail.billing
+              ? billingReady
+                ? "Billing listo"
+                : detail.billing.status === "ERROR"
+                  ? "Error Billing"
+                  : "Billing pendiente"
+              : detail.readiness.ready
+                ? "Lista para emitir"
+                : "Pendiente"}
           </span>
         </div>
         <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
           {detail.document ?? "Sin documento"} · {detail.planName} ·{" "}
-          {detail.sunat.ambiente}
+          {detail.billing?.environment ?? detail.sunat.ambiente}
         </p>
       </div>
       <StatusBadge
-        ok={detail.sunat.activo}
-        label={detail.sunat.activo ? "SUNAT activo" : "SUNAT inactivo"}
+        ok={detail.billing?.enabled ?? detail.sunat.activo}
+        label={
+          detail.billing
+            ? detail.billing.enabled
+              ? "Billing activo"
+              : "Billing inactivo"
+            : detail.sunat.activo
+              ? "SUNAT activo"
+              : "SUNAT inactivo"
+        }
       />
+    </section>
+  );
+}
+
+function BillingIntegrationPanel({
+  detail,
+}: {
+  detail: PlatformSunatCompanyDetail;
+}) {
+  if (!detail.billing) {
+    return (
+      <section className="rounded-[14px] bg-[var(--color-card)] p-4 text-sm text-[var(--color-muted-foreground)] shadow-sm">
+        Configuracion historica SUNAT. Se mostrara el estado de Nuvex Billing al provisionar la empresa.
+      </section>
+    );
+  }
+
+  const environment = detail.billing.environment;
+  const checks = [
+    ["API key", detail.billing.apiKeys[environment]],
+    ["Webhook", detail.billing.webhooks[environment]],
+    ["Credenciales SOL", detail.billing.credentials[environment]],
+    ["Certificado", detail.billing.certificates[environment]],
+  ] as const;
+
+  return (
+    <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <SectionTitle
+          icon={<ShieldCheckIcon size={16} weight="bold" />}
+          title="Integracion Nuvex Billing"
+        />
+        <StatusBadge
+          ok={detail.billing.status === "READY"}
+          label={`${detail.billing.status} · ${environment}`}
+        />
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        {checks.map(([label, ok]) => (
+          <div
+            key={label}
+            className="flex items-center gap-2 rounded-xl bg-[var(--color-input-bg)] px-3 py-2 text-sm"
+          >
+            {ok ? (
+              <CheckCircleIcon size={17} weight="fill" className="text-[#10b981]" />
+            ) : (
+              <XCircleIcon size={17} weight="fill" className="text-[#ef4444]" />
+            )}
+            <span className="text-[var(--color-text)]">{label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-muted-foreground)]">
+        <span>Establecimientos: {detail.billing.establishments}</span>
+        <span>Series: {detail.billing.series}</span>
+        <span>
+          Ultima sincronizacion:{" "}
+          {detail.billing.lastSyncedAt
+            ? new Date(detail.billing.lastSyncedAt).toLocaleString("es-PE")
+            : "Pendiente"}
+        </span>
+      </div>
+      {detail.billing.lastError ? (
+        <p className="mt-3 rounded-xl bg-[#ef4444]/10 px-3 py-2 text-xs text-[#dc2626]">
+          {detail.billing.lastError}
+        </p>
+      ) : null}
     </section>
   );
 }

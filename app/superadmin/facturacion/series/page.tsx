@@ -169,7 +169,9 @@ export default function PlatformSeriesPage() {
       setModal((prev) => ({ ...prev, isOpen: false, editing: null, form: defaultForm }));
       showToast({
         title: modal.editing ? "Serie actualizada" : "Serie creada",
-        description: `${saved.series} quedo disponible para la plataforma.`,
+        description: saved.billing?.synced
+          ? `${saved.series} quedo sincronizada con Nuvex Billing.`
+          : `${saved.series} quedo guardada y pendiente de sincronizacion.`,
         variant: "success",
       });
     } catch (requestError) {
@@ -397,6 +399,18 @@ export default function PlatformSeriesPage() {
                 {String(modal.editing?.currentNumber ?? 0).padStart(8, "0")}
               </div>
             </div>
+            {modal.editing?.billing ? (
+              <div className="rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm text-[var(--color-text)]">
+                <p className="font-circular-bold">
+                  Nuvex Billing · {modal.editing.billing.environment}
+                </p>
+                <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                  {modal.editing.billing.synced
+                    ? "Serie fiscal sincronizada"
+                    : "Pendiente de sincronizacion"}
+                </p>
+              </div>
+            ) : null}
             <label className="flex items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 py-3 text-sm font-circular-bold text-[var(--color-text)]">
               Serie activa
               <input
@@ -458,7 +472,7 @@ function SeriesRow({
 }) {
   const type = typeConfig[row.type];
   return (
-    <article className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_0.9fr_1fr_0.9fr_40px] md:items-center md:gap-4">
+    <article className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[1.1fr_0.8fr_0.9fr_1fr_0.8fr_40px] md:items-center md:gap-4">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
           <ReceiptIcon size={20} weight="fill" />
@@ -468,7 +482,9 @@ function SeriesRow({
             {row.series}
           </p>
           <p className="text-[10px] text-[var(--color-muted-foreground)]">
-            Serie de plataforma
+            {row.billing
+              ? `Billing ${row.billing.environment}`
+              : "Serie historica"}
           </p>
         </div>
       </div>
@@ -489,6 +505,23 @@ function SeriesRow({
         <p className="text-sm font-circular-bold text-[var(--color-text)]">
           {String(row.currentNumber).padStart(8, "0")}
         </p>
+      </div>
+      <div>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-circular-bold",
+            row.billing?.synced
+              ? "bg-[#10b981]/10 text-[#047857]"
+              : "bg-[#f59e0b]/10 text-[#b45309]",
+          )}
+        >
+          {row.billing?.synced ? (
+            <CheckCircleIcon size={14} weight="fill" />
+          ) : (
+            <WarningCircleIcon size={14} weight="fill" />
+          )}
+          {row.billing?.synced ? "Sincronizada" : "Pendiente Billing"}
+        </span>
       </div>
       <div>
         <span

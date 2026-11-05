@@ -90,8 +90,8 @@ export default function PlatformSunatCompaniesPage() {
           />
           <MetricCard
             icon={<ShieldCheckIcon size={20} weight="bold" />}
-            label="Modulo SUNAT"
-            value={1}
+            label="Billing listas"
+            value={companies.filter((company) => company.billing?.status === "READY").length}
             tone="info"
           />
           <MetricCard
@@ -161,7 +161,7 @@ export default function PlatformSunatCompaniesPage() {
             companies.map((company) => (
               <article
                 key={company.id}
-                className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(190px,1.45fr)_minmax(190px,1.2fr)_minmax(120px,0.8fr)_minmax(120px,0.75fr)_minmax(70px,0.35fr)] md:items-center"
+                className="grid grid-cols-1 gap-3 rounded-[14px] bg-[var(--color-card)] p-4 shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)] md:grid-cols-[minmax(180px,1.3fr)_minmax(170px,1.1fr)_minmax(110px,0.7fr)_minmax(120px,0.75fr)_minmax(135px,0.8fr)_minmax(70px,0.35fr)] md:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-white">
@@ -186,6 +186,7 @@ export default function PlatformSunatCompaniesPage() {
                 </div>
                 <PlanBadge code={company.planCode} name={company.planName} />
                 <CompanyStateBadge state={company.state} />
+                <BillingBadge company={company} />
                 <div className="flex justify-start md:justify-end">
                   <Link
                     href={`/superadmin/facturacion/sunat/${company.id}`}
@@ -211,6 +212,39 @@ export default function PlatformSunatCompaniesPage() {
         />
       </div>
     </DashboardShell>
+  );
+}
+
+function BillingBadge({ company }: { company: PlatformSunatCompany }) {
+  if (!company.billing) {
+    return (
+      <span className="w-fit rounded-full bg-[#64748b]/10 px-2.5 py-1 text-xs font-circular-bold text-[#475569]">
+        Historico
+      </span>
+    );
+  }
+
+  const ready = company.billing.status === "READY";
+  const failed = company.billing.status === "ERROR";
+  return (
+    <div className="min-w-0">
+      <span
+        className={cn(
+          "inline-flex rounded-full px-2.5 py-1 text-xs font-circular-bold",
+          ready
+            ? "bg-[#10b981]/10 text-[#047857]"
+            : failed
+              ? "bg-[#ef4444]/10 text-[#dc2626]"
+              : "bg-[#f59e0b]/10 text-[#b45309]",
+        )}
+      >
+        {ready ? "Billing listo" : failed ? "Error Billing" : "Billing pendiente"}
+      </span>
+      <p className="mt-1 truncate text-[10px] text-[var(--color-muted-foreground)]">
+        {company.billing.environment}
+        {company.billing.enabled ? " · activo" : " · inactivo"}
+      </p>
+    </div>
   );
 }
 

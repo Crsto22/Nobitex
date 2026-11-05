@@ -29,6 +29,7 @@ import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   platformBillingApi,
+  type BillingEnvironment,
   type PlatformIssuerConfig,
 } from "@/lib/api/platform-billing";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,9 @@ export default function PlatformIssuerPage() {
   const [form, setForm] = useState<IssuerForm>(defaultForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingCredentials, setSavingCredentials] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [togglingBilling, setTogglingBilling] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -139,8 +143,6 @@ export default function PlatformIssuerPage() {
         address,
         ubigeo,
         environment: form.environment,
-        solUser: form.solUser.trim() || undefined,
-        solPassword: form.solPassword.trim() || undefined,
         igvPercent,
         active: form.active,
       });
@@ -171,6 +173,89 @@ export default function PlatformIssuerPage() {
     }
   };
 
+  const saveCredentials = async () => {
+    const solUser = form.solUser.trim();
+    const solPassword = form.solPassword.trim();
+    if (!solUser || !solPassword) {
+      setError("Ingresa el usuario y la clave SOL para el ambiente seleccionado.");
+      return;
+    }
+
+    setSavingCredentials(true);
+    setError("");
+    try {
+      await platformBillingApi.updateIssuerCredentials(
+        toBillingEnvironment(form.environment),
+        { solUsername: solUser, solPassword },
+      );
+      await load();
+      setForm((current) => ({ ...current, solUser: "", solPassword: "" }));
+      showToast({
+        title: "Credenciales Billing actualizadas",
+        description: `Ambiente ${form.environment}`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      const message = getErrorMessage(
+        requestError,
+        "No se pudieron guardar las credenciales.",
+      );
+      setError(message);
+      showToast({ title: "No se pudo guardar", description: message, variant: "error" });
+    } finally {
+      setSavingCredentials(false);
+    }
+  };
+
+  const provision = async () => {
+    setProvisioning(true);
+    setError("");
+    try {
+      await platformBillingApi.provisionIssuer(
+        toBillingEnvironment(form.environment),
+      );
+      await load();
+      showToast({
+        title: "Nuvex Billing provisionado",
+        description: `Integracion ${form.environment} sincronizada.`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      const message = getErrorMessage(
+        requestError,
+        "No se pudo provisionar Nuvex Billing.",
+      );
+      setError(message);
+      showToast({ title: "No se pudo provisionar", description: message, variant: "error" });
+    } finally {
+      setProvisioning(false);
+    }
+  };
+
+  const toggleBilling = async () => {
+    const enabled = !config?.billing?.enabled;
+    setTogglingBilling(true);
+    setError("");
+    try {
+      await platformBillingApi.setIssuerEnabled(enabled);
+      await load();
+      showToast({
+        title: enabled ? "Nuvex Billing activado" : "Nuvex Billing desactivado",
+        description: `Emision fiscal ${form.environment}`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      const message = getErrorMessage(
+        requestError,
+        "No se pudo cambiar el estado de Nuvex Billing.",
+      );
+      setError(message);
+      showToast({ title: "No se pudo actualizar", description: message, variant: "error" });
+    } finally {
+      setTogglingBilling(false);
+    }
+  };
+
   if (loading && !config) {
     return (
       <DashboardShell headerTitle="Configuracion del emisor">
@@ -198,28 +283,39 @@ export default function PlatformIssuerPage() {
         <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           <StatusTile
             icon={<ShieldCheckIcon size={22} weight="fill" />}
-            label="Facturacion electronica"
-            value={form.active ? "Activa" : "Inactiva"}
-            ok={form.active}
+            label="Nuvex Billing"
+            value={config?.billing?.status ?? (form.active ? "Activa" : "Inactiva")}
+            ok={config?.billing?.status === "READY" || (!config?.billing && form.active)}
           />
           <StatusTile
             icon={<KeyIcon size={22} weight="fill" />}
             label="Credenciales SOL"
             value={
-              config?.solUserConfigured && config.solPasswordConfigured
+              config?.billing?.credentials[toBillingEnvironment(form.environment)] ||
+              (config?.solUserConfigured && config.solPasswordConfigured)
                 ? "Configuradas"
                 : "Pendientes"
             }
             ok={
-              Boolean(config?.solUserConfigured) &&
-              Boolean(config?.solPasswordConfigured)
+              Boolean(
+                config?.billing?.credentials[toBillingEnvironment(form.environment)] ||
+                  (config?.solUserConfigured && config.solPasswordConfigured),
+              )
             }
           />
           <StatusTile
             icon={<FileTextIcon size={22} weight="fill" />}
             label="Certificado digital"
-            value={config?.certificate ? "Subido" : "Pendiente"}
-            ok={Boolean(config?.certificate)}
+            value={
+              config?.billing?.certificates[toBillingEnvironment(form.environment)] ||
+              config?.certificate
+                ? "Subido"
+                : "Pendiente"
+            }
+            ok={Boolean(
+              config?.billing?.certificates[toBillingEnvironment(form.environment)] ||
+                config?.certificate,
+            )}
           />
         </section>
 
@@ -256,7 +352,41 @@ export default function PlatformIssuerPage() {
                   ) : (
                     <WarningCircleIcon size={16} weight="bold" />
                   )}
-                  {form.active ? "Activo" : "Inactivo"}
+                  {form.active ? "Fiscal activo" : "Fiscal inactivo"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void provision()}
+                  disabled={provisioning || saving}
+                  className="flex h-9 items-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  <ShieldCheckIcon size={16} weight="bold" />
+                  {provisioning ? "Provisionando..." : "Provisionar Billing"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void toggleBilling()}
+                  disabled={
+                    togglingBilling ||
+                    (!config?.billing?.enabled &&
+                      !isBillingActivationReady(
+                        config,
+                        toBillingEnvironment(form.environment),
+                      ))
+                  }
+                  className={cn(
+                    "flex h-9 items-center gap-2 rounded-[12px] px-4 text-xs font-circular-bold transition-colors disabled:opacity-45",
+                    config?.billing?.enabled
+                      ? "bg-[#10b981] text-white"
+                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                  )}
+                >
+                  <CheckCircleIcon size={16} weight="bold" />
+                  {togglingBilling
+                    ? "Actualizando..."
+                    : config?.billing?.enabled
+                      ? "Billing activo"
+                      : "Activar Billing"}
                 </button>
               </div>
 
@@ -391,10 +521,13 @@ export default function PlatformIssuerPage() {
                 <SecretInput
                   id="issuer-sol-user"
                   label="Usuario SOL"
-                  configured={Boolean(config?.solUserConfigured)}
+                  configured={Boolean(
+                    config?.billing?.credentials[toBillingEnvironment(form.environment)] ||
+                      config?.solUserConfigured,
+                  )}
                   value={form.solUser}
                   placeholder="Ingresa usuario SOL"
-                  disabled={saving}
+                  disabled={saving || savingCredentials}
                   onChange={(value) =>
                     setForm((current) => ({ ...current, solUser: value }))
                   }
@@ -402,15 +535,34 @@ export default function PlatformIssuerPage() {
                 <SecretInput
                   id="issuer-sol-password"
                   label="Clave SOL"
-                  configured={Boolean(config?.solPasswordConfigured)}
+                  configured={Boolean(
+                    config?.billing?.credentials[toBillingEnvironment(form.environment)] ||
+                      config?.solPasswordConfigured,
+                  )}
                   value={form.solPassword}
                   placeholder="Nueva clave SOL"
-                  disabled={saving}
+                  disabled={saving || savingCredentials}
                   onChange={(value) =>
                     setForm((current) => ({ ...current, solPassword: value }))
                   }
                 />
               </div>
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => void saveCredentials()}
+                  disabled={savingCredentials || !form.solUser.trim() || !form.solPassword.trim()}
+                  className="h-10 rounded-[12px] bg-[var(--color-input-bg)] px-5 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:opacity-40"
+                >
+                  {savingCredentials ? "Guardando..." : "Guardar credenciales del ambiente"}
+                </button>
+              </div>
+
+              {config?.billing?.lastError ? (
+                <p className="rounded-[12px] bg-[#ef4444]/10 px-4 py-3 text-sm text-[#dc2626]">
+                  Billing: {config.billing.lastError}
+                </p>
+              ) : null}
 
               {error ? (
                 <p className="rounded-[12px] bg-[#ef4444]/10 px-4 py-3 text-sm text-[#dc2626]">
@@ -429,7 +581,11 @@ export default function PlatformIssuerPage() {
               </div>
             </div>
 
-            <CertificatePanel config={config} onUploaded={load} />
+            <CertificatePanel
+              config={config}
+              environment={toBillingEnvironment(form.environment)}
+              onUploaded={load}
+            />
           </section>
         </form>
       </div>
@@ -439,9 +595,11 @@ export default function PlatformIssuerPage() {
 
 function CertificatePanel({
   config,
+  environment,
   onUploaded,
 }: {
   config: PlatformIssuerConfig | null;
+  environment: BillingEnvironment;
   onUploaded: () => Promise<void>;
 }) {
   const { showToast } = useSystemToast();
@@ -474,7 +632,11 @@ function CertificatePanel({
     setSaving(true);
     setError("");
     try {
-      await platformBillingApi.uploadCertificate(file, password.trim());
+      await platformBillingApi.uploadCertificate(
+        environment,
+        file,
+        password.trim(),
+      );
       setFile(null);
       setPassword("");
       await onUploaded();
@@ -499,6 +661,28 @@ function CertificatePanel({
     }
   };
 
+  const remove = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await platformBillingApi.deleteCertificate(environment);
+      setFile(null);
+      setPassword("");
+      await onUploaded();
+      showToast({
+        title: "Certificado eliminado",
+        description: `Ambiente ${environment}`,
+        variant: "success",
+      });
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, "No se pudo eliminar el certificado.");
+      setError(message);
+      showToast({ title: "No se pudo eliminar", description: message, variant: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <aside className="space-y-4 p-1 sm:p-6">
       <div>
@@ -511,7 +695,7 @@ function CertificatePanel({
       </div>
 
       <div className="rounded-[16px] bg-[var(--color-input-bg)] p-4">
-        {config?.certificate ? (
+        {config?.certificate || config?.billing?.certificates[environment] ? (
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#10b981]/10 text-[#10b981]">
@@ -519,14 +703,22 @@ function CertificatePanel({
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
-                  {config.certificate.name}
+                  {config?.certificate?.name ?? `Certificado ${environment}`}
                 </p>
-                <p className="text-xs text-[var(--color-muted-foreground)]">
-                  {formatFileSize(config.certificate.sizeBytes)}
-                </p>
-                <p className="text-xs text-[var(--color-muted-foreground)]">
-                  Subido: {formatDate(config.certificate.uploadedAt)}
-                </p>
+                {config?.certificate ? (
+                  <>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      {formatFileSize(config.certificate.sizeBytes)}
+                    </p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
+                      Subido: {formatDate(config.certificate.uploadedAt)}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    Almacenado de forma privada en Nuvex Billing.
+                  </p>
+                )}
               </div>
             </div>
             <p className="rounded-[10px] bg-[#10b981]/10 px-3 py-2 text-xs text-[#047857]">
@@ -550,6 +742,10 @@ function CertificatePanel({
         )}
       </div>
 
+      <p className="text-xs text-[var(--color-muted-foreground)]">
+        Ambiente Billing: <strong>{environment}</strong>
+      </p>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -566,6 +762,16 @@ function CertificatePanel({
         <CloudArrowUpIcon size={18} weight="bold" />
         Seleccionar certificado
       </button>
+      {config?.billing?.certificates[environment] || config?.certificate ? (
+        <button
+          type="button"
+          onClick={() => void remove()}
+          disabled={saving}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[#ef4444]/10 text-sm font-circular-bold text-[#dc2626] disabled:opacity-50"
+        >
+          Eliminar certificado del ambiente
+        </button>
+      ) : null}
 
       {file ? (
         <p className="truncate text-xs font-circular-bold text-[var(--color-primary)]">
@@ -597,6 +803,23 @@ function CertificatePanel({
         {saving ? "Guardando..." : "Subir certificado"}
       </button>
     </aside>
+  );
+}
+
+function toBillingEnvironment(
+  environment: IssuerForm["environment"],
+): BillingEnvironment {
+  return environment === "PRODUCCION" ? "PRODUCTION" : "BETA";
+}
+
+function isBillingActivationReady(
+  config: PlatformIssuerConfig | null,
+  environment: BillingEnvironment,
+) {
+  return Boolean(
+    config?.billing?.configured &&
+      config.billing.credentials[environment] &&
+      config.billing.certificates[environment],
   );
 }
 

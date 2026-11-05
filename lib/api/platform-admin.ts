@@ -269,6 +269,21 @@ export type PlatformCompanySunatConfig = {
   updatedAt: string | null;
 };
 
+export type PlatformCompanyBillingConfig = {
+  enabled: boolean;
+  configured: boolean;
+  environment: "BETA" | "PRODUCTION";
+  status: "PENDING" | "READY" | "ERROR";
+  lastError: string | null;
+  lastSyncedAt: string | null;
+  apiKeys: Record<"BETA" | "PRODUCTION", boolean>;
+  webhooks: Record<"BETA" | "PRODUCTION", boolean>;
+  credentials: Record<"BETA" | "PRODUCTION", boolean>;
+  certificates: Record<"BETA" | "PRODUCTION", boolean>;
+  establishments: number;
+  series: number;
+};
+
 export type PlatformSunatCompany = {
   id: string;
   name: string;
@@ -278,6 +293,7 @@ export type PlatformSunatCompany = {
   state: PlatformCompanyState;
   planCode: PlatformPlanCode;
   planName: string;
+  billing?: PlatformCompanyBillingConfig;
 };
 
 export type PlatformSunatCompanyDetail = PlatformSunatCompany & {
