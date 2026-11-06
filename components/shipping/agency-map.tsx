@@ -21,6 +21,9 @@ export function AgencyMap({ agencies, selectedExternalId, onSelect }: AgencyMapP
     let cancelled = false;
     void import("maplibre-gl").then((maplibregl) => {
       if (cancelled || !containerRef.current || mapRef.current) return;
+      maplibregl.setWorkerUrl(
+        "https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl-worker.mjs",
+      );
       mapRef.current = new maplibregl.Map({
         container: containerRef.current,
         style: "https://tiles.openfreemap.org/styles/liberty",
