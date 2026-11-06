@@ -25,6 +25,13 @@ export type PublicShippingAgency = {
   ubigeo: string | null;
   latitud: number | null;
   longitud: number | null;
+  distanceKm?: number | null;
+};
+
+export type SearchShippingAgenciesOptions = {
+  q?: string;
+  lat?: number;
+  lng?: number;
 };
 
 export const shippingLinksApi = {
@@ -41,8 +48,15 @@ export const shippingLinksApi = {
     );
   },
 
-  searchAgencies(code: string, agencia: SaleShippingAgency, q: string) {
-    const params = new URLSearchParams({ agencia, q });
+  searchAgencies(
+    code: string,
+    agencia: SaleShippingAgency,
+    options: SearchShippingAgenciesOptions = {},
+  ) {
+    const params = new URLSearchParams({ agencia });
+    if (options.q) params.set("q", options.q);
+    if (options.lat !== undefined) params.set("lat", String(options.lat));
+    if (options.lng !== undefined) params.set("lng", String(options.lng));
     return apiRequest<PublicShippingAgency[]>(
       `/public/shipping-links/${code}/agencies?${params.toString()}`,
       { cache: "no-store" },

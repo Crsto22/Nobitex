@@ -1,14 +1,23 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
   BuildingsIcon,
   CheckCircleIcon,
+  CrosshairIcon,
   IdentificationCardIcon,
+  MagnifyingGlassIcon,
   MapPinIcon,
-  MapTrifoldIcon,
   PaperPlaneTiltIcon,
   PhoneIcon,
   SpinnerGapIcon,
@@ -16,15 +25,16 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { AgencyMap } from "@/components/shipping/agency-map";
 import {
   shippingLinksApi,
   type PublicShippingAgency,
   type PublicShippingLink,
+  type SearchShippingAgenciesOptions,
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
-import { AgencyMap } from "@/components/shipping/agency-map";
 
-const agencies: Array<{
+const couriers: Array<{
   value: SaleShippingAgency;
   label: string;
   image: string;
@@ -34,20 +44,26 @@ const agencies: Array<{
     value: "SHALOM",
     label: "Shalom",
     image: "/envios/shalom.svg",
-    selectedBg: "bg-[#e52421]/10",
+    selectedBg: "bg-[#e52421]/10 ring-2 ring-[#e52421]/30",
   },
   {
     value: "OLVA",
     label: "Olva",
     image: "/envios/olva.webp",
-    selectedBg: "bg-[#f5c518]/15",
+    selectedBg: "bg-[#f5c518]/15 ring-2 ring-[#f5c518]/40",
   },
 ];
+
+type FormStep = 1 | 2 | 3;
+type UserLocation = { latitude: number; longitude: number };
 
 export default function ShippingDetailsPage() {
   const params = useParams<{ codigo: string }>();
   const code = params.codigo;
+  const formRef = useRef<HTMLFormElement>(null);
+  const requestSequenceRef = useRef(0);
   const [link, setLink] = useState<PublicShippingLink | null>(null);
+  const [step, setStep] = useState<FormStep>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
@@ -55,9 +71,12 @@ export default function ShippingDetailsPage() {
   const [error, setError] = useState("");
   const [agencyQuery, setAgencyQuery] = useState("");
   const [agencyResults, setAgencyResults] = useState<PublicShippingAgency[]>([]);
-  const [mapAgencies, setMapAgencies] = useState<PublicShippingAgency[]>([]);
+  const [selectedAgency, setSelectedAgency] =
+    useState<PublicShippingAgency | null>(null);
   const [isSearchingAgencies, setIsSearchingAgencies] = useState(false);
-  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [form, setForm] = useState({
     nombreCompleto: "",
     dni: "",
@@ -86,50 +105,118 @@ export default function ShippingDetailsPage() {
     };
   }, [code]);
 
-  useEffect(() => {
-    const courier = form.agencia;
-    if (!courier || agencyQuery.trim().length < 2 || isComplete) {
-      return;
-    }
-    let active = true;
-    const timer = window.setTimeout(() => {
+  const fetchAgencies = useCallback(
+    async (options: SearchShippingAgenciesOptions) => {
+      if (!form.agencia) return;
+      const requestSequence = ++requestSequenceRef.current;
       setIsSearchingAgencies(true);
-      void shippingLinksApi
-        .searchAgencies(code, courier, agencyQuery.trim())
-        .then((data) => {
-          if (active) {
-            setAgencyResults(data);
-            setMapAgencies(data);
-          }
-        })
-        .catch(() => {
-          if (active) {
-            setAgencyResults([]);
-            setMapAgencies([]);
-          }
-        })
-        .finally(() => {
-          if (active) setIsSearchingAgencies(false);
-        });
-    }, 300);
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [agencyQuery, code, form.agencia, isComplete]);
+      try {
+        const data = await shippingLinksApi.searchAgencies(
+          code,
+          form.agencia,
+          options,
+        );
+        if (requestSequence === requestSequenceRef.current) {
+          setAgencyResults(data);
+        }
+      } catch {
+        if (requestSequence === requestSequenceRef.current) {
+          setAgencyResults([]);
+          setError("No pudimos cargar las agencias. Intenta nuevamente.");
+        }
+      } finally {
+        if (requestSequence === requestSequenceRef.current) {
+          setIsSearchingAgencies(false);
+        }
+      }
+    },
+    [code, form.agencia],
+  );
+
+  useEffect(() => {
+    if (step !== 2 || !form.agencia || isComplete) return;
+    const term = agencyQuery.trim();
+    if (term.length === 1) return;
+
+    const timer = window.setTimeout(() => {
+      setError("");
+      void fetchAgencies(
+        term.length >= 2
+          ? { q: term }
+          : userLocation
+            ? { lat: userLocation.latitude, lng: userLocation.longitude }
+            : {},
+      );
+    }, term ? 300 : 0);
+
+    return () => window.clearTimeout(timer);
+  }, [agencyQuery, fetchAgencies, form.agencia, isComplete, step, userLocation]);
 
   const selectAgency = useCallback((agency: PublicShippingAgency) => {
+    setSelectedAgency(agency);
     setForm((current) => ({
       ...current,
       agenciaExternalId: agency.externalId,
     }));
-    setAgencyQuery(agency.nombre);
-    setAgencyResults([]);
   }, []);
+
+  const chooseCourier = (courier: SaleShippingAgency) => {
+    setForm((current) => ({
+      ...current,
+      agencia: courier,
+      agenciaExternalId: "",
+    }));
+    setSelectedAgency(null);
+    setAgencyQuery("");
+    setAgencyResults([]);
+    setUserLocation(null);
+    setLocationError("");
+  };
+
+  const continueToAgencies = () => {
+    if (!formRef.current?.reportValidity() || !form.agencia) return;
+    setError("");
+    setStep(2);
+  };
+
+  const locateUser = () => {
+    setLocationError("");
+    if (!navigator.geolocation) {
+      setLocationError("Tu navegador no permite obtener la ubicación.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setAgencyQuery("");
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setIsLocating(false);
+      },
+      (geolocationError) => {
+        setIsLocating(false);
+        setLocationError(
+          geolocationError.code === geolocationError.PERMISSION_DENIED
+            ? "Debes permitir la ubicación para mostrar agencias cercanas."
+            : "No pudimos obtener tu ubicación. Intenta nuevamente.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 },
+    );
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.agencia || !form.agenciaExternalId || isSubmitting) return;
+    if (
+      step !== 3 ||
+      !form.agencia ||
+      !form.agenciaExternalId ||
+      isSubmitting
+    ) {
+      return;
+    }
     setError("");
     setIsSubmitting(true);
     try {
@@ -155,12 +242,10 @@ export default function ShippingDetailsPage() {
   if (isLoading) {
     return (
       <PublicShell>
-        <div className="flex flex-1 items-center justify-center px-5 py-10">
-          <div className="flex items-center gap-3 text-sm text-[var(--color-muted-foreground)]">
-            <SpinnerGapIcon size={24} className="animate-spin text-[var(--color-primary)]" />
-            Cargando formulario...
-          </div>
-        </div>
+        <CenteredMessage>
+          <SpinnerGapIcon size={25} className="animate-spin text-[var(--color-primary)]" />
+          Cargando formulario...
+        </CenteredMessage>
       </PublicShell>
     );
   }
@@ -168,19 +253,18 @@ export default function ShippingDetailsPage() {
   if (isUnavailable || !link) {
     return (
       <PublicShell>
-        <div className="flex flex-1 items-center justify-center px-5 py-10">
-          <div className="flex flex-col items-center justify-center px-6 text-center">
+        <div className="flex flex-1 items-center justify-center px-5 py-10 text-center">
+          <div>
             <WarningCircleIcon
               size={52}
               weight="fill"
-              className="text-[var(--color-destructive)]"
+              className="mx-auto text-[var(--color-destructive)]"
             />
             <h1 className="mt-4 text-xl font-black text-[var(--color-text)]">
               Enlace no disponible
             </h1>
             <p className="mt-2 max-w-sm text-sm text-[var(--color-muted-foreground)]">
-              Solicita al negocio un nuevo enlace para registrar tus datos de
-              envío.
+              Solicita al negocio un nuevo enlace para registrar tus datos de envío.
             </p>
           </div>
         </div>
@@ -190,258 +274,61 @@ export default function ShippingDetailsPage() {
 
   return (
     <PublicShell>
-      <header className="sticky top-0 z-30 w-full border-b border-[var(--color-border)] bg-[var(--color-sidebar-bg)] px-5 py-4">
-        <div className="mx-auto flex w-full max-w-md items-center gap-3">
-          {link.negocio.logoUrl ? (
-            <Image
-              src={link.negocio.logoUrl}
-              alt={link.negocio.nombreComercial}
-              width={38}
-              height={38}
-              unoptimized
-              className="h-[38px] w-[38px] shrink-0 rounded-lg object-contain"
-            />
-          ) : (
-            <Image
-              src="/Logo/Nuvex.png"
-              alt="Nuvex"
-              width={38}
-              height={38}
-              priority
-              className="h-[38px] w-[38px] shrink-0 object-contain"
-            />
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-base font-black text-[var(--color-text)]">
-              {link.negocio.nombreComercial}
-            </p>
-            <p className="text-xs text-[var(--color-muted-foreground)]">
-              Formulario seguro con Nuvex
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex flex-1 justify-center px-5 py-8">
-        <div className="my-auto w-full max-w-md">
+      <PublicHeader link={link} />
+      <div className="flex flex-1 justify-center px-4 py-7 sm:px-5">
+        <div className={`my-auto w-full ${step === 2 ? "max-w-3xl" : "max-w-md"}`}>
           {isComplete ? (
-            <div className="flex flex-col items-center justify-center px-2 py-10 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#10b981]/10">
-                <CheckCircleIcon
-                  size={52}
-                  weight="fill"
-                  className="text-[#10b981]"
-                />
-              </div>
-              <h1 className="mt-5 text-2xl font-black text-[var(--color-text)]">
-                ¡Datos recibidos!
-              </h1>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-[var(--color-muted-foreground)]">
-                {link.negocio.nombreComercial} ya puede coordinar el envío de tu
-                pedido.
-              </p>
-            </div>
+            <SuccessState businessName={link.negocio.nombreComercial} />
           ) : (
-            <form onSubmit={submit} className="space-y-5">
-              <div className="text-center">
-                <h1 className="text-2xl font-black text-[var(--color-text)]">
-                  Datos de envío
-                </h1>
-                <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                  Completa tus datos para coordinar el envío de tu pedido.
-                </p>
-              </div>
+            <form ref={formRef} onSubmit={submit} className="space-y-5">
+              <StepIndicator current={step} />
 
-              <Field icon={<UserIcon size={19} />} label="Nombre completo">
-                <input
-                  required
-                  minLength={3}
-                  maxLength={150}
-                  autoComplete="name"
-                  value={form.nombreCompleto}
-                  onChange={(event) =>
+              {step === 1 ? (
+                <StepOne
+                  form={form}
+                  onFormChange={setForm}
+                  onCourierChange={chooseCourier}
+                  onContinue={continueToAgencies}
+                />
+              ) : null}
+
+              {step === 2 && form.agencia ? (
+                <StepTwo
+                  courier={form.agencia}
+                  agencyQuery={agencyQuery}
+                  agencies={agencyResults}
+                  selectedAgency={selectedAgency}
+                  userLocation={userLocation}
+                  isSearching={isSearchingAgencies}
+                  isLocating={isLocating}
+                  locationError={locationError}
+                  onQueryChange={(value) => {
+                    setAgencyQuery(value);
+                    setSelectedAgency(null);
                     setForm((current) => ({
                       ...current,
-                      nombreCompleto: event.target.value,
-                    }))
-                  }
-                  className="public-shipping-input"
-                  placeholder="Ej. María López"
+                      agenciaExternalId: "",
+                    }));
+                  }}
+                  onLocate={locateUser}
+                  onShowAll={() => {
+                    setAgencyQuery("");
+                    setUserLocation(null);
+                    setLocationError("");
+                  }}
+                  onSelect={selectAgency}
+                  onBack={() => setStep(1)}
+                  onContinue={() => selectedAgency && setStep(3)}
                 />
-              </Field>
+              ) : null}
 
-              <Field icon={<IdentificationCardIcon size={19} />} label="DNI">
-                <input
-                  required
-                  inputMode="numeric"
-                  pattern="[0-9]{8}"
-                  minLength={8}
-                  maxLength={8}
-                  value={form.dni}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      dni: event.target.value.replace(/\D/g, "").slice(0, 8),
-                    }))
-                  }
-                  className="public-shipping-input"
-                  placeholder="12345678"
+              {step === 3 && selectedAgency && form.agencia ? (
+                <StepThree
+                  form={form}
+                  agency={selectedAgency}
+                  isSubmitting={isSubmitting}
+                  onBack={() => setStep(2)}
                 />
-              </Field>
-
-              <Field icon={<PhoneIcon size={19} />} label="Celular">
-                <input
-                  required
-                  inputMode="tel"
-                  pattern="9[0-9]{8}"
-                  minLength={9}
-                  maxLength={9}
-                  autoComplete="tel"
-                  value={form.celular}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      celular: event.target.value.replace(/\D/g, "").slice(0, 9),
-                    }))
-                  }
-                  className="public-shipping-input"
-                  placeholder="987654321"
-                />
-              </Field>
-
-              <fieldset>
-                <legend className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                  <BuildingsIcon size={19} className="text-[var(--color-primary)]" />
-                  Agencia
-                </legend>
-                <div className="grid grid-cols-2 gap-3">
-                  {agencies.map((agency) => (
-                    <button
-                      key={agency.value}
-                      type="button"
-                      onClick={() => {
-                        setForm((current) => ({
-                          ...current,
-                          agencia: agency.value,
-                          agenciaExternalId: "",
-                        }));
-                        setAgencyQuery("");
-                        setAgencyResults([]);
-                        setMapAgencies([]);
-                        setIsMapVisible(false);
-                      }}
-                      className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-colors ${
-                        form.agencia === agency.value
-                          ? agency.selectedBg
-                          : "hover:bg-[var(--color-button-hover)]"
-                      }`}
-                    >
-                      <Image
-                        src={agency.image}
-                        alt={agency.label}
-                        width={200}
-                        height={80}
-                        unoptimized
-                        className="h-full w-auto max-w-full rounded-2xl object-contain"
-                      />
-                      {form.agencia === agency.value ? (
-                        <CheckCircleIcon
-                          size={20}
-                          weight="fill"
-                          className="absolute right-1.5 top-1.5 text-[var(--color-primary)]"
-                        />
-                      ) : null}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              {form.agencia ? (
-                <Field
-                  icon={<MapPinIcon size={19} />}
-                  label={`Busca una agencia ${
-                    form.agencia === "OLVA" ? "Olva" : "Shalom"
-                  }`}
-                >
-                  <div className="relative">
-                    <input
-                      required
-                      minLength={2}
-                      value={agencyQuery}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setAgencyQuery(value);
-                        if (value.trim().length < 2) {
-                          setAgencyResults([]);
-                          setMapAgencies([]);
-                          setIsSearchingAgencies(false);
-                          setIsMapVisible(false);
-                        }
-                        setForm((current) => ({
-                          ...current,
-                          agenciaExternalId: "",
-                        }));
-                      }}
-                      className="public-shipping-input"
-                      placeholder="Ej. Miraflores, Lima o una dirección"
-                    />
-                    {isSearchingAgencies ? (
-                      <SpinnerGapIcon
-                        size={18}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-primary)]"
-                      />
-                    ) : null}
-                  </div>
-                  {agencyResults.length ? (
-                    <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-1 shadow-lg">
-                      {agencyResults.map((agency) => (
-                        <button
-                          key={agency.externalId}
-                          type="button"
-                          onClick={() => selectAgency(agency)}
-                          className="w-full rounded-lg px-3 py-2.5 text-left hover:bg-[var(--color-button-hover)]"
-                        >
-                          <p className="text-sm font-bold text-[var(--color-text)]">
-                            {agency.nombre}
-                          </p>
-                          <p className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
-                            {[agency.direccion, agency.distrito, agency.provincia]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {mapAgencies.length ? (
-                    <button
-                      type="button"
-                      onClick={() => setIsMapVisible((visible) => !visible)}
-                      className="mt-2 flex items-center gap-2 text-xs font-bold text-[var(--color-primary)] hover:underline"
-                    >
-                      <MapTrifoldIcon size={17} weight="fill" />
-                      {isMapVisible ? "Ocultar mapa" : "Ver agencias en el mapa"}
-                    </button>
-                  ) : null}
-                  {isMapVisible && mapAgencies.length ? (
-                    <div className="mt-3">
-                      <AgencyMap
-                        agencies={mapAgencies}
-                        selectedExternalId={form.agenciaExternalId}
-                        onSelect={selectAgency}
-                      />
-                    </div>
-                  ) : null}
-                  {form.agenciaExternalId ? (
-                    <p className="mt-2 text-xs font-bold text-[#047857]">
-                      Agencia seleccionada correctamente.
-                    </p>
-                  ) : agencyQuery.trim().length >= 2 && !isSearchingAgencies ? (
-                    <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
-                      Selecciona una agencia de los resultados para continuar.
-                    </p>
-                  ) : null}
-                </Field>
               ) : null}
 
               {error ? (
@@ -449,24 +336,461 @@ export default function ShippingDetailsPage() {
                   {error}
                 </p>
               ) : null}
-
-              <button
-                type="submit"
-                disabled={!form.agencia || !form.agenciaExternalId || isSubmitting}
-                className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-black text-white shadow-lg shadow-[var(--color-primary)]/20 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <SpinnerGapIcon size={19} className="animate-spin" />
-                ) : (
-                  <PaperPlaneTiltIcon size={19} weight="fill" />
-                )}
-                Enviar datos
-              </button>
             </form>
           )}
         </div>
       </div>
     </PublicShell>
+  );
+}
+
+function StepOne({
+  form,
+  onFormChange,
+  onCourierChange,
+  onContinue,
+}: {
+  form: {
+    nombreCompleto: string;
+    dni: string;
+    celular: string;
+    agencia: SaleShippingAgency | "";
+    agenciaExternalId: string;
+  };
+  onFormChange: React.Dispatch<React.SetStateAction<typeof form>>;
+  onCourierChange: (courier: SaleShippingAgency) => void;
+  onContinue: () => void;
+}) {
+  return (
+    <>
+      <StepTitle
+        title="Datos de envío"
+        subtitle="Completa tus datos y elige la empresa que transportará tu pedido."
+      />
+      <Field icon={<UserIcon size={19} />} label="Nombre completo">
+        <input
+          required
+          minLength={3}
+          maxLength={150}
+          autoComplete="name"
+          value={form.nombreCompleto}
+          onChange={(event) =>
+            onFormChange((current) => ({
+              ...current,
+              nombreCompleto: event.target.value,
+            }))
+          }
+          className="public-shipping-input"
+          placeholder="Ej. María López"
+        />
+      </Field>
+      <Field icon={<IdentificationCardIcon size={19} />} label="DNI">
+        <input
+          required
+          inputMode="numeric"
+          pattern="[0-9]{8}"
+          minLength={8}
+          maxLength={8}
+          value={form.dni}
+          onChange={(event) =>
+            onFormChange((current) => ({
+              ...current,
+              dni: event.target.value.replace(/\D/g, "").slice(0, 8),
+            }))
+          }
+          className="public-shipping-input"
+          placeholder="12345678"
+        />
+      </Field>
+      <Field icon={<PhoneIcon size={19} />} label="Celular">
+        <input
+          required
+          inputMode="tel"
+          pattern="9[0-9]{8}"
+          minLength={9}
+          maxLength={9}
+          autoComplete="tel"
+          value={form.celular}
+          onChange={(event) =>
+            onFormChange((current) => ({
+              ...current,
+              celular: event.target.value.replace(/\D/g, "").slice(0, 9),
+            }))
+          }
+          className="public-shipping-input"
+          placeholder="987654321"
+        />
+      </Field>
+      <fieldset>
+        <legend className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+          <BuildingsIcon size={19} className="text-[var(--color-primary)]" />
+          Empresa de envío
+        </legend>
+        <div className="grid grid-cols-2 gap-3">
+          {couriers.map((courier) => (
+            <button
+              key={courier.value}
+              type="button"
+              onClick={() => onCourierChange(courier.value)}
+              className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-all ${
+                form.agencia === courier.value
+                  ? courier.selectedBg
+                  : "hover:bg-[var(--color-button-hover)]"
+              }`}
+            >
+              <Image
+                src={courier.image}
+                alt={courier.label}
+                width={200}
+                height={80}
+                unoptimized
+                className="h-full w-auto max-w-full rounded-2xl object-contain"
+              />
+              {form.agencia === courier.value ? (
+                <CheckCircleIcon
+                  size={21}
+                  weight="fill"
+                  className="absolute right-2 top-2 text-[var(--color-primary)]"
+                />
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <button
+        type="button"
+        disabled={!form.agencia}
+        onClick={onContinue}
+        className="public-primary-button"
+      >
+        Siguiente
+        <ArrowRightIcon size={19} weight="bold" />
+      </button>
+    </>
+  );
+}
+
+function StepTwo({
+  courier,
+  agencyQuery,
+  agencies,
+  selectedAgency,
+  userLocation,
+  isSearching,
+  isLocating,
+  locationError,
+  onQueryChange,
+  onLocate,
+  onShowAll,
+  onSelect,
+  onBack,
+  onContinue,
+}: {
+  courier: SaleShippingAgency;
+  agencyQuery: string;
+  agencies: PublicShippingAgency[];
+  selectedAgency: PublicShippingAgency | null;
+  userLocation: UserLocation | null;
+  isSearching: boolean;
+  isLocating: boolean;
+  locationError: string;
+  onQueryChange: (value: string) => void;
+  onLocate: () => void;
+  onShowAll: () => void;
+  onSelect: (agency: PublicShippingAgency) => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const courierLabel = courier === "SHALOM" ? "Shalom" : "Olva";
+  return (
+    <>
+      <StepTitle
+        title={`Elige tu agencia ${courierLabel}`}
+        subtitle="Busca por distrito, usa tu ubicación o selecciona un pin del mapa."
+      />
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className="relative">
+          <MagnifyingGlassIcon
+            size={19}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+          />
+          <input
+            value={agencyQuery}
+            onChange={(event) => onQueryChange(event.target.value)}
+            className="public-shipping-input pl-11"
+            placeholder="Busca distrito o agencia (ej. Cayma, Arequipa)"
+          />
+          {isSearching ? (
+            <SpinnerGapIcon
+              size={18}
+              className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-primary)]"
+            />
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={onLocate}
+          disabled={isLocating}
+          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 disabled:opacity-60"
+        >
+          {isLocating ? (
+            <SpinnerGapIcon size={18} className="animate-spin" />
+          ) : (
+            <CrosshairIcon size={18} weight="bold" />
+          )}
+          Ubicarme
+        </button>
+      </div>
+      {locationError ? (
+        <p className="text-xs font-semibold text-[var(--color-destructive)]">
+          {locationError}
+        </p>
+      ) : null}
+      {userLocation ? (
+        <div className="flex items-center justify-between rounded-xl bg-[#2563eb]/8 px-3 py-2 text-xs font-bold text-[#1d4ed8]">
+          <span>Mostrando las agencias más cercanas a tu ubicación.</span>
+          <button type="button" onClick={onShowAll} className="underline">
+            Ver todas
+          </button>
+        </div>
+      ) : null}
+      <AgencyMap
+        agencies={agencies}
+        selectedExternalId={selectedAgency?.externalId ?? ""}
+        onSelect={onSelect}
+        courier={courier}
+        userLocation={userLocation}
+      />
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold text-[var(--color-muted-foreground)]">
+          {isSearching
+            ? "Buscando agencias..."
+            : `${agencies.length} agencias disponibles`}
+        </p>
+        <div className="flex items-center gap-3 text-[11px] font-bold text-[var(--color-muted-foreground)]">
+          <span className={`h-2.5 w-2.5 rounded-full ${courier === "SHALOM" ? "bg-[#dc2626]" : "bg-[#eab308]"}`} />
+          Agencia {courierLabel}
+          {userLocation ? <span className="h-2.5 w-2.5 rounded-full bg-[#2563eb]" /> : null}
+          {userLocation ? "Tu ubicación" : null}
+        </div>
+      </div>
+      <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+        {!isSearching && !agencies.length ? (
+          <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-sm text-[var(--color-muted-foreground)]">
+            No encontramos agencias para esta búsqueda.
+          </div>
+        ) : null}
+        {agencies.map((agency) => (
+          <button
+            key={agency.externalId}
+            type="button"
+            onClick={() => onSelect(agency)}
+            className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+              selectedAgency?.externalId === agency.externalId
+                ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
+                : "border-[var(--color-border)] bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <MapPinIcon
+                size={20}
+                weight="fill"
+                className={`mt-0.5 shrink-0 ${courier === "SHALOM" ? "text-[#dc2626]" : "text-[#ca8a04]"}`}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-black text-[var(--color-text)]">
+                    {agency.nombre}
+                  </p>
+                  {agency.distanceKm !== null && agency.distanceKm !== undefined ? (
+                    <span className="shrink-0 text-xs font-black text-[var(--color-primary)]">
+                      {formatDistance(agency.distanceKm)}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
+                  {[agency.direccion, agency.distrito, agency.provincia]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              {selectedAgency?.externalId === agency.externalId ? (
+                <CheckCircleIcon
+                  size={21}
+                  weight="fill"
+                  className="shrink-0 text-[#059669]"
+                />
+              ) : null}
+            </div>
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={onBack} className="public-secondary-button">
+          <ArrowLeftIcon size={19} />
+          Atrás
+        </button>
+        <button
+          type="button"
+          disabled={!selectedAgency}
+          onClick={onContinue}
+          className="public-primary-button"
+        >
+          Siguiente
+          <ArrowRightIcon size={19} />
+        </button>
+      </div>
+    </>
+  );
+}
+
+function StepThree({
+  form,
+  agency,
+  isSubmitting,
+  onBack,
+}: {
+  form: {
+    nombreCompleto: string;
+    dni: string;
+    celular: string;
+    agencia: SaleShippingAgency | "";
+    agenciaExternalId: string;
+  };
+  agency: PublicShippingAgency;
+  isSubmitting: boolean;
+  onBack: () => void;
+}) {
+  return (
+    <>
+      <StepTitle
+        title="Confirma tus datos"
+        subtitle="Revisa la información antes de enviarla al negocio."
+      />
+      <div className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-4">
+        <SummaryRow label="Cliente" value={form.nombreCompleto} />
+        <SummaryRow label="DNI" value={form.dni} />
+        <SummaryRow label="Celular" value={form.celular} />
+        <SummaryRow label="Courier" value={form.agencia === "SHALOM" ? "Shalom" : "Olva"} />
+        <div className="border-t border-[var(--color-border)] pt-3">
+          <p className="text-[11px] font-bold uppercase text-[var(--color-muted-foreground)]">
+            Agencia seleccionada
+          </p>
+          <p className="mt-1 text-sm font-black text-[var(--color-text)]">
+            {agency.nombre}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
+            {[agency.direccion, agency.distrito, agency.provincia]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={onBack} className="public-secondary-button">
+          <ArrowLeftIcon size={19} />
+          Atrás
+        </button>
+        <button type="submit" disabled={isSubmitting} className="public-primary-button">
+          {isSubmitting ? (
+            <SpinnerGapIcon size={19} className="animate-spin" />
+          ) : (
+            <PaperPlaneTiltIcon size={19} weight="fill" />
+          )}
+          Enviar datos
+        </button>
+      </div>
+    </>
+  );
+}
+
+function PublicHeader({ link }: { link: PublicShippingLink }) {
+  return (
+    <header className="sticky top-0 z-30 w-full border-b border-[var(--color-border)] bg-[var(--color-sidebar-bg)] px-5 py-4">
+      <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
+        <Image
+          src={link.negocio.logoUrl || "/Logo/Nuvex.png"}
+          alt={link.negocio.nombreComercial}
+          width={38}
+          height={38}
+          unoptimized={Boolean(link.negocio.logoUrl)}
+          priority={!link.negocio.logoUrl}
+          className="h-[38px] w-[38px] shrink-0 rounded-lg object-contain"
+        />
+        <div className="min-w-0">
+          <p className="truncate text-base font-black text-[var(--color-text)]">
+            {link.negocio.nombreComercial}
+          </p>
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Formulario seguro con Nuvex
+          </p>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function StepIndicator({ current }: { current: FormStep }) {
+  const labels = ["Datos", "Agencia", "Confirmar"];
+  return (
+    <div>
+      <p className="mb-3 text-center text-xs font-bold text-[var(--color-muted-foreground)]">
+        Paso {current} de 3 · {labels[current - 1]}
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {labels.map((label, index) => {
+          const number = index + 1;
+          return (
+            <div
+              key={label}
+              className={`h-1.5 rounded-full ${number <= current ? "bg-[var(--color-primary)]" : "bg-[var(--color-border)]"}`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="text-center">
+      <h1 className="text-2xl font-black text-[var(--color-text)]">{title}</h1>
+      <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">{subtitle}</p>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs font-bold text-[var(--color-muted-foreground)]">{label}</span>
+      <span className="text-right text-sm font-black text-[var(--color-text)]">{value}</span>
+    </div>
+  );
+}
+
+function SuccessState({ businessName }: { businessName: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-2 py-10 text-center">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#10b981]/10">
+        <CheckCircleIcon size={52} weight="fill" className="text-[#10b981]" />
+      </div>
+      <h1 className="mt-5 text-2xl font-black text-[var(--color-text)]">
+        ¡Datos recibidos!
+      </h1>
+      <p className="mt-2 max-w-sm text-sm leading-6 text-[var(--color-muted-foreground)]">
+        {businessName} ya puede coordinar el envío de tu pedido.
+      </p>
+    </div>
+  );
+}
+
+function CenteredMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-1 items-center justify-center gap-3 px-5 py-10 text-sm text-[var(--color-muted-foreground)]">
+      {children}
+    </div>
   );
 }
 
@@ -506,4 +830,9 @@ function Field({
       {children}
     </label>
   );
+}
+
+function formatDistance(distanceKm: number) {
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
+  return `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
 }

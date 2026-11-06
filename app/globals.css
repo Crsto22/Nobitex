@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "maplibre-gl/dist/maplibre-gl.css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -673,11 +673,31 @@ html[data-sidebar-expanded-sections]:not(
     @apply h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none transition-colors placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20;
   }
 
+  .public-primary-button {
+    @apply flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-black text-white shadow-lg shadow-[var(--color-primary)]/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .public-secondary-button {
+    @apply flex h-13 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] px-4 text-sm font-black text-[var(--color-text)] hover:bg-[var(--color-button-hover)];
+  }
+
   .shipping-agency-marker {
     @apply h-9 w-9 cursor-pointer rounded-full border-[3px] border-white bg-[var(--color-primary)] shadow-lg transition-transform hover:scale-110;
   }
 
   .shipping-agency-marker-selected {
     @apply scale-110 bg-[#059669] ring-4 ring-[#059669]/20;
+  }
+
+  .shipping-agency-marker-shalom {
+    @apply bg-[#dc2626];
+  }
+
+  .shipping-agency-marker-olva {
+    @apply bg-[#eab308];
+  }
+
+  .shipping-user-location-marker {
+    @apply block h-[22px] w-[22px] rounded-full border-4 border-white bg-[#2563eb] shadow-lg ring-4 ring-[#2563eb]/25;
   }
 }
