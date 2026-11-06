@@ -206,6 +206,15 @@ export type SaleShippingDetails = {
   dni: string | null;
   celular: string | null;
   agencia: SaleShippingAgency | null;
+  agenciaExternalId: string | null;
+  agenciaNombre: string | null;
+  agenciaDireccion: string | null;
+  agenciaDepartamento: string | null;
+  agenciaProvincia: string | null;
+  agenciaDistrito: string | null;
+  agenciaUbigeo: string | null;
+  agenciaLatitud: number | null;
+  agenciaLongitud: number | null;
   recibidoAt: string | null;
 };
 

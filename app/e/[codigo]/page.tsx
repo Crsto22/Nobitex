@@ -7,6 +7,7 @@ import {
   BuildingsIcon,
   CheckCircleIcon,
   IdentificationCardIcon,
+  MapPinIcon,
   PaperPlaneTiltIcon,
   PhoneIcon,
   SpinnerGapIcon,
@@ -16,6 +17,7 @@ import {
 
 import {
   shippingLinksApi,
+  type PublicShippingAgency,
   type PublicShippingLink,
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
@@ -49,11 +51,15 @@ export default function ShippingDetailsPage() {
   const [isUnavailable, setIsUnavailable] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState("");
+  const [agencyQuery, setAgencyQuery] = useState("");
+  const [agencyResults, setAgencyResults] = useState<PublicShippingAgency[]>([]);
+  const [isSearchingAgencies, setIsSearchingAgencies] = useState(false);
   const [form, setForm] = useState({
     nombreCompleto: "",
     dni: "",
     celular: "",
     agencia: "" as SaleShippingAgency | "",
+    agenciaExternalId: "",
   });
 
   useEffect(() => {
@@ -76,9 +82,35 @@ export default function ShippingDetailsPage() {
     };
   }, [code]);
 
+  useEffect(() => {
+    const courier = form.agencia;
+    if (!courier || agencyQuery.trim().length < 2 || isComplete) {
+      return;
+    }
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setIsSearchingAgencies(true);
+      void shippingLinksApi
+        .searchAgencies(code, courier, agencyQuery.trim())
+        .then((data) => {
+          if (active) setAgencyResults(data);
+        })
+        .catch(() => {
+          if (active) setAgencyResults([]);
+        })
+        .finally(() => {
+          if (active) setIsSearchingAgencies(false);
+        });
+    }, 300);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [agencyQuery, code, form.agencia, isComplete]);
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.agencia || isSubmitting) return;
+    if (!form.agencia || !form.agenciaExternalId || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
     try {
@@ -87,6 +119,7 @@ export default function ShippingDetailsPage() {
         dni: form.dni,
         celular: form.celular,
         agencia: form.agencia,
+        agenciaExternalId: form.agenciaExternalId,
       });
       setIsComplete(true);
     } catch (submitError: unknown) {
@@ -267,12 +300,15 @@ export default function ShippingDetailsPage() {
                     <button
                       key={agency.value}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
                         setForm((current) => ({
                           ...current,
                           agencia: agency.value,
-                        }))
-                      }
+                          agenciaExternalId: "",
+                        }));
+                        setAgencyQuery("");
+                        setAgencyResults([]);
+                      }}
                       className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-colors ${
                         form.agencia === agency.value
                           ? agency.selectedBg
@@ -299,6 +335,80 @@ export default function ShippingDetailsPage() {
                 </div>
               </fieldset>
 
+              {form.agencia ? (
+                <Field
+                  icon={<MapPinIcon size={19} />}
+                  label={`Busca una agencia ${
+                    form.agencia === "OLVA" ? "Olva" : "Shalom"
+                  }`}
+                >
+                  <div className="relative">
+                    <input
+                      required
+                      minLength={2}
+                      value={agencyQuery}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setAgencyQuery(value);
+                        if (value.trim().length < 2) {
+                          setAgencyResults([]);
+                          setIsSearchingAgencies(false);
+                        }
+                        setForm((current) => ({
+                          ...current,
+                          agenciaExternalId: "",
+                        }));
+                      }}
+                      className="public-shipping-input"
+                      placeholder="Ej. Miraflores, Lima o una dirección"
+                    />
+                    {isSearchingAgencies ? (
+                      <SpinnerGapIcon
+                        size={18}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-primary)]"
+                      />
+                    ) : null}
+                  </div>
+                  {agencyResults.length ? (
+                    <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-1 shadow-lg">
+                      {agencyResults.map((agency) => (
+                        <button
+                          key={agency.externalId}
+                          type="button"
+                          onClick={() => {
+                            setForm((current) => ({
+                              ...current,
+                              agenciaExternalId: agency.externalId,
+                            }));
+                            setAgencyQuery(agency.nombre);
+                            setAgencyResults([]);
+                          }}
+                          className="w-full rounded-lg px-3 py-2.5 text-left hover:bg-[var(--color-button-hover)]"
+                        >
+                          <p className="text-sm font-bold text-[var(--color-text)]">
+                            {agency.nombre}
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+                            {[agency.direccion, agency.distrito, agency.provincia]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {form.agenciaExternalId ? (
+                    <p className="mt-2 text-xs font-bold text-[#047857]">
+                      Agencia seleccionada correctamente.
+                    </p>
+                  ) : agencyQuery.trim().length >= 2 && !isSearchingAgencies ? (
+                    <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                      Selecciona una agencia de los resultados para continuar.
+                    </p>
+                  ) : null}
+                </Field>
+              ) : null}
+
               {error ? (
                 <p className="rounded-xl bg-[var(--color-destructive)]/10 px-4 py-3 text-sm text-[var(--color-destructive)]">
                   {error}
@@ -307,7 +417,7 @@ export default function ShippingDetailsPage() {
 
               <button
                 type="submit"
-                disabled={!form.agencia || isSubmitting}
+                disabled={!form.agencia || !form.agenciaExternalId || isSubmitting}
                 className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-black text-white shadow-lg shadow-[var(--color-primary)]/20 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (

@@ -854,6 +854,21 @@ export default function VentaDetallePage() {
                       <p className="text-[var(--color-muted-foreground)]">
                         Agencia: <span className="text-[var(--color-text)]">{venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}</span>
                       </p>
+                      {venta.envio.agenciaNombre ? (
+                        <p className="text-[var(--color-muted-foreground)] sm:col-span-2">
+                          Sede: <span className="text-[var(--color-text)]">{venta.envio.agenciaNombre}</span>
+                        </p>
+                      ) : null}
+                      {venta.envio.agenciaDireccion ? (
+                        <p className="text-[var(--color-muted-foreground)] sm:col-span-2">
+                          Dirección: <span className="text-[var(--color-text)]">{[
+                            venta.envio.agenciaDireccion,
+                            venta.envio.agenciaDistrito,
+                            venta.envio.agenciaProvincia,
+                            venta.envio.agenciaDepartamento,
+                          ].filter(Boolean).join(" · ")}</span>
+                        </p>
+                      ) : null}
                     </div>
                   ) : (
                     <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">

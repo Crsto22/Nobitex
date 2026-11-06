@@ -12,6 +12,19 @@ export type SubmitShippingDetails = {
   dni: string;
   celular: string;
   agencia: SaleShippingAgency;
+  agenciaExternalId: string;
+};
+
+export type PublicShippingAgency = {
+  externalId: string;
+  nombre: string;
+  direccion: string | null;
+  departamento: string | null;
+  provincia: string | null;
+  distrito: string | null;
+  ubigeo: string | null;
+  latitud: number | null;
+  longitud: number | null;
 };
 
 export const shippingLinksApi = {
@@ -25,6 +38,14 @@ export const shippingLinksApi = {
     return apiRequest<{ estado: "recibido" }>(
       `/public/shipping-links/${code}`,
       { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+
+  searchAgencies(code: string, agencia: SaleShippingAgency, q: string) {
+    const params = new URLSearchParams({ agencia, q });
+    return apiRequest<PublicShippingAgency[]>(
+      `/public/shipping-links/${code}/agencies?${params.toString()}`,
+      { cache: "no-store" },
     );
   },
 };
