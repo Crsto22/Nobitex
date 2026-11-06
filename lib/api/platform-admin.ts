@@ -744,10 +744,45 @@ export type PlatformAdminDashboardResponse = {
   }>;
 };
 
+export type CourierAgencySyncStatus = {
+  courier: "SHALOM" | "OLVA";
+  estado: "procesando" | "completada" | "fallida";
+  iniciadaAt: string;
+  finalizadaAt: string | null;
+  totalRecibidas: number;
+  creadas: number;
+  actualizadas: number;
+  desactivadas: number;
+  error: string | null;
+};
+
+export type CourierAgencySyncResult = {
+  courier: "SHALOM" | "OLVA";
+  ok: boolean;
+  totalRecibidas?: number;
+  creadas?: number;
+  actualizadas?: number;
+  desactivadas?: number;
+  error?: string;
+};
+
 export const platformAdminApi = {
   getDashboard(dateFilter: PlatformDashboardDateFilter = "month") {
     return authFetch<PlatformAdminDashboardResponse>(
       `/platform-admin/dashboard?dateFilter=${dateFilter}`,
+    );
+  },
+
+  getCourierAgenciesSyncStatus() {
+    return authFetch<Array<CourierAgencySyncStatus | null>>(
+      "/platform-admin/courier-agencies/sync-status",
+    );
+  },
+
+  syncCourierAgencies() {
+    return authFetch<CourierAgencySyncResult[]>(
+      "/platform-admin/courier-agencies/sync",
+      { method: "POST", body: JSON.stringify({}) },
     );
   },
 

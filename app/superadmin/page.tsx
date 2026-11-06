@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
 import {
@@ -27,6 +28,7 @@ import {
   type PlatformAdminDashboardResponse,
   type PlatformDashboardDateFilter,
   type PlatformPlanCode,
+  type CourierAgencySyncStatus,
 } from "@/lib/api/platform-admin";
 import { cn } from "@/lib/utils";
 
@@ -55,12 +57,25 @@ const dashboardFilters: Array<{
 
 export default function SuperAdminDashboardPage() {
   const { user } = useAuth();
+  const { showToast } = useSystemToast();
   const [dashboard, setDashboard] =
     useState<PlatformAdminDashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateFilter, setDateFilter] =
     useState<PlatformDashboardDateFilter>("month");
+  const [courierSyncStatus, setCourierSyncStatus] = useState<
+    Array<CourierAgencySyncStatus | null>
+  >([]);
+  const [isSyncingCouriers, setIsSyncingCouriers] = useState(false);
+
+  const loadCourierSyncStatus = useCallback(async () => {
+    try {
+      setCourierSyncStatus(await platformAdminApi.getCourierAgenciesSyncStatus());
+    } catch {
+      setCourierSyncStatus([]);
+    }
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
@@ -80,9 +95,48 @@ export default function SuperAdminDashboardPage() {
   }, [dateFilter]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => void loadDashboard(), 0);
+    const timeoutId = window.setTimeout(() => {
+      void loadDashboard();
+      void loadCourierSyncStatus();
+    }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [loadDashboard]);
+  }, [loadCourierSyncStatus, loadDashboard]);
+
+  const syncCourierAgencies = async () => {
+    if (isSyncingCouriers) return;
+    setIsSyncingCouriers(true);
+    try {
+      const results = await platformAdminApi.syncCourierAgencies();
+      const failed = results.filter((result) => !result.ok);
+      if (failed.length) {
+        showToast({
+          title: "No se completó la sincronización",
+          description: failed.map((result) => result.courier).join(", "),
+          variant: "error",
+        });
+      } else {
+        showToast({
+          title: "Agencias actualizadas",
+          description: results
+            .map((result) => `${result.courier}: ${result.totalRecibidas ?? 0}`)
+            .join(" · "),
+          variant: "success",
+        });
+      }
+      await loadCourierSyncStatus();
+    } catch (syncError) {
+      showToast({
+        title: "No se pudieron actualizar las agencias",
+        description:
+          syncError instanceof Error
+            ? syncError.message
+            : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsSyncingCouriers(false);
+    }
+  };
 
   return (
     <DashboardShell headerTitle="Dashboard administrativo">
@@ -141,8 +195,15 @@ export default function SuperAdminDashboardPage() {
             isLoading={isLoading}
             dateFilter={dateFilter}
           />
-          <div className="xl:w-[500px] xl:shrink-0">
+          <div className="xl:w-[380px] xl:shrink-0">
             <PlanDistribution data={dashboard?.planDistribution ?? []} />
+          </div>
+          <div className="xl:w-[260px] xl:shrink-0">
+            <CourierAgencySyncCard
+              statuses={courierSyncStatus}
+              isSyncing={isSyncingCouriers}
+              onSync={syncCourierAgencies}
+            />
           </div>
         </div>
 
@@ -153,6 +214,96 @@ export default function SuperAdminDashboardPage() {
       </div>
     </DashboardShell>
   );
+}
+
+function CourierAgencySyncCard({
+  statuses,
+  isSyncing,
+  onSync,
+}: {
+  statuses: Array<CourierAgencySyncStatus | null>;
+  isSyncing: boolean;
+  onSync: () => void;
+}) {
+  const statusFor = (courier: "SHALOM" | "OLVA") =>
+    statuses.find((status) => status?.courier === courier) ?? null;
+
+  return (
+    <article className="flex h-full min-h-[250px] flex-col rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-circular-bold text-[var(--color-text)]">
+            Agencias courier
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
+            Catálogo de Shalom y Olva
+          </p>
+        </div>
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+          <BuildingsIcon size={18} weight="bold" />
+        </span>
+      </div>
+
+      <div className="mt-5 space-y-2">
+        {(["SHALOM", "OLVA"] as const).map((courier) => {
+          const status = statusFor(courier);
+          const successful = status?.estado === "completada";
+          return (
+            <div
+              key={courier}
+              className="rounded-xl bg-[var(--color-background)] px-3 py-2.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-circular-bold text-[var(--color-text)]">
+                  {courier === "SHALOM" ? "Shalom" : "Olva"}
+                </span>
+                <span
+                  className={cn(
+                    "h-2.5 w-2.5 rounded-full",
+                    successful
+                      ? "bg-[#10b981]"
+                      : status?.estado === "fallida"
+                        ? "bg-[#ef4444]"
+                        : "bg-[#f59e0b]",
+                  )}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-[var(--color-muted-foreground)]">
+                {status
+                  ? `${status.totalRecibidas} agencias · ${formatSyncDate(status.finalizadaAt ?? status.iniciadaAt)}`
+                  : "Aún no sincronizado"}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={onSync}
+        disabled={isSyncing}
+        className={cn(
+          "mt-auto flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-xs font-circular-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+        )}
+      >
+        <ArrowClockwiseIcon
+          size={16}
+          weight="bold"
+          className={cn(isSyncing && "animate-spin")}
+        />
+        {isSyncing ? "Actualizando..." : "Actualizar agencias"}
+      </button>
+    </article>
+  );
+}
+
+function formatSyncDate(value: string) {
+  return new Intl.DateTimeFormat("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function SummaryGrid({
