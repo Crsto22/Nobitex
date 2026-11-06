@@ -18,6 +18,7 @@ import {
   IdentificationCardIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
+  MapTrifoldIcon,
   PaperPlaneTiltIcon,
   PhoneIcon,
   SpinnerGapIcon,
@@ -75,6 +76,7 @@ export default function ShippingDetailsPage() {
     useState<PublicShippingAgency | null>(null);
   const [isSearchingAgencies, setIsSearchingAgencies] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [form, setForm] = useState({
@@ -136,13 +138,26 @@ export default function ShippingDetailsPage() {
   useEffect(() => {
     if (step !== 2 || !form.agencia || isComplete) return;
     const term = agencyQuery.trim();
-    if (term.length === 1) return;
+    if (term.length < 2 && !userLocation) {
+      requestSequenceRef.current += 1;
+      setAgencyResults([]);
+      setIsSearchingAgencies(false);
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       setError("");
       void fetchAgencies(
         term.length >= 2
-          ? { q: term }
+          ? {
+              q: term,
+              ...(userLocation
+                ? {
+                    lat: userLocation.latitude,
+                    lng: userLocation.longitude,
+                  }
+                : {}),
+            }
           : userLocation
             ? { lat: userLocation.latitude, lng: userLocation.longitude }
             : {},
@@ -170,6 +185,7 @@ export default function ShippingDetailsPage() {
     setAgencyQuery("");
     setAgencyResults([]);
     setUserLocation(null);
+    setIsMapVisible(false);
     setLocationError("");
   };
 
@@ -189,10 +205,13 @@ export default function ShippingDetailsPage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setAgencyQuery("");
+        setSelectedAgency(null);
+        setForm((current) => ({ ...current, agenciaExternalId: "" }));
         setUserLocation({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
+        setIsMapVisible(true);
         setIsLocating(false);
       },
       (geolocationError) => {
@@ -302,6 +321,7 @@ export default function ShippingDetailsPage() {
                   isSearching={isSearchingAgencies}
                   isLocating={isLocating}
                   locationError={locationError}
+                  isMapVisible={isMapVisible}
                   onQueryChange={(value) => {
                     setAgencyQuery(value);
                     setSelectedAgency(null);
@@ -311,11 +331,13 @@ export default function ShippingDetailsPage() {
                     }));
                   }}
                   onLocate={locateUser}
-                  onShowAll={() => {
+                  onClearLocation={() => {
                     setAgencyQuery("");
                     setUserLocation(null);
+                    setAgencyResults([]);
                     setLocationError("");
                   }}
+                  onToggleMap={() => setIsMapVisible((visible) => !visible)}
                   onSelect={selectAgency}
                   onBack={() => setStep(1)}
                   onContinue={() => selectedAgency && setStep(3)}
@@ -479,9 +501,11 @@ function StepTwo({
   isSearching,
   isLocating,
   locationError,
+  isMapVisible,
   onQueryChange,
   onLocate,
-  onShowAll,
+  onClearLocation,
+  onToggleMap,
   onSelect,
   onBack,
   onContinue,
@@ -494,9 +518,11 @@ function StepTwo({
   isSearching: boolean;
   isLocating: boolean;
   locationError: string;
+  isMapVisible: boolean;
   onQueryChange: (value: string) => void;
   onLocate: () => void;
-  onShowAll: () => void;
+  onClearLocation: () => void;
+  onToggleMap: () => void;
   onSelect: (agency: PublicShippingAgency) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -549,19 +575,31 @@ function StepTwo({
       {userLocation ? (
         <div className="flex items-center justify-between rounded-xl bg-[#2563eb]/8 px-3 py-2 text-xs font-bold text-[#1d4ed8]">
           <span>Mostrando las agencias más cercanas a tu ubicación.</span>
-          <button type="button" onClick={onShowAll} className="underline">
-            Ver todas
+          <button type="button" onClick={onClearLocation} className="underline">
+            Quitar ubicación
           </button>
         </div>
       ) : null}
-      <AgencyMap
-        agencies={agencies}
-        selectedExternalId={selectedAgency?.externalId ?? ""}
-        onSelect={onSelect}
-        courier={courier}
-        userLocation={userLocation}
-      />
-      <div className="flex items-center justify-between">
+      <button
+        type="button"
+        onClick={onToggleMap}
+        className="flex items-center gap-2 text-xs font-black text-[var(--color-primary)] hover:underline"
+      >
+        <MapTrifoldIcon size={18} weight="fill" />
+        {isMapVisible ? "Ocultar mapa" : "Ver mapa"}
+      </button>
+      {isMapVisible ? (
+        <AgencyMap
+          agencies={agencies}
+          selectedExternalId={selectedAgency?.externalId ?? ""}
+          onSelect={onSelect}
+          courier={courier}
+          userLocation={userLocation}
+          focusResults={agencyQuery.trim().length >= 2}
+        />
+      ) : null}
+      {agencyQuery.trim().length >= 2 || userLocation ? (
+        <div className="flex items-center justify-between">
         <p className="text-xs font-bold text-[var(--color-muted-foreground)]">
           {isSearching
             ? "Buscando agencias..."
@@ -573,9 +611,16 @@ function StepTwo({
           {userLocation ? <span className="h-2.5 w-2.5 rounded-full bg-[#2563eb]" /> : null}
           {userLocation ? "Tu ubicación" : null}
         </div>
-      </div>
+        </div>
+      ) : (
+        <p className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-5 text-center text-sm text-[var(--color-muted-foreground)]">
+          Escribe al menos 2 caracteres para buscar una agencia o utiliza “Ubicarme”.
+        </p>
+      )}
       <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-        {!isSearching && !agencies.length ? (
+        {!isSearching &&
+        !agencies.length &&
+        (agencyQuery.trim().length >= 2 || userLocation) ? (
           <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-sm text-[var(--color-muted-foreground)]">
             No encontramos agencias para esta búsqueda.
           </div>

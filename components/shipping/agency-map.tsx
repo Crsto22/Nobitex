@@ -10,6 +10,7 @@ type AgencyMapProps = {
   onSelect: (agency: PublicShippingAgency) => void;
   courier: SaleShippingAgency;
   userLocation?: { latitude: number; longitude: number } | null;
+  focusResults?: boolean;
 };
 
 const PERU_CENTER: [number, number] = [-9.19, -75.0152];
@@ -20,6 +21,7 @@ export function AgencyMap({
   onSelect,
   courier,
   userLocation,
+  focusResults = false,
 }: AgencyMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -137,11 +139,23 @@ export function AgencyMap({
         })
           .bindPopup("Tu ubicación")
           .addTo(markers);
-        bounds.extend([userLocation.latitude, userLocation.longitude]);
       }
 
       map.invalidateSize();
-      if (userLocation) {
+      const selected = positioned.find(
+        (agency) => agency.externalId === selectedExternalId,
+      );
+      if (selected) {
+        map.flyTo([selected.latitud!, selected.longitud!], 16, {
+          duration: 0.7,
+        });
+      } else if (focusResults && positioned.length === 1) {
+        map.flyTo([positioned[0].latitud!, positioned[0].longitud!], 15, {
+          duration: 0.7,
+        });
+      } else if (focusResults && positioned.length > 1) {
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+      } else if (userLocation) {
         map.flyTo([userLocation.latitude, userLocation.longitude], 14, {
           duration: 0.7,
         });
@@ -155,7 +169,15 @@ export function AgencyMap({
     return () => {
       cancelled = true;
     };
-  }, [agencies, courier, isMapReady, onSelect, selectedExternalId, userLocation]);
+  }, [
+    agencies,
+    courier,
+    focusResults,
+    isMapReady,
+    onSelect,
+    selectedExternalId,
+    userLocation,
+  ]);
 
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)]">
