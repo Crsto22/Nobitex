@@ -14,7 +14,6 @@ import {
   ArrowRightIcon,
   BuildingsIcon,
   CheckCircleIcon,
-  CrosshairIcon,
   IdentificationCardIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -294,14 +293,17 @@ export default function ShippingDetailsPage() {
   return (
     <PublicShell>
       <PublicHeader link={link} />
+      {!isComplete ? (
+        <div className="bg-[var(--color-background)] px-4 py-3 sm:px-5">
+          <StepIndicator current={step} />
+        </div>
+      ) : null}
       <div className="flex flex-1 justify-center px-4 py-7 sm:px-5">
-        <div className={`my-auto w-full ${step === 2 ? "max-w-3xl" : "max-w-md"}`}>
+        <div className={`w-full ${step === 2 ? "max-w-3xl" : "max-w-md"}`}>
           {isComplete ? (
             <SuccessState businessName={link.negocio.nombreComercial} />
           ) : (
             <form ref={formRef} onSubmit={submit} className="space-y-5">
-              <StepIndicator current={step} />
-
               {step === 1 ? (
                 <StepOne
                   form={form}
@@ -528,13 +530,24 @@ function StepTwo({
   onContinue: () => void;
 }) {
   const courierLabel = courier === "SHALOM" ? "Shalom" : "Olva";
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const externalId = selectedAgency?.externalId;
+    if (!externalId) return;
+    itemRefs.current[externalId]?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [selectedAgency?.externalId]);
+
   return (
     <>
       <StepTitle
         title={`Elige tu agencia ${courierLabel}`}
         subtitle="Busca por distrito, usa tu ubicación o selecciona un pin del mapa."
       />
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+      <div className="grid grid-cols-[1fr_auto] gap-2 sm:gap-3">
         <div className="relative">
           <MagnifyingGlassIcon
             size={19}
@@ -557,14 +570,15 @@ function StepTwo({
           type="button"
           onClick={onLocate}
           disabled={isLocating}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 disabled:opacity-60"
+          aria-label="Ubicarme"
+          className="flex h-12 w-12 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] text-sm font-black text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 disabled:opacity-60 sm:w-auto sm:px-5"
         >
           {isLocating ? (
             <SpinnerGapIcon size={18} className="animate-spin" />
           ) : (
-            <CrosshairIcon size={18} weight="bold" />
+            <MapPinIcon size={18} weight="fill" className="text-red-600" />
           )}
-          Ubicarme
+          <span className="hidden sm:inline">Ubicarme</span>
         </button>
       </div>
       {locationError ? (
@@ -624,6 +638,9 @@ function StepTwo({
         {agencies.map((agency) => (
           <button
             key={agency.externalId}
+            ref={(node) => {
+              itemRefs.current[agency.externalId] = node;
+            }}
             type="button"
             onClick={() => onSelect(agency)}
             className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
@@ -747,7 +764,7 @@ function StepThree({
 
 function PublicHeader({ link }: { link: PublicShippingLink }) {
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-[var(--color-border)] bg-[var(--color-sidebar-bg)] px-5 py-4">
+    <header className="sticky top-0 z-[1100] w-full border-b border-gray-200 bg-[var(--color-background)] px-5 py-4">
       <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
         <Image
           src={link.negocio.logoUrl || "/Logo/Nuvex.png"}
@@ -774,18 +791,25 @@ function PublicHeader({ link }: { link: PublicShippingLink }) {
 function StepIndicator({ current }: { current: FormStep }) {
   const labels = ["Datos", "Agencia", "Confirmar"];
   return (
-    <div>
-      <p className="mb-3 text-center text-xs font-bold text-[var(--color-muted-foreground)]">
+    <div className="mx-auto w-full max-w-md">
+      <p className="mb-2 text-center text-xs font-bold text-[var(--color-muted-foreground)]">
         Paso {current} de 3 · {labels[current - 1]}
       </p>
       <div className="grid grid-cols-3 gap-2">
         {labels.map((label, index) => {
           const number = index + 1;
+          const active = number <= current;
           return (
             <div
               key={label}
-              className={`h-1.5 rounded-full ${number <= current ? "bg-[var(--color-primary)]" : "bg-[var(--color-border)]"}`}
-            />
+              className="relative h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]"
+            >
+              <div
+                className={`h-full rounded-full bg-[var(--color-primary)] transition-all duration-500 ease-out ${
+                  active ? "w-full" : "w-0"
+                }`}
+              />
+            </div>
           );
         })}
       </div>
