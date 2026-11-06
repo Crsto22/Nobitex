@@ -199,9 +199,16 @@ export type VentaDetalleResponse = {
 };
 
 export type SaleShippingAgency = "SHALOM" | "OLVA";
+export type SaleShippingLogisticsStatus =
+  | "POR_PREPARAR"
+  | "POR_DESPACHAR"
+  | "EN_TRANSITO"
+  | "ENTREGADO"
+  | "INCIDENCIA";
 export type SaleShippingDetails = {
   codigo: string;
   estado: "pendiente" | "recibido";
+  estadoLogistico: SaleShippingLogisticsStatus;
   nombreCompleto: string | null;
   dni: string | null;
   celular: string | null;
@@ -216,6 +223,23 @@ export type SaleShippingDetails = {
   agenciaLatitud: number | null;
   agenciaLongitud: number | null;
   recibidoAt: string | null;
+  despachadoAt: string | null;
+  entregadoAt: string | null;
+  incidencias: Array<{
+    publicId: string;
+    motivo: string;
+    descripcion: string;
+    estado: "ABIERTA" | "RESUELTA";
+    solucion: string | null;
+    createdAt: string;
+    resueltaAt: string | null;
+  }>;
+  historial: Array<{
+    estadoAnterior: SaleShippingLogisticsStatus | null;
+    estadoNuevo: SaleShippingLogisticsStatus;
+    detalle: string | null;
+    createdAt: string;
+  }>;
 };
 
 export type VentaPagoResponse = {
@@ -271,6 +295,12 @@ export type VentaResponse = {
   recojoHasta: string | null;
   fechaEntrega: string | null;
   estadoEntrega: "pendiente" | "parcial" | "entregada";
+  ultimaEntrega: {
+    tipo: "CLIENTE" | "COURIER";
+    numeroConstancia: string | null;
+    notas: string | null;
+    createdAt: string;
+  } | null;
   envio: SaleShippingDetails | null;
   moneda: string;
   formaPago: VentaFormaPago;
@@ -403,13 +433,21 @@ export type VentasResponse = {
   };
 };
 
-export type DeliveryStatusQuery = "pendiente" | "entregada";
+export type DeliveryStatusQuery =
+  | "pendiente"
+  | "por_preparar"
+  | "por_despachar"
+  | "en_transito"
+  | "entregada"
+  | "incidencia";
 
-export type DeliveriesQuery = {
+export type DeliveriesQuery = HistoryPeriodQuery & {
   estado?: DeliveryStatusQuery;
   page?: number;
   limit?: number;
   search?: string;
+  courier?: SaleShippingAgency;
+  sucursalId?: string;
 };
 
 export type DeliveriesResponse = {
@@ -419,6 +457,13 @@ export type DeliveriesResponse = {
     limit: number;
     total: number;
     totalPages: number;
+  };
+  summary: {
+    porPreparar: number;
+    porDespachar: number;
+    enTransito: number;
+    entregados: number;
+    incidencias: number;
   };
 };
 
@@ -432,6 +477,12 @@ export type DeliverSalePayload = {
 export type DeliverSaleResponse = {
   entrega: { publicId: string };
   venta: VentaResponse;
+};
+
+export type DispatchToCourierPayload = {
+  detalles: Array<{ ventaDetalleId: string; cantidad: number }>;
+  numeroConstancia?: string;
+  notas?: string;
 };
 
 export type ComprobanteSunatEstado =
@@ -583,6 +634,7 @@ export const salesApi = {
       typeof query === "string" ? { estado: query } : query;
 
     params.set("estado", normalizedQuery.estado ?? "pendiente");
+    appendHistoryPeriod(params, normalizedQuery);
 
     if (normalizedQuery.page) {
       params.set("page", String(normalizedQuery.page));
@@ -596,6 +648,14 @@ export const salesApi = {
       params.set("search", normalizedQuery.search.trim());
     }
 
+    if (normalizedQuery.courier) {
+      params.set("courier", normalizedQuery.courier);
+    }
+
+    if (normalizedQuery.sucursalId && normalizedQuery.sucursalId !== "all") {
+      params.set("sucursalId", normalizedQuery.sucursalId);
+    }
+
     return authFetch<DeliveriesResponse>(
       `/sales/deliveries?${params.toString()}`,
       options,
@@ -607,6 +667,53 @@ export const salesApi = {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+
+  dispatchToCourier(publicId: string, payload: DispatchToCourierPayload) {
+    return authFetch<DeliverSaleResponse>(
+      `/sales/${publicId}/dispatch-to-courier`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  updateShippingStatus(
+    publicId: string,
+    payload: { estado: "EN_TRANSITO" | "ENTREGADO"; notas?: string },
+  ) {
+    return authFetch<VentaResponse>(`/sales/${publicId}/shipping-status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  createShippingIncident(
+    publicId: string,
+    payload: { motivo: string; descripcion: string },
+  ) {
+    return authFetch<{
+      incidencia: { publicId: string };
+      venta: VentaResponse;
+    }>(`/sales/${publicId}/shipping-incidents`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  resolveShippingIncident(
+    publicId: string,
+    incidentId: string,
+    solucion: string,
+  ) {
+    return authFetch<VentaResponse>(
+      `/sales/${publicId}/shipping-incidents/${incidentId}/resolve`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ solucion }),
+      },
+    );
   },
 
   generateShippingLink(publicId: string) {

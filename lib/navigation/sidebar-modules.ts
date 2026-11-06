@@ -84,7 +84,7 @@ export const sidebarSections: SidebarSection[] = [
       },
       {
         key: "entregas-pendientes",
-        label: "Entregas pendientes",
+        label: "Entregas y envíos",
         icon: TruckIcon,
         route: "/entregas-pendientes",
       },
