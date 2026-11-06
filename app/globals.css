@@ -667,3 +667,8 @@ html[data-sidebar-expanded-sections]:not(
   .text-fixed-5xl  { font-size: calc(3rem * 16 / 14) !important; }
   .text-fixed-6xl  { font-size: calc(3.75rem * 16 / 14) !important; }
 }
+@layer components {
+  .public-shipping-input {
+    @apply h-12 w-full rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#172033] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#7c2dcc] focus:ring-2 focus:ring-[#7c2dcc]/15;
+  }
+}

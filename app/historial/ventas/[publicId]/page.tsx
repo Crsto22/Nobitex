@@ -18,6 +18,8 @@ import {
   ReceiptIcon,
   WarningCircleIcon,
   ArrowsClockwiseIcon,
+  LinkIcon,
+  TruckIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -34,6 +36,7 @@ import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { documentFileName } from "@/lib/document-file-name";
 import { canRetrySunatBaja } from "@/lib/sunat-baja-retry";
+import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
 
 const statusConfig: Record<
   VentaEstado,
@@ -305,6 +308,7 @@ export default function VentaDetallePage() {
   >(null);
   const [isSunatOpen, setIsSunatOpen] = useState(false);
   const [isSunatBajaOpen, setIsSunatBajaOpen] = useState(false);
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
   const [isRetryingSunat, setIsRetryingSunat] = useState(false);
   const [isRetryingSunatBaja, setIsRetryingSunatBaja] = useState(false);
   const [isConsultingSunatBaja, setIsConsultingSunatBaja] = useState(false);
@@ -789,6 +793,75 @@ export default function VentaDetallePage() {
             </div>
           </div>
         </div>
+
+        {/* Datos de envio */}
+        {(venta.estado !== "anulada" || venta.envio) && (
+          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
+                  <TruckIcon
+                    size={22}
+                    weight="fill"
+                    className="text-[var(--color-primary)]"
+                  />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-black text-[var(--color-text)]">
+                      Datos de envío
+                    </p>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[10px] font-circular-bold ${
+                        venta.envio?.estado === "recibido"
+                          ? "bg-[#10b981]/10 text-[#047857]"
+                          : "bg-[#f59e0b]/10 text-[#b45309]"
+                      }`}
+                    >
+                      {venta.envio?.estado === "recibido"
+                        ? "Datos recibidos"
+                        : venta.envio
+                          ? "Esperando datos"
+                          : "Sin enlace"}
+                    </span>
+                  </div>
+                  {venta.envio?.estado === "recibido" ? (
+                    <div className="mt-3 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                      <p className="text-[var(--color-muted-foreground)]">
+                        Nombre: <span className="text-[var(--color-text)]">{venta.envio.nombreCompleto}</span>
+                      </p>
+                      <p className="text-[var(--color-muted-foreground)]">
+                        DNI: <span className="text-[var(--color-text)]">{venta.envio.dni}</span>
+                      </p>
+                      <p className="text-[var(--color-muted-foreground)]">
+                        Celular: <span className="text-[var(--color-text)]">{venta.envio.celular}</span>
+                      </p>
+                      <p className="text-[var(--color-muted-foreground)]">
+                        Agencia: <span className="text-[var(--color-text)]">{venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                      {venta.envio
+                        ? "El cliente todavía no completa el formulario."
+                        : "Genera un enlace para solicitar los datos al cliente."}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {venta.estado !== "anulada" ? (
+                <button
+                  type="button"
+                  onClick={() => setIsShippingModalOpen(true)}
+                  className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white hover:opacity-90"
+                >
+                  <LinkIcon size={16} weight="bold" />
+                  {venta.envio ? "Gestionar enlace" : "Generar enlace"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {/* SUNAT */}
         {electronicSale && (
@@ -1299,6 +1372,16 @@ export default function VentaDetallePage() {
           setVenta(converted);
           setConvertModalType(null);
         }}
+      />
+      <ShippingLinkModal
+        isOpen={isShippingModalOpen}
+        sale={venta}
+        onClose={() => setIsShippingModalOpen(false)}
+        onUpdated={(shipping) =>
+          setVenta((current) =>
+            current ? { ...current, envio: shipping } : current,
+          )
+        }
       />
     </DashboardShell>
   );

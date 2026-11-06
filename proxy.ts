@@ -16,6 +16,7 @@ const PUBLIC_PREFIXES = [
   "/font",
   "/mascot",
   "/avatar",
+  "/e/",
   "/favicon.ico",
 ];
 

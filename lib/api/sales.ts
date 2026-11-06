@@ -198,6 +198,17 @@ export type VentaDetalleResponse = {
   };
 };
 
+export type SaleShippingAgency = "SHALOM" | "OLVA";
+export type SaleShippingDetails = {
+  codigo: string;
+  estado: "pendiente" | "recibido";
+  nombreCompleto: string | null;
+  dni: string | null;
+  celular: string | null;
+  agencia: SaleShippingAgency | null;
+  recibidoAt: string | null;
+};
+
 export type VentaPagoResponse = {
   id: string;
   publicId: string;
@@ -251,6 +262,7 @@ export type VentaResponse = {
   recojoHasta: string | null;
   fechaEntrega: string | null;
   estadoEntrega: "pendiente" | "parcial" | "entregada";
+  envio: SaleShippingDetails | null;
   moneda: string;
   formaPago: VentaFormaPago;
   subtotal: string;
@@ -310,6 +322,7 @@ export type VentaResponse = {
     nombre: string;
     tipoDocumento: string;
     numeroDocumento: string;
+    telefono: string | null;
   } | null;
   serieComprobante: {
     id: string;
@@ -585,6 +598,19 @@ export const salesApi = {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+
+  generateShippingLink(publicId: string) {
+    return authFetch<SaleShippingDetails>(`/sales/${publicId}/shipping-link`, {
+      method: "POST",
+    });
+  },
+
+  regenerateShippingLink(publicId: string) {
+    return authFetch<SaleShippingDetails>(
+      `/sales/${publicId}/shipping-link/regenerate`,
+      { method: "POST" },
+    );
   },
 
   findAll(query: VentasQuery = {}, options: RequestInit = {}) {

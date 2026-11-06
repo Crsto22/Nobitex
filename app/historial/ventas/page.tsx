@@ -15,6 +15,7 @@ import {
   DownloadSimpleIcon,
   ArrowsClockwiseIcon,
   PaperPlaneTiltIcon,
+  LinkIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ import { HistoryPeriodFilter } from "@/components/History/history-period-filter"
 import { defaultHistoryPeriod } from "@/lib/history-period";
 import { documentFileName } from "@/lib/document-file-name";
 import { canRetrySunatBaja } from "@/lib/sunat-baja-retry";
+import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
 
 const statusConfig: Record<
   VentaEstado,
@@ -300,6 +302,7 @@ export default function HistorialVentasPage() {
     venta: VentaResponse | null;
     type: "boleta" | "factura";
   }>({ open: false, venta: null, type: "boleta" });
+  const [shippingSale, setShippingSale] = useState<VentaResponse | null>(null);
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
   const [retryingSunatBajaId, setRetryingSunatBajaId] = useState<string | null>(
     null,
@@ -909,7 +912,7 @@ export default function HistorialVentasPage() {
                       <DotsThreeVerticalIcon size={20} weight="bold" />
                     </button>
                     {openMenuId === venta.publicId && (
-                      <div className="absolute right-0 top-full z-20 mt-2 w-44 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                      <div className="absolute right-0 top-full z-20 mt-2 w-64 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
                         <button
                           type="button"
                           onClick={() => {
@@ -921,6 +924,23 @@ export default function HistorialVentasPage() {
                           <EyeIcon size={16} weight="bold" />
                           Ver detalle
                         </button>
+                        {venta.estado !== "anulada" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              setShippingSale(venta);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                          >
+                            <LinkIcon size={16} weight="bold" />
+                            {venta.envio?.estado === "recibido"
+                              ? "Ver datos de envío"
+                              : venta.envio
+                                ? "Compartir enlace de envío"
+                                : "Generar enlace de envío"}
+                          </button>
+                        ) : null}
                         {(showAnnulAction || showBajaAction) && (
                           <button
                             type="button"
@@ -1068,6 +1088,23 @@ export default function HistorialVentasPage() {
           setConvertModal({ open: false, venta: null, type: "boleta" })
         }
         onConverted={handleConvertSuccess}
+      />
+      <ShippingLinkModal
+        isOpen={Boolean(shippingSale)}
+        sale={shippingSale}
+        onClose={() => setShippingSale(null)}
+        onUpdated={(shipping) => {
+          setVentas((current) =>
+            current.map((item) =>
+              item.publicId === shippingSale?.publicId
+                ? { ...item, envio: shipping }
+                : item,
+            ),
+          );
+          setShippingSale((current) =>
+            current ? { ...current, envio: shipping } : current,
+          );
+        }}
       />
     </DashboardShell>
   );
