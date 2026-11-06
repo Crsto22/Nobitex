@@ -34,6 +34,7 @@ import { relativeTimeFormatter } from "@/lib/intl";
 
 type HeaderProps = {
   title?: ReactNode;
+  content?: ReactNode;
   className?: string;
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
@@ -52,6 +53,7 @@ type NotificationLoadOptions = RequestInit & { force?: boolean };
 
 export function Header({
   title = "Punto de Venta",
+  content,
   className,
   isSidebarCollapsed = false,
   onToggleSidebar,
@@ -240,6 +242,11 @@ export function Header({
         <div className="min-w-0 text-sm font-circular-regular whitespace-nowrap text-[var(--color-text)]/70">
           {title}
         </div>
+        {content ? (
+          <div className="ml-2 hidden min-w-0 items-center lg:flex">
+            {content}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">

@@ -13,6 +13,7 @@ import {
   MapPinIcon,
   PackageIcon,
   PhoneIcon,
+  PrinterIcon,
   ReceiptIcon,
   SpinnerGapIcon,
   StorefrontIcon,
@@ -160,6 +161,10 @@ export default function DeliveriesPage() {
   const [incidentSale, setIncidentSale] = useState<VentaResponse | null>(null);
   const [shippingLinkSale, setShippingLinkSale] =
     useState<VentaResponse | null>(null);
+  const [selectedShippingSales, setSelectedShippingSales] = useState<
+    VentaResponse[]
+  >([]);
+  const [labelSales, setLabelSales] = useState<VentaResponse[] | null>(null);
   const toast = useSystemToast();
 
   const loadDeliveries = useCallback(async () => {
@@ -306,31 +311,66 @@ export default function DeliveriesPage() {
   const visibleTabs =
     viewMode === "pickup" ? pickupTabConfig : courierTabConfig;
 
+  const changeViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    setActiveTab("pendiente");
+    if (mode === "pickup") {
+      setCourier("");
+      setSelectedShippingSales([]);
+    }
+    setPage(1);
+  };
+
+  const toggleShippingSale = (sale: VentaResponse, selected: boolean) => {
+    setSelectedShippingSales((current) =>
+      selected
+        ? current.some((item) => item.publicId === sale.publicId)
+          ? current
+          : [...current, sale]
+        : current.filter((item) => item.publicId !== sale.publicId),
+    );
+  };
+
   return (
-    <DashboardShell headerTitle="Entregas y envíos">
+    <DashboardShell
+      headerTitle="Entregas y envíos"
+      headerContent={
+        <div className="flex items-center gap-2">
+          <ViewModeSwitch
+            viewMode={viewMode}
+            onChange={changeViewMode}
+            className="w-auto"
+          />
+          {viewMode === "courier" && selectedShippingSales.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setLabelSales(selectedShippingSales)}
+              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white lg:inline-flex"
+            >
+              <PrinterIcon size={17} weight="bold" />
+              Imprimir ({selectedShippingSales.length})
+            </button>
+          ) : null}
+        </div>
+      }
+    >
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6">
-        <div className="grid w-full grid-cols-2 rounded-[18px] bg-[var(--color-input-bg)] p-1 sm:max-w-xl">
-          <ViewModeButton
-            active={viewMode === "pickup"}
-            icon={StorefrontIcon}
-            label="Recojo en tienda"
-            onClick={() => {
-              setViewMode("pickup");
-              setActiveTab("pendiente");
-              setCourier("");
-              setPage(1);
-            }}
+        <div className="lg:hidden">
+          <ViewModeSwitch
+            viewMode={viewMode}
+            onChange={changeViewMode}
+            className="w-full sm:w-auto"
           />
-          <ViewModeButton
-            active={viewMode === "courier"}
-            icon={TruckIcon}
-            label="Envíos por courier"
-            onClick={() => {
-              setViewMode("courier");
-              setActiveTab("pendiente");
-              setPage(1);
-            }}
-          />
+          {viewMode === "courier" && selectedShippingSales.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setLabelSales(selectedShippingSales)}
+              className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white"
+            >
+              <PrinterIcon size={17} weight="bold" />
+              Imprimir seleccionados ({selectedShippingSales.length})
+            </button>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -509,6 +549,16 @@ export default function DeliveriesPage() {
                 onManageLink={() => setShippingLinkSale(sale)}
                 onUpdateStatus={() => setStatusSale(sale)}
                 onIncident={() => setIncidentSale(sale)}
+                selectable={
+                  viewMode === "courier" && sale.envio?.estado === "recibido"
+                }
+                selected={selectedShippingSales.some(
+                  (item) => item.publicId === sale.publicId,
+                )}
+                onSelectedChange={(selected) =>
+                  toggleShippingSale(sale, selected)
+                }
+                onPrintLabel={() => setLabelSales([sale])}
               />
             ))
           )}
@@ -587,35 +637,67 @@ export default function DeliveriesPage() {
           void loadDeliveries();
         }}
       />
+      {labelSales ? (
+        <ShippingLabelModal
+          sales={labelSales}
+          onClose={() => setLabelSales(null)}
+        />
+      ) : null}
     </DashboardShell>
   );
 }
 
-function ViewModeButton({
-  active,
-  icon: Icon,
-  label,
-  onClick,
+function ViewModeSwitch({
+  viewMode,
+  onChange,
+  className,
 }: {
-  active: boolean;
-  icon: typeof StorefrontIcon;
-  label: string;
-  onClick: () => void;
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+  className?: string;
 }) {
+  const options: Array<{
+    value: ViewMode;
+    label: string;
+    icon: typeof StorefrontIcon;
+  }> = [
+    { value: "pickup", label: "Recojo en tienda", icon: StorefrontIcon },
+    { value: "courier", label: "Envíos por courier", icon: TruckIcon },
+  ];
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className={cn(
-        "flex min-h-12 items-center justify-center gap-2 rounded-[15px] px-3 text-sm font-black transition-colors",
-        active
-          ? "bg-[var(--color-card)] text-[var(--color-primary)] shadow-sm"
-          : "text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
+        "inline-flex items-center rounded-[16px] bg-[var(--color-input-bg)] p-1",
+        className,
       )}
     >
-      <Icon size={19} weight={active ? "fill" : "regular"} />
-      {label}
-    </button>
+      {options.map((option) => {
+        const Icon = option.icon;
+        const active = option.value === viewMode;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={active}
+            className={cn(
+              "flex h-9 flex-1 items-center justify-center gap-2 rounded-[13px] px-3 text-sm font-medium transition-colors",
+              active
+                ? "bg-[var(--color-card)] text-[var(--color-primary)] shadow-sm"
+                : "text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
+            )}
+          >
+            <Icon
+              size={17}
+              weight={active ? "fill" : "regular"}
+              className="shrink-0"
+            />
+            <span className="truncate">{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -649,6 +731,10 @@ function DeliveryRow({
   onManageLink,
   onUpdateStatus,
   onIncident,
+  selectable,
+  selected,
+  onSelectedChange,
+  onPrintLabel,
 }: {
   sale: VentaResponse;
   onClientDelivery: () => void;
@@ -656,6 +742,10 @@ function DeliveryRow({
   onManageLink: () => void;
   onUpdateStatus: () => void;
   onIncident: () => void;
+  selectable: boolean;
+  selected: boolean;
+  onSelectedChange: (selected: boolean) => void;
+  onPrintLabel: () => void;
 }) {
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
@@ -676,6 +766,15 @@ function DeliveryRow({
     <article className="overflow-hidden rounded-[16px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
       <div className="grid gap-3 p-4 lg:grid-cols-[170px_minmax(190px,1fr)_150px_150px_120px_auto] lg:items-center">
         <div className="flex min-w-0 items-center gap-3">
+          {selectable ? (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(event) => onSelectedChange(event.target.checked)}
+              aria-label={`Seleccionar ${sale.correlativo} para imprimir etiqueta`}
+              className="size-4 shrink-0 accent-[var(--color-primary)]"
+            />
+          ) : null}
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
             <ReceiptIcon size={20} weight="fill" className="text-[var(--color-primary)]" />
           </div>
@@ -843,6 +942,16 @@ function DeliveryRow({
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
+          {isCourier && sale.envio?.estado === "recibido" ? (
+            <button
+              type="button"
+              onClick={onPrintLabel}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-4 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+            >
+              <PrinterIcon size={17} weight="bold" />
+              Imprimir etiqueta
+            </button>
+          ) : null}
           {status === "INCIDENCIA" ? (
             <PrimaryButton onClick={onIncident} icon={WarningCircleIcon}>
               Gestionar incidencia
@@ -968,6 +1077,190 @@ function EmptyState({ tab, mode }: { tab: PageTab; mode: ViewMode }) {
         <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
           Cambia los filtros o actualiza la lista.
         </p>
+      </div>
+    </div>
+  );
+}
+
+function ShippingLabelModal({
+  sales,
+  onClose,
+}: {
+  sales: VentaResponse[];
+  onClose: () => void;
+}) {
+  const [packageCounts, setPackageCounts] = useState<Record<string, number>>(
+    () => Object.fromEntries(sales.map((sale) => [sale.publicId, 1])),
+  );
+  const [isPrinting, setIsPrinting] = useState(false);
+  const toast = useSystemToast();
+  const totalLabels = sales.reduce(
+    (total, sale) => total + (packageCounts[sale.publicId] ?? 1),
+    0,
+  );
+  const isBatch = sales.length > 1;
+  const isValid =
+    totalLabels >= 1 &&
+    totalLabels <= 100 &&
+    sales.every((sale) => {
+      const quantity = packageCounts[sale.publicId];
+      return Number.isInteger(quantity) && quantity >= 1 && quantity <= 50;
+    });
+
+  const updatePackageCount = (publicId: string, value: string) => {
+    const parsed = Number(value);
+    setPackageCounts((current) => ({
+      ...current,
+      [publicId]: Number.isFinite(parsed) ? Math.trunc(parsed) : 0,
+    }));
+  };
+
+  const print = async () => {
+    if (!isValid || isPrinting) return;
+
+    const previewWindow = window.open("", "_blank");
+    setIsPrinting(true);
+    try {
+      const blob = isBatch
+        ? await salesApi.printShippingLabelBatch(
+            sales.map((sale) => ({
+              publicId: sale.publicId,
+              packageCount: packageCounts[sale.publicId],
+            })),
+          )
+        : await salesApi.printShippingLabels(
+            sales[0].publicId,
+            packageCounts[sales[0].publicId],
+          );
+      const url = URL.createObjectURL(blob);
+
+      if (previewWindow) {
+        previewWindow.location.href = url;
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = isBatch
+          ? "etiquetas-envios.pdf"
+          : `etiquetas-${sales[0].correlativo}.pdf`;
+        link.click();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      toast.showToast({
+        title: isBatch ? "Etiquetas generadas" : "Etiqueta generada",
+        description: `${totalLabels} etiqueta${totalLabels === 1 ? "" : "s"} lista${totalLabels === 1 ? "" : "s"} para imprimir.`,
+        variant: "success",
+      });
+      onClose();
+    } catch (error: unknown) {
+      previewWindow?.close();
+      toast.showToast({
+        title: "No se pudieron generar las etiquetas",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4">
+      <div className="flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-[20px] bg-[var(--color-card)] shadow-2xl">
+        <div className="flex items-start justify-between border-b border-[var(--color-border)] px-5 py-4">
+          <div>
+            <h2 className="text-lg font-black text-[var(--color-text)]">
+              {isBatch ? "Imprimir etiquetas por cantidad" : "Imprimir etiqueta"}
+            </h2>
+            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+              Formato térmico de 100 × 150 mm. Indica cuántos bultos tiene cada
+              envío.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPrinting}
+            aria-label="Cerrar"
+            className="flex size-9 items-center justify-center rounded-xl bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
+          >
+            <XIcon size={18} weight="bold" />
+          </button>
+        </div>
+
+        <div className="content-scrollbar space-y-3 overflow-y-auto p-5">
+          {sales.map((sale) => (
+            <div
+              key={sale.publicId}
+              className="grid gap-3 rounded-[16px] bg-[var(--color-input-bg)] p-4 sm:grid-cols-[1fr_120px] sm:items-center"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[var(--color-text)]">
+                  {sale.correlativo} · {customerName(sale)}
+                </p>
+                <p className="mt-1 truncate text-xs text-[var(--color-muted-foreground)]">
+                  {sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom"} ·{" "}
+                  {sale.envio?.agenciaNombre || "Agencia seleccionada"}
+                </p>
+              </div>
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
+                  N.º de bultos
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  step={1}
+                  value={packageCounts[sale.publicId] ?? 1}
+                  onChange={(event) =>
+                    updatePackageCount(sale.publicId, event.target.value)
+                  }
+                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-bold text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-[var(--color-border)] p-5">
+          <div className="mb-3 flex items-center justify-between text-xs">
+            <span className="text-[var(--color-muted-foreground)]">
+              Cada bulto tendrá su propia página: 1 de N, 2 de N, etc.
+            </span>
+            <strong className="text-[var(--color-text)]">
+              {totalLabels}/100 etiquetas
+            </strong>
+          </div>
+          {totalLabels > 100 ? (
+            <p className="mb-3 text-xs font-medium text-[#b91c1c]">
+              El máximo por impresión es de 100 etiquetas.
+            </p>
+          ) : null}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPrinting}
+              className="h-11 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-bold text-[var(--color-text)] disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => void print()}
+              disabled={!isValid || isPrinting}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPrinting ? (
+                <SpinnerGapIcon size={18} className="animate-spin" />
+              ) : (
+                <PrinterIcon size={18} weight="bold" />
+              )}
+              {isPrinting ? "Generando..." : "Generar PDF"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

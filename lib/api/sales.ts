@@ -722,6 +722,24 @@ export const salesApi = {
     );
   },
 
+  printShippingLabels(publicId: string, packageCount: number) {
+    return authBlobFetch(`/sales/${publicId}/shipping-labels/pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageCount }),
+    });
+  },
+
+  printShippingLabelBatch(
+    sales: Array<{ publicId: string; packageCount: number }>,
+  ) {
+    return authBlobFetch("/sales/shipping-labels/batch/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sales }),
+    });
+  },
+
   generateShippingLink(publicId: string) {
     return authFetch<SaleShippingDetails>(`/sales/${publicId}/shipping-link`, {
       method: "POST",

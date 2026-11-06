@@ -34,6 +34,7 @@ const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 type DashboardShellProps = {
   children: ReactNode;
   headerTitle?: ReactNode;
+  headerContent?: ReactNode;
   headerParent?: {
     label: string;
     href: string;
@@ -88,6 +89,7 @@ function getServerMobileSnapshot() {
 export function DashboardShell({
   children,
   headerTitle = "Punto de Venta",
+  headerContent,
   headerParent,
 }: DashboardShellProps) {
   const router = useRouter();
@@ -349,6 +351,7 @@ export function DashboardShell({
               headerTitle
             )
           }
+          content={headerContent}
           isSidebarCollapsed={
             isMobile ? !isMobileSidebarOpen : isSidebarCollapsed
           }
