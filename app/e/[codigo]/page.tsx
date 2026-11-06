@@ -138,7 +138,7 @@ export default function ShippingDetailsPage() {
   useEffect(() => {
     if (step !== 2 || !form.agencia || isComplete) return;
     const term = agencyQuery.trim();
-    if (term.length < 2 && !userLocation) {
+    if (term.length === 1 && !userLocation) {
       requestSequenceRef.current += 1;
       setAgencyResults([]);
       setIsSearchingAgencies(false);
@@ -162,7 +162,7 @@ export default function ShippingDetailsPage() {
             ? { lat: userLocation.latitude, lng: userLocation.longitude }
             : {},
       );
-    }, term ? 300 : 0);
+    }, term ? 2000 : 0);
 
     return () => window.clearTimeout(timer);
   }, [agencyQuery, fetchAgencies, form.agencia, isComplete, step, userLocation]);
@@ -598,7 +598,7 @@ function StepTwo({
           focusResults={agencyQuery.trim().length >= 2}
         />
       ) : null}
-      {agencyQuery.trim().length >= 2 || userLocation ? (
+      {agencies.length || agencyQuery.trim().length >= 2 || userLocation ? (
         <div className="flex items-center justify-between">
         <p className="text-xs font-bold text-[var(--color-muted-foreground)]">
           {isSearching
@@ -612,11 +612,7 @@ function StepTwo({
           {userLocation ? "Tu ubicación" : null}
         </div>
         </div>
-      ) : (
-        <p className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-5 text-center text-sm text-[var(--color-muted-foreground)]">
-          Escribe al menos 2 caracteres para buscar una agencia o utiliza “Ubicarme”.
-        </p>
-      )}
+      ) : null}
       <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
         {!isSearching &&
         !agencies.length &&
