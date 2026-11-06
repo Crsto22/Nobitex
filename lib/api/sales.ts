@@ -442,6 +442,7 @@ export type DeliveryStatusQuery =
   | "incidencia";
 
 export type DeliveriesQuery = HistoryPeriodQuery & {
+  mode?: "pickup" | "courier";
   estado?: DeliveryStatusQuery;
   page?: number;
   limit?: number;
@@ -464,6 +465,8 @@ export type DeliveriesResponse = {
     enTransito: number;
     entregados: number;
     incidencias: number;
+    recojoParciales: number;
+    productosPendientes: number;
   };
 };
 
@@ -634,6 +637,9 @@ export const salesApi = {
       typeof query === "string" ? { estado: query } : query;
 
     params.set("estado", normalizedQuery.estado ?? "pendiente");
+    if (normalizedQuery.mode) {
+      params.set("mode", normalizedQuery.mode);
+    }
     appendHistoryPeriod(params, normalizedQuery);
 
     if (normalizedQuery.page) {

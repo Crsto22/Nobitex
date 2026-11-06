@@ -5,10 +5,14 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   ClockIcon,
+  FunnelIcon,
+  IdentificationBadgeIcon,
+  IdentificationCardIcon,
   LinkIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
   PackageIcon,
+  PhoneIcon,
   ReceiptIcon,
   SpinnerGapIcon,
   StorefrontIcon,
@@ -18,6 +22,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { Select } from "@/components/ui/select";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -35,14 +40,19 @@ import {
 import { cn } from "@/lib/utils";
 
 type PageTab = "pendiente" | "en_transito" | "entregada" | "incidencia";
+type ViewMode = "pickup" | "courier";
 type FulfillmentMode = "CLIENTE" | "COURIER";
 
 const pageSize = 10;
-const tabConfig: Array<{ label: string; value: PageTab }> = [
+const courierTabConfig: Array<{ label: string; value: PageTab }> = [
   { label: "Pendientes", value: "pendiente" },
   { label: "En tránsito", value: "en_transito" },
   { label: "Entregados", value: "entregada" },
   { label: "Incidencias", value: "incidencia" },
+];
+const pickupTabConfig: Array<{ label: string; value: PageTab }> = [
+  { label: "Pendientes", value: "pendiente" },
+  { label: "Entregados", value: "entregada" },
 ];
 
 const emptySummary = {
@@ -51,6 +61,8 @@ const emptySummary = {
   enTransito: 0,
   entregados: 0,
   incidencias: 0,
+  recojoParciales: 0,
+  productosPendientes: 0,
 };
 
 const logisticsLabels: Record<
@@ -107,13 +119,6 @@ function pendingQuantity(sale: VentaResponse) {
   );
 }
 
-function deliveredQuantity(sale: VentaResponse) {
-  return sale.detalles.reduce(
-    (sum, detail) => sum + detail.cantidadEntregada,
-    0,
-  );
-}
-
 function totalQuantity(sale: VentaResponse) {
   return sale.detalles.reduce((sum, detail) => sum + detail.cantidad, 0);
 }
@@ -128,6 +133,7 @@ function customerName(sale: VentaResponse) {
 }
 
 export default function DeliveriesPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("pickup");
   const [activeTab, setActiveTab] = useState<PageTab>("pendiente");
   const [sales, setSales] = useState<VentaResponse[]>([]);
   const [summary, setSummary] = useState(emptySummary);
@@ -143,6 +149,7 @@ export default function DeliveriesPage() {
   const [courier, setCourier] = useState<"" | "SHALOM" | "OLVA">("");
   const [branchId, setBranchId] = useState("");
   const [period, setPeriod] = useState<"" | "today" | "week" | "month">("");
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [fulfillment, setFulfillment] = useState<{
@@ -159,11 +166,12 @@ export default function DeliveriesPage() {
     setIsLoading(true);
     try {
       const response = await salesApi.findDeliveries({
+        mode: viewMode,
         estado: activeTab as DeliveryStatusQuery,
         page,
         limit: pageSize,
         search: debouncedSearchTerm || undefined,
-        courier: courier || undefined,
+        courier: viewMode === "courier" ? courier || undefined : undefined,
         sucursalId: branchId || undefined,
         period: period || undefined,
       });
@@ -187,7 +195,16 @@ export default function DeliveriesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, branchId, courier, debouncedSearchTerm, page, period, toast]);
+  }, [
+    activeTab,
+    branchId,
+    courier,
+    debouncedSearchTerm,
+    page,
+    period,
+    toast,
+    viewMode,
+  ]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -224,47 +241,96 @@ export default function DeliveriesPage() {
     [],
   );
 
-  const cards = [
-    {
-      label: "Por preparar",
-      value: summary.porPreparar,
-      icon: PackageIcon,
-      color: "text-[#f59e0b]",
-      background: "bg-[#f59e0b]/10",
-    },
-    {
-      label: "Por despachar",
-      value: summary.porDespachar,
-      icon: TruckIcon,
-      color: "text-[#7c3aed]",
-      background: "bg-[#7c3aed]/10",
-    },
-    {
-      label: "En tránsito",
-      value: summary.enTransito,
-      icon: TruckIcon,
-      color: "text-[#3b82f6]",
-      background: "bg-[#3b82f6]/10",
-    },
-    {
-      label: "Entregados",
-      value: summary.entregados,
-      icon: CheckCircleIcon,
-      color: "text-[#10b981]",
-      background: "bg-[#10b981]/10",
-    },
-  ];
+  const cards =
+    viewMode === "pickup"
+      ? [
+          {
+            label: "Por entregar",
+            value: summary.porPreparar,
+            icon: StorefrontIcon,
+            color: "text-[#f59e0b]",
+            background: "bg-[#f59e0b]/10",
+          },
+          {
+            label: "Entregas parciales",
+            value: summary.recojoParciales,
+            icon: PackageIcon,
+            color: "text-[#7c3aed]",
+            background: "bg-[#7c3aed]/10",
+          },
+          {
+            label: "Entregados",
+            value: summary.entregados,
+            icon: CheckCircleIcon,
+            color: "text-[#10b981]",
+            background: "bg-[#10b981]/10",
+          },
+          {
+            label: "Productos pendientes",
+            value: summary.productosPendientes,
+            icon: PackageIcon,
+            color: "text-[#3b82f6]",
+            background: "bg-[#3b82f6]/10",
+          },
+        ]
+      : [
+          {
+            label: "Por preparar",
+            value: summary.porPreparar,
+            icon: PackageIcon,
+            color: "text-[#f59e0b]",
+            background: "bg-[#f59e0b]/10",
+          },
+          {
+            label: "Por despachar",
+            value: summary.porDespachar,
+            icon: TruckIcon,
+            color: "text-[#7c3aed]",
+            background: "bg-[#7c3aed]/10",
+          },
+          {
+            label: "En tránsito",
+            value: summary.enTransito,
+            icon: TruckIcon,
+            color: "text-[#3b82f6]",
+            background: "bg-[#3b82f6]/10",
+          },
+          {
+            label: "Entregados",
+            value: summary.entregados,
+            icon: CheckCircleIcon,
+            color: "text-[#10b981]",
+            background: "bg-[#10b981]/10",
+          },
+        ];
+  const visibleTabs =
+    viewMode === "pickup" ? pickupTabConfig : courierTabConfig;
 
   return (
     <DashboardShell headerTitle="Entregas y envíos">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:p-4 lg:px-6">
-        <div>
-          <h1 className="text-2xl font-black text-[var(--color-text)] sm:text-3xl">
-            Entregas y envíos
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-            Gestiona pedidos pendientes, despachos y entregas.
-          </p>
+        <div className="grid w-full grid-cols-2 rounded-[18px] bg-[var(--color-input-bg)] p-1 sm:max-w-xl">
+          <ViewModeButton
+            active={viewMode === "pickup"}
+            icon={StorefrontIcon}
+            label="Recojo en tienda"
+            onClick={() => {
+              setViewMode("pickup");
+              setActiveTab("pendiente");
+              setCourier("");
+              setPage(1);
+            }}
+          />
+          <ViewModeButton
+            active={viewMode === "courier"}
+            icon={TruckIcon}
+            label="Envíos por courier"
+            onClick={() => {
+              setViewMode("courier");
+              setActiveTab("pendiente");
+              setPage(1);
+            }}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -298,7 +364,7 @@ export default function DeliveriesPage() {
 
         <div className="sticky -top-4 z-30 -mx-3 space-y-3 bg-[var(--color-background)] px-3 py-2 sm:-mx-4 sm:px-4 lg:-mx-6 lg:px-6">
           <div className="flex w-full overflow-x-auto rounded-[16px] bg-[var(--color-input-bg)] p-1 sm:max-w-3xl">
-            {tabConfig.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab.value}
                 type="button"
@@ -321,8 +387,8 @@ export default function DeliveriesPage() {
             ))}
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_180px_200px_160px_auto]">
-            <label className="relative">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
+            <label className="relative w-full min-w-0 sm:flex-1">
               <MagnifyingGlassIcon
                 size={18}
                 weight="bold"
@@ -336,57 +402,86 @@ export default function DeliveriesPage() {
                 className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
               />
             </label>
-            <FilterSelect
-              value={courier}
-              onChange={(value) => {
-                setCourier(value as "" | "SHALOM" | "OLVA");
-                setPage(1);
-              }}
-              options={[
-                { value: "", label: "Todos los couriers" },
-                { value: "SHALOM", label: "Shalom" },
-                { value: "OLVA", label: "Olva" },
-              ]}
-            />
-            <FilterSelect
-              value={branchId}
-              onChange={(value) => {
-                setBranchId(value);
-                setPage(1);
-              }}
-              options={[
-                { value: "", label: "Todas las sucursales" },
-                ...branches.map((branch) => ({
-                  value: branch.id,
-                  label: branch.nombre,
-                })),
-              ]}
-            />
-            <FilterSelect
-              value={period}
-              onChange={(value) => {
-                setPeriod(value as "" | "today" | "week" | "month");
-                setPage(1);
-              }}
-              options={[
-                { value: "", label: "Todas las fechas" },
-                { value: "today", label: "Hoy" },
-                { value: "week", label: "Esta semana" },
-                { value: "month", label: "Este mes" },
-              ]}
-            />
-            <button
-              type="button"
-              onClick={() => void loadDeliveries()}
-              className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+            <div
+              className={cn(
+                "grid w-full gap-2 sm:w-auto sm:flex-1 lg:flex lg:flex-none lg:items-center",
+                viewMode === "courier" ? "sm:grid-cols-3" : "sm:grid-cols-2",
+                showFilters ? "" : "hidden lg:flex",
+              )}
             >
-              <SpinnerGapIcon
-                size={16}
-                weight="bold"
-                className={cn(isLoading && "animate-spin")}
+              {viewMode === "courier" ? (
+                <FilterSelect
+                  className="lg:w-40"
+                  value={courier}
+                  onChange={(value) => {
+                    setCourier(value as "" | "SHALOM" | "OLVA");
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: "", label: "Todos los couriers" },
+                    { value: "SHALOM", label: "Shalom" },
+                    { value: "OLVA", label: "Olva" },
+                  ]}
+                />
+              ) : null}
+              <FilterSelect
+                className="lg:w-44"
+                value={branchId}
+                onChange={(value) => {
+                  setBranchId(value);
+                  setPage(1);
+                }}
+                options={[
+                  { value: "", label: "Todas las sucursales" },
+                  ...branches.map((branch) => ({
+                    value: branch.id,
+                    label: branch.nombre,
+                  })),
+                ]}
               />
-              Actualizar
-            </button>
+              <FilterSelect
+                className="lg:w-36"
+                value={period}
+                onChange={(value) => {
+                  setPeriod(value as "" | "today" | "week" | "month");
+                  setPage(1);
+                }}
+                options={[
+                  { value: "", label: "Todas las fechas" },
+                  { value: "today", label: "Hoy" },
+                  { value: "week", label: "Esta semana" },
+                  { value: "month", label: "Este mes" },
+                ]}
+              />
+            </div>
+            <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex">
+              <button
+                type="button"
+                onClick={() => setShowFilters((current) => !current)}
+                aria-expanded={showFilters}
+                className={cn(
+                  "flex h-11 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-circular-bold transition-colors lg:hidden",
+                  showFilters
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                )}
+              >
+                <FunnelIcon size={16} weight="bold" />
+                Filtros
+              </button>
+              <button
+                type="button"
+                onClick={() => void loadDeliveries()}
+                className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+              >
+                <SpinnerGapIcon
+                  size={16}
+                  weight="bold"
+                  className={cn(isLoading && "animate-spin")}
+                />
+                Actualizar
+              </button>
+            </div>
           </div>
         </div>
 
@@ -399,7 +494,7 @@ export default function DeliveriesPage() {
               />
             ))
           ) : sales.length === 0 ? (
-            <EmptyState tab={activeTab} />
+            <EmptyState tab={activeTab} mode={viewMode} />
           ) : (
             sales.map((sale) => (
               <DeliveryRow
@@ -421,7 +516,8 @@ export default function DeliveriesPage() {
 
         <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
           <p className="text-xs text-[var(--color-muted-foreground)]">
-            Mostrando {sales.length} de {meta.total} envíos
+            Mostrando {sales.length} de {meta.total}{" "}
+            {viewMode === "pickup" ? "entregas" : "envíos"}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -495,27 +591,54 @@ export default function DeliveriesPage() {
   );
 }
 
+function ViewModeButton({
+  active,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  icon: typeof StorefrontIcon;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-h-12 items-center justify-center gap-2 rounded-[15px] px-3 text-sm font-black transition-colors",
+        active
+          ? "bg-[var(--color-card)] text-[var(--color-primary)] shadow-sm"
+          : "text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
+      )}
+    >
+      <Icon size={19} weight={active ? "fill" : "regular"} />
+      {label}
+    </button>
+  );
+}
+
 function FilterSelect({
   value,
   onChange,
   options,
+  className,
 }: {
   value: string;
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
+  className?: string;
 }) {
   return (
-    <select
+    <Select
       value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-11 rounded-[14px] border-0 bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-    >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+      onChange={onChange}
+      options={options}
+      ariaLabel={options[0]?.label ?? "Filtro"}
+      className={className}
+      fixedMenu
+    />
   );
 }
 
@@ -537,7 +660,6 @@ function DeliveryRow({
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
   const pending = pendingQuantity(sale);
-  const delivered = deliveredQuantity(sale);
   const total = totalQuantity(sale);
   const isCourier = Boolean(sale.envio);
   const activeIncident = sale.envio?.incidencias.find(
@@ -620,57 +742,86 @@ function DeliveryRow({
         </span>
       </div>
 
-      <div className="grid gap-4 border-t border-[var(--color-border)] px-4 py-3 lg:grid-cols-[minmax(220px,0.8fr)_minmax(300px,1.3fr)_auto] lg:items-center">
-        <div>
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium text-[var(--color-text)]">
-              Productos: {delivered} de {total} gestionados
-            </span>
-            <span className="text-[var(--color-muted-foreground)]">
-              {total > 0 ? Math.round((delivered / total) * 100) : 0}%
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[var(--color-input-bg)]">
-            <div
-              className="h-full rounded-full bg-[var(--color-primary)] transition-all"
-              style={{ width: `${total > 0 ? (delivered / total) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-
+      <div className="grid gap-4 border-t border-[var(--color-border)] px-4 py-3 lg:grid-cols-[minmax(300px,1.3fr)_auto] lg:items-center">
         <div className="min-w-0">
           {isCourier && sale.envio ? (
             <div className="flex min-w-0 items-start gap-3">
-              <span
-                className={cn(
-                  "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black text-white",
-                  sale.envio.agencia === "OLVA" ? "bg-[#eab308]" : "bg-[#dc2626]",
-                )}
-              >
-                {sale.envio.agencia === "OLVA" ? "OLVA" : "SHALOM"}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {sale.envio.estado === "recibido"
-                    ? sale.envio.agenciaNombre || "Agencia seleccionada"
-                    : "Esperando datos del cliente"}
-                </p>
-                <p className="flex items-center gap-1 truncate text-xs text-[var(--color-muted-foreground)]">
-                  <MapPinIcon size={13} />
-                  {sale.envio.estado === "recibido"
-                    ? [
-                        sale.envio.agenciaDistrito,
-                        sale.envio.agenciaProvincia,
-                        sale.envio.agenciaDepartamento,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")
-                    : "Comparte o revisa el enlace de envío"}
-                </p>
-                {activeIncident ? (
-                  <p className="mt-1 text-xs font-medium text-[#b91c1c]">
-                    {activeIncident.motivo}: {activeIncident.descripcion}
+              {sale.envio.estado === "recibido" ? (
+                <span
+                  className={cn(
+                    "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black text-white",
+                    sale.envio.agencia === "OLVA"
+                      ? "bg-[#eab308]"
+                      : "bg-[#dc2626]",
+                  )}
+                >
+                  {sale.envio.agencia === "OLVA" ? "OLVA" : "SHALOM"}
+                </span>
+              ) : (
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-secondary)] text-white">
+                  <ClockIcon size={20} weight="fill" />
+                </span>
+              )}
+              <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-[var(--color-text)]">
+                    {sale.envio.estado === "recibido"
+                      ? sale.envio.agenciaNombre || "Agencia seleccionada"
+                      : "Esperando datos del cliente"}
                   </p>
+                  <p className="flex items-center gap-1 truncate text-xs text-[var(--color-muted-foreground)]">
+                    <MapPinIcon size={13} />
+                    {sale.envio.estado === "recibido"
+                      ? [
+                          sale.envio.agenciaDistrito,
+                          sale.envio.agenciaProvincia,
+                          sale.envio.agenciaDepartamento,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : "Comparte o revisa el enlace de envío"}
+                  </p>
+                  {activeIncident ? (
+                    <p className="mt-1 text-xs font-medium text-[#b91c1c]">
+                      {activeIncident.motivo}: {activeIncident.descripcion}
+                    </p>
+                  ) : null}
+                </div>
+                {sale.envio.estado === "recibido" &&
+                (sale.envio.nombreCompleto ||
+                  sale.envio.celular ||
+                  sale.envio.dni) ? (
+                  <div className="flex items-center gap-2">
+                    <IdentificationBadgeIcon
+                      size={34}
+                      weight="duotone"
+                      className="shrink-0 text-[var(--color-primary)]"
+                    />
+                    <div className="min-w-0 space-y-0.5 text-xs">
+                      {sale.envio.nombreCompleto ? (
+                        <p className="truncate font-semibold text-[var(--color-text)]">
+                          {sale.envio.nombreCompleto}
+                        </p>
+                      ) : null}
+                      <p className="flex flex-wrap items-center gap-x-2 text-[var(--color-muted-foreground)]">
+                        {sale.envio.celular ? (
+                          <span className="flex items-center gap-1">
+                            <PhoneIcon size={12} className="shrink-0" />
+                            {sale.envio.celular}
+                          </span>
+                        ) : null}
+                        {sale.envio.dni ? (
+                          <span className="flex items-center gap-1">
+                            <IdentificationCardIcon
+                              size={12}
+                              className="shrink-0"
+                            />
+                            DNI {sale.envio.dni}
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -793,9 +944,12 @@ function SecondaryButton({
   );
 }
 
-function EmptyState({ tab }: { tab: PageTab }) {
+function EmptyState({ tab, mode }: { tab: PageTab; mode: ViewMode }) {
   const labels: Record<PageTab, string> = {
-    pendiente: "No hay pedidos pendientes",
+    pendiente:
+      mode === "pickup"
+        ? "No hay recojos pendientes"
+        : "No hay envíos pendientes",
     en_transito: "No hay envíos en tránsito",
     entregada: "No hay entregas registradas",
     incidencia: "No hay incidencias abiertas",
