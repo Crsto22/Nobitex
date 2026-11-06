@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
@@ -8,6 +8,7 @@ import {
   CheckCircleIcon,
   IdentificationCardIcon,
   MapPinIcon,
+  MapTrifoldIcon,
   PaperPlaneTiltIcon,
   PhoneIcon,
   SpinnerGapIcon,
@@ -21,6 +22,7 @@ import {
   type PublicShippingLink,
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
+import { AgencyMap } from "@/components/shipping/agency-map";
 
 const agencies: Array<{
   value: SaleShippingAgency;
@@ -53,7 +55,9 @@ export default function ShippingDetailsPage() {
   const [error, setError] = useState("");
   const [agencyQuery, setAgencyQuery] = useState("");
   const [agencyResults, setAgencyResults] = useState<PublicShippingAgency[]>([]);
+  const [mapAgencies, setMapAgencies] = useState<PublicShippingAgency[]>([]);
   const [isSearchingAgencies, setIsSearchingAgencies] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(false);
   const [form, setForm] = useState({
     nombreCompleto: "",
     dni: "",
@@ -93,10 +97,16 @@ export default function ShippingDetailsPage() {
       void shippingLinksApi
         .searchAgencies(code, courier, agencyQuery.trim())
         .then((data) => {
-          if (active) setAgencyResults(data);
+          if (active) {
+            setAgencyResults(data);
+            setMapAgencies(data);
+          }
         })
         .catch(() => {
-          if (active) setAgencyResults([]);
+          if (active) {
+            setAgencyResults([]);
+            setMapAgencies([]);
+          }
         })
         .finally(() => {
           if (active) setIsSearchingAgencies(false);
@@ -107,6 +117,15 @@ export default function ShippingDetailsPage() {
       window.clearTimeout(timer);
     };
   }, [agencyQuery, code, form.agencia, isComplete]);
+
+  const selectAgency = useCallback((agency: PublicShippingAgency) => {
+    setForm((current) => ({
+      ...current,
+      agenciaExternalId: agency.externalId,
+    }));
+    setAgencyQuery(agency.nombre);
+    setAgencyResults([]);
+  }, []);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -308,6 +327,8 @@ export default function ShippingDetailsPage() {
                         }));
                         setAgencyQuery("");
                         setAgencyResults([]);
+                        setMapAgencies([]);
+                        setIsMapVisible(false);
                       }}
                       className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-colors ${
                         form.agencia === agency.value
@@ -352,7 +373,9 @@ export default function ShippingDetailsPage() {
                         setAgencyQuery(value);
                         if (value.trim().length < 2) {
                           setAgencyResults([]);
+                          setMapAgencies([]);
                           setIsSearchingAgencies(false);
+                          setIsMapVisible(false);
                         }
                         setForm((current) => ({
                           ...current,
@@ -375,14 +398,7 @@ export default function ShippingDetailsPage() {
                         <button
                           key={agency.externalId}
                           type="button"
-                          onClick={() => {
-                            setForm((current) => ({
-                              ...current,
-                              agenciaExternalId: agency.externalId,
-                            }));
-                            setAgencyQuery(agency.nombre);
-                            setAgencyResults([]);
-                          }}
+                          onClick={() => selectAgency(agency)}
                           className="w-full rounded-lg px-3 py-2.5 text-left hover:bg-[var(--color-button-hover)]"
                         >
                           <p className="text-sm font-bold text-[var(--color-text)]">
@@ -395,6 +411,25 @@ export default function ShippingDetailsPage() {
                           </p>
                         </button>
                       ))}
+                    </div>
+                  ) : null}
+                  {mapAgencies.length ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsMapVisible((visible) => !visible)}
+                      className="mt-2 flex items-center gap-2 text-xs font-bold text-[var(--color-primary)] hover:underline"
+                    >
+                      <MapTrifoldIcon size={17} weight="fill" />
+                      {isMapVisible ? "Ocultar mapa" : "Ver agencias en el mapa"}
+                    </button>
+                  ) : null}
+                  {isMapVisible && mapAgencies.length ? (
+                    <div className="mt-3">
+                      <AgencyMap
+                        agencies={mapAgencies}
+                        selectedExternalId={form.agenciaExternalId}
+                        onSelect={selectAgency}
+                      />
                     </div>
                   ) : null}
                   {form.agenciaExternalId ? (
