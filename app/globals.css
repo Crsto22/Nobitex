@@ -669,6 +669,6 @@ html[data-sidebar-expanded-sections]:not(
 }
 @layer components {
   .public-shipping-input {
-    @apply h-12 w-full rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#172033] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#7c2dcc] focus:ring-2 focus:ring-[#7c2dcc]/15;
+    @apply h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none transition-colors placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20;
   }
 }

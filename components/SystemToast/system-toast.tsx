@@ -5,7 +5,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -89,6 +91,7 @@ const toastStyles = {
 
 export function SystemToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const toastLayerRef = useRef<HTMLDivElement>(null);
 
   const removeToast = useCallback((id: string) => {
     setToasts((currentToasts) =>
@@ -130,6 +133,21 @@ export function SystemToastProvider({ children }: { children: ReactNode }) {
     [removeToast]
   );
 
+  useEffect(() => {
+    const layer = toastLayerRef.current;
+    if (!layer) return;
+
+    try {
+      if (toasts.length > 0) {
+        if (!layer.matches(":popover-open")) layer.showPopover();
+      } else if (layer.matches(":popover-open")) {
+        layer.hidePopover();
+      }
+    } catch {
+      // Popover API no disponible: se mantiene el z-index como respaldo.
+    }
+  }, [toasts.length]);
+
   const value = useMemo(
     () => ({ showToast, dismissToast }),
     [showToast, dismissToast]
@@ -138,7 +156,11 @@ export function SystemToastProvider({ children }: { children: ReactNode }) {
   return (
     <SystemToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed left-1/2 top-4 z-[10000] flex w-[calc(100%-2rem)] max-w-[420px] -translate-x-1/2 flex-col items-center gap-3 sm:top-6">
+      <div
+        ref={toastLayerRef}
+        popover="manual"
+        className="pointer-events-none fixed left-1/2 top-4 z-[10000] flex w-[calc(100%-2rem)] max-w-[420px] -translate-x-1/2 flex-col items-center gap-3 [margin:0] [border:0] [background:transparent] [padding:0] [overflow:visible] [right:auto] [bottom:auto] sm:top-6"
+      >
         {toasts.map((toast) => {
           const styles = toastStyles[toast.variant];
           const Icon = styles.icon;

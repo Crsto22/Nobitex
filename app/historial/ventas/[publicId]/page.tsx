@@ -799,12 +799,27 @@ export default function VentaDetallePage() {
           <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-                  <TruckIcon
-                    size={22}
-                    weight="fill"
-                    className="text-[var(--color-primary)]"
-                  />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-primary)]/10">
+                  {venta.envio?.agencia ? (
+                    <Image
+                      src={
+                        venta.envio.agencia === "OLVA"
+                          ? "/envios/olva.webp"
+                          : "/envios/shalom.svg"
+                      }
+                      alt={venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}
+                      width={44}
+                      height={44}
+                      unoptimized
+                      className="h-full w-full rounded-xl object-contain"
+                    />
+                  ) : (
+                    <TruckIcon
+                      size={22}
+                      weight="fill"
+                      className="text-[var(--color-primary)]"
+                    />
+                  )}
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

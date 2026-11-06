@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { Modal } from "@/components/Modal/modal";
+import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   salesApi,
@@ -36,6 +37,7 @@ export function ShippingLinkModal({
     data: SaleShippingDetails;
   } | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const initializedSaleId = useRef<string | null>(null);
   const toast = useSystemToast();
 
@@ -97,10 +99,6 @@ export function ShippingLinkModal({
 
   const regenerate = async () => {
     if (!sale || isRegenerating) return;
-    const confirmed = window.confirm(
-      "El enlace anterior dejará de funcionar y se borrarán los datos de envío recibidos. ¿Deseas continuar?",
-    );
-    if (!confirmed) return;
 
     setIsRegenerating(true);
     try {
@@ -125,13 +123,14 @@ export function ShippingLinkModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Enlace de envío"
-      description={sale ? `Venta ${sale.correlativo}` : undefined}
-      size="md"
-    >
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Enlace de envío"
+        description={sale ? `Venta ${sale.correlativo}` : undefined}
+        size="md"
+      >
       {!shipping ? (
         <div className="flex min-h-40 items-center justify-center gap-2 text-sm text-[var(--color-muted-foreground)]">
           <SpinnerGapIcon size={20} className="animate-spin" />
@@ -185,7 +184,7 @@ export function ShippingLinkModal({
 
           <button
             type="button"
-            onClick={() => void regenerate()}
+            onClick={() => setIsConfirmOpen(true)}
             disabled={isRegenerating}
             className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] text-xs font-circular-bold text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] disabled:opacity-50"
           >
@@ -198,6 +197,15 @@ export function ShippingLinkModal({
           </button>
         </div>
       )}
-    </Modal>
+      </Modal>
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={regenerate}
+        title="Regenerar enlace"
+        description="El enlace anterior dejará de funcionar y se borrarán los datos de envío recibidos. ¿Deseas continuar?"
+        confirmLabel="Regenerar enlace"
+      />
+    </>
   );
 }

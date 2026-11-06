@@ -16,6 +16,9 @@ import {
   ArrowsClockwiseIcon,
   PaperPlaneTiltIcon,
   LinkIcon,
+  TruckIcon,
+  CheckIcon,
+  HourglassMediumIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -887,6 +890,50 @@ export default function HistorialVentasPage() {
 
                   {/* Total */}
                   <div className="flex items-center gap-4 md:justify-end">
+                    {venta.envio ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          setShippingSale(venta);
+                        }}
+                        className={cn(
+                          "group relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-white",
+                          venta.envio.estado === "recibido"
+                            ? "bg-[#10b981]"
+                            : "bg-[#f59e0b]",
+                        )}
+                        title={
+                          venta.envio.estado === "recibido"
+                            ? "Datos de envío recibidos"
+                            : "Esperando datos de envío"
+                        }
+                        aria-label="Abrir enlace de envío"
+                      >
+                        <TruckIcon
+                          size={24}
+                          weight="fill"
+                          className={cn(
+                            "transition-opacity group-hover:opacity-0",
+                            venta.envio.estado !== "recibido" &&
+                              "animate-pulse group-hover:animate-none",
+                          )}
+                        />
+                        {venta.envio.estado === "recibido" ? (
+                          <CheckIcon
+                            size={22}
+                            weight="bold"
+                            className="absolute opacity-0 transition-opacity group-hover:opacity-100"
+                          />
+                        ) : (
+                          <HourglassMediumIcon
+                            size={20}
+                            weight="fill"
+                            className="absolute opacity-0 transition-opacity group-hover:opacity-100"
+                          />
+                        )}
+                      </button>
+                    ) : null}
                     <div className="text-right">
                       <p className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
                         Total
