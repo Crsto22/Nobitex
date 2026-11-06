@@ -68,7 +68,10 @@ export function AgencyMap({
 
       markers.clearLayers();
       const positioned = agencies.filter(
-        (agency) => agency.latitud !== null && agency.longitud !== null,
+        (agency) =>
+          agency.latitud !== null &&
+          agency.longitud !== null &&
+          isValidPeruCoordinate(agency.latitud, agency.longitud),
       );
       const bounds = L.latLngBounds([]);
 
@@ -85,6 +88,8 @@ export function AgencyMap({
             ? "shipping-agency-marker-selected"
             : ""
         }`;
+        markerButton.innerHTML =
+          '<svg viewBox="0 0 32 42" aria-hidden="true"><path d="M16 1C7.72 1 1 7.72 1 16c0 11.25 15 25 15 25s15-13.75 15-25C31 7.72 24.28 1 16 1Z" fill="currentColor" stroke="white" stroke-width="2"/><circle cx="16" cy="16" r="5.5" fill="white"/></svg>';
         markerButton.onclick = () => onSelect(agency);
 
         const popup = document.createElement("div");
@@ -104,9 +109,9 @@ export function AgencyMap({
           icon: L.divIcon({
             html: markerButton,
             className: "",
-            iconSize: [36, 36],
-            iconAnchor: [18, 36],
-            popupAnchor: [0, -34],
+            iconSize: [36, 44],
+            iconAnchor: [18, 44],
+            popupAnchor: [0, -42],
           }),
           title: agency.nombre,
         })
@@ -135,13 +140,16 @@ export function AgencyMap({
         bounds.extend([userLocation.latitude, userLocation.longitude]);
       }
 
-      if (positioned.length === 1 && !userLocation) {
+      map.invalidateSize();
+      if (userLocation) {
+        map.flyTo([userLocation.latitude, userLocation.longitude], 14, {
+          duration: 0.7,
+        });
+      } else if (positioned.length === 1) {
         map.flyTo(bounds.getCenter(), 14, { duration: 0.5 });
-      } else if (positioned.length > 1 || userLocation) {
+      } else if (positioned.length > 1) {
         map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
       }
-
-      window.setTimeout(() => map.invalidateSize(), 0);
     });
 
     return () => {
@@ -157,4 +165,8 @@ export function AgencyMap({
       </p>
     </div>
   );
+}
+
+function isValidPeruCoordinate(latitude: number, longitude: number) {
+  return latitude >= -20 && latitude <= 1 && longitude >= -82 && longitude <= -68;
 }
