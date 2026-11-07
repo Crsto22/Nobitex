@@ -309,8 +309,6 @@ export default function CotizacionDetallePage() {
       clienteId: convertClient?.id ?? null,
       pagos: payload.pagos,
       observaciones: quotation.observaciones ?? undefined,
-      recogerDespues: payload.recogerDespues,
-      recojoHasta: payload.recojoHasta,
     });
     setQuotation(result.quotation);
     setConvertModalOpen(false);

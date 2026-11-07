@@ -379,8 +379,6 @@ export default function HistorialCotizacionesPage() {
         clienteId: convertClient?.id ?? null,
         pagos: payload.pagos,
         observaciones: convertModal.quote.observaciones ?? undefined,
-        recogerDespues: payload.recogerDespues,
-        recojoHasta: payload.recojoHasta,
       },
     );
     setConvertModal({ open: false, quote: null });

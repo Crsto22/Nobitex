@@ -1,19 +1,27 @@
 import { apiRequest } from "@/lib/api/client";
 import type { SaleShippingAgency } from "@/lib/api/sales";
 
+export type PublicShippingMetodo = {
+  metodo: string;
+  nombre: string;
+  tipo: "courier" | "recojo";
+  direccion: string | null;
+};
+
 export type PublicShippingLink = {
   estado: "pendiente" | "recibido";
   venta: { correlativo: string };
   negocio: { nombreComercial: string; logoUrl: string | null };
-  metodosEnvio: SaleShippingAgency[];
+  metodosEnvio: PublicShippingMetodo[];
 };
 
 export type SubmitShippingDetails = {
   nombreCompleto: string;
   dni: string;
   celular: string;
-  agencia: SaleShippingAgency;
-  agenciaExternalId: string;
+  metodo: string;
+  agencia?: SaleShippingAgency;
+  agenciaExternalId?: string;
 };
 
 export type PublicShippingAgency = {

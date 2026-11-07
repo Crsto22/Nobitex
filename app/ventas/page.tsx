@@ -2502,7 +2502,6 @@ export default function VentasPage() {
         <ChargeModal
           isOpen={isChargeModalOpen}
           wide
-          enableShippingMethods
           onClose={() => setIsChargeModalOpen(false)}
           cartItems={cartItems}
           subtotal={subtotal}

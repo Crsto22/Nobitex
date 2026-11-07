@@ -791,7 +791,8 @@ function DeliveryRow({
   const toast = useSystemToast();
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
-  const isCourier = Boolean(sale.envio);
+  const isCourier =
+    Boolean(sale.envio) && sale.envio?.metodoEnvio !== "RECOJO";
   const documentLabel =
     sale.cliente?.tipoDocumento === "ruc"
       ? "RUC"

@@ -61,11 +61,21 @@ export default function EnviosConfigPage() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [direccionDraft, setDireccionDraft] = useState<Record<string, string>>(
+    {},
+  );
+  const [savingDireccion, setSavingDireccion] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      setConfigs(await enviosConfigApi.findAll());
+      const data = await enviosConfigApi.findAll();
+      setConfigs(data);
+      setDireccionDraft(
+        Object.fromEntries(
+          data.map((config) => [config.metodo, config.direccion ?? ""]),
+        ),
+      );
     } catch (error: unknown) {
       showToast({
         title: "No se pudieron cargar los métodos de envío",
@@ -127,7 +137,7 @@ export default function EnviosConfigPage() {
       ),
     );
     try {
-      const updated = await enviosConfigApi.toggle(metodo, activo);
+      const updated = await enviosConfigApi.update(metodo, { activo });
       setConfigs((current) =>
         current.map((config) =>
           config.metodo === updated.metodo ? updated : config,
@@ -148,6 +158,40 @@ export default function EnviosConfigPage() {
       });
     } finally {
       setToggling(null);
+    }
+  };
+
+  const saveDireccion = async (metodo: string, activo: boolean) => {
+    if (savingDireccion) return;
+    setSavingDireccion(metodo);
+    try {
+      const updated = await enviosConfigApi.update(metodo, {
+        activo,
+        direccion: direccionDraft[metodo] ?? "",
+      });
+      setConfigs((current) =>
+        current.map((config) =>
+          config.metodo === updated.metodo ? updated : config,
+        ),
+      );
+      setDireccionDraft((current) => ({
+        ...current,
+        [metodo]: updated.direccion ?? "",
+      }));
+      showToast({
+        title: "Dirección de recojo guardada",
+        description: updated.nombre,
+        variant: "success",
+      });
+    } catch (error: unknown) {
+      showToast({
+        title: "No se pudo guardar la dirección",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setSavingDireccion(null);
     }
   };
 
@@ -320,6 +364,41 @@ export default function EnviosConfigPage() {
                       )}
                     </div>
                   </div>
+
+                  {item.tipo === "recojo" ? (
+                    <div className="col-span-2 mt-1 rounded-[12px] bg-[var(--color-input-bg)] p-3 md:col-span-4">
+                      <label className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
+                        Dirección de recojo
+                      </label>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <input
+                          type="text"
+                          value={direccionDraft[item.metodo] ?? ""}
+                          onChange={(event) =>
+                            setDireccionDraft((current) => ({
+                              ...current,
+                              [item.metodo]: event.target.value,
+                            }))
+                          }
+                          placeholder="Ej. Av. Principal 123, Lima"
+                          maxLength={300}
+                          className="h-10 min-w-0 flex-1 rounded-[12px] bg-[var(--color-card)] px-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void saveDireccion(item.metodo, item.activo)
+                          }
+                          disabled={savingDireccion === item.metodo}
+                          className="h-10 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
+                        >
+                          {savingDireccion === item.metodo
+                            ? "Guardando..."
+                            : "Guardar"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

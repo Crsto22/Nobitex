@@ -21,6 +21,7 @@ import {
   PaperPlaneTiltIcon,
   PhoneIcon,
   SpinnerGapIcon,
+  StorefrontIcon,
   UserIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react/ssr";
@@ -30,31 +31,25 @@ import {
   shippingLinksApi,
   type PublicShippingAgency,
   type PublicShippingLink,
+  type PublicShippingMetodo,
   type SearchShippingAgenciesOptions,
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
 
-const couriers: Array<{
-  value: SaleShippingAgency;
-  label: string;
-  image: string;
-  selectedBg: string;
-}> = [
-  {
-    value: "SHALOM",
-    label: "Shalom",
+const metodoVisuals: Record<string, { image?: string; selectedBg: string }> = {
+  SHALOM: {
     image: "/envios/shalom.svg",
     selectedBg: "bg-[#e52421]/10 ring-2 ring-[#e52421]/30",
   },
-  {
-    value: "OLVA",
-    label: "Olva",
+  OLVA: {
     image: "/envios/olva.webp",
     selectedBg: "bg-[#f5c518]/15 ring-2 ring-[#f5c518]/40",
   },
-];
-
-type CourierOption = (typeof couriers)[number];
+  RECOJO: {
+    selectedBg:
+      "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
+  },
+};
 
 type FormStep = 1 | 2 | 3;
 type UserLocation = { latitude: number; longitude: number };
@@ -84,9 +79,13 @@ export default function ShippingDetailsPage() {
     nombreCompleto: "",
     dni: "",
     celular: "",
-    agencia: "" as SaleShippingAgency | "",
+    metodo: "",
     agenciaExternalId: "",
   });
+
+  const selectedMetodo =
+    link?.metodosEnvio.find((metodo) => metodo.metodo === form.metodo) ?? null;
+  const isRecojo = selectedMetodo?.tipo === "recojo";
 
   useEffect(() => {
     let active = true;
@@ -110,13 +109,13 @@ export default function ShippingDetailsPage() {
 
   const fetchAgencies = useCallback(
     async (options: SearchShippingAgenciesOptions) => {
-      if (!form.agencia) return;
+      if (!form.metodo) return;
       const requestSequence = ++requestSequenceRef.current;
       setIsSearchingAgencies(true);
       try {
         const data = await shippingLinksApi.searchAgencies(
           code,
-          form.agencia,
+          form.metodo as SaleShippingAgency,
           options,
         );
         if (requestSequence === requestSequenceRef.current) {
@@ -133,11 +132,11 @@ export default function ShippingDetailsPage() {
         }
       }
     },
-    [code, form.agencia],
+    [code, form.metodo],
   );
 
   useEffect(() => {
-    if (step !== 2 || !form.agencia || isComplete) return;
+    if (step !== 2 || !form.metodo || isComplete) return;
     const term = agencyQuery.trim();
     if (term.length === 1 && !userLocation) {
       requestSequenceRef.current += 1;
@@ -167,7 +166,7 @@ export default function ShippingDetailsPage() {
     }, term ? 2000 : 0);
 
     return () => window.clearTimeout(timer);
-  }, [agencyQuery, fetchAgencies, form.agencia, isComplete, step, userLocation]);
+  }, [agencyQuery, fetchAgencies, form.metodo, isComplete, step, userLocation]);
 
   const selectAgency = useCallback((agency: PublicShippingAgency) => {
     setSelectedAgency(agency);
@@ -177,10 +176,10 @@ export default function ShippingDetailsPage() {
     }));
   }, []);
 
-  const chooseCourier = (courier: SaleShippingAgency) => {
+  const chooseMetodo = (metodo: string) => {
     setForm((current) => ({
       ...current,
-      agencia: courier,
+      metodo,
       agenciaExternalId: "",
     }));
     setSelectedAgency(null);
@@ -191,10 +190,10 @@ export default function ShippingDetailsPage() {
     setLocationError("");
   };
 
-  const continueToAgencies = () => {
-    if (!formRef.current?.reportValidity() || !form.agencia) return;
+  const continueFromStepOne = () => {
+    if (!formRef.current?.reportValidity() || !form.metodo) return;
     setError("");
-    setStep(2);
+    setStep(isRecojo ? 3 : 2);
   };
 
   const locateUser = () => {
@@ -230,12 +229,10 @@ export default function ShippingDetailsPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (
-      step !== 3 ||
-      !form.agencia ||
-      !form.agenciaExternalId ||
-      isSubmitting
-    ) {
+    if (step !== 3 || !form.metodo || isSubmitting) {
+      return;
+    }
+    if (!isRecojo && !form.agenciaExternalId) {
       return;
     }
     setError("");
@@ -245,8 +242,13 @@ export default function ShippingDetailsPage() {
         nombreCompleto: form.nombreCompleto.trim(),
         dni: form.dni,
         celular: form.celular,
-        agencia: form.agencia,
-        agenciaExternalId: form.agenciaExternalId,
+        metodo: form.metodo,
+        agencia: isRecojo
+          ? undefined
+          : (form.metodo as SaleShippingAgency),
+        agenciaExternalId: isRecojo
+          ? undefined
+          : form.agenciaExternalId,
       });
       setIsComplete(true);
     } catch (submitError: unknown) {
@@ -310,18 +312,16 @@ export default function ShippingDetailsPage() {
               {step === 1 ? (
                 <StepOne
                   form={form}
-                  couriers={couriers.filter((courier) =>
-                    link.metodosEnvio.includes(courier.value),
-                  )}
+                  metodos={link.metodosEnvio}
                   onFormChange={setForm}
-                  onCourierChange={chooseCourier}
-                  onContinue={continueToAgencies}
+                  onMetodoChange={chooseMetodo}
+                  onContinue={continueFromStepOne}
                 />
               ) : null}
 
-              {step === 2 && form.agencia ? (
+              {step === 2 && form.metodo ? (
                 <StepTwo
-                  courier={form.agencia}
+                  courier={form.metodo as SaleShippingAgency}
                   agencyQuery={agencyQuery}
                   agencies={agencyResults}
                   selectedAgency={selectedAgency}
@@ -352,12 +352,13 @@ export default function ShippingDetailsPage() {
                 />
               ) : null}
 
-              {step === 3 && selectedAgency && form.agencia ? (
+              {step === 3 && selectedMetodo && (isRecojo || selectedAgency) ? (
                 <StepThree
                   form={form}
-                  agency={selectedAgency}
+                  metodo={selectedMetodo}
+                  agency={isRecojo ? null : selectedAgency}
                   isSubmitting={isSubmitting}
-                  onBack={() => setStep(2)}
+                  onBack={() => setStep(isRecojo ? 1 : 2)}
                 />
               ) : null}
 
@@ -376,23 +377,25 @@ export default function ShippingDetailsPage() {
 
 function StepOne({
   form,
-  couriers: enabledCouriers,
+  metodos,
   onFormChange,
-  onCourierChange,
+  onMetodoChange,
   onContinue,
 }: {
   form: {
     nombreCompleto: string;
     dni: string;
     celular: string;
-    agencia: SaleShippingAgency | "";
+    metodo: string;
     agenciaExternalId: string;
   };
-  couriers: CourierOption[];
+  metodos: PublicShippingMetodo[];
   onFormChange: React.Dispatch<React.SetStateAction<typeof form>>;
-  onCourierChange: (courier: SaleShippingAgency) => void;
+  onMetodoChange: (metodo: string) => void;
   onContinue: () => void;
 }) {
+  const selectedMetodo =
+    metodos.find((metodo) => metodo.metodo === form.metodo) ?? null;
   return (
     <>
       <StepTitle
@@ -456,48 +459,78 @@ function StepOne({
       <fieldset>
         <legend className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
           <BuildingsIcon size={19} className="text-[var(--color-primary)]" />
-          Empresa de envío
+          Método de envío
         </legend>
-        {enabledCouriers.length === 0 ? (
+        {metodos.length === 0 ? (
           <p className="rounded-xl bg-[var(--color-input-bg)] px-4 py-6 text-center text-sm text-[var(--color-muted-foreground)]">
             No hay métodos de envío disponibles. Contacta al negocio.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {enabledCouriers.map((courier) => (
-              <button
-                key={courier.value}
-                type="button"
-                onClick={() => onCourierChange(courier.value)}
-                className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-all ${
-                  form.agencia === courier.value
-                    ? courier.selectedBg
-                    : "hover:bg-[var(--color-button-hover)]"
-                }`}
-              >
-                <Image
-                  src={courier.image}
-                  alt={courier.label}
-                  width={200}
-                  height={80}
-                  unoptimized
-                  className="h-full w-auto max-w-full rounded-2xl object-contain"
-                />
-                {form.agencia === courier.value ? (
-                  <CheckCircleIcon
-                    size={21}
-                    weight="fill"
-                    className="absolute right-2 top-2 text-[var(--color-primary)]"
-                  />
-                ) : null}
-              </button>
-            ))}
+            {metodos.map((metodo) => {
+              const visual = metodoVisuals[metodo.metodo];
+              const selected = form.metodo === metodo.metodo;
+              return (
+                <button
+                  key={metodo.metodo}
+                  type="button"
+                  onClick={() => onMetodoChange(metodo.metodo)}
+                  className={`relative flex h-28 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl p-2 transition-all ${
+                    selected
+                      ? (visual?.selectedBg ??
+                        "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30")
+                      : "hover:bg-[var(--color-button-hover)]"
+                  }`}
+                >
+                  {metodo.tipo === "recojo" ? (
+                    <>
+                      <StorefrontIcon
+                        size={40}
+                        weight="fill"
+                        className="text-[var(--color-primary)]"
+                      />
+                      <span className="text-sm font-black text-[var(--color-text)]">
+                        {metodo.nombre}
+                      </span>
+                    </>
+                  ) : visual?.image ? (
+                    <Image
+                      src={visual.image}
+                      alt={metodo.nombre}
+                      width={200}
+                      height={80}
+                      unoptimized
+                      className="h-full w-auto max-w-full rounded-2xl object-contain"
+                    />
+                  ) : (
+                    <span className="text-sm font-black text-[var(--color-text)]">
+                      {metodo.nombre}
+                    </span>
+                  )}
+                  {selected ? (
+                    <CheckCircleIcon
+                      size={21}
+                      weight="fill"
+                      className="absolute right-2 top-2 text-[var(--color-primary)]"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         )}
+        {selectedMetodo?.tipo === "recojo" ? (
+          <p className="mt-2 rounded-xl bg-[var(--color-input-bg)] px-4 py-3 text-xs text-[var(--color-muted-foreground)]">
+            Recogerás tu pedido en:{" "}
+            <span className="font-bold text-[var(--color-text)]">
+              {selectedMetodo.direccion || "la tienda (dirección por confirmar)"}
+            </span>
+          </p>
+        ) : null}
       </fieldset>
       <button
         type="button"
-        disabled={!form.agencia}
+        disabled={!form.metodo}
         onClick={onContinue}
         className="public-primary-button"
       >
@@ -718,6 +751,7 @@ function StepTwo({
 
 function StepThree({
   form,
+  metodo,
   agency,
   isSubmitting,
   onBack,
@@ -726,10 +760,11 @@ function StepThree({
     nombreCompleto: string;
     dni: string;
     celular: string;
-    agencia: SaleShippingAgency | "";
+    metodo: string;
     agenciaExternalId: string;
   };
-  agency: PublicShippingAgency;
+  metodo: PublicShippingMetodo;
+  agency: PublicShippingAgency | null;
   isSubmitting: boolean;
   onBack: () => void;
 }) {
@@ -743,19 +778,27 @@ function StepThree({
         <SummaryRow label="Cliente" value={form.nombreCompleto} />
         <SummaryRow label="DNI" value={form.dni} />
         <SummaryRow label="Celular" value={form.celular} />
-        <SummaryRow label="Courier" value={form.agencia === "SHALOM" ? "Shalom" : "Olva"} />
+        <SummaryRow label="Método" value={metodo.nombre} />
         <div className="border-t border-[var(--color-border)] pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--color-muted-foreground)]">
-            Agencia seleccionada
+            {metodo.tipo === "recojo" ? "Recojo en tienda" : "Agencia seleccionada"}
           </p>
-          <p className="mt-1 text-sm font-black text-[var(--color-text)]">
-            {agency.nombre}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
-            {[agency.direccion, agency.distrito, agency.provincia]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+          {metodo.tipo === "recojo" ? (
+            <p className="mt-1 text-sm leading-5 text-[var(--color-text)]">
+              {metodo.direccion || "Dirección por confirmar con el negocio."}
+            </p>
+          ) : agency ? (
+            <>
+              <p className="mt-1 text-sm font-black text-[var(--color-text)]">
+                {agency.nombre}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
+                {[agency.direccion, agency.distrito, agency.provincia]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </>
+          ) : null}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">

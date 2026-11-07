@@ -138,8 +138,6 @@ export type CreateSalePayload = {
   tipoComprobante: VentaTipoComprobante;
   sucursalId?: string;
   clienteId?: string;
-  recogerDespues?: boolean;
-  recojoHasta?: string;
   descuentoTipo?: VentaDescuentoTipo;
   descuentoValor?: string;
   detalles: CreateSaleDetalle[];
@@ -222,6 +220,7 @@ export type SaleShippingDetails = {
   agenciaUbigeo: string | null;
   agenciaLatitud: number | null;
   agenciaLongitud: number | null;
+  metodoEnvio: string | null;
   recibidoAt: string | null;
   despachadoAt: string | null;
   entregadoAt: string | null;
