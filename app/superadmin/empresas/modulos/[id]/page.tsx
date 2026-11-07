@@ -68,7 +68,14 @@ const moduleGroups = [
   },
   {
     label: "Configuración",
-    keys: ["sucursales", "usuarios", "empresa", "metodos-pago", "mi-cuenta"],
+    keys: [
+      "sucursales",
+      "usuarios",
+      "empresa",
+      "envios-config",
+      "metodos-pago",
+      "mi-cuenta",
+    ],
   },
   {
     label: "Asistencias",

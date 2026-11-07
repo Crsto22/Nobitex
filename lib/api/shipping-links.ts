@@ -5,6 +5,7 @@ export type PublicShippingLink = {
   estado: "pendiente" | "recibido";
   venta: { correlativo: string };
   negocio: { nombreComercial: string; logoUrl: string | null };
+  metodosEnvio: SaleShippingAgency[];
 };
 
 export type SubmitShippingDetails = {

@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   CheckIcon,
   ClockIcon,
+  ColumnsIcon,
   FunnelIcon,
   LinkIcon,
   MagnifyingGlassIcon,
@@ -17,6 +18,7 @@ import {
   PlusIcon,
   PrinterIcon,
   ReceiptIcon,
+  RowsIcon,
   SpinnerGapIcon,
   StorefrontIcon,
   TruckIcon,
@@ -119,6 +121,19 @@ function customerName(sale: VentaResponse) {
   return sale.cliente?.nombre || "Cliente genérico";
 }
 
+function canMarkShipped(sale: VentaResponse) {
+  if (sale.envio?.estado !== "recibido") return false;
+  if (
+    sale.envio.estadoLogistico !== "POR_PREPARAR" &&
+    sale.envio.estadoLogistico !== "POR_DESPACHAR"
+  ) {
+    return false;
+  }
+  return sale.detalles.some(
+    (detail) => detail.cantidad - detail.cantidadEntregada > 0,
+  );
+}
+
 export default function DeliveriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("pickup");
   const [activeTab, setActiveTab] = useState<PageTab>("pendiente");
@@ -146,6 +161,9 @@ export default function DeliveriesPage() {
     VentaResponse[]
   >([]);
   const [labelSales, setLabelSales] = useState<VentaResponse[] | null>(null);
+  const [bulkShipSales, setBulkShipSales] = useState<VentaResponse[] | null>(
+    null,
+  );
   const toast = useSystemToast();
 
   const loadDeliveries = useCallback(async () => {
@@ -306,6 +324,10 @@ export default function DeliveriesPage() {
         : [],
     [sales, viewMode],
   );
+  const markableSelected = useMemo(
+    () => selectedShippingSales.filter((sale) => canMarkShipped(sale)),
+    [selectedShippingSales],
+  );
   const allSelectableSelected =
     selectableSales.length > 0 &&
     selectableSales.every((sale) =>
@@ -336,6 +358,16 @@ export default function DeliveriesPage() {
             onChange={changeViewMode}
             className="w-auto"
           />
+          {viewMode === "courier" && markableSelected.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setBulkShipSales(markableSelected)}
+              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:inline-flex"
+            >
+              <TruckIcon size={17} weight="bold" />
+              Enviar ({markableSelected.length})
+            </button>
+          ) : null}
           {viewMode === "courier" && selectedShippingSales.length > 0 ? (
             <button
               type="button"
@@ -409,6 +441,16 @@ export default function DeliveriesPage() {
             ))}
           </div>
 
+          {viewMode === "courier" && markableSelected.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setBulkShipSales(markableSelected)}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:hidden"
+            >
+              <TruckIcon size={17} weight="bold" />
+              Enviar ({markableSelected.length})
+            </button>
+          ) : null}
           {viewMode === "courier" && selectedShippingSales.length > 0 ? (
             <button
               type="button"
@@ -624,6 +666,25 @@ export default function DeliveriesPage() {
         <ShippingLabelModal
           sales={labelSales}
           onClose={() => setLabelSales(null)}
+          onPrinted={(printed) =>
+            setSelectedShippingSales((current) =>
+              current.filter(
+                (item) =>
+                  !printed.some((sale) => sale.publicId === item.publicId),
+              ),
+            )
+          }
+        />
+      ) : null}
+      {bulkShipSales ? (
+        <BulkShipModal
+          sales={bulkShipSales}
+          onClose={() => setBulkShipSales(null)}
+          onCompleted={() => {
+            setBulkShipSales(null);
+            setSelectedShippingSales([]);
+            void loadDeliveries();
+          }}
         />
       ) : null}
     </DashboardShell>
@@ -1093,9 +1154,11 @@ function EmptyState({ tab, mode }: { tab: PageTab; mode: ViewMode }) {
 function ShippingLabelModal({
   sales,
   onClose,
+  onPrinted,
 }: {
   sales: VentaResponse[];
   onClose: () => void;
+  onPrinted: (sales: VentaResponse[]) => void;
 }) {
   const [packageCounts, setPackageCounts] = useState<Record<string, number>>(
     () => Object.fromEntries(sales.map((sale) => [sale.publicId, 1])),
@@ -1173,6 +1236,7 @@ function ShippingLabelModal({
         description: `${totalLabels} etiqueta${totalLabels === 1 ? "" : "s"} lista${totalLabels === 1 ? "" : "s"} para imprimir.`,
         variant: "success",
       });
+      onPrinted(sales);
       onClose();
     } catch (error: unknown) {
       previewWindow?.close();
@@ -1209,27 +1273,36 @@ function ShippingLabelModal({
         </div>
 
         <div className="content-scrollbar space-y-4 overflow-y-auto p-5">
-          <section className="rounded-[16px] border border-[var(--color-border)] p-4">
+          <section className="rounded-[16px] p-4">
             <p className="text-sm font-black text-[var(--color-text)]">
               Distribución en hoja A4
             </p>
-            <div className="mt-3 max-w-xs">
-              <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
-                Columnas
-              </span>
-              <Select
-                value={String(columns)}
-                onChange={(value) => setColumns(Number(value) as 1 | 2)}
-                ariaLabel="Columnas de etiquetas"
-                options={[
-                  { value: "1", label: "Una columna" },
-                  { value: "2", label: "Dos columnas" },
-                ]}
-                fixedMenu
-              />
-              <p className="mt-3 text-xs text-[var(--color-muted-foreground)]">
-                Los rótulos se acomodan automáticamente en una hoja A4.
-              </p>
+            <div className="mt-3 max-w-sm">
+              <div className="grid grid-cols-2 gap-2">
+                {([1, 2] as const).map((option) => {
+                  const active = columns === option;
+                  const Icon = option === 1 ? RowsIcon : ColumnsIcon;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setColumns(option)}
+                      aria-pressed={active}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 rounded-[14px] border-2 px-3 py-3 transition-colors",
+                        active
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted-foreground)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      <Icon size={26} weight={active ? "fill" : "regular"} />
+                      <span className="text-xs font-bold">
+                        {option === 1 ? "1 columna" : "2 columnas"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </section>
           {sales.map((sale) => (
@@ -1248,14 +1321,14 @@ function ShippingLabelModal({
               </div>
               <div>
                 <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
-                  N.º de bultos
+                  Cantidad impresión
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => adjustPackageCount(sale.publicId, -1)}
                     disabled={(packageCounts[sale.publicId] ?? 1) <= 1}
-                    aria-label={`Quitar bulto a ${sale.correlativo}`}
+                    aria-label={`Quitar impresión a ${sale.correlativo}`}
                     className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <MinusIcon size={15} weight="bold" />
@@ -1269,14 +1342,14 @@ function ShippingLabelModal({
                     onChange={(event) =>
                       updatePackageCount(sale.publicId, event.target.value)
                     }
-                    aria-label={`Cantidad de bultos para ${sale.correlativo}`}
+                    aria-label={`Cantidad de impresiones para ${sale.correlativo}`}
                     className="h-9 min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-2 text-center text-sm font-bold text-[var(--color-text)] outline-none [-moz-appearance:textfield] focus:ring-2 focus:ring-[var(--color-primary)]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
                     onClick={() => adjustPackageCount(sale.publicId, 1)}
                     disabled={(packageCounts[sale.publicId] ?? 1) >= 50}
-                    aria-label={`Agregar bulto a ${sale.correlativo}`}
+                    aria-label={`Agregar impresión a ${sale.correlativo}`}
                     className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <PlusIcon size={15} weight="bold" />
@@ -1462,6 +1535,103 @@ function FulfillmentModal({
         onConfirm={() => void submit()}
         confirmLabel="Entregar al cliente"
         disabled={total <= 0 || isSubmitting}
+        loading={isSubmitting}
+      />
+    </ModalFrame>
+  );
+}
+
+function BulkShipModal({
+  sales,
+  onClose,
+  onCompleted,
+}: {
+  sales: VentaResponse[];
+  onClose: () => void;
+  onCompleted: () => void;
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useSystemToast();
+
+  const submit = async () => {
+    if (isSubmitting || sales.length === 0) return;
+    setIsSubmitting(true);
+    const results = await Promise.allSettled(
+      sales.map((sale) =>
+        salesApi.dispatchToCourier(sale.publicId, {
+          detalles: sale.detalles
+            .map((detail) => ({
+              ventaDetalleId: detail.id,
+              cantidad: Math.max(
+                0,
+                detail.cantidad - detail.cantidadEntregada,
+              ),
+            }))
+            .filter((item) => item.cantidad > 0),
+        }),
+      ),
+    );
+    setIsSubmitting(false);
+    const failed = results.filter(
+      (result) => result.status === "rejected",
+    ).length;
+    const succeeded = sales.length - failed;
+    if (failed > 0) {
+      toast.showToast({
+        title:
+          succeeded > 0
+            ? `${succeeded} envío${succeeded === 1 ? "" : "s"} marcado${succeeded === 1 ? "" : "s"} como enviado${succeeded === 1 ? "" : "s"}`
+            : "No se pudieron marcar los envíos",
+        description: `${failed} envío${failed === 1 ? "" : "s"} no se pudo marcar. Revisa los pendientes.`,
+        variant: "error",
+      });
+    } else {
+      toast.showToast({
+        title: "Envíos marcados como enviados",
+        description: `${succeeded} envío${succeeded === 1 ? "" : "s"} despachado${succeeded === 1 ? "" : "s"} al courier.`,
+        variant: "success",
+      });
+    }
+    onCompleted();
+  };
+
+  return (
+    <ModalFrame
+      title="Marcar envíos como enviados"
+      description={`Se despacharán ${sales.length} envío${sales.length === 1 ? "" : "s"} al courier con todas las cantidades pendientes.`}
+      onClose={onClose}
+      disabled={isSubmitting}
+    >
+      <div className="rounded-[14px] bg-[#3b82f6]/10 p-4 text-sm text-[#1d4ed8]">
+        Esta acción enviará los productos al courier. Asegúrate de haber
+        empacado y despachado todo correctamente.
+      </div>
+      <div className="content-scrollbar max-h-56 space-y-2 overflow-y-auto">
+        {sales.map((sale) => (
+          <div
+            key={sale.publicId}
+            className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--color-input-bg)] px-4 py-2.5"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-[var(--color-text)]">
+                {sale.correlativo}
+              </p>
+              <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+                {sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom"} ·{" "}
+                {sale.envio?.agenciaNombre || "Agencia seleccionada"}
+              </p>
+            </div>
+            <span className="shrink-0 truncate text-xs text-[var(--color-muted-foreground)]">
+              {customerName(sale)}
+            </span>
+          </div>
+        ))}
+      </div>
+      <ModalActions
+        onCancel={onClose}
+        onConfirm={() => void submit()}
+        confirmLabel={`Confirmar ${sales.length} envío${sales.length === 1 ? "" : "s"}`}
+        disabled={isSubmitting}
         loading={isSubmitting}
       />
     </ModalFrame>

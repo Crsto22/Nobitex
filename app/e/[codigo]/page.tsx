@@ -54,6 +54,8 @@ const couriers: Array<{
   },
 ];
 
+type CourierOption = (typeof couriers)[number];
+
 type FormStep = 1 | 2 | 3;
 type UserLocation = { latitude: number; longitude: number };
 
@@ -139,6 +141,7 @@ export default function ShippingDetailsPage() {
     const term = agencyQuery.trim();
     if (term.length === 1 && !userLocation) {
       requestSequenceRef.current += 1;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAgencyResults([]);
       setIsSearchingAgencies(false);
       return;
@@ -307,6 +310,9 @@ export default function ShippingDetailsPage() {
               {step === 1 ? (
                 <StepOne
                   form={form}
+                  couriers={couriers.filter((courier) =>
+                    link.metodosEnvio.includes(courier.value),
+                  )}
                   onFormChange={setForm}
                   onCourierChange={chooseCourier}
                   onContinue={continueToAgencies}
@@ -370,6 +376,7 @@ export default function ShippingDetailsPage() {
 
 function StepOne({
   form,
+  couriers: enabledCouriers,
   onFormChange,
   onCourierChange,
   onContinue,
@@ -381,6 +388,7 @@ function StepOne({
     agencia: SaleShippingAgency | "";
     agenciaExternalId: string;
   };
+  couriers: CourierOption[];
   onFormChange: React.Dispatch<React.SetStateAction<typeof form>>;
   onCourierChange: (courier: SaleShippingAgency) => void;
   onContinue: () => void;
@@ -450,36 +458,42 @@ function StepOne({
           <BuildingsIcon size={19} className="text-[var(--color-primary)]" />
           Empresa de envío
         </legend>
-        <div className="grid grid-cols-2 gap-3">
-          {couriers.map((courier) => (
-            <button
-              key={courier.value}
-              type="button"
-              onClick={() => onCourierChange(courier.value)}
-              className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-all ${
-                form.agencia === courier.value
-                  ? courier.selectedBg
-                  : "hover:bg-[var(--color-button-hover)]"
-              }`}
-            >
-              <Image
-                src={courier.image}
-                alt={courier.label}
-                width={200}
-                height={80}
-                unoptimized
-                className="h-full w-auto max-w-full rounded-2xl object-contain"
-              />
-              {form.agencia === courier.value ? (
-                <CheckCircleIcon
-                  size={21}
-                  weight="fill"
-                  className="absolute right-2 top-2 text-[var(--color-primary)]"
+        {enabledCouriers.length === 0 ? (
+          <p className="rounded-xl bg-[var(--color-input-bg)] px-4 py-6 text-center text-sm text-[var(--color-muted-foreground)]">
+            No hay métodos de envío disponibles. Contacta al negocio.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {enabledCouriers.map((courier) => (
+              <button
+                key={courier.value}
+                type="button"
+                onClick={() => onCourierChange(courier.value)}
+                className={`relative flex h-28 items-center justify-center overflow-hidden rounded-2xl p-2 transition-all ${
+                  form.agencia === courier.value
+                    ? courier.selectedBg
+                    : "hover:bg-[var(--color-button-hover)]"
+                }`}
+              >
+                <Image
+                  src={courier.image}
+                  alt={courier.label}
+                  width={200}
+                  height={80}
+                  unoptimized
+                  className="h-full w-auto max-w-full rounded-2xl object-contain"
                 />
-              ) : null}
-            </button>
-          ))}
-        </div>
+                {form.agencia === courier.value ? (
+                  <CheckCircleIcon
+                    size={21}
+                    weight="fill"
+                    className="absolute right-2 top-2 text-[var(--color-primary)]"
+                  />
+                ) : null}
+              </button>
+            ))}
+          </div>
+        )}
       </fieldset>
       <button
         type="button"

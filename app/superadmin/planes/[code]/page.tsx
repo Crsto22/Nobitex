@@ -116,6 +116,7 @@ const moduleGroups = [
       "sucursales",
       "usuarios",
       "empresa",
+      "envios-config",
       "metodos-pago",
       "mi-cuenta",
     ],

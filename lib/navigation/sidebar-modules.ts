@@ -324,6 +324,12 @@ export const sidebarSections: SidebarSection[] = [
         route: "/configuracion/empresa",
       },
       {
+        key: "envios-config",
+        label: "Envíos",
+        icon: TruckIcon,
+        route: "/configuracion/envios",
+      },
+      {
         key: "metodos-pago",
         label: "Metodos de pago",
         icon: CreditCardIcon,
