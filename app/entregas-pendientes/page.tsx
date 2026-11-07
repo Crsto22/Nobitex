@@ -20,7 +20,6 @@ import {
   SpinnerGapIcon,
   StorefrontIcon,
   TruckIcon,
-  WarningCircleIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -42,16 +41,13 @@ import {
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
 
-type PageTab = "pendiente" | "en_transito" | "entregada" | "incidencia";
+type PageTab = "pendiente" | "enviado" | "entregada";
 type ViewMode = "pickup" | "courier";
-type FulfillmentMode = "CLIENTE" | "COURIER";
 
 const pageSize = 10;
 const courierTabConfig: Array<{ label: string; value: PageTab }> = [
   { label: "Pendientes", value: "pendiente" },
-  { label: "En tránsito", value: "en_transito" },
-  { label: "Entregados", value: "entregada" },
-  { label: "Incidencias", value: "incidencia" },
+  { label: "Enviados", value: "enviado" },
 ];
 const pickupTabConfig: Array<{ label: string; value: PageTab }> = [
   { label: "Pendientes", value: "pendiente" },
@@ -73,23 +69,23 @@ const logisticsLabels: Record<
   { label: string; className: string }
 > = {
   POR_PREPARAR: {
-    label: "Por preparar",
+    label: "Pendiente",
     className: "bg-[#f59e0b]/10 text-[#b45309]",
   },
   POR_DESPACHAR: {
-    label: "Por despachar",
+    label: "Pendiente",
     className: "bg-[#7c3aed]/10 text-[#6d28d9]",
   },
   EN_TRANSITO: {
-    label: "En tránsito",
+    label: "Enviado",
     className: "bg-[#3b82f6]/10 text-[#1d4ed8]",
   },
   ENTREGADO: {
-    label: "Entregado",
+    label: "Enviado",
     className: "bg-[#10b981]/10 text-[#047857]",
   },
   INCIDENCIA: {
-    label: "Incidencia",
+    label: "Enviado",
     className: "bg-[#ef4444]/10 text-[#b91c1c]",
   },
 };
@@ -112,14 +108,6 @@ function formatDateTime(value: string | null) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function pendingQuantity(sale: VentaResponse) {
-  return sale.detalles.reduce(
-    (sum, detail) =>
-      sum + Math.max(0, detail.cantidad - detail.cantidadEntregada),
-    0,
-  );
 }
 
 function logisticsStatus(sale: VentaResponse): SaleShippingLogisticsStatus {
@@ -151,12 +139,7 @@ export default function DeliveriesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [fulfillment, setFulfillment] = useState<{
-    sale: VentaResponse;
-    mode: FulfillmentMode;
-  } | null>(null);
-  const [statusSale, setStatusSale] = useState<VentaResponse | null>(null);
-  const [incidentSale, setIncidentSale] = useState<VentaResponse | null>(null);
+  const [fulfillment, setFulfillment] = useState<VentaResponse | null>(null);
   const [shippingLinkSale, setShippingLinkSale] =
     useState<VentaResponse | null>(null);
   const [selectedShippingSales, setSelectedShippingSales] = useState<
@@ -278,32 +261,19 @@ export default function DeliveriesPage() {
         ]
       : [
           {
-            label: "Por preparar",
-            value: summary.porPreparar,
+            label: "Pendientes",
+            value: summary.porPreparar + summary.porDespachar,
             icon: PackageIcon,
             color: "text-[#f59e0b]",
             background: "bg-[#f59e0b]/10",
           },
           {
-            label: "Por despachar",
-            value: summary.porDespachar,
-            icon: TruckIcon,
-            color: "text-[#7c3aed]",
-            background: "bg-[#7c3aed]/10",
-          },
-          {
-            label: "En tránsito",
-            value: summary.enTransito,
+            label: "Enviados",
+            value:
+              summary.enTransito + summary.entregados + summary.incidencias,
             icon: TruckIcon,
             color: "text-[#3b82f6]",
             background: "bg-[#3b82f6]/10",
-          },
-          {
-            label: "Entregados",
-            value: summary.entregados,
-            icon: CheckCircleIcon,
-            color: "text-[#10b981]",
-            background: "bg-[#10b981]/10",
           },
         ];
   const visibleTabs =
@@ -435,9 +405,6 @@ export default function DeliveriesPage() {
                 )}
               >
                 {tab.label}
-                {tab.value === "incidencia" && summary.incidencias > 0
-                  ? ` (${summary.incidencias})`
-                  : ""}
               </button>
             ))}
           </div>
@@ -583,15 +550,9 @@ export default function DeliveriesPage() {
               <DeliveryRow
                 key={sale.publicId}
                 sale={sale}
-                onClientDelivery={() =>
-                  setFulfillment({ sale, mode: "CLIENTE" })
-                }
-                onCourierDispatch={() =>
-                  setFulfillment({ sale, mode: "COURIER" })
-                }
+                onClientDelivery={() => setFulfillment(sale)}
                 onManageLink={() => setShippingLinkSale(sale)}
-                onUpdateStatus={() => setStatusSale(sale)}
-                onIncident={() => setIncidentSale(sale)}
+                onMarkShipped={() => void loadDeliveries()}
                 selectable={
                   viewMode === "courier" && sale.envio?.estado === "recibido"
                 }
@@ -640,31 +601,10 @@ export default function DeliveriesPage() {
 
       {fulfillment ? (
         <FulfillmentModal
-          sale={fulfillment.sale}
-          mode={fulfillment.mode}
+          sale={fulfillment}
           onClose={() => setFulfillment(null)}
           onCompleted={() => {
             setFulfillment(null);
-            void loadDeliveries();
-          }}
-        />
-      ) : null}
-      {statusSale ? (
-        <ShippingStatusModal
-          sale={statusSale}
-          onClose={() => setStatusSale(null)}
-          onCompleted={() => {
-            setStatusSale(null);
-            void loadDeliveries();
-          }}
-        />
-      ) : null}
-      {incidentSale ? (
-        <IncidentModal
-          sale={incidentSale}
-          onClose={() => setIncidentSale(null)}
-          onCompleted={() => {
-            setIncidentSale(null);
             void loadDeliveries();
           }}
         />
@@ -770,10 +710,8 @@ function FilterSelect({
 function DeliveryRow({
   sale,
   onClientDelivery,
-  onCourierDispatch,
   onManageLink,
-  onUpdateStatus,
-  onIncident,
+  onMarkShipped,
   selectable,
   selected,
   onSelectedChange,
@@ -781,28 +719,54 @@ function DeliveryRow({
 }: {
   sale: VentaResponse;
   onClientDelivery: () => void;
-  onCourierDispatch: () => void;
   onManageLink: () => void;
-  onUpdateStatus: () => void;
-  onIncident: () => void;
+  onMarkShipped: () => void;
   selectable: boolean;
   selected: boolean;
   onSelectedChange: (selected: boolean) => void;
   onPrintLabel: () => void;
 }) {
+  const [isMarkingShipped, setIsMarkingShipped] = useState(false);
+  const toast = useSystemToast();
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
-  const pending = pendingQuantity(sale);
   const isCourier = Boolean(sale.envio);
-  const activeIncident = sale.envio?.incidencias.find(
-    (incident) => incident.estado === "ABIERTA",
-  );
   const documentLabel =
     sale.cliente?.tipoDocumento === "ruc"
       ? "RUC"
       : sale.cliente?.tipoDocumento === "dni"
         ? "DNI"
         : "";
+
+  const markShipped = async () => {
+    if (isMarkingShipped) return;
+    const detalles = sale.detalles
+      .map((detail) => ({
+        ventaDetalleId: detail.id,
+        cantidad: Math.max(0, detail.cantidad - detail.cantidadEntregada),
+      }))
+      .filter((item) => item.cantidad > 0);
+    if (detalles.length === 0) return;
+    setIsMarkingShipped(true);
+    try {
+      await salesApi.dispatchToCourier(sale.publicId, { detalles });
+      toast.showToast({
+        title: "Envío marcado como enviado",
+        description: sale.correlativo,
+        variant: "success",
+      });
+      onMarkShipped();
+    } catch (error: unknown) {
+      toast.showToast({
+        title: "No se pudo marcar el envío",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsMarkingShipped(false);
+    }
+  };
 
   return (
     <article className="overflow-hidden rounded-[16px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
@@ -986,11 +950,6 @@ function DeliveryRow({
                           .join(" · ")
                       : "Comparte o revisa el enlace de envío"}
                   </p>
-                  {activeIncident ? (
-                    <p className="mt-1 text-xs font-medium text-[#b91c1c]">
-                      {activeIncident.motivo}: {activeIncident.descripcion}
-                    </p>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -1023,42 +982,39 @@ function DeliveryRow({
               <PrinterIcon size={17} weight="bold" />
             </button>
           ) : null}
-          {status === "INCIDENCIA" ? (
-            <PrimaryButton onClick={onIncident} icon={WarningCircleIcon}>
-              Gestionar incidencia
-            </PrimaryButton>
-          ) : status === "ENTREGADO" ? (
-            <span className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-[#10b981]/10 px-4 text-xs font-bold text-[#047857]">
-              <CheckCircleIcon size={17} weight="fill" /> Entregado
-            </span>
-          ) : !isCourier ? (
-            <PrimaryButton onClick={onClientDelivery} icon={PackageIcon}>
-              Entregar al cliente
-            </PrimaryButton>
+          {!isCourier ? (
+            status === "ENTREGADO" ? (
+              <span className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-[#10b981]/10 px-4 text-xs font-bold text-[#047857]">
+                <CheckCircleIcon size={17} weight="fill" /> Entregado
+              </span>
+            ) : (
+              <PrimaryButton onClick={onClientDelivery} icon={PackageIcon}>
+                Entregar al cliente
+              </PrimaryButton>
+            )
           ) : sale.envio?.estado !== "recibido" ? (
             <PrimaryButton onClick={onManageLink} icon={LinkIcon}>
               Gestionar enlace
             </PrimaryButton>
-          ) : status === "POR_DESPACHAR" ? (
-            <>
-              <SecondaryButton onClick={onIncident} icon={WarningCircleIcon}>Incidencia</SecondaryButton>
-              <PrimaryButton onClick={onCourierDispatch} icon={TruckIcon}>
-                Entregar al courier
-              </PrimaryButton>
-            </>
-          ) : status === "EN_TRANSITO" ? (
-            <>
-              {pending > 0 ? (
-                <SecondaryButton onClick={onCourierDispatch}>
-                  Despachar restantes
-                </SecondaryButton>
-              ) : null}
-              <SecondaryButton onClick={onIncident} icon={WarningCircleIcon}>Incidencia</SecondaryButton>
-              <PrimaryButton onClick={onUpdateStatus} icon={TruckIcon}>
-                Actualizar estado
-              </PrimaryButton>
-            </>
-          ) : null}
+          ) : status === "POR_PREPARAR" || status === "POR_DESPACHAR" ? (
+            <button
+              type="button"
+              onClick={() => void markShipped()}
+              disabled={isMarkingShipped}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isMarkingShipped ? (
+                <SpinnerGapIcon size={17} className="animate-spin" />
+              ) : (
+                <TruckIcon size={17} weight="bold" />
+              )}
+              Marcar como enviado
+            </button>
+          ) : (
+            <span className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-[#3b82f6]/10 px-4 text-xs font-bold text-[#1d4ed8]">
+              <TruckIcon size={17} weight="fill" /> Enviado
+            </span>
+          )}
         </div>
       </div>
     </article>
@@ -1106,36 +1062,14 @@ function PrimaryButton({
   );
 }
 
-function SecondaryButton({
-  children,
-  onClick,
-  icon: Icon,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  icon?: typeof TruckIcon;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-4 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-    >
-      {Icon ? <Icon size={17} weight="bold" /> : null}
-      {children}
-    </button>
-  );
-}
-
 function EmptyState({ tab, mode }: { tab: PageTab; mode: ViewMode }) {
   const labels: Record<PageTab, string> = {
     pendiente:
       mode === "pickup"
         ? "No hay recojos pendientes"
         : "No hay envíos pendientes",
-    en_transito: "No hay envíos en tránsito",
+    enviado: "No hay envíos enviados",
     entregada: "No hay entregas registradas",
-    incidencia: "No hay incidencias abiertas",
   };
   return (
     <div className="flex min-h-72 items-center justify-center rounded-[16px] bg-[var(--color-card)]">
@@ -1439,12 +1373,10 @@ function ShippingLabelModal({
 
 function FulfillmentModal({
   sale,
-  mode,
   onClose,
   onCompleted,
 }: {
   sale: VentaResponse;
-  mode: FulfillmentMode;
   onClose: () => void;
   onCompleted: () => void;
 }) {
@@ -1462,7 +1394,6 @@ function FulfillmentModal({
     useState<Record<string, number>>(initialQuantities);
   const [retiranteDni, setRetiranteDni] = useState("");
   const [retiranteNombre, setRetiranteNombre] = useState("");
-  const [numeroConstancia, setNumeroConstancia] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useSystemToast();
@@ -1489,23 +1420,13 @@ function FulfillmentModal({
       notas: notes.trim() || undefined,
     };
     try {
-      if (mode === "CLIENTE") {
-        await salesApi.deliver(sale.publicId, {
-          ...payload,
-          retiranteDni: retiranteDni.trim() || undefined,
-          retiranteNombre: retiranteNombre.trim() || undefined,
-        });
-      } else {
-        await salesApi.dispatchToCourier(sale.publicId, {
-          ...payload,
-          numeroConstancia: numeroConstancia.trim() || undefined,
-        });
-      }
+      await salesApi.deliver(sale.publicId, {
+        ...payload,
+        retiranteDni: retiranteDni.trim() || undefined,
+        retiranteNombre: retiranteNombre.trim() || undefined,
+      });
       toast.showToast({
-        title:
-          mode === "CLIENTE"
-            ? "Entrega al cliente registrada"
-            : "Despacho al courier registrado",
+        title: "Entrega al cliente registrada",
         description: sale.correlativo,
         variant: "success",
       });
@@ -1524,24 +1445,11 @@ function FulfillmentModal({
 
   return (
     <ModalFrame
-      title={mode === "CLIENTE" ? "Entregar al cliente" : "Entregar al courier"}
+      title="Entregar al cliente"
       description={`${sale.correlativo} · ${customerName(sale)}`}
       onClose={onClose}
       disabled={isSubmitting}
     >
-      {mode === "COURIER" && sale.envio ? (
-        <div className="rounded-[14px] bg-[var(--color-input-bg)] p-4 text-sm">
-          <p className="font-black text-[var(--color-text)]">
-            {sale.envio.agencia === "OLVA" ? "Olva" : "Shalom"} · {sale.envio.agenciaNombre}
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-            {[sale.envio.agenciaDireccion, sale.envio.agenciaDistrito]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
-      ) : null}
-
       <div className="space-y-2">
         {details.map(({ detail, pending, quantity }) => (
           <div
@@ -1576,26 +1484,18 @@ function FulfillmentModal({
         ))}
       </div>
 
-      {mode === "CLIENTE" ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextInput
-            value={retiranteDni}
-            onChange={setRetiranteDni}
-            placeholder="DNI de quien retira (opcional)"
-          />
-          <TextInput
-            value={retiranteNombre}
-            onChange={setRetiranteNombre}
-            placeholder="Nombre de quien retira (opcional)"
-          />
-        </div>
-      ) : (
+      <div className="grid gap-3 sm:grid-cols-2">
         <TextInput
-          value={numeroConstancia}
-          onChange={setNumeroConstancia}
-          placeholder="N.º de guía o constancia (opcional)"
+          value={retiranteDni}
+          onChange={setRetiranteDni}
+          placeholder="DNI de quien retira (opcional)"
         />
-      )}
+        <TextInput
+          value={retiranteNombre}
+          onChange={setRetiranteNombre}
+          placeholder="Nombre de quien retira (opcional)"
+        />
+      </div>
       <TextArea
         value={notes}
         onChange={setNotes}
@@ -1604,175 +1504,8 @@ function FulfillmentModal({
       <ModalActions
         onCancel={onClose}
         onConfirm={() => void submit()}
-        confirmLabel={mode === "CLIENTE" ? "Entregar al cliente" : "Confirmar despacho"}
+        confirmLabel="Entregar al cliente"
         disabled={total <= 0 || isSubmitting}
-        loading={isSubmitting}
-      />
-    </ModalFrame>
-  );
-}
-
-function ShippingStatusModal({
-  sale,
-  onClose,
-  onCompleted,
-}: {
-  sale: VentaResponse;
-  onClose: () => void;
-  onCompleted: () => void;
-}) {
-  const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useSystemToast();
-
-  const submit = async () => {
-    setIsSubmitting(true);
-    try {
-      await salesApi.updateShippingStatus(sale.publicId, {
-        estado: "ENTREGADO",
-        notas: notes.trim() || undefined,
-      });
-      toast.showToast({
-        title: "Envío marcado como entregado",
-        description: sale.correlativo,
-        variant: "success",
-      });
-      onCompleted();
-    } catch (error: unknown) {
-      toast.showToast({
-        title: "No se pudo actualizar el estado",
-        description:
-          error instanceof Error ? error.message : "Intenta nuevamente.",
-        variant: "error",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <ModalFrame
-      title="Actualizar estado del envío"
-      description={`${sale.correlativo} · ${sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom"}`}
-      onClose={onClose}
-      disabled={isSubmitting}
-    >
-      <div className="rounded-[14px] bg-[#3b82f6]/10 p-4 text-sm text-[#1d4ed8]">
-        Confirma únicamente cuando el cliente haya recibido todo el pedido.
-      </div>
-      <TextArea
-        value={notes}
-        onChange={setNotes}
-        placeholder="Observaciones de la entrega (opcional)"
-      />
-      <ModalActions
-        onCancel={onClose}
-        onConfirm={() => void submit()}
-        confirmLabel="Confirmar entrega final"
-        disabled={isSubmitting}
-        loading={isSubmitting}
-      />
-    </ModalFrame>
-  );
-}
-
-function IncidentModal({
-  sale,
-  onClose,
-  onCompleted,
-}: {
-  sale: VentaResponse;
-  onClose: () => void;
-  onCompleted: () => void;
-}) {
-  const activeIncident = sale.envio?.incidencias.find(
-    (incident) => incident.estado === "ABIERTA",
-  );
-  const [reason, setReason] = useState("");
-  const [description, setDescription] = useState("");
-  const [solution, setSolution] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useSystemToast();
-
-  const submit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      if (activeIncident) {
-        await salesApi.resolveShippingIncident(
-          sale.publicId,
-          activeIncident.publicId,
-          solution.trim(),
-        );
-      } else {
-        await salesApi.createShippingIncident(sale.publicId, {
-          motivo: reason.trim(),
-          descripcion: description.trim(),
-        });
-      }
-      toast.showToast({
-        title: activeIncident ? "Incidencia resuelta" : "Incidencia registrada",
-        variant: "success",
-      });
-      onCompleted();
-    } catch (error: unknown) {
-      toast.showToast({
-        title: "No se pudo guardar la incidencia",
-        description:
-          error instanceof Error ? error.message : "Intenta nuevamente.",
-        variant: "error",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const invalid = activeIncident
-    ? solution.trim().length < 3
-    : reason.trim().length < 3 || description.trim().length < 3;
-
-  return (
-    <ModalFrame
-      title={activeIncident ? "Gestionar incidencia" : "Registrar incidencia"}
-      description={`${sale.correlativo} · ${sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom"}`}
-      onClose={onClose}
-      disabled={isSubmitting}
-    >
-      {activeIncident ? (
-        <>
-          <div className="rounded-[14px] bg-[#ef4444]/10 p-4">
-            <p className="text-sm font-black text-[#b91c1c]">
-              {activeIncident.motivo}
-            </p>
-            <p className="mt-1 text-sm text-[#991b1b]">
-              {activeIncident.descripcion}
-            </p>
-          </div>
-          <TextArea
-            value={solution}
-            onChange={setSolution}
-            placeholder="Describe cómo se resolvió la incidencia"
-          />
-        </>
-      ) : (
-        <>
-          <TextInput
-            value={reason}
-            onChange={setReason}
-            placeholder="Motivo de la incidencia"
-          />
-          <TextArea
-            value={description}
-            onChange={setDescription}
-            placeholder="Describe lo ocurrido"
-          />
-        </>
-      )}
-      <ModalActions
-        onCancel={onClose}
-        onConfirm={() => void submit()}
-        confirmLabel={activeIncident ? "Resolver incidencia" : "Registrar incidencia"}
-        disabled={invalid || isSubmitting}
         loading={isSubmitting}
       />
     </ModalFrame>

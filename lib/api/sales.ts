@@ -439,7 +439,8 @@ export type DeliveryStatusQuery =
   | "por_despachar"
   | "en_transito"
   | "entregada"
-  | "incidencia";
+  | "incidencia"
+  | "enviado";
 
 export type DeliveriesQuery = HistoryPeriodQuery & {
   mode?: "pickup" | "courier";
