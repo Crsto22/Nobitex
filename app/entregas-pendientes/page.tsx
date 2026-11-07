@@ -2,17 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ArrowsClockwiseIcon,
   CalendarIcon,
   CheckCircleIcon,
+  CheckIcon,
   ClockIcon,
   FunnelIcon,
-  IdentificationBadgeIcon,
-  IdentificationCardIcon,
   LinkIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
+  MinusIcon,
   PackageIcon,
   PhoneIcon,
+  PlusIcon,
   PrinterIcon,
   ReceiptIcon,
   SpinnerGapIcon,
@@ -118,10 +120,6 @@ function pendingQuantity(sale: VentaResponse) {
       sum + Math.max(0, detail.cantidad - detail.cantidadEntregada),
     0,
   );
-}
-
-function totalQuantity(sale: VentaResponse) {
-  return sale.detalles.reduce((sum, detail) => sum + detail.cantidad, 0);
 }
 
 function logisticsStatus(sale: VentaResponse): SaleShippingLogisticsStatus {
@@ -331,6 +329,33 @@ export default function DeliveriesPage() {
     );
   };
 
+  const selectableSales = useMemo(
+    () =>
+      viewMode === "courier"
+        ? sales.filter((sale) => sale.envio?.estado === "recibido")
+        : [],
+    [sales, viewMode],
+  );
+  const allSelectableSelected =
+    selectableSales.length > 0 &&
+    selectableSales.every((sale) =>
+      selectedShippingSales.some((item) => item.publicId === sale.publicId),
+    );
+
+  const toggleSelectAll = () => {
+    setSelectedShippingSales((current) => {
+      if (allSelectableSelected) {
+        return current.filter(
+          (item) =>
+            !selectableSales.some((sale) => sale.publicId === item.publicId),
+        );
+      }
+      const next = new Map(current.map((item) => [item.publicId, item]));
+      selectableSales.forEach((sale) => next.set(sale.publicId, sale));
+      return Array.from(next.values());
+    });
+  };
+
   return (
     <DashboardShell
       headerTitle="Entregas y envíos"
@@ -361,16 +386,6 @@ export default function DeliveriesPage() {
             onChange={changeViewMode}
             className="w-full sm:w-auto"
           />
-          {viewMode === "courier" && selectedShippingSales.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setLabelSales(selectedShippingSales)}
-              className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white"
-            >
-              <PrinterIcon size={17} weight="bold" />
-              Imprimir seleccionados ({selectedShippingSales.length})
-            </button>
-          ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -426,6 +441,17 @@ export default function DeliveriesPage() {
               </button>
             ))}
           </div>
+
+          {viewMode === "courier" && selectedShippingSales.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setLabelSales(selectedShippingSales)}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white lg:hidden"
+            >
+              <PrinterIcon size={17} weight="bold" />
+              Imprimir seleccionados ({selectedShippingSales.length})
+            </button>
+          ) : null}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
             <label className="relative w-full min-w-0 sm:flex-1">
@@ -514,7 +540,7 @@ export default function DeliveriesPage() {
                 onClick={() => void loadDeliveries()}
                 className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
               >
-                <SpinnerGapIcon
+                <ArrowsClockwiseIcon
                   size={16}
                   weight="bold"
                   className={cn(isLoading && "animate-spin")}
@@ -526,6 +552,23 @@ export default function DeliveriesPage() {
         </div>
 
         <div className="space-y-3 pb-2">
+          {viewMode === "courier" && selectableSales.length > 0 ? (
+            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--color-card)] px-4 py-2.5 shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
+              <p className="truncate text-xs font-medium text-[var(--color-muted-foreground)]">
+                {selectedShippingSales.length > 0
+                  ? `${selectedShippingSales.length} seleccionado${selectedShippingSales.length === 1 ? "" : "s"}`
+                  : `${selectableSales.length} por seleccionar`}
+              </p>
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="inline-flex shrink-0 items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-xs font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)]/10"
+              >
+                <CheckIcon size={14} weight="bold" />
+                {allSelectableSelected ? "Deseleccionar todo" : "Seleccionar todo"}
+              </button>
+            </div>
+          ) : null}
           {isLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div
@@ -661,8 +704,8 @@ function ViewModeSwitch({
     label: string;
     icon: typeof StorefrontIcon;
   }> = [
-    { value: "pickup", label: "Recojo en tienda", icon: StorefrontIcon },
-    { value: "courier", label: "Envíos por courier", icon: TruckIcon },
+    { value: "pickup", label: "Recojo", icon: StorefrontIcon },
+    { value: "courier", label: "Envíos", icon: TruckIcon },
   ];
 
   return (
@@ -750,7 +793,6 @@ function DeliveryRow({
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
   const pending = pendingQuantity(sale);
-  const total = totalQuantity(sale);
   const isCourier = Boolean(sale.envio);
   const activeIncident = sale.envio?.incidencias.find(
     (incident) => incident.estado === "ABIERTA",
@@ -764,16 +806,36 @@ function DeliveryRow({
 
   return (
     <article className="overflow-hidden rounded-[16px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
-      <div className="grid gap-3 p-4 lg:grid-cols-[170px_minmax(190px,1fr)_150px_150px_120px_auto] lg:items-center">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-[220px_minmax(240px,1fr)_150px_150px_170px_auto] lg:items-center lg:gap-x-8">
+        <div className="col-span-2 flex min-w-0 items-center gap-3 lg:col-span-1">
           {selectable ? (
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={(event) => onSelectedChange(event.target.checked)}
-              aria-label={`Seleccionar ${sale.correlativo} para imprimir etiqueta`}
-              className="size-4 shrink-0 accent-[var(--color-primary)]"
-            />
+            <label className="group relative inline-flex shrink-0 cursor-pointer select-none items-center">
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(event) => onSelectedChange(event.target.checked)}
+                aria-label={`Seleccionar ${sale.correlativo} para imprimir etiqueta`}
+                className="peer sr-only"
+              />
+              <span
+                className={cn(
+                  "flex size-[22px] items-center justify-center rounded-[7px] border-2 transition-all duration-200 ease-out",
+                  "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--color-primary)]/35 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--color-card)]",
+                  selected
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] shadow-[0_2px_8px_rgba(0,0,0,0.18)]"
+                    : "border-[var(--color-border)] bg-[var(--color-input-bg)] group-hover:border-[var(--color-primary)]/60 group-hover:bg-[var(--color-primary)]/5",
+                )}
+              >
+                <CheckIcon
+                  size={14}
+                  weight="bold"
+                  className={cn(
+                    "text-white transition-all duration-200 ease-out",
+                    selected ? "scale-100 opacity-100" : "scale-50 opacity-0",
+                  )}
+                />
+              </span>
+            </label>
           ) : null}
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
             <ReceiptIcon size={20} weight="fill" className="text-[var(--color-primary)]" />
@@ -787,7 +849,7 @@ function DeliveryRow({
             </p>
           </div>
         </div>
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="col-span-2 flex min-w-0 flex-wrap items-center gap-3 lg:col-span-1">
           {sale.cliente ? (
             <UserAvatar
               seed={sale.cliente.id}
@@ -808,6 +870,28 @@ function DeliveryRow({
                 : "Sin documento"}
             </p>
           </div>
+          {sale.envio &&
+          sale.envio.estado === "recibido" &&
+          (sale.envio.nombreCompleto ||
+            sale.envio.celular ||
+            sale.envio.dni) ? (
+            <div className="min-w-0 space-y-1 rounded-xl border border-dashed border-[var(--color-primary)] bg-white p-2 text-xs">
+              {sale.envio.nombreCompleto ? (
+                <p className="max-w-full truncate font-semibold text-[var(--color-text)]">
+                  {sale.envio.nombreCompleto}
+                </p>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--color-muted-foreground)]">
+                {sale.envio.celular ? (
+                  <span className="flex items-center gap-1">
+                    <PhoneIcon size={12} className="shrink-0" />
+                    {sale.envio.celular}
+                  </span>
+                ) : null}
+                {sale.envio.dni ? <span>DNI {sale.envio.dni}</span> : null}
+              </div>
+            </div>
+          ) : null}
         </div>
         <InfoItem
           icon={CalendarIcon}
@@ -823,13 +907,35 @@ function DeliveryRow({
               : sale.recojoHasta,
           )}
         />
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] text-[var(--color-muted-foreground)]">
             Productos
           </p>
-          <p className="text-sm font-black text-[var(--color-text)]">
-            {pending > 0 ? `${pending} pendientes` : `${total} entregados`}
-          </p>
+          {sale.detalles.length > 0 ? (
+            <ul className="mt-0.5 space-y-0.5">
+              {sale.detalles.map((detail) => {
+                const productName =
+                  detail.descripcion ??
+                  detail.productoVariante.producto.nombre;
+                return (
+                  <li
+                    key={detail.id}
+                    className="truncate text-xs font-medium text-[var(--color-text)]"
+                    title={`${detail.cantidad}× ${productName}`}
+                  >
+                    <span className="font-black text-[var(--color-primary)]">
+                      {detail.cantidad}×
+                    </span>{" "}
+                    {productName}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Sin productos
+            </p>
+          )}
         </div>
         <span
           className={cn(
@@ -848,10 +954,10 @@ function DeliveryRow({
               {sale.envio.estado === "recibido" ? (
                 <span
                   className={cn(
-                    "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black text-white",
+                    "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black",
                     sale.envio.agencia === "OLVA"
-                      ? "bg-[#eab308]"
-                      : "bg-[#dc2626]",
+                      ? "bg-[#eab308] text-black"
+                      : "bg-[#dc2626] text-white",
                   )}
                 >
                   {sale.envio.agencia === "OLVA" ? "OLVA" : "SHALOM"}
@@ -886,42 +992,6 @@ function DeliveryRow({
                     </p>
                   ) : null}
                 </div>
-                {sale.envio.estado === "recibido" &&
-                (sale.envio.nombreCompleto ||
-                  sale.envio.celular ||
-                  sale.envio.dni) ? (
-                  <div className="flex items-center gap-2">
-                    <IdentificationBadgeIcon
-                      size={34}
-                      weight="duotone"
-                      className="shrink-0 text-[var(--color-primary)]"
-                    />
-                    <div className="min-w-0 space-y-0.5 text-xs">
-                      {sale.envio.nombreCompleto ? (
-                        <p className="truncate font-semibold text-[var(--color-text)]">
-                          {sale.envio.nombreCompleto}
-                        </p>
-                      ) : null}
-                      <p className="flex flex-wrap items-center gap-x-2 text-[var(--color-muted-foreground)]">
-                        {sale.envio.celular ? (
-                          <span className="flex items-center gap-1">
-                            <PhoneIcon size={12} className="shrink-0" />
-                            {sale.envio.celular}
-                          </span>
-                        ) : null}
-                        {sale.envio.dni ? (
-                          <span className="flex items-center gap-1">
-                            <IdentificationCardIcon
-                              size={12}
-                              className="shrink-0"
-                            />
-                            DNI {sale.envio.dni}
-                          </span>
-                        ) : null}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
           ) : (
@@ -946,10 +1016,11 @@ function DeliveryRow({
             <button
               type="button"
               onClick={onPrintLabel}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-4 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+              aria-label="Imprimir etiqueta"
+              title="Imprimir etiqueta"
+              className="inline-flex size-10 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
             >
               <PrinterIcon size={17} weight="bold" />
-              Imprimir etiqueta
             </button>
           ) : null}
           {status === "INCIDENCIA" ? (
@@ -970,7 +1041,7 @@ function DeliveryRow({
             </PrimaryButton>
           ) : status === "POR_DESPACHAR" ? (
             <>
-              <SecondaryButton onClick={onIncident}>Incidencia</SecondaryButton>
+              <SecondaryButton onClick={onIncident} icon={WarningCircleIcon}>Incidencia</SecondaryButton>
               <PrimaryButton onClick={onCourierDispatch} icon={TruckIcon}>
                 Entregar al courier
               </PrimaryButton>
@@ -982,7 +1053,7 @@ function DeliveryRow({
                   Despachar restantes
                 </SecondaryButton>
               ) : null}
-              <SecondaryButton onClick={onIncident}>Incidencia</SecondaryButton>
+              <SecondaryButton onClick={onIncident} icon={WarningCircleIcon}>Incidencia</SecondaryButton>
               <PrimaryButton onClick={onUpdateStatus} icon={TruckIcon}>
                 Actualizar estado
               </PrimaryButton>
@@ -1038,16 +1109,19 @@ function PrimaryButton({
 function SecondaryButton({
   children,
   onClick,
+  icon: Icon,
 }: {
   children: React.ReactNode;
   onClick: () => void;
+  icon?: typeof TruckIcon;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="h-10 rounded-[14px] bg-[var(--color-input-bg)] px-4 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-4 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
     >
+      {Icon ? <Icon size={17} weight="bold" /> : null}
       {children}
     </button>
   );
@@ -1093,9 +1167,7 @@ function ShippingLabelModal({
     () => Object.fromEntries(sales.map((sale) => [sale.publicId, 1])),
   );
   const [isPrinting, setIsPrinting] = useState(false);
-  const [paperFormat, setPaperFormat] = useState<"THERMAL" | "A4">(
-    "THERMAL",
-  );
+  const [paperFormat, setPaperFormat] = useState<"THERMAL" | "A4">("A4");
   const [labelsPerPage, setLabelsPerPage] = useState<1 | 2 | 4>(1);
   const [orientation, setOrientation] = useState<"PORTRAIT" | "LANDSCAPE">(
     "PORTRAIT",
@@ -1120,6 +1192,16 @@ function ShippingLabelModal({
       ...current,
       [publicId]: Number.isFinite(parsed) ? Math.trunc(parsed) : 0,
     }));
+  };
+
+  const adjustPackageCount = (publicId: string, delta: number) => {
+    setPackageCounts((current) => {
+      const next = Math.min(
+        50,
+        Math.max(1, (current[publicId] ?? 1) + delta),
+      );
+      return { ...current, [publicId]: next };
+    });
   };
 
   const print = async () => {
@@ -1178,16 +1260,14 @@ function ShippingLabelModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4">
-      <div className="flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-[20px] bg-[var(--color-card)] shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 animate-in fade-in bg-black/45 duration-200" />
+      <div className="relative flex max-h-[90dvh] w-full max-w-xl animate-in flex-col overflow-hidden rounded-[20px] bg-[var(--color-card)] shadow-2xl fade-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between border-b border-[var(--color-border)] px-5 py-4">
           <div>
             <h2 className="text-lg font-black text-[var(--color-text)]">
               {isBatch ? "Imprimir etiquetas por cantidad" : "Imprimir etiqueta"}
             </h2>
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-              Elige el papel y cuántos rótulos deseas acomodar por hoja.
-            </p>
           </div>
           <button
             type="button"
@@ -1206,67 +1286,66 @@ function ShippingLabelModal({
               Formato de impresión
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <label className="block">
+              <div>
                 <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
                   Papel
                 </span>
-                <select
+                <Select
                   value={paperFormat}
-                  onChange={(event) =>
-                    setPaperFormat(event.target.value as "THERMAL" | "A4")
+                  onChange={(value) =>
+                    setPaperFormat(value as "THERMAL" | "A4")
                   }
-                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] outline-none"
-                >
-                  <option value="THERMAL">Térmico 100 × 150 mm</option>
-                  <option value="A4">Hoja A4</option>
-                </select>
-              </label>
-              <label className="block">
+                  ariaLabel="Papel"
+                  options={[
+                    { value: "A4", label: "Hoja A4" },
+                    { value: "THERMAL", label: "Térmico 100 × 150 mm" },
+                  ]}
+                  fixedMenu
+                />
+              </div>
+              <div>
                 <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
                   Rótulos por hoja
                 </span>
-                <select
-                  value={paperFormat === "THERMAL" ? 1 : labelsPerPage}
-                  disabled={paperFormat === "THERMAL"}
-                  onChange={(event) =>
-                    setLabelsPerPage(Number(event.target.value) as 1 | 2 | 4)
+                <Select
+                  value={String(paperFormat === "THERMAL" ? 1 : labelsPerPage)}
+                  onChange={(value) =>
+                    setLabelsPerPage(Number(value) as 1 | 2 | 4)
                   }
-                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value={1}>1 rótulo</option>
-                  <option value={2}>2 rótulos</option>
-                  <option value={4}>4 rótulos</option>
-                </select>
-              </label>
-              <label className="block">
+                  disabled={paperFormat === "THERMAL"}
+                  ariaLabel="Rótulos por hoja"
+                  options={[
+                    { value: "1", label: "1 rótulo" },
+                    { value: "2", label: "2 rótulos" },
+                    { value: "4", label: "4 rótulos" },
+                  ]}
+                  fixedMenu
+                />
+              </div>
+              <div>
                 <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
                   Orientación
                 </span>
-                <select
+                <Select
                   value={orientation}
-                  disabled={paperFormat === "THERMAL"}
-                  onChange={(event) =>
-                    setOrientation(
-                      event.target.value as "PORTRAIT" | "LANDSCAPE",
-                    )
+                  onChange={(value) =>
+                    setOrientation(value as "PORTRAIT" | "LANDSCAPE")
                   }
-                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="PORTRAIT">Vertical</option>
-                  <option value="LANDSCAPE">Horizontal</option>
-                </select>
-              </label>
+                  disabled={paperFormat === "THERMAL"}
+                  ariaLabel="Orientación"
+                  options={[
+                    { value: "PORTRAIT", label: "Vertical" },
+                    { value: "LANDSCAPE", label: "Horizontal" },
+                  ]}
+                  fixedMenu
+                />
+              </div>
             </div>
-            <p className="mt-3 text-xs text-[var(--color-muted-foreground)]">
-              {paperFormat === "THERMAL"
-                ? "Una etiqueta por página, lista para impresora térmica."
-                : `${labelsPerPage} rótulo${labelsPerPage === 1 ? "" : "s"} por hoja A4 en orientación ${orientation === "PORTRAIT" ? "vertical" : "horizontal"}.`}
-            </p>
           </section>
           {sales.map((sale) => (
             <div
               key={sale.publicId}
-              className="grid gap-3 rounded-[16px] bg-[var(--color-input-bg)] p-4 sm:grid-cols-[1fr_120px] sm:items-center"
+              className="grid gap-3 rounded-[16px] bg-[var(--color-input-bg)] p-4 sm:grid-cols-[1fr_164px] sm:items-center"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[var(--color-text)]">
@@ -1277,31 +1356,49 @@ function ShippingLabelModal({
                   {sale.envio?.agenciaNombre || "Agencia seleccionada"}
                 </p>
               </div>
-              <label className="block">
+              <div>
                 <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
                   N.º de bultos
                 </span>
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  step={1}
-                  value={packageCounts[sale.publicId] ?? 1}
-                  onChange={(event) =>
-                    updatePackageCount(sale.publicId, event.target.value)
-                  }
-                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-bold text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                />
-              </label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => adjustPackageCount(sale.publicId, -1)}
+                    disabled={(packageCounts[sale.publicId] ?? 1) <= 1}
+                    aria-label={`Quitar bulto a ${sale.correlativo}`}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <MinusIcon size={15} weight="bold" />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    step={1}
+                    value={packageCounts[sale.publicId] ?? 1}
+                    onChange={(event) =>
+                      updatePackageCount(sale.publicId, event.target.value)
+                    }
+                    aria-label={`Cantidad de bultos para ${sale.correlativo}`}
+                    className="h-9 min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-2 text-center text-sm font-bold text-[var(--color-text)] outline-none [-moz-appearance:textfield] focus:ring-2 focus:ring-[var(--color-primary)]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => adjustPackageCount(sale.publicId, 1)}
+                    disabled={(packageCounts[sale.publicId] ?? 1) >= 50}
+                    aria-label={`Agregar bulto a ${sale.correlativo}`}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <PlusIcon size={15} weight="bold" />
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
 
         <div className="border-t border-[var(--color-border)] p-5">
-          <div className="mb-3 flex items-center justify-between text-xs">
-            <span className="text-[var(--color-muted-foreground)]">
-              Cada bulto conserva su numeración: 1 de N, 2 de N, etc.
-            </span>
+          <div className="mb-3 flex items-center justify-end text-xs">
             <strong className="text-[var(--color-text)]">
               {totalLabels}/100 etiquetas
             </strong>
@@ -1696,8 +1793,9 @@ function ModalFrame({
   disabled?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/35 px-4 py-6">
-      <div className="w-full max-w-2xl rounded-[16px] bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.28)]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 py-6">
+      <div className="fixed inset-0 animate-in fade-in bg-black/35 duration-200" />
+      <div className="relative w-full max-w-2xl animate-in rounded-[16px] bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.28)] fade-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] p-5">
           <div>
             <h2 className="text-lg font-black text-[var(--color-text)]">{title}</h2>
