@@ -1093,6 +1093,13 @@ function ShippingLabelModal({
     () => Object.fromEntries(sales.map((sale) => [sale.publicId, 1])),
   );
   const [isPrinting, setIsPrinting] = useState(false);
+  const [paperFormat, setPaperFormat] = useState<"THERMAL" | "A4">(
+    "THERMAL",
+  );
+  const [labelsPerPage, setLabelsPerPage] = useState<1 | 2 | 4>(1);
+  const [orientation, setOrientation] = useState<"PORTRAIT" | "LANDSCAPE">(
+    "PORTRAIT",
+  );
   const toast = useSystemToast();
   const totalLabels = sales.reduce(
     (total, sale) => total + (packageCounts[sale.publicId] ?? 1),
@@ -1127,10 +1134,16 @@ function ShippingLabelModal({
               publicId: sale.publicId,
               packageCount: packageCounts[sale.publicId],
             })),
+            { paperFormat, labelsPerPage, orientation },
           )
         : await salesApi.printShippingLabels(
             sales[0].publicId,
-            packageCounts[sales[0].publicId],
+            {
+              packageCount: packageCounts[sales[0].publicId],
+              paperFormat,
+              labelsPerPage,
+              orientation,
+            },
           );
       const url = URL.createObjectURL(blob);
 
@@ -1173,8 +1186,7 @@ function ShippingLabelModal({
               {isBatch ? "Imprimir etiquetas por cantidad" : "Imprimir etiqueta"}
             </h2>
             <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-              Formato térmico de 100 × 150 mm. Indica cuántos bultos tiene cada
-              envío.
+              Elige el papel y cuántos rótulos deseas acomodar por hoja.
             </p>
           </div>
           <button
@@ -1188,7 +1200,69 @@ function ShippingLabelModal({
           </button>
         </div>
 
-        <div className="content-scrollbar space-y-3 overflow-y-auto p-5">
+        <div className="content-scrollbar space-y-4 overflow-y-auto p-5">
+          <section className="rounded-[16px] border border-[var(--color-border)] p-4">
+            <p className="text-sm font-black text-[var(--color-text)]">
+              Formato de impresión
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
+                  Papel
+                </span>
+                <select
+                  value={paperFormat}
+                  onChange={(event) =>
+                    setPaperFormat(event.target.value as "THERMAL" | "A4")
+                  }
+                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] outline-none"
+                >
+                  <option value="THERMAL">Térmico 100 × 150 mm</option>
+                  <option value="A4">Hoja A4</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
+                  Rótulos por hoja
+                </span>
+                <select
+                  value={paperFormat === "THERMAL" ? 1 : labelsPerPage}
+                  disabled={paperFormat === "THERMAL"}
+                  onChange={(event) =>
+                    setLabelsPerPage(Number(event.target.value) as 1 | 2 | 4)
+                  }
+                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value={1}>1 rótulo</option>
+                  <option value={2}>2 rótulos</option>
+                  <option value={4}>4 rótulos</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
+                  Orientación
+                </span>
+                <select
+                  value={orientation}
+                  disabled={paperFormat === "THERMAL"}
+                  onChange={(event) =>
+                    setOrientation(
+                      event.target.value as "PORTRAIT" | "LANDSCAPE",
+                    )
+                  }
+                  className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="PORTRAIT">Vertical</option>
+                  <option value="LANDSCAPE">Horizontal</option>
+                </select>
+              </label>
+            </div>
+            <p className="mt-3 text-xs text-[var(--color-muted-foreground)]">
+              {paperFormat === "THERMAL"
+                ? "Una etiqueta por página, lista para impresora térmica."
+                : `${labelsPerPage} rótulo${labelsPerPage === 1 ? "" : "s"} por hoja A4 en orientación ${orientation === "PORTRAIT" ? "vertical" : "horizontal"}.`}
+            </p>
+          </section>
           {sales.map((sale) => (
             <div
               key={sale.publicId}
@@ -1226,7 +1300,7 @@ function ShippingLabelModal({
         <div className="border-t border-[var(--color-border)] p-5">
           <div className="mb-3 flex items-center justify-between text-xs">
             <span className="text-[var(--color-muted-foreground)]">
-              Cada bulto tendrá su propia página: 1 de N, 2 de N, etc.
+              Cada bulto conserva su numeración: 1 de N, 2 de N, etc.
             </span>
             <strong className="text-[var(--color-text)]">
               {totalLabels}/100 etiquetas

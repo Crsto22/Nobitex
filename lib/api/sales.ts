@@ -722,21 +722,34 @@ export const salesApi = {
     );
   },
 
-  printShippingLabels(publicId: string, packageCount: number) {
+  printShippingLabels(
+    publicId: string,
+    payload: {
+      packageCount: number;
+      paperFormat: "THERMAL" | "A4";
+      labelsPerPage: 1 | 2 | 4;
+      orientation: "PORTRAIT" | "LANDSCAPE";
+    },
+  ) {
     return authBlobFetch(`/sales/${publicId}/shipping-labels/pdf`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageCount }),
+      body: JSON.stringify(payload),
     });
   },
 
   printShippingLabelBatch(
     sales: Array<{ publicId: string; packageCount: number }>,
+    options: {
+      paperFormat: "THERMAL" | "A4";
+      labelsPerPage: 1 | 2 | 4;
+      orientation: "PORTRAIT" | "LANDSCAPE";
+    },
   ) {
     return authBlobFetch("/sales/shipping-labels/batch/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sales }),
+      body: JSON.stringify({ sales, ...options }),
     });
   },
 
