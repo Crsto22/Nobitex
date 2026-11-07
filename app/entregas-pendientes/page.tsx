@@ -1101,11 +1101,7 @@ function ShippingLabelModal({
     () => Object.fromEntries(sales.map((sale) => [sale.publicId, 1])),
   );
   const [isPrinting, setIsPrinting] = useState(false);
-  const [paperFormat, setPaperFormat] = useState<"THERMAL" | "A4">("A4");
-  const [labelsPerPage, setLabelsPerPage] = useState<1 | 2 | 4>(1);
-  const [orientation, setOrientation] = useState<"PORTRAIT" | "LANDSCAPE">(
-    "PORTRAIT",
-  );
+  const [columns, setColumns] = useState<1 | 2>(2);
   const toast = useSystemToast();
   const totalLabels = sales.reduce(
     (total, sale) => total + (packageCounts[sale.publicId] ?? 1),
@@ -1150,15 +1146,13 @@ function ShippingLabelModal({
               publicId: sale.publicId,
               packageCount: packageCounts[sale.publicId],
             })),
-            { paperFormat, labelsPerPage, orientation },
+            { columns },
           )
         : await salesApi.printShippingLabels(
             sales[0].publicId,
             {
               packageCount: packageCounts[sales[0].publicId],
-              paperFormat,
-              labelsPerPage,
-              orientation,
+              columns,
             },
           );
       const url = URL.createObjectURL(blob);
@@ -1217,63 +1211,25 @@ function ShippingLabelModal({
         <div className="content-scrollbar space-y-4 overflow-y-auto p-5">
           <section className="rounded-[16px] border border-[var(--color-border)] p-4">
             <p className="text-sm font-black text-[var(--color-text)]">
-              Formato de impresión
+              Distribución en hoja A4
             </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <div>
-                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
-                  Papel
-                </span>
-                <Select
-                  value={paperFormat}
-                  onChange={(value) =>
-                    setPaperFormat(value as "THERMAL" | "A4")
-                  }
-                  ariaLabel="Papel"
-                  options={[
-                    { value: "A4", label: "Hoja A4" },
-                    { value: "THERMAL", label: "Térmico 100 × 150 mm" },
-                  ]}
-                  fixedMenu
-                />
-              </div>
-              <div>
-                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
-                  Rótulos por hoja
-                </span>
-                <Select
-                  value={String(paperFormat === "THERMAL" ? 1 : labelsPerPage)}
-                  onChange={(value) =>
-                    setLabelsPerPage(Number(value) as 1 | 2 | 4)
-                  }
-                  disabled={paperFormat === "THERMAL"}
-                  ariaLabel="Rótulos por hoja"
-                  options={[
-                    { value: "1", label: "1 rótulo" },
-                    { value: "2", label: "2 rótulos" },
-                    { value: "4", label: "4 rótulos" },
-                  ]}
-                  fixedMenu
-                />
-              </div>
-              <div>
-                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
-                  Orientación
-                </span>
-                <Select
-                  value={orientation}
-                  onChange={(value) =>
-                    setOrientation(value as "PORTRAIT" | "LANDSCAPE")
-                  }
-                  disabled={paperFormat === "THERMAL"}
-                  ariaLabel="Orientación"
-                  options={[
-                    { value: "PORTRAIT", label: "Vertical" },
-                    { value: "LANDSCAPE", label: "Horizontal" },
-                  ]}
-                  fixedMenu
-                />
-              </div>
+            <div className="mt-3 max-w-xs">
+              <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
+                Columnas
+              </span>
+              <Select
+                value={String(columns)}
+                onChange={(value) => setColumns(Number(value) as 1 | 2)}
+                ariaLabel="Columnas de etiquetas"
+                options={[
+                  { value: "1", label: "Una columna" },
+                  { value: "2", label: "Dos columnas" },
+                ]}
+                fixedMenu
+              />
+              <p className="mt-3 text-xs text-[var(--color-muted-foreground)]">
+                Los rótulos se acomodan automáticamente en una hoja A4.
+              </p>
             </div>
           </section>
           {sales.map((sale) => (

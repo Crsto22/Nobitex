@@ -727,9 +727,7 @@ export const salesApi = {
     publicId: string,
     payload: {
       packageCount: number;
-      paperFormat: "THERMAL" | "A4";
-      labelsPerPage: 1 | 2 | 4;
-      orientation: "PORTRAIT" | "LANDSCAPE";
+      columns: 1 | 2;
     },
   ) {
     return authBlobFetch(`/sales/${publicId}/shipping-labels/pdf`, {
@@ -742,9 +740,7 @@ export const salesApi = {
   printShippingLabelBatch(
     sales: Array<{ publicId: string; packageCount: number }>,
     options: {
-      paperFormat: "THERMAL" | "A4";
-      labelsPerPage: 1 | 2 | 4;
-      orientation: "PORTRAIT" | "LANDSCAPE";
+      columns: 1 | 2;
     },
   ) {
     return authBlobFetch("/sales/shipping-labels/batch/pdf", {
