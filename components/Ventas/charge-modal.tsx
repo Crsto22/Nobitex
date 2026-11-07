@@ -6,6 +6,7 @@ import { CalendarInput } from "@/components/ui/calendar-input";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  CheckCircleIcon,
   CreditCardIcon,
   XIcon,
   ReceiptIcon,
@@ -15,6 +16,8 @@ import {
   TrashIcon,
   NotePencilIcon,
   LockSimpleIcon,
+  StorefrontIcon,
+  TruckIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -29,6 +32,10 @@ import {
   paymentMethodsApi,
   type PaymentMethod,
 } from "@/lib/api/payment-methods";
+import {
+  enviosConfigApi,
+  type EnvioMetodoConfig,
+} from "@/lib/api/envios-config";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { ClientPickerModal } from "@/components/Clients/client-picker-modal";
 import type { Client } from "@/lib/api/clients";
@@ -93,6 +100,7 @@ type ChargeModalProps = {
   submitTitle?: string;
   loadingTitle?: string;
   allowCredit?: boolean;
+  enableShippingMethods?: boolean;
   onSubmitSale?: (payload: CreateSalePayload) => Promise<VentaResponse>;
   onSaleSuccess: (venta: VentaResponse) => void;
 };
@@ -164,6 +172,11 @@ const getPaymentMethodConfig = (name: string) => {
   return null;
 };
 
+const envioMetodoImages: Record<string, string> = {
+  SHALOM: "/envios/shalom.svg",
+  OLVA: "/envios/olva.webp",
+};
+
 export function ChargeModal({
   isOpen,
   onClose,
@@ -186,6 +199,7 @@ export function ChargeModal({
   submitTitle,
   loadingTitle = "Procesando venta...",
   allowCredit = true,
+  enableShippingMethods = false,
   onSubmitSale,
   onSaleSuccess,
 }: ChargeModalProps) {
@@ -203,6 +217,8 @@ export function ChargeModal({
   const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
   const [pickupLater, setPickupLater] = useState(false);
   const [pickupUntil, setPickupUntil] = useState("");
+  const [envioMetodos, setEnvioMetodos] = useState<EnvioMetodoConfig[]>([]);
+  const [selectedMetodoEnvio, setSelectedMetodoEnvio] = useState("");
   const [formaPago, setFormaPago] = useState<"CONTADO" | "CREDITO">("CONTADO");
   const [advanceAmount, setAdvanceAmount] = useState("0.00");
   const [creditFrequency, setCreditFrequency] =
@@ -274,10 +290,19 @@ export function ChargeModal({
       setFirstDueDate(defaultFirstDueDate());
       setPaymentEntries([]);
       setSelectedMethod(null);
+      setSelectedMetodoEnvio("");
       requestIdRef.current = null;
+      if (enableShippingMethods) {
+        void enviosConfigApi
+          .findAll()
+          .then((metodos) =>
+            setEnvioMetodos(metodos.filter((metodo) => metodo.activo)),
+          )
+          .catch(() => setEnvioMetodos([]));
+      }
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [isOpen]);
+  }, [isOpen, enableShippingMethods]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -332,8 +357,10 @@ export function ChargeModal({
     total > 700 &&
     (selectedClient?.tipoDocumento !== "dni" ||
       selectedClient.numeroDocumento?.length !== 8);
+  const requireDeliveryClient =
+    pickupLater || (enableShippingMethods && selectedMetodoEnvio !== "");
   const isPickupClientInvalid =
-    pickupLater &&
+    requireDeliveryClient &&
     (!selectedClient ||
       !(
         (selectedClient.tipoDocumento === "dni" &&
@@ -530,7 +557,7 @@ export function ChargeModal({
       toast.showToast({
         title: "Cliente requerido",
         description:
-          "Para recoger despues selecciona un cliente con DNI o RUC valido.",
+          "Para este método de entrega selecciona un cliente con DNI o RUC valido.",
         variant: "error",
         duration: 5000,
       });
@@ -586,13 +613,20 @@ export function ChargeModal({
 
     requestIdRef.current ??= crypto.randomUUID();
 
+    const isRecojoEnTienda =
+      enableShippingMethods && selectedMetodoEnvio === "RECOJO";
+    const usePickup = enableShippingMethods ? isRecojoEnTienda : pickupLater;
+    const isCourierShipment =
+      enableShippingMethods &&
+      (selectedMetodoEnvio === "SHALOM" || selectedMetodoEnvio === "OLVA");
+
     const payload: CreateSalePayload = {
       requestId: requestIdRef.current,
       tipoComprobante: noteTypeMap[selectedNoteType] ?? "nota_venta",
       sucursalId: selectedBranch || undefined,
       clienteId: selectedClient?.id || undefined,
-      recogerDespues: pickupLater,
-      recojoHasta: pickupLater && pickupUntil ? pickupUntil : undefined,
+      recogerDespues: usePickup,
+      recojoHasta: usePickup && pickupUntil ? pickupUntil : undefined,
       descuentoTipo: discountType ?? undefined,
       descuentoValor:
         discountType && discountValue.trim()
@@ -613,6 +647,19 @@ export function ChargeModal({
       const venta = onSubmitSale
         ? await onSubmitSale(payload)
         : await salesApi.create(payload);
+      if (isCourierShipment) {
+        try {
+          await salesApi.generateShippingLink(venta.publicId);
+        } catch {
+          toast.showToast({
+            title: "Enlace de envío no generado",
+            description:
+              "La venta se registró, pero genera el enlace de envío manualmente.",
+            variant: "error",
+            duration: 5000,
+          });
+        }
+      }
       const electronic =
         venta.tipoComprobante === "boleta" ||
         venta.tipoComprobante === "factura";
@@ -634,6 +681,7 @@ export function ChargeModal({
       requestIdRef.current = null;
       setPickupLater(false);
       setPickupUntil("");
+      setSelectedMetodoEnvio("");
       onClose();
     } catch (error: unknown) {
       const message =
@@ -654,6 +702,7 @@ export function ChargeModal({
     if (isSubmitting) return;
     setPickupLater(false);
     setPickupUntil("");
+    setSelectedMetodoEnvio("");
     onClose();
   };
 
@@ -900,36 +949,112 @@ export function ChargeModal({
                 ) : null}
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <ToggleButton
-                  active={pickupLater}
-                  onClick={() => setPickupLater((current) => !current)}
-                >
-                  <span className="min-w-0 text-left">
-                    <span className="block text-sm font-circular-bold text-[var(--color-text)]">
-                      Recogera despues
-                    </span>
+              {enableShippingMethods ? (
+                <div>
+                  <span className="mb-2 block text-sm font-black text-[var(--color-text)]">
+                    Método de entrega
                   </span>
-                </ToggleButton>
-
-                {pickupLater ? (
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <CalendarInput
-                      label="Recoger hasta (opcional)"
-                      value={pickupUntil}
-                      onChange={setPickupUntil}
-                      popoverAlign="left"
-                      popoverFixed
-                    />
-
-                    {isPickupClientInvalid ? (
-                      <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
-                        Selecciona un cliente con DNI o RUC valido.
-                      </div>
-                    ) : null}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMetodoEnvio("")}
+                      className={cn(
+                        "flex h-16 flex-col items-center justify-center gap-1 rounded-[14px] border-2 px-2 text-xs font-circular-bold transition-colors",
+                        selectedMetodoEnvio === ""
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      <CheckCircleIcon size={20} weight="bold" />
+                      Entrega inmediata
+                    </button>
+                    {envioMetodos.map((metodo) => {
+                      const active = selectedMetodoEnvio === metodo.metodo;
+                      const image = envioMetodoImages[metodo.metodo];
+                      return (
+                        <button
+                          key={metodo.metodo}
+                          type="button"
+                          onClick={() => setSelectedMetodoEnvio(metodo.metodo)}
+                          className={cn(
+                            "flex h-16 flex-col items-center justify-center gap-1 rounded-[14px] border-2 px-2 text-xs font-circular-bold transition-colors",
+                            active
+                              ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                              : "border-[var(--color-border)] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                          )}
+                        >
+                          {metodo.tipo === "recojo" ? (
+                            <StorefrontIcon size={20} weight="bold" />
+                          ) : image ? (
+                            <Image
+                              src={image}
+                              width={48}
+                              height={24}
+                              alt={metodo.nombre}
+                              unoptimized
+                              className="h-6 w-12 object-contain"
+                            />
+                          ) : (
+                            <TruckIcon size={20} weight="bold" />
+                          )}
+                          <span className="max-w-full truncate">
+                            {metodo.nombre}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : null}
-              </div>
+
+                  {selectedMetodoEnvio === "RECOJO" ? (
+                    <div className="mt-2">
+                      <CalendarInput
+                        label="Recoger hasta (opcional)"
+                        value={pickupUntil}
+                        onChange={setPickupUntil}
+                        popoverAlign="left"
+                        popoverFixed
+                      />
+                    </div>
+                  ) : null}
+
+                  {isPickupClientInvalid ? (
+                    <div className="mt-2 rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                      Selecciona un cliente con DNI o RUC valido.
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <ToggleButton
+                    active={pickupLater}
+                    onClick={() => setPickupLater((current) => !current)}
+                  >
+                    <span className="min-w-0 text-left">
+                      <span className="block text-sm font-circular-bold text-[var(--color-text)]">
+                        Recogera despues
+                      </span>
+                    </span>
+                  </ToggleButton>
+
+                  {pickupLater ? (
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <CalendarInput
+                        label="Recoger hasta (opcional)"
+                        value={pickupUntil}
+                        onChange={setPickupUntil}
+                        popoverAlign="left"
+                        popoverFixed
+                      />
+
+                      {isPickupClientInvalid ? (
+                        <div className="rounded-[8px] bg-[#fff3e8] p-3 text-xs text-[#b45309]">
+                          Selecciona un cliente con DNI o RUC valido.
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-4">

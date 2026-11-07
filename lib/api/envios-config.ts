@@ -1,9 +1,12 @@
 import { authFetch } from "@/lib/api/auth-fetch";
 import type { SaleShippingAgency } from "@/lib/api/sales";
 
+export type EnvioMetodoTipo = "courier" | "recojo";
+
 export type EnvioMetodoConfig = {
   metodo: string;
   nombre: string;
+  tipo: EnvioMetodoTipo;
   activo: boolean;
 };
 
