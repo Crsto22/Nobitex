@@ -8,11 +8,18 @@ export type PublicShippingMetodo = {
   direccion: string | null;
 };
 
+export type PublicShippingDespacho = {
+  diasSemana: number[];
+  horaCorte: string;
+  fechasDisponibles: string[];
+};
+
 export type PublicShippingLink = {
   estado: "pendiente" | "recibido";
   venta: { correlativo: string };
   negocio: { nombreComercial: string; logoUrl: string | null };
   metodosEnvio: PublicShippingMetodo[];
+  despacho: PublicShippingDespacho | null;
 };
 
 export type SubmitShippingDetails = {
@@ -20,6 +27,7 @@ export type SubmitShippingDetails = {
   dni: string;
   celular: string;
   metodo: string;
+  fechaEnvio: string;
   agencia?: SaleShippingAgency;
   agenciaExternalId?: string;
   direccionEntrega?: string;

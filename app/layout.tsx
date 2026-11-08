@@ -5,6 +5,9 @@ import { MetaPixel } from "@/components/analytics/meta-pixel";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://app.nuvex.pe",
+  ),
   title: "Nuvex",
   description: "Gestiona ventas, inventario y facturacion desde Nuvex.",
   applicationName: "Nuvex",

@@ -32,6 +32,7 @@ import { AgencyMap } from "@/components/shipping/agency-map";
 import {
   shippingLinksApi,
   type PublicShippingAgency,
+  type PublicShippingDespacho,
   type PublicShippingLink,
   type PublicShippingMetodo,
   type SearchShippingAgenciesOptions,
@@ -61,7 +62,7 @@ const metodoVisuals: Record<string, { image?: string; selectedBg: string }> = {
   },
 };
 
-type FormStep = 1 | 2 | 3;
+type FormStep = 1 | 2 | 3 | 4;
 type UserLocation = { latitude: number; longitude: number };
 
 export default function ShippingDetailsPage() {
@@ -90,6 +91,7 @@ export default function ShippingDetailsPage() {
     dni: "",
     celular: "",
     metodo: "",
+    fechaEnvio: "",
     agenciaExternalId: "",
     direccionEntrega: "",
     referenciaEntrega: "",
@@ -99,6 +101,9 @@ export default function ShippingDetailsPage() {
     link?.metodosEnvio.find((metodo) => metodo.metodo === form.metodo) ?? null;
   const isRecojo = selectedMetodo?.tipo === "recojo";
   const isDomicilio = selectedMetodo?.tipo === "domicilio";
+  const isCourier = selectedMetodo?.tipo === "courier";
+  const confirmStep: FormStep = isRecojo ? 3 : 4;
+  const despacho = link?.despacho ?? null;
 
   useEffect(() => {
     let active = true;
@@ -122,7 +127,7 @@ export default function ShippingDetailsPage() {
 
   const fetchAgencies = useCallback(
     async (options: SearchShippingAgenciesOptions) => {
-      if (!form.metodo) return;
+      if (!form.metodo || !isCourier) return;
       const requestSequence = ++requestSequenceRef.current;
       setIsSearchingAgencies(true);
       try {
@@ -145,11 +150,11 @@ export default function ShippingDetailsPage() {
         }
       }
     },
-    [code, form.metodo],
+    [code, form.metodo, isCourier],
   );
 
   useEffect(() => {
-    if (step !== 2 || !form.metodo || isComplete) return;
+    if (step !== 3 || !form.metodo || isComplete || !isCourier) return;
     const term = agencyQuery.trim();
     if (term.length === 1 && !userLocation) {
       requestSequenceRef.current += 1;
@@ -179,7 +184,7 @@ export default function ShippingDetailsPage() {
     }, term ? 2000 : 0);
 
     return () => window.clearTimeout(timer);
-  }, [agencyQuery, fetchAgencies, form.metodo, isComplete, step, userLocation]);
+  }, [agencyQuery, fetchAgencies, form.metodo, isComplete, isCourier, step, userLocation]);
 
   const selectAgency = useCallback((agency: PublicShippingAgency) => {
     setSelectedAgency(agency);
@@ -208,7 +213,7 @@ export default function ShippingDetailsPage() {
   const continueFromStepOne = () => {
     if (!formRef.current?.reportValidity() || !form.metodo) return;
     setError("");
-    setStep(isRecojo ? 3 : 2);
+    setStep(2);
   };
 
   const locateUser = () => {
@@ -244,7 +249,10 @@ export default function ShippingDetailsPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (step !== 3 || !form.metodo || isSubmitting) {
+    if (step !== confirmStep || !form.metodo || isSubmitting) {
+      return;
+    }
+    if (!form.fechaEnvio) {
       return;
     }
     if (!isRecojo && !isDomicilio && !form.agenciaExternalId) {
@@ -261,6 +269,7 @@ export default function ShippingDetailsPage() {
         dni: form.dni,
         celular: form.celular,
         metodo: form.metodo,
+        fechaEnvio: form.fechaEnvio,
         agencia:
           isRecojo || isDomicilio
             ? undefined
@@ -325,11 +334,18 @@ export default function ShippingDetailsPage() {
       <PublicHeader link={link} />
       {!isComplete ? (
         <div className="bg-[var(--color-background)] px-4 py-3 sm:px-5">
-          <StepIndicator current={step} />
+          <StepIndicator
+            current={step}
+            labels={
+              isRecojo
+                ? ["Datos", "Fecha", "Confirmar"]
+                : ["Datos", "Fecha", isDomicilio ? "Dirección" : "Agencia", "Confirmar"]
+            }
+          />
         </div>
       ) : null}
       <div className="flex flex-1 justify-center px-4 py-7 sm:px-5">
-        <div className={`w-full ${step === 2 ? "max-w-3xl" : "max-w-md"}`}>
+        <div className={`w-full ${step === 3 ? "max-w-3xl" : "max-w-md"}`}>
           {isComplete ? (
             <SuccessState businessName={link.negocio.nombreComercial} />
           ) : (
@@ -344,7 +360,19 @@ export default function ShippingDetailsPage() {
                 />
               ) : null}
 
-              {step === 2 && form.metodo && isDomicilio ? (
+              {step === 2 && form.metodo ? (
+                <StepShippingDate
+                  despacho={despacho}
+                  selected={form.fechaEnvio}
+                  onSelect={(value) =>
+                    setForm((current) => ({ ...current, fechaEnvio: value }))
+                  }
+                  onBack={() => setStep(1)}
+                  onContinue={() => setStep(3)}
+                />
+              ) : null}
+
+              {step === 3 && form.metodo && isDomicilio ? (
                 <StepDeliveryAddress
                   direccion={form.direccionEntrega}
                   referencia={form.referenciaEntrega}
@@ -360,12 +388,12 @@ export default function ShippingDetailsPage() {
                       referenciaEntrega: value,
                     }))
                   }
-                  onBack={() => setStep(1)}
-                  onContinue={() => setStep(3)}
+                  onBack={() => setStep(2)}
+                  onContinue={() => setStep(4)}
                 />
               ) : null}
 
-              {step === 2 && form.metodo && !isDomicilio ? (
+              {step === 3 && form.metodo && isCourier ? (
                 <StepTwo
                   courier={form.metodo as SaleShippingAgency}
                   agencyQuery={agencyQuery}
@@ -393,12 +421,12 @@ export default function ShippingDetailsPage() {
                   }}
                   onToggleMap={() => setIsMapVisible((visible) => !visible)}
                   onSelect={selectAgency}
-                  onBack={() => setStep(1)}
-                  onContinue={() => selectedAgency && setStep(3)}
+                  onBack={() => setStep(2)}
+                  onContinue={() => selectedAgency && setStep(4)}
                 />
               ) : null}
 
-              {step === 3 &&
+              {step === confirmStep &&
               selectedMetodo &&
               (isRecojo || isDomicilio || selectedAgency) ? (
                 <StepThree
@@ -406,7 +434,7 @@ export default function ShippingDetailsPage() {
                   metodo={selectedMetodo}
                   agency={isRecojo || isDomicilio ? null : selectedAgency}
                   isSubmitting={isSubmitting}
-                  onBack={() => setStep(isRecojo ? 1 : 2)}
+                  onBack={() => setStep(isRecojo ? 2 : 3)}
                 />
               ) : null}
 
@@ -435,6 +463,7 @@ function StepOne({
     dni: string;
     celular: string;
     metodo: string;
+    fechaEnvio: string;
     agenciaExternalId: string;
     direccionEntrega: string;
     referenciaEntrega: string;
@@ -609,6 +638,90 @@ function StepOne({
         Siguiente
         <ArrowRightIcon size={19} weight="bold" />
       </button>
+    </>
+  );
+}
+
+function StepShippingDate({
+  despacho,
+  selected,
+  onSelect,
+  onBack,
+  onContinue,
+}: {
+  despacho: PublicShippingDespacho | null;
+  selected: string;
+  onSelect: (value: string) => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <>
+      <StepTitle
+        title="Fecha de envío"
+        subtitle="Elige cuándo quieres que salga tu pedido."
+      />
+      {!despacho ? (
+        <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center">
+          <p className="text-sm font-black text-[var(--color-text)]">
+            El negocio aún no habilitó las fechas de envío
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+            Contacta al negocio para coordinar tu pedido.
+          </p>
+        </div>
+      ) : (
+        <>
+          {despacho.horaCorte ? (
+            <p className="rounded-xl bg-[var(--color-input-bg)] px-4 py-3 text-xs text-[var(--color-muted-foreground)]">
+              Los pedidos después de las{" "}
+              <span className="font-bold text-[var(--color-text)]">
+                {despacho.horaCorte}
+              </span>{" "}
+              salen el siguiente día de despacho.
+            </p>
+          ) : null}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {despacho.fechasDisponibles.map((fecha) => {
+              const isSelected = fecha === selected;
+              return (
+                <button
+                  key={fecha}
+                  type="button"
+                  onClick={() => onSelect(fecha)}
+                  className={`flex flex-col items-center rounded-xl border px-2 py-3 transition-colors ${
+                    isSelected
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                      : "border-[var(--color-border)] bg-[var(--color-sidebar-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                  }`}
+                >
+                  <span className="text-[10px] font-bold uppercase opacity-80">
+                    {formatFechaEnvioWeekday(fecha)}
+                  </span>
+                  <span className="text-sm font-black">
+                    {formatFechaEnvioDay(fecha)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={onBack} className="public-secondary-button">
+          <ArrowLeftIcon size={19} />
+          Atrás
+        </button>
+        <button
+          type="button"
+          disabled={!despacho || !selected}
+          onClick={onContinue}
+          className="public-primary-button"
+        >
+          Siguiente
+          <ArrowRightIcon size={19} />
+        </button>
+      </div>
     </>
   );
 }
@@ -895,6 +1008,7 @@ function StepThree({
     dni: string;
     celular: string;
     metodo: string;
+    fechaEnvio: string;
     agenciaExternalId: string;
     direccionEntrega: string;
     referenciaEntrega: string;
@@ -916,6 +1030,10 @@ function StepThree({
         <SummaryRow label="DNI" value={form.dni} />
         <SummaryRow label="Celular" value={form.celular} />
         <SummaryRow label="Método" value={metodo.nombre} />
+        <SummaryRow
+          label="Fecha de envío"
+          value={formatFechaEnvio(form.fechaEnvio)}
+        />
         <div className="border-t border-[var(--color-border)] pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--color-muted-foreground)]">
             {metodo.tipo === "recojo"
@@ -997,17 +1115,27 @@ function PublicHeader({ link }: { link: PublicShippingLink }) {
   );
 }
 
-function StepIndicator({ current }: { current: FormStep }) {
-  const labels = ["Datos", "Agencia", "Confirmar"];
+function StepIndicator({
+  current,
+  labels,
+}: {
+  current: FormStep;
+  labels: string[];
+}) {
+  const total = labels.length;
+  const activeIndex = Math.min(current, total);
   return (
     <div className="mx-auto w-full max-w-md">
       <p className="mb-2 text-center text-xs font-bold text-[var(--color-muted-foreground)]">
-        Paso {current} de 3 · {labels[current - 1]}
+        Paso {activeIndex} de {total} · {labels[activeIndex - 1]}
       </p>
-      <div className="grid grid-cols-3 gap-2">
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
+      >
         {labels.map((label, index) => {
           const number = index + 1;
-          const active = number <= current;
+          const active = number <= activeIndex;
           return (
             <div
               key={label}
@@ -1109,4 +1237,34 @@ function Field({
 function formatDistance(distanceKm: number) {
   if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
   return `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
+}
+
+function parseFechaEnvio(iso: string) {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function formatFechaEnvio(iso: string) {
+  if (!iso) return "—";
+  return parseFechaEnvio(iso).toLocaleDateString("es-PE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
+function formatFechaEnvioWeekday(iso: string) {
+  return parseFechaEnvio(iso).toLocaleDateString("es-PE", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+}
+
+function formatFechaEnvioDay(iso: string) {
+  return parseFechaEnvio(iso).toLocaleDateString("es-PE", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 }

@@ -11,6 +11,7 @@ import {
   FileTextIcon,
   GearSixIcon,
   IdentificationBadgeIcon,
+  LinkIcon,
   ListBulletsIcon,
   PackageIcon,
   PaletteIcon,
@@ -325,8 +326,8 @@ export const sidebarSections: SidebarSection[] = [
       },
       {
         key: "envios-config",
-        label: "Envíos",
-        icon: TruckIcon,
+        label: "Link Envíos",
+        icon: LinkIcon,
         route: "/configuracion/envios",
       },
       {

@@ -16,9 +16,31 @@ export type UpdateEnvioConfigPayload = {
   direccion?: string | null;
 };
 
+export type DespachoConfig = {
+  diasSemana: number[];
+  horaCorte: string;
+  configurado: boolean;
+};
+
+export type UpdateDespachoConfigPayload = {
+  diasSemana: number[];
+  horaCorte: string;
+};
+
 export const enviosConfigApi = {
   findAll() {
     return authFetch<EnvioMetodoConfig[]>("/envios-config");
+  },
+
+  findDespacho() {
+    return authFetch<DespachoConfig>("/envios-config/despacho");
+  },
+
+  updateDespacho(payload: UpdateDespachoConfigPayload) {
+    return authFetch<DespachoConfig>("/envios-config/despacho", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
   },
 
   update(metodo: SaleShippingAgency | string, payload: UpdateEnvioConfigPayload) {
