@@ -3,11 +3,11 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CalendarCheckIcon,
   CaretDownIcon,
   CheckCircleIcon,
   ClockIcon,
   DotsThreeVerticalIcon,
+  GearSixIcon,
   HouseIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -101,6 +101,7 @@ export default function EnviosConfigPage() {
   const [despachoDias, setDespachoDias] = useState<number[]>(allWeekdays);
   const [despachoHoraCorte, setDespachoHoraCorte] = useState("18:00");
   const [savingDespacho, setSavingDespacho] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -295,133 +296,6 @@ export default function EnviosConfigPage() {
   return (
     <DashboardShell headerTitle="Envíos">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <CalendarCheckIcon
-                size={22}
-                weight="fill"
-                className="text-[var(--color-primary)]"
-              />
-              <h2 className="text-base font-black text-[var(--color-text)]">
-                Días de despacho y hora de corte
-              </h2>
-            </div>
-            {despacho?.configurado ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#10b981]/10 px-3 py-1 text-xs font-circular-bold text-[#10b981]">
-                <CheckCircleIcon size={14} weight="fill" />
-                Configurado
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#f59e0b]/10 px-3 py-1 text-xs font-circular-bold text-[#d97706]">
-                <WarningCircleIcon size={14} weight="fill" />
-                Obligatorio
-              </span>
-            )}
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <div>
-              <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                ¿Qué días despachas?
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDespachoModo("todos")}
-                  className={cn(
-                    "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
-                    despachoModo === "todos"
-                      ? "bg-[var(--color-primary)] text-white"
-                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                  )}
-                >
-                  Todos los días
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDespachoModo("elegir")}
-                  className={cn(
-                    "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
-                    despachoModo === "elegir"
-                      ? "bg-[var(--color-primary)] text-white"
-                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                  )}
-                >
-                  Elegir días
-                </button>
-              </div>
-            </div>
-
-            {despachoModo === "elegir" ? (
-              <div>
-                <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                  Días de despacho
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {dispatchWeekdays.map((day) => {
-                    const selected = despachoDias.includes(day.value);
-                    return (
-                      <button
-                        key={day.value}
-                        type="button"
-                        title={day.full}
-                        onClick={() =>
-                          setDespachoDias((current) =>
-                            selected
-                              ? current.filter((value) => value !== day.value)
-                              : [...current, day.value].sort((a, b) => a - b),
-                          )
-                        }
-                        className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-xl text-sm font-circular-bold transition-colors",
-                          selected
-                            ? "bg-[var(--color-primary)] text-white"
-                            : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                        )}
-                      >
-                        {day.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-
-            <div>
-              <label
-                htmlFor="despacho-hora-corte"
-                className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-              >
-                <ClockIcon size={16} className="text-[var(--color-primary)]" />
-                Hora de corte
-              </label>
-              <input
-                id="despacho-hora-corte"
-                type="time"
-                value={despachoHoraCorte}
-                onChange={(event) => setDespachoHoraCorte(event.target.value)}
-                className="h-11 w-full max-w-[180px] rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-              />
-              <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
-                Los pedidos recibidos después de esta hora salen el siguiente día
-                de despacho.
-              </p>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => void saveDespacho()}
-                disabled={savingDespacho}
-                className="h-11 rounded-[14px] bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white hover:opacity-90 disabled:opacity-50"
-              >
-                {savingDespacho ? "Guardando..." : "Guardar configuración"}
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           <MetricCard
             icon={<TruckIcon size={22} weight="fill" />}
@@ -458,25 +332,40 @@ export default function EnviosConfigPage() {
             />
           </label>
 
-          <DropdownFilter
-            value={selectedStatus}
-            label={
-              selectedStatus === "todos"
-                ? "Estado"
-                : selectedStatus === "active"
-                  ? "Activo"
-                  : "Inactivo"
-            }
-            options={statusOptions}
-            isOpen={isStatusOpen}
-            onToggle={() => {
-              setIsStatusOpen(!isStatusOpen);
-            }}
-            onSelect={(value) => {
-              setSelectedStatus(value as EnvioStatusFilter);
-              setIsStatusOpen(false);
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <DropdownFilter
+              value={selectedStatus}
+              label={
+                selectedStatus === "todos"
+                  ? "Estado"
+                  : selectedStatus === "active"
+                    ? "Activo"
+                    : "Inactivo"
+              }
+              options={statusOptions}
+              isOpen={isStatusOpen}
+              onToggle={() => {
+                setIsStatusOpen(!isStatusOpen);
+              }}
+              onSelect={(value) => {
+                setSelectedStatus(value as EnvioStatusFilter);
+                setIsStatusOpen(false);
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => setIsConfigOpen(true)}
+              aria-label="Configuración de envíos"
+              title="Configuración de envíos"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <GearSixIcon size={20} weight="bold" />
+              {!despacho?.configurado ? (
+                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#f59e0b]" />
+              ) : null}
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -657,6 +546,114 @@ export default function EnviosConfigPage() {
           </p>
         </div>
       </div>
+
+      <Modal
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+        title="Configuración de envíos"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+              ¿Qué días despachas?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDespachoModo("todos")}
+                className={cn(
+                  "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
+                  despachoModo === "todos"
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                )}
+              >
+                Todos los días
+              </button>
+              <button
+                type="button"
+                onClick={() => setDespachoModo("elegir")}
+                className={cn(
+                  "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
+                  despachoModo === "elegir"
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                )}
+              >
+                Elegir días
+              </button>
+            </div>
+          </div>
+
+          {despachoModo === "elegir" ? (
+            <div>
+              <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+                Días de despacho
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {dispatchWeekdays.map((day) => {
+                  const selected = despachoDias.includes(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      type="button"
+                      title={day.full}
+                      onClick={() =>
+                        setDespachoDias((current) =>
+                          selected
+                            ? current.filter((value) => value !== day.value)
+                            : [...current, day.value].sort((a, b) => a - b),
+                        )
+                      }
+                      className={cn(
+                        "flex h-10 items-center justify-center rounded-full px-4 text-sm font-circular-bold transition-colors",
+                        selected
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      {day.full}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          <div>
+            <label
+              htmlFor="despacho-hora-corte"
+              className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+            >
+              <ClockIcon size={16} className="text-[var(--color-primary)]" />
+              Hora de corte
+            </label>
+            <input
+              id="despacho-hora-corte"
+              type="time"
+              value={despachoHoraCorte}
+              onChange={(event) => setDespachoHoraCorte(event.target.value)}
+              className="h-11 w-full max-w-[180px] rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            />
+            <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+              Los pedidos recibidos después de esta hora salen el siguiente día
+              de despacho.
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void saveDespacho()}
+              disabled={savingDespacho}
+              className="h-11 rounded-[14px] bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {savingDespacho ? "Guardando..." : "Guardar configuración"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={direccionModal !== null}

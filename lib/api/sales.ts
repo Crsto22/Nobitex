@@ -223,6 +223,7 @@ export type SaleShippingDetails = {
   metodoEnvio: string | null;
   direccionEntrega: string | null;
   referenciaEntrega: string | null;
+  fechaEnvio: string | null;
   recibidoAt: string | null;
   despachadoAt: string | null;
   entregadoAt: string | null;
@@ -451,6 +452,9 @@ export type DeliveriesQuery = HistoryPeriodQuery & {
   search?: string;
   courier?: SaleShippingAgency;
   sucursalId?: string;
+  servicio?: "SHALOM" | "OLVA" | "MOTORIZADO" | "DOMICILIO";
+  fechaEnvioDesde?: string;
+  fechaEnvioHasta?: string;
 };
 
 export type DeliveriesResponse = {
@@ -642,7 +646,21 @@ export const salesApi = {
     if (normalizedQuery.mode) {
       params.set("mode", normalizedQuery.mode);
     }
-    appendHistoryPeriod(params, normalizedQuery);
+    if (normalizedQuery.period) {
+      params.set("period", normalizedQuery.period);
+    }
+    if (normalizedQuery.dateFrom) {
+      params.set("dateFrom", normalizedQuery.dateFrom);
+    }
+    if (normalizedQuery.dateTo) {
+      params.set("dateTo", normalizedQuery.dateTo);
+    }
+    if (normalizedQuery.fechaEnvioDesde) {
+      params.set("fechaEnvioDesde", normalizedQuery.fechaEnvioDesde);
+    }
+    if (normalizedQuery.fechaEnvioHasta) {
+      params.set("fechaEnvioHasta", normalizedQuery.fechaEnvioHasta);
+    }
 
     if (normalizedQuery.page) {
       params.set("page", String(normalizedQuery.page));
@@ -658,6 +676,10 @@ export const salesApi = {
 
     if (normalizedQuery.courier) {
       params.set("courier", normalizedQuery.courier);
+    }
+
+    if (normalizedQuery.servicio) {
+      params.set("servicio", normalizedQuery.servicio);
     }
 
     if (normalizedQuery.sucursalId && normalizedQuery.sucursalId !== "all") {

@@ -47,6 +47,16 @@ import { cn } from "@/lib/utils";
 
 type PageTab = "pendiente" | "enviado" | "entregada";
 type ViewMode = "pickup" | "courier";
+type DateFilterType = "" | "venta" | "envio";
+type DateRangePreset =
+  | ""
+  | "today"
+  | "yesterday"
+  | "tomorrow"
+  | "week"
+  | "month"
+  | "next7"
+  | "custom";
 
 const pageSize = 10;
 const courierTabConfig: Array<{ label: string; value: PageTab }> = [
@@ -103,6 +113,33 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function limaToday() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function addDaysToIso(value: string, amount: number) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatFechaEnvio(value: string | null) {
+  if (!value) return "-";
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return "-";
+  return new Intl.DateTimeFormat("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
 function formatDateTime(value: string | null) {
   if (!value) return "-";
   return new Intl.DateTimeFormat("es-PE", {
@@ -138,7 +175,7 @@ function canMarkShipped(sale: VentaResponse) {
 }
 
 export default function DeliveriesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("pickup");
+  const [viewMode, setViewMode] = useState<ViewMode>("courier");
   const [activeTab, setActiveTab] = useState<PageTab>("pendiente");
   const [sales, setSales] = useState<VentaResponse[]>([]);
   const [summary, setSummary] = useState(emptySummary);
@@ -151,9 +188,15 @@ export default function DeliveriesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [courier, setCourier] = useState<"" | "SHALOM" | "OLVA">("");
+  const [servicio, setServicio] = useState<
+    "" | "SHALOM" | "OLVA" | "MOTORIZADO" | "DOMICILIO"
+  >("");
   const [branchId, setBranchId] = useState("");
-  const [period, setPeriod] = useState<"" | "today" | "week" | "month">("");
+  const [dateFilterType, setDateFilterType] =
+    useState<DateFilterType>("envio");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("today");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,6 +212,69 @@ export default function DeliveriesPage() {
   );
   const toast = useSystemToast();
 
+  const dateFilter = useMemo(() => {
+    const empty = {
+      period: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      fechaEnvioDesde: undefined,
+      fechaEnvioHasta: undefined,
+    };
+    if (!dateFilterType || !datePreset) return empty;
+
+    if (dateFilterType === "venta") {
+      if (datePreset === "custom") {
+        if (!dateFrom || !dateTo || dateFrom > dateTo) return empty;
+        return {
+          ...empty,
+          period: "custom" as const,
+          dateFrom,
+          dateTo,
+        };
+      }
+      if (
+        datePreset === "today" ||
+        datePreset === "yesterday" ||
+        datePreset === "week" ||
+        datePreset === "month"
+      ) {
+        return { ...empty, period: datePreset };
+      }
+      return empty;
+    }
+
+    let desde: string | undefined;
+    let hasta: string | undefined;
+    if (datePreset === "custom") {
+      desde = dateFrom || dateTo || undefined;
+      hasta = dateTo || dateFrom || undefined;
+      if (desde && hasta && desde > hasta) {
+        desde = undefined;
+        hasta = undefined;
+      }
+    } else {
+      const today = limaToday();
+      if (datePreset === "today") {
+        desde = today;
+        hasta = today;
+      } else if (datePreset === "tomorrow") {
+        const tomorrow = addDaysToIso(today, 1);
+        desde = tomorrow;
+        hasta = tomorrow;
+      } else if (datePreset === "next7") {
+        desde = today;
+        hasta = addDaysToIso(today, 6);
+      } else {
+        const weekday = new Date(`${today}T12:00:00Z`).getUTCDay();
+        const daysToSunday = (7 - weekday) % 7;
+        desde = today;
+        hasta = addDaysToIso(today, daysToSunday);
+      }
+    }
+
+    return { ...empty, fechaEnvioDesde: desde, fechaEnvioHasta: hasta };
+  }, [dateFilterType, datePreset, dateFrom, dateTo]);
+
   const loadDeliveries = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -178,17 +284,24 @@ export default function DeliveriesPage() {
         page,
         limit: pageSize,
         search: debouncedSearchTerm || undefined,
-        courier: viewMode === "courier" ? courier || undefined : undefined,
+        servicio: viewMode === "courier" ? servicio || undefined : undefined,
         sucursalId: branchId || undefined,
-        period: period || undefined,
+        period: dateFilter.period,
+        dateFrom: dateFilter.dateFrom,
+        dateTo: dateFilter.dateTo,
+        fechaEnvioDesde: dateFilter.fechaEnvioDesde,
+        fechaEnvioHasta: dateFilter.fechaEnvioHasta,
       });
-      setSales(response.data);
+      const readySales = response.data.filter(
+        (sale) => !sale.envio || sale.envio.estado === "recibido",
+      );
+      setSales(readySales);
       setSummary(response.summary ?? emptySummary);
       setMeta(
         response.meta ?? {
           page,
           limit: pageSize,
-          total: response.data.length,
+          total: readySales.length,
           totalPages: 1,
         },
       );
@@ -205,10 +318,10 @@ export default function DeliveriesPage() {
   }, [
     activeTab,
     branchId,
-    courier,
+    servicio,
+    dateFilter,
     debouncedSearchTerm,
     page,
-    period,
     toast,
     viewMode,
   ]);
@@ -304,7 +417,7 @@ export default function DeliveriesPage() {
     setViewMode(mode);
     setActiveTab("pendiente");
     if (mode === "pickup") {
-      setCourier("");
+      setServicio("");
       setSelectedShippingSales([]);
     }
     setPage(1);
@@ -465,7 +578,7 @@ export default function DeliveriesPage() {
             </button>
           ) : null}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-wrap">
             <label className="relative w-full min-w-0 sm:flex-1">
               <MagnifyingGlassIcon
                 size={18}
@@ -482,23 +595,31 @@ export default function DeliveriesPage() {
             </label>
             <div
               className={cn(
-                "grid w-full gap-2 sm:w-auto sm:flex-1 lg:flex lg:flex-none lg:items-center",
-                viewMode === "courier" ? "sm:grid-cols-3" : "sm:grid-cols-2",
+                "grid w-full gap-2 sm:w-auto sm:flex-1 sm:grid-cols-2 lg:flex lg:flex-none lg:items-center",
                 showFilters ? "" : "hidden lg:flex",
               )}
             >
               {viewMode === "courier" ? (
                 <FilterSelect
-                  className="lg:w-40"
-                  value={courier}
+                  className="lg:w-48"
+                  value={servicio}
                   onChange={(value) => {
-                    setCourier(value as "" | "SHALOM" | "OLVA");
+                    setServicio(
+                      value as
+                        | ""
+                        | "SHALOM"
+                        | "OLVA"
+                        | "MOTORIZADO"
+                        | "DOMICILIO",
+                    );
                     setPage(1);
                   }}
                   options={[
-                    { value: "", label: "Todos los couriers" },
+                    { value: "", label: "Todos los servicios" },
                     { value: "SHALOM", label: "Shalom" },
                     { value: "OLVA", label: "Olva" },
+                    { value: "MOTORIZADO", label: "Motorizado" },
+                    { value: "DOMICILIO", label: "Envío a domicilio" },
                   ]}
                 />
               ) : null}
@@ -518,19 +639,74 @@ export default function DeliveriesPage() {
                 ]}
               />
               <FilterSelect
-                className="lg:w-36"
-                value={period}
+                className="lg:w-44"
+                value={dateFilterType}
                 onChange={(value) => {
-                  setPeriod(value as "" | "today" | "week" | "month");
+                  setDateFilterType(value as DateFilterType);
+                  setDatePreset("");
+                  setDateFrom("");
+                  setDateTo("");
                   setPage(1);
                 }}
                 options={[
-                  { value: "", label: "Todas las fechas" },
-                  { value: "today", label: "Hoy" },
-                  { value: "week", label: "Esta semana" },
-                  { value: "month", label: "Este mes" },
+                  { value: "", label: "Sin filtro de fecha" },
+                  { value: "venta", label: "Fecha de venta" },
+                  { value: "envio", label: "Fecha de envío" },
                 ]}
               />
+              {dateFilterType ? (
+                <FilterSelect
+                  className="lg:w-44"
+                  value={datePreset}
+                  onChange={(value) => {
+                    setDatePreset(value as DateRangePreset);
+                    setPage(1);
+                  }}
+                  options={
+                    dateFilterType === "venta"
+                      ? [
+                          { value: "", label: "Todas" },
+                          { value: "today", label: "Hoy" },
+                          { value: "yesterday", label: "Ayer" },
+                          { value: "week", label: "Esta semana" },
+                          { value: "month", label: "Este mes" },
+                          { value: "custom", label: "Personalizado" },
+                        ]
+                      : [
+                          { value: "", label: "Todas" },
+                          { value: "today", label: "Hoy" },
+                          { value: "tomorrow", label: "Mañana" },
+                          { value: "week", label: "Esta semana" },
+                          { value: "next7", label: "Próximos 7 días" },
+                          { value: "custom", label: "Personalizado" },
+                        ]
+                  }
+                />
+              ) : null}
+              {dateFilterType && datePreset === "custom" ? (
+                <>
+                  <input
+                    type="date"
+                    aria-label="Desde"
+                    value={dateFrom}
+                    onChange={(event) => {
+                      setDateFrom(event.target.value);
+                      setPage(1);
+                    }}
+                    className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  />
+                  <input
+                    type="date"
+                    aria-label="Hasta"
+                    value={dateTo}
+                    onChange={(event) => {
+                      setDateTo(event.target.value);
+                      setPage(1);
+                    }}
+                    className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  />
+                </>
+              ) : null}
             </div>
             <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex">
               <button
@@ -708,8 +884,8 @@ function ViewModeSwitch({
     label: string;
     icon: typeof StorefrontIcon;
   }> = [
-    { value: "pickup", label: "Recojo", icon: StorefrontIcon },
     { value: "courier", label: "Envíos", icon: TruckIcon },
+    { value: "pickup", label: "Recojo", icon: StorefrontIcon },
   ];
 
   return (
@@ -931,14 +1107,17 @@ function DeliveryRow({
           value={formatDateTime(sale.createdAt)}
         />
         <InfoItem
-          icon={ClockIcon}
-          label={status === "ENTREGADO" ? "Entregado" : "Recojo hasta"}
-          value={formatDate(
-            status === "ENTREGADO"
-              ? sale.envio?.entregadoAt ?? sale.fechaEntrega
-              : sale.recojoHasta,
-          )}
+          icon={CalendarIcon}
+          label={isRecojoMetodo ? "Fecha de recojo" : "Fecha de envío"}
+          value={formatFechaEnvio(sale.envio?.fechaEnvio ?? null)}
         />
+        {status === "ENTREGADO" ? (
+          <InfoItem
+            icon={ClockIcon}
+            label="Entregado"
+            value={formatDate(sale.envio?.entregadoAt ?? sale.fechaEntrega)}
+          />
+        ) : null}
         <div className="min-w-0">
           <p className="text-[10px] text-[var(--color-muted-foreground)]">
             Productos
