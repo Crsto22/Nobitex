@@ -14,10 +14,12 @@ import {
   ArrowRightIcon,
   BuildingsIcon,
   CheckCircleIcon,
+  HouseIcon,
   IdentificationCardIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
   MapTrifoldIcon,
+  MotorcycleIcon,
   PaperPlaneTiltIcon,
   PhoneIcon,
   SpinnerGapIcon,
@@ -46,6 +48,14 @@ const metodoVisuals: Record<string, { image?: string; selectedBg: string }> = {
     selectedBg: "bg-[#f5c518]/15 ring-2 ring-[#f5c518]/40",
   },
   RECOJO: {
+    selectedBg:
+      "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
+  },
+  MOTORIZADO: {
+    selectedBg:
+      "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
+  },
+  DOMICILIO: {
     selectedBg:
       "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
   },
@@ -81,11 +91,14 @@ export default function ShippingDetailsPage() {
     celular: "",
     metodo: "",
     agenciaExternalId: "",
+    direccionEntrega: "",
+    referenciaEntrega: "",
   });
 
   const selectedMetodo =
     link?.metodosEnvio.find((metodo) => metodo.metodo === form.metodo) ?? null;
   const isRecojo = selectedMetodo?.tipo === "recojo";
+  const isDomicilio = selectedMetodo?.tipo === "domicilio";
 
   useEffect(() => {
     let active = true;
@@ -181,6 +194,8 @@ export default function ShippingDetailsPage() {
       ...current,
       metodo,
       agenciaExternalId: "",
+      direccionEntrega: "",
+      referenciaEntrega: "",
     }));
     setSelectedAgency(null);
     setAgencyQuery("");
@@ -232,7 +247,10 @@ export default function ShippingDetailsPage() {
     if (step !== 3 || !form.metodo || isSubmitting) {
       return;
     }
-    if (!isRecojo && !form.agenciaExternalId) {
+    if (!isRecojo && !isDomicilio && !form.agenciaExternalId) {
+      return;
+    }
+    if (isDomicilio && !form.direccionEntrega.trim()) {
       return;
     }
     setError("");
@@ -243,12 +261,19 @@ export default function ShippingDetailsPage() {
         dni: form.dni,
         celular: form.celular,
         metodo: form.metodo,
-        agencia: isRecojo
-          ? undefined
-          : (form.metodo as SaleShippingAgency),
-        agenciaExternalId: isRecojo
-          ? undefined
-          : form.agenciaExternalId,
+        agencia:
+          isRecojo || isDomicilio
+            ? undefined
+            : (form.metodo as SaleShippingAgency),
+        agenciaExternalId:
+          isRecojo || isDomicilio ? undefined : form.agenciaExternalId,
+        direccionEntrega: isDomicilio
+          ? form.direccionEntrega.trim()
+          : undefined,
+        referenciaEntrega:
+          isDomicilio && form.referenciaEntrega.trim()
+            ? form.referenciaEntrega.trim()
+            : undefined,
       });
       setIsComplete(true);
     } catch (submitError: unknown) {
@@ -319,7 +344,28 @@ export default function ShippingDetailsPage() {
                 />
               ) : null}
 
-              {step === 2 && form.metodo ? (
+              {step === 2 && form.metodo && isDomicilio ? (
+                <StepDeliveryAddress
+                  direccion={form.direccionEntrega}
+                  referencia={form.referenciaEntrega}
+                  onDireccionChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      direccionEntrega: value,
+                    }))
+                  }
+                  onReferenciaChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      referenciaEntrega: value,
+                    }))
+                  }
+                  onBack={() => setStep(1)}
+                  onContinue={() => setStep(3)}
+                />
+              ) : null}
+
+              {step === 2 && form.metodo && !isDomicilio ? (
                 <StepTwo
                   courier={form.metodo as SaleShippingAgency}
                   agencyQuery={agencyQuery}
@@ -352,11 +398,13 @@ export default function ShippingDetailsPage() {
                 />
               ) : null}
 
-              {step === 3 && selectedMetodo && (isRecojo || selectedAgency) ? (
+              {step === 3 &&
+              selectedMetodo &&
+              (isRecojo || isDomicilio || selectedAgency) ? (
                 <StepThree
                   form={form}
                   metodo={selectedMetodo}
-                  agency={isRecojo ? null : selectedAgency}
+                  agency={isRecojo || isDomicilio ? null : selectedAgency}
                   isSubmitting={isSubmitting}
                   onBack={() => setStep(isRecojo ? 1 : 2)}
                 />
@@ -388,6 +436,8 @@ function StepOne({
     celular: string;
     metodo: string;
     agenciaExternalId: string;
+    direccionEntrega: string;
+    referenciaEntrega: string;
   };
   metodos: PublicShippingMetodo[];
   onFormChange: React.Dispatch<React.SetStateAction<typeof form>>;
@@ -485,6 +535,28 @@ function StepOne({
                   {metodo.tipo === "recojo" ? (
                     <>
                       <StorefrontIcon
+                        size={40}
+                        weight="fill"
+                        className="text-[var(--color-primary)]"
+                      />
+                      <span className="text-sm font-black text-[var(--color-text)]">
+                        {metodo.nombre}
+                      </span>
+                    </>
+                  ) : metodo.metodo === "MOTORIZADO" ? (
+                    <>
+                      <MotorcycleIcon
+                        size={40}
+                        weight="fill"
+                        className="text-[var(--color-primary)]"
+                      />
+                      <span className="text-sm font-black text-[var(--color-text)]">
+                        {metodo.nombre}
+                      </span>
+                    </>
+                  ) : metodo.metodo === "DOMICILIO" ? (
+                    <>
+                      <HouseIcon
                         size={40}
                         weight="fill"
                         className="text-[var(--color-primary)]"
@@ -749,6 +821,68 @@ function StepTwo({
   );
 }
 
+function StepDeliveryAddress({
+  direccion,
+  referencia,
+  onDireccionChange,
+  onReferenciaChange,
+  onBack,
+  onContinue,
+}: {
+  direccion: string;
+  referencia: string;
+  onDireccionChange: (value: string) => void;
+  onReferenciaChange: (value: string) => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const canContinue = direccion.trim().length >= 5;
+  return (
+    <>
+      <StepTitle
+        title="Dirección de entrega"
+        subtitle="Indica dónde deseas recibir tu pedido."
+      />
+      <Field icon={<MapPinIcon size={19} />} label="Dirección completa">
+        <textarea
+          required
+          minLength={5}
+          maxLength={500}
+          rows={3}
+          value={direccion}
+          onChange={(event) => onDireccionChange(event.target.value)}
+          className="public-shipping-input min-h-[88px] resize-none"
+          placeholder="Ej. Av. Los Álamos 123, Dpto. 201, Arequipa"
+        />
+      </Field>
+      <Field icon={<MapPinIcon size={19} />} label="Referencia (opcional)">
+        <input
+          maxLength={300}
+          value={referencia}
+          onChange={(event) => onReferenciaChange(event.target.value)}
+          className="public-shipping-input"
+          placeholder="Ej. Frente al parque, portón azul"
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={onBack} className="public-secondary-button">
+          <ArrowLeftIcon size={19} />
+          Atrás
+        </button>
+        <button
+          type="button"
+          disabled={!canContinue}
+          onClick={onContinue}
+          className="public-primary-button"
+        >
+          Siguiente
+          <ArrowRightIcon size={19} />
+        </button>
+      </div>
+    </>
+  );
+}
+
 function StepThree({
   form,
   metodo,
@@ -762,12 +896,15 @@ function StepThree({
     celular: string;
     metodo: string;
     agenciaExternalId: string;
+    direccionEntrega: string;
+    referenciaEntrega: string;
   };
   metodo: PublicShippingMetodo;
   agency: PublicShippingAgency | null;
   isSubmitting: boolean;
   onBack: () => void;
 }) {
+  const isDomicilio = metodo.tipo === "domicilio";
   return (
     <>
       <StepTitle
@@ -781,12 +918,27 @@ function StepThree({
         <SummaryRow label="Método" value={metodo.nombre} />
         <div className="border-t border-[var(--color-border)] pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--color-muted-foreground)]">
-            {metodo.tipo === "recojo" ? "Recojo en tienda" : "Agencia seleccionada"}
+            {metodo.tipo === "recojo"
+              ? "Recojo en tienda"
+              : isDomicilio
+                ? "Dirección de entrega"
+                : "Agencia seleccionada"}
           </p>
           {metodo.tipo === "recojo" ? (
             <p className="mt-1 text-sm leading-5 text-[var(--color-text)]">
               {metodo.direccion || "Dirección por confirmar con el negocio."}
             </p>
+          ) : isDomicilio ? (
+            <>
+              <p className="mt-1 text-sm leading-5 text-[var(--color-text)]">
+                {form.direccionEntrega || "Sin dirección"}
+              </p>
+              {form.referenciaEntrega ? (
+                <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
+                  Ref: {form.referenciaEntrega}
+                </p>
+              ) : null}
+            </>
           ) : agency ? (
             <>
               <p className="mt-1 text-sm font-black text-[var(--color-text)]">

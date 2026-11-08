@@ -19,6 +19,8 @@ import {
   WarningCircleIcon,
   ArrowsClockwiseIcon,
   LinkIcon,
+  HouseIcon,
+  MotorcycleIcon,
   StorefrontIcon,
   TruckIcon,
 } from "@phosphor-icons/react/ssr";
@@ -807,6 +809,18 @@ export default function VentaDetallePage() {
                       weight="fill"
                       className="text-[var(--color-primary)]"
                     />
+                  ) : venta.envio?.metodoEnvio === "MOTORIZADO" ? (
+                    <MotorcycleIcon
+                      size={22}
+                      weight="fill"
+                      className="text-[var(--color-primary)]"
+                    />
+                  ) : venta.envio?.metodoEnvio === "DOMICILIO" ? (
+                    <HouseIcon
+                      size={22}
+                      weight="fill"
+                      className="text-[var(--color-primary)]"
+                    />
                   ) : venta.envio?.agencia ? (
                     <Image
                       src={
@@ -866,6 +880,20 @@ export default function VentaDetallePage() {
                               Recojo en tienda
                             </span>
                           </>
+                        ) : venta.envio.metodoEnvio === "MOTORIZADO" ? (
+                          <>
+                            Método:{" "}
+                            <span className="text-[var(--color-text)]">
+                              Motorizado
+                            </span>
+                          </>
+                        ) : venta.envio.metodoEnvio === "DOMICILIO" ? (
+                          <>
+                            Método:{" "}
+                            <span className="text-[var(--color-text)]">
+                              Envío a domicilio
+                            </span>
+                          </>
                         ) : venta.envio.agencia ? (
                           <>
                             Agencia:{" "}
@@ -885,6 +913,17 @@ export default function VentaDetallePage() {
                       {venta.envio.agencia && venta.envio.agenciaNombre ? (
                         <p className="text-[var(--color-muted-foreground)] sm:col-span-2">
                           Sede: <span className="text-[var(--color-text)]">{venta.envio.agenciaNombre}</span>
+                        </p>
+                      ) : null}
+                      {venta.envio.direccionEntrega ? (
+                        <p className="text-[var(--color-muted-foreground)] sm:col-span-2">
+                          Dirección:{" "}
+                          <span className="text-[var(--color-text)]">
+                            {venta.envio.direccionEntrega}
+                            {venta.envio.referenciaEntrega
+                              ? ` · Ref: ${venta.envio.referenciaEntrega}`
+                              : ""}
+                          </span>
                         </p>
                       ) : null}
                       {venta.envio.agenciaDireccion ? (

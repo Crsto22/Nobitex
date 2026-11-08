@@ -221,6 +221,8 @@ export type SaleShippingDetails = {
   agenciaLatitud: number | null;
   agenciaLongitud: number | null;
   metodoEnvio: string | null;
+  direccionEntrega: string | null;
+  referenciaEntrega: string | null;
   recibidoAt: string | null;
   despachadoAt: string | null;
   entregadoAt: string | null;

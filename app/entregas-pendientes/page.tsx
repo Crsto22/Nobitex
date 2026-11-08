@@ -9,10 +9,12 @@ import {
   ClockIcon,
   ColumnsIcon,
   FunnelIcon,
+  HouseIcon,
   LinkIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
   MinusIcon,
+  MotorcycleIcon,
   PackageIcon,
   PhoneIcon,
   PlusIcon,
@@ -792,8 +794,11 @@ function DeliveryRow({
   const toast = useSystemToast();
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
-  const isCourier =
-    Boolean(sale.envio) && sale.envio?.metodoEnvio !== "RECOJO";
+  const isRecojoMetodo = sale.envio?.metodoEnvio === "RECOJO";
+  const isDomicilioMetodo =
+    sale.envio?.metodoEnvio === "MOTORIZADO" ||
+    sale.envio?.metodoEnvio === "DOMICILIO";
+  const isCourier = Boolean(sale.envio) && !isRecojoMetodo;
   const documentLabel =
     sale.cliente?.tipoDocumento === "ruc"
       ? "RUC"
@@ -977,45 +982,76 @@ function DeliveryRow({
       <div className="grid gap-4 border-t border-[var(--color-border)] px-4 py-3 lg:grid-cols-[minmax(300px,1.3fr)_auto] lg:items-center">
         <div className="min-w-0">
           {isCourier && sale.envio ? (
-            <div className="flex min-w-0 items-start gap-3">
-              {sale.envio.estado === "recibido" ? (
-                <span
-                  className={cn(
-                    "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black",
-                    sale.envio.agencia === "OLVA"
-                      ? "bg-[#eab308] text-black"
-                      : "bg-[#dc2626] text-white",
+            isDomicilioMetodo ? (
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                  {sale.envio.metodoEnvio === "MOTORIZADO" ? (
+                    <MotorcycleIcon size={20} weight="fill" />
+                  ) : (
+                    <HouseIcon size={20} weight="fill" />
                   )}
-                >
-                  {sale.envio.agencia === "OLVA" ? "OLVA" : "SHALOM"}
                 </span>
-              ) : (
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-secondary)] text-white">
-                  <ClockIcon size={20} weight="fill" />
-                </span>
-              )}
-              <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black text-[var(--color-text)]">
-                    {sale.envio.estado === "recibido"
-                      ? sale.envio.agenciaNombre || "Agencia seleccionada"
-                      : "Esperando datos del cliente"}
+                    {sale.envio.metodoEnvio === "MOTORIZADO"
+                      ? "Motorizado"
+                      : "Envío a domicilio"}
                   </p>
                   <p className="flex items-center gap-1 truncate text-xs text-[var(--color-muted-foreground)]">
                     <MapPinIcon size={13} />
                     {sale.envio.estado === "recibido"
-                      ? [
-                          sale.envio.agenciaDistrito,
-                          sale.envio.agenciaProvincia,
-                          sale.envio.agenciaDepartamento,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")
-                      : "Comparte o revisa el enlace de envío"}
+                      ? sale.envio.direccionEntrega || "Sin dirección"
+                      : "Esperando datos del cliente"}
                   </p>
+                  {sale.envio.estado === "recibido" &&
+                  sale.envio.referenciaEntrega ? (
+                    <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+                      Ref: {sale.envio.referenciaEntrega}
+                    </p>
+                  ) : null}
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex min-w-0 items-start gap-3">
+                {sale.envio.estado === "recibido" ? (
+                  <span
+                    className={cn(
+                      "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black",
+                      sale.envio.agencia === "OLVA"
+                        ? "bg-[#eab308] text-black"
+                        : "bg-[#dc2626] text-white",
+                    )}
+                  >
+                    {sale.envio.agencia === "OLVA" ? "OLVA" : "SHALOM"}
+                  </span>
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-secondary)] text-white">
+                    <ClockIcon size={20} weight="fill" />
+                  </span>
+                )}
+                <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-[var(--color-text)]">
+                      {sale.envio.estado === "recibido"
+                        ? sale.envio.agenciaNombre || "Agencia seleccionada"
+                        : "Esperando datos del cliente"}
+                    </p>
+                    <p className="flex items-center gap-1 truncate text-xs text-[var(--color-muted-foreground)]">
+                      <MapPinIcon size={13} />
+                      {sale.envio.estado === "recibido"
+                        ? [
+                            sale.envio.agenciaDistrito,
+                            sale.envio.agenciaProvincia,
+                            sale.envio.agenciaDepartamento,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Comparte o revisa el enlace de envío"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
           ) : (
             <div className="flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
@@ -1034,7 +1070,7 @@ function DeliveryRow({
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
-          {isCourier && sale.envio?.estado === "recibido" ? (
+          {sale.envio?.agencia && sale.envio?.estado === "recibido" ? (
             <button
               type="button"
               onClick={onPrintLabel}

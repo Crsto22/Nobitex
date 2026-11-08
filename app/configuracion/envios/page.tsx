@@ -6,7 +6,10 @@ import {
   CaretDownIcon,
   CheckCircleIcon,
   DotsThreeVerticalIcon,
+  HouseIcon,
   MagnifyingGlassIcon,
+  MapPinIcon,
+  MotorcycleIcon,
   PowerIcon,
   StorefrontIcon,
   TruckIcon,
@@ -14,6 +17,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   enviosConfigApi,
@@ -29,6 +33,12 @@ const metodosCatalog: Record<
 > = {
   RECOJO: {
     descripcion: "Entrega directa en tienda",
+  },
+  MOTORIZADO: {
+    descripcion: "Delivery motorizado a domicilio",
+  },
+  DOMICILIO: {
+    descripcion: "Envío a la dirección del cliente",
   },
   SHALOM: {
     image: "/envios/shalom.svg",
@@ -65,6 +75,10 @@ export default function EnviosConfigPage() {
     {},
   );
   const [savingDireccion, setSavingDireccion] = useState<string | null>(null);
+  const [direccionModal, setDireccionModal] = useState<{
+    metodo: string;
+    nombre: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -183,6 +197,7 @@ export default function EnviosConfigPage() {
         description: updated.nombre,
         variant: "success",
       });
+      setDireccionModal(null);
     } catch (error: unknown) {
       showToast({
         title: "No se pudo guardar la dirección",
@@ -288,8 +303,20 @@ export default function EnviosConfigPage() {
                           unoptimized
                           className="h-full w-full rounded-xl object-contain"
                         />
-                      ) : item.tipo === "recojo" ? (
+                      ) : item.metodo === "RECOJO" ? (
                         <StorefrontIcon
+                          size={24}
+                          weight="fill"
+                          className="text-[var(--color-primary)]"
+                        />
+                      ) : item.metodo === "MOTORIZADO" ? (
+                        <MotorcycleIcon
+                          size={24}
+                          weight="fill"
+                          className="text-[var(--color-primary)]"
+                        />
+                      ) : item.metodo === "DOMICILIO" ? (
+                        <HouseIcon
                           size={24}
                           weight="fill"
                           className="text-[var(--color-primary)]"
@@ -317,7 +344,9 @@ export default function EnviosConfigPage() {
                       {item.catalog?.descripcion || "Método de envío"}
                     </p>
                     <p className="truncate text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-                      Método de envío
+                      {item.tipo === "recojo" && item.direccion
+                        ? item.direccion
+                        : "Método de envío"}
                     </p>
                   </div>
 
@@ -349,7 +378,25 @@ export default function EnviosConfigPage() {
                     </button>
                     <div className="relative">
                       {openMenuId === item.metodo && (
-                        <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                        <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                          {item.tipo === "recojo" ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setDireccionModal({
+                                  metodo: item.metodo,
+                                  nombre: item.nombre,
+                                });
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                            >
+                              <MapPinIcon size={16} weight="bold" />
+                              {item.direccion
+                                ? "Editar dirección"
+                                : "Agregar dirección"}
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() =>
@@ -364,41 +411,6 @@ export default function EnviosConfigPage() {
                       )}
                     </div>
                   </div>
-
-                  {item.tipo === "recojo" ? (
-                    <div className="col-span-2 mt-1 rounded-[12px] bg-[var(--color-input-bg)] p-3 md:col-span-4">
-                      <label className="mb-1 block text-[10px] font-bold uppercase text-[var(--color-muted-foreground)]">
-                        Dirección de recojo
-                      </label>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <input
-                          type="text"
-                          value={direccionDraft[item.metodo] ?? ""}
-                          onChange={(event) =>
-                            setDireccionDraft((current) => ({
-                              ...current,
-                              [item.metodo]: event.target.value,
-                            }))
-                          }
-                          placeholder="Ej. Av. Principal 123, Lima"
-                          maxLength={300}
-                          className="h-10 min-w-0 flex-1 rounded-[12px] bg-[var(--color-card)] px-3 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void saveDireccion(item.metodo, item.activo)
-                          }
-                          disabled={savingDireccion === item.metodo}
-                          className="h-10 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
-                        >
-                          {savingDireccion === item.metodo
-                            ? "Guardando..."
-                            : "Guardar"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
@@ -423,6 +435,64 @@ export default function EnviosConfigPage() {
           </p>
         </div>
       </div>
+
+      <Modal
+        isOpen={direccionModal !== null}
+        onClose={() => setDireccionModal(null)}
+        title="Dirección de recojo"
+        size="md"
+      >
+        {direccionModal ? (
+          <div className="space-y-4">
+            <div>
+              <input
+                type="text"
+                value={direccionDraft[direccionModal.metodo] ?? ""}
+                onChange={(event) =>
+                  setDireccionDraft((current) => ({
+                    ...current,
+                    [direccionModal.metodo]: event.target.value,
+                  }))
+                }
+                placeholder="Ej. Av. Principal 123, Lima"
+                maxLength={300}
+                autoFocus
+                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+              <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                Esta dirección se mostrará a tus clientes cuando elijan
+                &quot;Recojo en tienda&quot; en el enlace de envío.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDireccionModal(null)}
+                disabled={savingDireccion !== null}
+                className="h-11 flex-1 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)] disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const config = configs.find(
+                    (item) => item.metodo === direccionModal.metodo,
+                  );
+                  void saveDireccion(
+                    direccionModal.metodo,
+                    config?.activo ?? true,
+                  );
+                }}
+                disabled={savingDireccion !== null}
+                className="h-11 flex-1 rounded-[14px] bg-[var(--color-primary)] text-sm font-circular-bold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {savingDireccion ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </DashboardShell>
   );
 }

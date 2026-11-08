@@ -4,7 +4,7 @@ import type { SaleShippingAgency } from "@/lib/api/sales";
 export type PublicShippingMetodo = {
   metodo: string;
   nombre: string;
-  tipo: "courier" | "recojo";
+  tipo: "courier" | "recojo" | "domicilio";
   direccion: string | null;
 };
 
@@ -22,6 +22,8 @@ export type SubmitShippingDetails = {
   metodo: string;
   agencia?: SaleShippingAgency;
   agenciaExternalId?: string;
+  direccionEntrega?: string;
+  referenciaEntrega?: string;
 };
 
 export type PublicShippingAgency = {
