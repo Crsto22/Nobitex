@@ -19,6 +19,7 @@ import {
   WarningCircleIcon,
   ArrowsClockwiseIcon,
   LinkIcon,
+  StorefrontIcon,
   TruckIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -800,7 +801,13 @@ export default function VentaDetallePage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-primary)]/10">
-                  {venta.envio?.agencia ? (
+                  {venta.envio?.metodoEnvio === "RECOJO" ? (
+                    <StorefrontIcon
+                      size={22}
+                      weight="fill"
+                      className="text-[var(--color-primary)]"
+                    />
+                  ) : venta.envio?.agencia ? (
                     <Image
                       src={
                         venta.envio.agencia === "OLVA"
@@ -852,9 +859,30 @@ export default function VentaDetallePage() {
                         Celular: <span className="text-[var(--color-text)]">{venta.envio.celular}</span>
                       </p>
                       <p className="text-[var(--color-muted-foreground)]">
-                        Agencia: <span className="text-[var(--color-text)]">{venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}</span>
+                        {venta.envio.metodoEnvio === "RECOJO" ? (
+                          <>
+                            Método:{" "}
+                            <span className="text-[var(--color-text)]">
+                              Recojo en tienda
+                            </span>
+                          </>
+                        ) : venta.envio.agencia ? (
+                          <>
+                            Agencia:{" "}
+                            <span className="text-[var(--color-text)]">
+                              {venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            Método:{" "}
+                            <span className="text-[var(--color-text)]">
+                              Pendiente por el cliente
+                            </span>
+                          </>
+                        )}
                       </p>
-                      {venta.envio.agenciaNombre ? (
+                      {venta.envio.agencia && venta.envio.agenciaNombre ? (
                         <p className="text-[var(--color-muted-foreground)] sm:col-span-2">
                           Sede: <span className="text-[var(--color-text)]">{venta.envio.agenciaNombre}</span>
                         </p>

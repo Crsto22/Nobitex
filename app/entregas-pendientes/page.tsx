@@ -123,6 +123,7 @@ function customerName(sale: VentaResponse) {
 
 function canMarkShipped(sale: VentaResponse) {
   if (sale.envio?.estado !== "recibido") return false;
+  if (sale.envio.metodoEnvio === "RECOJO") return false;
   if (
     sale.envio.estadoLogistico !== "POR_PREPARAR" &&
     sale.envio.estadoLogistico !== "POR_DESPACHAR"
