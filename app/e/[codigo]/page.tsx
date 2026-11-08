@@ -90,6 +90,7 @@ export default function ShippingDetailsPage() {
   const [form, setForm] = useState({
     nombreCompleto: "",
     dni: "",
+    tipoDocumento: "DNI" as "DNI" | "CE",
     celular: "",
     metodo: "",
     fechaEnvio: "",
@@ -269,6 +270,7 @@ export default function ShippingDetailsPage() {
       await shippingLinksApi.submit(code, {
         nombreCompleto: form.nombreCompleto.trim(),
         dni: form.dni,
+        tipoDocumento: form.tipoDocumento,
         celular: form.celular,
         metodo: form.metodo,
         fechaEnvio: isRecojo ? undefined : form.fechaEnvio,
@@ -475,6 +477,7 @@ function StepOne({
   form: {
     nombreCompleto: string;
     dni: string;
+    tipoDocumento: "DNI" | "CE";
     celular: string;
     metodo: string;
     fechaEnvio: string;
@@ -512,24 +515,57 @@ function StepOne({
           placeholder="Ej. María López"
         />
       </Field>
-      <Field icon={<IdentificationCardIcon size={19} />} label="DNI">
+      <div>
+        <span className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+          <span className="text-[var(--color-primary)]">
+            <IdentificationCardIcon size={19} />
+          </span>
+          Documento de identidad
+        </span>
+        <div className="mb-2 grid grid-cols-2 gap-2">
+          {(["DNI", "CE"] as const).map((tipo) => {
+            const selected = form.tipoDocumento === tipo;
+            return (
+              <button
+                key={tipo}
+                type="button"
+                onClick={() =>
+                  onFormChange((current) => ({
+                    ...current,
+                    tipoDocumento: tipo,
+                    dni: "",
+                  }))
+                }
+                className={`h-9 rounded-xl text-sm font-black transition-colors ${
+                  selected
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                }`}
+              >
+                {tipo}
+              </button>
+            );
+          })}
+        </div>
         <input
           required
           inputMode="numeric"
-          pattern="[0-9]{8}"
-          minLength={8}
-          maxLength={8}
+          pattern={form.tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{9,12}"}
+          minLength={form.tipoDocumento === "DNI" ? 8 : 9}
+          maxLength={form.tipoDocumento === "DNI" ? 8 : 12}
           value={form.dni}
           onChange={(event) =>
             onFormChange((current) => ({
               ...current,
-              dni: event.target.value.replace(/\D/g, "").slice(0, 8),
+              dni: event.target.value
+                .replace(/\D/g, "")
+                .slice(0, current.tipoDocumento === "DNI" ? 8 : 12),
             }))
           }
           className="public-shipping-input"
-          placeholder="12345678"
+          placeholder={form.tipoDocumento === "DNI" ? "12345678" : "001234567"}
         />
-      </Field>
+      </div>
       <Field icon={<PhoneIcon size={19} />} label="Celular">
         <input
           required
@@ -1096,6 +1132,7 @@ function StepThree({
   form: {
     nombreCompleto: string;
     dni: string;
+    tipoDocumento: "DNI" | "CE";
     celular: string;
     metodo: string;
     fechaEnvio: string;
@@ -1119,7 +1156,7 @@ function StepThree({
       />
       <div className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-4">
         <SummaryRow label="Cliente" value={form.nombreCompleto} />
-        <SummaryRow label="DNI" value={form.dni} />
+        <SummaryRow label={form.tipoDocumento} value={form.dni} />
         <SummaryRow label="Celular" value={form.celular} />
         <SummaryRow label="Método" value={metodo.nombre} />
         <SummaryRow

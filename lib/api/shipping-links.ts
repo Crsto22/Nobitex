@@ -36,6 +36,7 @@ export type PublicShippingLink = {
 export type SubmitShippingDetails = {
   nombreCompleto: string;
   dni: string;
+  tipoDocumento: "DNI" | "CE";
   celular: string;
   metodo: string;
   fechaEnvio?: string;

@@ -209,6 +209,7 @@ export type SaleShippingDetails = {
   estadoLogistico: SaleShippingLogisticsStatus;
   nombreCompleto: string | null;
   dni: string | null;
+  tipoDocumento: "DNI" | "CE" | null;
   celular: string | null;
   agencia: SaleShippingAgency | null;
   agenciaExternalId: string | null;

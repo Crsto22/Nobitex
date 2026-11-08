@@ -1096,7 +1096,11 @@ function DeliveryRow({
                     {sale.envio.celular}
                   </span>
                 ) : null}
-                {sale.envio.dni ? <span>DNI {sale.envio.dni}</span> : null}
+                {sale.envio.dni ? (
+                  <span>
+                    {sale.envio.tipoDocumento ?? "DNI"} {sale.envio.dni}
+                  </span>
+                ) : null}
               </div>
             </div>
           ) : null}

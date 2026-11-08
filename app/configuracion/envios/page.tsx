@@ -108,6 +108,8 @@ export default function EnviosConfigPage() {
   const [recojoAnticipacion, setRecojoAnticipacion] = useState("0");
   const [savingDespacho, setSavingDespacho] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isRecojoOpen, setIsRecojoOpen] = useState(false);
+  const [savingRecojo, setSavingRecojo] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -212,61 +214,16 @@ export default function EnviosConfigPage() {
     }
     setSavingDespacho(true);
     try {
-      const recojoDiasSeleccionados =
-        recojoModo === "todos" ? allWeekdays : recojoDias;
-      if (!recojoUsaDespacho) {
-        if (recojoDiasSeleccionados.length === 0) {
-          showToast({
-            title: "Selecciona al menos un día de recojo",
-            variant: "error",
-          });
-          setSavingDespacho(false);
-          return;
-        }
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(recojoHoraCorte)) {
-          showToast({
-            title: "Ingresa una hora de corte de recojo válida (HH:mm)",
-            variant: "error",
-          });
-          setSavingDespacho(false);
-          return;
-        }
-        const recojoAnticipacionNum = Number(recojoAnticipacion);
-        if (
-          !Number.isInteger(recojoAnticipacionNum) ||
-          recojoAnticipacionNum < 0 ||
-          recojoAnticipacionNum > 30
-        ) {
-          showToast({
-            title: "La anticipación de recojo debe ser un entero entre 0 y 30",
-            variant: "error",
-          });
-          setSavingDespacho(false);
-          return;
-        }
-      }
-
       const updated = await enviosConfigApi.updateDespacho({
         diasSemana: dias,
         horaCorte: despachoHoraCorte,
         anticipacionDias: anticipacion,
       });
-      const updatedRecojo = await enviosConfigApi.updateRecojo(
-        recojoUsaDespacho
-          ? { usarDespacho: true }
-          : {
-              usarDespacho: false,
-              diasSemana: recojoDiasSeleccionados,
-              horaCorte: recojoHoraCorte,
-              anticipacionDias: Number(recojoAnticipacion),
-            },
-      );
       setDespacho(updated);
-      setRecojoUsaDespacho(updatedRecojo.usaDespacho);
       setIsConfigOpen(false);
       showToast({
-        title: "Configuración guardada",
-        description: "Las fechas de envío y recojo ya están actualizadas.",
+        title: "Días de despacho guardados",
+        description: "La fecha de envío ya estará disponible en tus enlaces.",
         variant: "success",
       });
     } catch (error: unknown) {
@@ -278,6 +235,68 @@ export default function EnviosConfigPage() {
       });
     } finally {
       setSavingDespacho(false);
+    }
+  };
+
+  const saveRecojo = async () => {
+    if (savingRecojo) return;
+    const dias = recojoModo === "todos" ? allWeekdays : recojoDias;
+    if (!recojoUsaDespacho) {
+      if (dias.length === 0) {
+        showToast({
+          title: "Selecciona al menos un día de recojo",
+          variant: "error",
+        });
+        return;
+      }
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(recojoHoraCorte)) {
+        showToast({
+          title: "Ingresa una hora de corte de recojo válida (HH:mm)",
+          variant: "error",
+        });
+        return;
+      }
+      const anticipacion = Number(recojoAnticipacion);
+      if (
+        !Number.isInteger(anticipacion) ||
+        anticipacion < 0 ||
+        anticipacion > 30
+      ) {
+        showToast({
+          title: "La anticipación de recojo debe ser un entero entre 0 y 30",
+          variant: "error",
+        });
+        return;
+      }
+    }
+    setSavingRecojo(true);
+    try {
+      const updated = await enviosConfigApi.updateRecojo(
+        recojoUsaDespacho
+          ? { usarDespacho: true }
+          : {
+              usarDespacho: false,
+              diasSemana: dias,
+              horaCorte: recojoHoraCorte,
+              anticipacionDias: Number(recojoAnticipacion),
+            },
+      );
+      setRecojoUsaDespacho(updated.usaDespacho);
+      setIsRecojoOpen(false);
+      showToast({
+        title: "Configuración de recojo guardada",
+        description: "La fecha de recojo ya está actualizada.",
+        variant: "success",
+      });
+    } catch (error: unknown) {
+      showToast({
+        title: "No se pudo guardar la configuración de recojo",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setSavingRecojo(false);
     }
   };
 
@@ -582,22 +601,35 @@ export default function EnviosConfigPage() {
                       {openMenuId === item.metodo && (
                         <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
                           {item.tipo === "recojo" ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                setDireccionModal({
-                                  metodo: item.metodo,
-                                  nombre: item.nombre,
-                                });
-                              }}
-                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-                            >
-                              <MapPinIcon size={16} weight="bold" />
-                              {item.direccion
-                                ? "Editar dirección"
-                                : "Agregar dirección"}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setIsRecojoOpen(true);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                              >
+                                <StorefrontIcon size={16} weight="bold" />
+                                Configurar recojo
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDireccionModal({
+                                    metodo: item.metodo,
+                                    nombre: item.nombre,
+                                  });
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                              >
+                                <MapPinIcon size={16} weight="bold" />
+                                {item.direccion
+                                  ? "Editar dirección"
+                                  : "Agregar dirección"}
+                              </button>
+                            </>
                           ) : null}
                           <button
                             type="button"
@@ -760,166 +792,6 @@ export default function EnviosConfigPage() {
             </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-[var(--color-border)] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-black text-[var(--color-text)]">
-                Recojo en tienda
-              </p>
-              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                <input
-                  type="checkbox"
-                  checked={recojoUsaDespacho}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setRecojoUsaDespacho(checked);
-                    if (!checked && recojoUsaDespacho) {
-                      setRecojoModo(despachoModo);
-                      setRecojoDias(
-                        despachoModo === "todos" ? allWeekdays : despachoDias,
-                      );
-                      setRecojoHoraCorte(despachoHoraCorte);
-                      setRecojoAnticipacion(despachoAnticipacion);
-                    }
-                  }}
-                  className="h-4 w-4 accent-[var(--color-primary)]"
-                />
-                Usar la misma configuración de despacho
-              </label>
-            </div>
-
-            {recojoUsaDespacho ? (
-              <p className="text-xs text-[var(--color-muted-foreground)]">
-                El recojo usará los mismos días, hora de corte y anticipación
-                que el despacho.
-              </p>
-            ) : (
-              <>
-                <div>
-                  <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                    ¿Qué días hay recojo?
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRecojoModo("todos")}
-                      className={cn(
-                        "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
-                        recojoModo === "todos"
-                          ? "bg-[var(--color-primary)] text-white"
-                          : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                      )}
-                    >
-                      Todos los días
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRecojoModo("elegir")}
-                      className={cn(
-                        "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
-                        recojoModo === "elegir"
-                          ? "bg-[var(--color-primary)] text-white"
-                          : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                      )}
-                    >
-                      Elegir días
-                    </button>
-                  </div>
-                </div>
-
-                {recojoModo === "elegir" ? (
-                  <div>
-                    <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                      Días de recojo
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {dispatchWeekdays.map((day) => {
-                        const selected = recojoDias.includes(day.value);
-                        return (
-                          <button
-                            key={day.value}
-                            type="button"
-                            title={day.full}
-                            onClick={() =>
-                              setRecojoDias((current) =>
-                                selected
-                                  ? current.filter(
-                                      (value) => value !== day.value,
-                                    )
-                                  : [...current, day.value].sort(
-                                      (a, b) => a - b,
-                                    ),
-                              )
-                            }
-                            className={cn(
-                              "flex h-10 items-center justify-center rounded-full px-4 text-sm font-circular-bold transition-colors",
-                              selected
-                                ? "bg-[#fd741a] text-white"
-                                : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                            )}
-                          >
-                            {day.full}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <div className="flex-1">
-                    <label
-                      htmlFor="recojo-hora-corte"
-                      className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-                    >
-                      <ClockIcon
-                        size={16}
-                        className="text-[var(--color-primary)]"
-                      />
-                      Hora de corte
-                    </label>
-                    <input
-                      id="recojo-hora-corte"
-                      type="time"
-                      value={recojoHoraCorte}
-                      onChange={(event) =>
-                        setRecojoHoraCorte(event.target.value)
-                      }
-                      className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <label
-                      htmlFor="recojo-anticipacion"
-                      className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-                    >
-                      <ClockIcon
-                        size={16}
-                        className="text-[var(--color-primary)]"
-                      />
-                      Anticipación (días)
-                    </label>
-                    <input
-                      id="recojo-anticipacion"
-                      type="number"
-                      min={0}
-                      max={30}
-                      step={1}
-                      value={recojoAnticipacion}
-                      onChange={(event) =>
-                        setRecojoAnticipacion(event.target.value)
-                      }
-                      className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                    />
-                    <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
-                      Días mínimos para preparar el pedido para recojo.
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
           <div className="flex justify-end">
             <button
               type="button"
@@ -928,6 +800,190 @@ export default function EnviosConfigPage() {
               className="h-11 rounded-[14px] bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white hover:opacity-90 disabled:opacity-50"
             >
               {savingDespacho ? "Guardando..." : "Guardar configuración"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRecojoOpen}
+        onClose={() => setIsRecojoOpen(false)}
+        title="Recojo en tienda"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3">
+            <span className="text-sm font-circular-regular text-[var(--color-text)]">
+              Usar la misma configuración de despacho
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={recojoUsaDespacho}
+              onClick={() => {
+                const checked = !recojoUsaDespacho;
+                setRecojoUsaDespacho(checked);
+                if (!checked && recojoUsaDespacho) {
+                  setRecojoModo(despachoModo);
+                  setRecojoDias(
+                    despachoModo === "todos" ? allWeekdays : despachoDias,
+                  );
+                  setRecojoHoraCorte(despachoHoraCorte);
+                  setRecojoAnticipacion(despachoAnticipacion);
+                }
+              }}
+              className={cn(
+                "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                recojoUsaDespacho ? "bg-[var(--color-primary)]" : "bg-[#9ca3af]",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute left-0 top-1 h-4 w-4 rounded-full bg-white transition-transform",
+                  recojoUsaDespacho ? "translate-x-5" : "translate-x-1",
+                )}
+              />
+            </button>
+          </div>
+
+          {recojoUsaDespacho ? (
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              El recojo usará los mismos días, hora de corte y anticipación que
+              el despacho.
+            </p>
+          ) : (
+            <>
+              <div>
+                <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+                  ¿Qué días hay recojo?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecojoModo("todos")}
+                    className={cn(
+                      "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
+                      recojoModo === "todos"
+                        ? "bg-[var(--color-primary)] text-white"
+                        : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                    )}
+                  >
+                    Todos los días
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecojoModo("elegir")}
+                    className={cn(
+                      "flex-1 rounded-xl px-4 py-2.5 text-sm font-circular-bold transition-colors",
+                      recojoModo === "elegir"
+                        ? "bg-[var(--color-primary)] text-white"
+                        : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                    )}
+                  >
+                    Elegir días
+                  </button>
+                </div>
+              </div>
+
+              {recojoModo === "elegir" ? (
+                <div>
+                  <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+                    Días de recojo
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {dispatchWeekdays.map((day) => {
+                      const selected = recojoDias.includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          title={day.full}
+                          onClick={() =>
+                            setRecojoDias((current) =>
+                              selected
+                                ? current.filter(
+                                    (value) => value !== day.value,
+                                  )
+                                : [...current, day.value].sort((a, b) => a - b),
+                            )
+                          }
+                          className={cn(
+                            "flex h-10 items-center justify-center rounded-full px-4 text-sm font-circular-bold transition-colors",
+                            selected
+                              ? "bg-[#fd741a] text-white"
+                              : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                          )}
+                        >
+                          {day.full}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <div className="flex-1">
+                  <label
+                    htmlFor="recojo-hora-corte"
+                    className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+                  >
+                    <ClockIcon
+                      size={16}
+                      className="text-[var(--color-primary)]"
+                    />
+                    Hora de corte
+                  </label>
+                  <input
+                    id="recojo-hora-corte"
+                    type="time"
+                    value={recojoHoraCorte}
+                    onChange={(event) =>
+                      setRecojoHoraCorte(event.target.value)
+                    }
+                    className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  />
+                </div>
+
+                <div className="flex-1">
+                  <label
+                    htmlFor="recojo-anticipacion"
+                    className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+                  >
+                    <ClockIcon
+                      size={16}
+                      className="text-[var(--color-primary)]"
+                    />
+                    Anticipación (días)
+                  </label>
+                  <input
+                    id="recojo-anticipacion"
+                    type="number"
+                    min={0}
+                    max={30}
+                    step={1}
+                    value={recojoAnticipacion}
+                    onChange={(event) =>
+                      setRecojoAnticipacion(event.target.value)
+                    }
+                    className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  />
+                  <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                    Días mínimos para preparar el pedido para recojo.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void saveRecojo()}
+              disabled={savingRecojo}
+              className="h-11 rounded-[14px] bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {savingRecojo ? "Guardando..." : "Guardar recojo"}
             </button>
           </div>
         </div>

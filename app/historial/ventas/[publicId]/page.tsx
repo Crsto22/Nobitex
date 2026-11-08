@@ -874,7 +874,8 @@ export default function VentaDetallePage() {
                         Nombre: <span className="text-[var(--color-text)]">{venta.envio.nombreCompleto}</span>
                       </p>
                       <p className="text-[var(--color-muted-foreground)]">
-                        DNI: <span className="text-[var(--color-text)]">{venta.envio.dni}</span>
+                        {venta.envio.tipoDocumento ?? "DNI"}:{" "}
+                        <span className="text-[var(--color-text)]">{venta.envio.dni}</span>
                       </p>
                       <p className="text-[var(--color-muted-foreground)]">
                         Celular: <span className="text-[var(--color-text)]">{venta.envio.celular}</span>

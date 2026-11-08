@@ -18,7 +18,8 @@ import {
   LinkIcon,
   TruckIcon,
   StorefrontIcon,
-  CheckIcon,
+  MotorcycleIcon,
+  HouseIcon,
   HourglassMediumIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -899,10 +900,20 @@ export default function HistorialVentasPage() {
                           setShippingSale(venta);
                         }}
                         className={cn(
-                          "group relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-white",
-                          venta.envio.estado === "recibido"
-                            ? "bg-[#10b981]"
-                            : "bg-[#f59e0b]",
+                          "flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-full",
+                          venta.envio.estado !== "recibido"
+                            ? "w-10 bg-[#f59e0b] text-white"
+                            : venta.envio.agencia === "SHALOM"
+                              ? "px-3 bg-[#dc2626] text-white"
+                              : venta.envio.agencia === "OLVA"
+                                ? "px-3 bg-[#eab308] text-black"
+                                : venta.envio.metodoEnvio === "RECOJO"
+                                  ? "w-10 bg-[#f97316] text-white"
+                                  : venta.envio.metodoEnvio === "MOTORIZADO"
+                                    ? "w-10 bg-[#3b82f6] text-white"
+                                    : venta.envio.metodoEnvio === "DOMICILIO"
+                                      ? "w-10 bg-[#10b981] text-white"
+                                      : "w-10 bg-[var(--color-primary)] text-white",
                         )}
                         title={
                           venta.envio.estado === "recibido"
@@ -911,33 +922,28 @@ export default function HistorialVentasPage() {
                         }
                         aria-label="Abrir enlace de envío"
                       >
-                        {venta.envio.estado === "recibido" ? (
-                          <>
-                            {venta.envio.metodoEnvio === "RECOJO" ? (
-                              <StorefrontIcon
-                                size={24}
-                                weight="fill"
-                                className="transition-opacity group-hover:opacity-0"
-                              />
-                            ) : (
-                              <TruckIcon
-                                size={24}
-                                weight="fill"
-                                className="transition-opacity group-hover:opacity-0"
-                              />
-                            )}
-                            <CheckIcon
-                              size={22}
-                              weight="bold"
-                              className="absolute opacity-0 transition-opacity group-hover:opacity-100"
-                            />
-                          </>
-                        ) : (
+                        {venta.envio.estado !== "recibido" ? (
                           <HourglassMediumIcon
                             size={22}
                             weight="fill"
                             className="animate-pulse"
                           />
+                        ) : venta.envio.agencia === "SHALOM" ? (
+                          <span className="text-[10px] font-black tracking-wide">
+                            SHALOM
+                          </span>
+                        ) : venta.envio.agencia === "OLVA" ? (
+                          <span className="text-[10px] font-black tracking-wide">
+                            OLVA
+                          </span>
+                        ) : venta.envio.metodoEnvio === "RECOJO" ? (
+                          <StorefrontIcon size={22} weight="fill" />
+                        ) : venta.envio.metodoEnvio === "MOTORIZADO" ? (
+                          <MotorcycleIcon size={22} weight="fill" />
+                        ) : venta.envio.metodoEnvio === "DOMICILIO" ? (
+                          <HouseIcon size={22} weight="fill" />
+                        ) : (
+                          <TruckIcon size={22} weight="fill" />
                         )}
                       </button>
                     ) : null}

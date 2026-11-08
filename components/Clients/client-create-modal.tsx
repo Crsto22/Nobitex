@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   CaretDownIcon,
   MagnifyingGlassIcon,
-  UserIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { Modal } from "@/components/Modal/modal";
@@ -85,6 +84,7 @@ export function ClientCreateModal({
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchingDocument, setIsSearchingDocument] = useState(false);
+  const [isUbicacionOpen, setIsUbicacionOpen] = useState(false);
 
   const closeModal = () => {
     if (isSubmitting || isSearchingDocument) return;
@@ -330,54 +330,58 @@ export function ClientCreateModal({
           />
         </div>
 
-        <h3 className="text-sm font-circular-bold text-[var(--color-text)]">
-          Ubicacion - opcional, para guia de remision
-        </h3>
+        <button
+          type="button"
+          onClick={() => setIsUbicacionOpen((current) => !current)}
+          aria-expanded={isUbicacionOpen}
+          className="flex w-full items-center justify-between gap-3 rounded-[14px] bg-[var(--color-input-bg)] px-4 py-3 text-left transition-colors hover:bg-[var(--color-button-hover)]"
+        >
+          <span className="text-sm font-circular-bold text-[var(--color-text)]">
+            Ubicación{" "}
+            <span className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
+              (opcional, para guía de remisión)
+            </span>
+          </span>
+          <CaretDownIcon
+            size={16}
+            className={cn(
+              "shrink-0 text-[var(--color-muted-foreground)] transition-transform duration-200",
+              isUbicacionOpen && "rotate-180",
+            )}
+          />
+        </button>
 
-        <InputField
-          id="quick-client-address"
-          label="Direccion"
-          value={form.direccion}
-          placeholder="Av. Principal 123"
-          maxLength={255}
-          disabled={isSubmitting}
-          required={false}
-          onChange={(value) =>
-            setForm((currentForm) => ({ ...currentForm, direccion: value }))
-          }
-        />
+        {isUbicacionOpen ? (
+          <div className="space-y-4">
+            <InputField
+              id="quick-client-address"
+              label="Direccion"
+              value={form.direccion}
+              placeholder="Av. Principal 123"
+              maxLength={255}
+              disabled={isSubmitting}
+              required={false}
+              onChange={(value) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  direccion: value,
+                }))
+              }
+            />
 
-        <UbigeoSelect
-          value={form.ubigeo}
-          disabled={isSubmitting}
-          onSelect={(item) =>
-            setForm((currentForm) => ({
-              ...currentForm,
-              ubigeo: item.ubigeo,
-              distrito: item.distrito,
-            }))
-          }
-        />
-
-        <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-          <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-            Vista previa
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
-              <UserIcon size={25} weight="fill" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-[var(--color-text)]">
-                {previewName(form)}
-              </p>
-              <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                {documentConfig[form.tipoDocumento].label}{" "}
-                {form.numeroDocumento || "sin numero"}
-              </p>
-            </div>
+            <UbigeoSelect
+              value={form.ubigeo}
+              disabled={isSubmitting}
+              onSelect={(item) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  ubigeo: item.ubigeo,
+                  distrito: item.distrito,
+                }))
+              }
+            />
           </div>
-        </div>
+        ) : null}
 
         {formError ? (
           <p className="text-sm font-circular-regular text-[#d9480f]">
@@ -725,14 +729,6 @@ function validateForm(payload: ReturnType<typeof buildPayload>) {
   }
 
   return "";
-}
-
-function previewName(form: ClientForm) {
-  return (
-    form.razonSocial.trim() ||
-    form.nombre.trim() ||
-    (form.tipoDocumento === "ruc" ? "Razon social" : "Nombre del cliente")
-  );
 }
 
 function normalizeSearch(value: string) {
