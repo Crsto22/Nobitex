@@ -11,6 +11,7 @@ export type PublicShippingMetodo = {
 export type PublicShippingDespacho = {
   diasSemana: number[];
   horaCorte: string;
+  anticipacionDias: number;
   fechasDisponibles: string[];
 };
 

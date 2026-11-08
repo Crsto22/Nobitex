@@ -681,6 +681,16 @@ function StepShippingDate({
               salen el siguiente día de despacho.
             </p>
           ) : null}
+          {despacho.anticipacionDias > 0 ? (
+            <p className="rounded-xl bg-[#f59e0b]/10 px-4 py-3 text-xs text-[#b45309]">
+              El negocio necesita{" "}
+              <span className="font-bold">
+                {despacho.anticipacionDias} día
+                {despacho.anticipacionDias === 1 ? "" : "s"}
+              </span>{" "}
+              para preparar tu pedido.
+            </p>
+          ) : null}
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {despacho.fechasDisponibles.map((fecha) => {
               const isSelected = fecha === selected;

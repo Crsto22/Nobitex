@@ -100,6 +100,7 @@ export default function EnviosConfigPage() {
   );
   const [despachoDias, setDespachoDias] = useState<number[]>(allWeekdays);
   const [despachoHoraCorte, setDespachoHoraCorte] = useState("18:00");
+  const [despachoAnticipacion, setDespachoAnticipacion] = useState("0");
   const [savingDespacho, setSavingDespacho] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
@@ -138,9 +139,15 @@ export default function EnviosConfigPage() {
         setDespachoModo(data.diasSemana.length === 7 ? "todos" : "elegir");
         setDespachoDias(data.diasSemana);
         setDespachoHoraCorte(data.horaCorte);
+        setDespachoAnticipacion(String(data.anticipacionDias ?? 0));
       }
     } catch {
-      setDespacho({ diasSemana: [], horaCorte: "", configurado: false });
+      setDespacho({
+        diasSemana: [],
+        horaCorte: "",
+        anticipacionDias: 0,
+        configurado: false,
+      });
     }
   }, []);
 
@@ -166,11 +173,24 @@ export default function EnviosConfigPage() {
       });
       return;
     }
+    const anticipacion = Number(despachoAnticipacion);
+    if (
+      !Number.isInteger(anticipacion) ||
+      anticipacion < 0 ||
+      anticipacion > 30
+    ) {
+      showToast({
+        title: "La anticipación debe ser un entero entre 0 y 30 días",
+        variant: "error",
+      });
+      return;
+    }
     setSavingDespacho(true);
     try {
       const updated = await enviosConfigApi.updateDespacho({
         diasSemana: dias,
         horaCorte: despachoHoraCorte,
+        anticipacionDias: anticipacion,
       });
       setDespacho(updated);
       showToast({
@@ -621,25 +641,52 @@ export default function EnviosConfigPage() {
             </div>
           ) : null}
 
-          <div>
-            <label
-              htmlFor="despacho-hora-corte"
-              className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-            >
-              <ClockIcon size={16} className="text-[var(--color-primary)]" />
-              Hora de corte
-            </label>
-            <input
-              id="despacho-hora-corte"
-              type="time"
-              value={despachoHoraCorte}
-              onChange={(event) => setDespachoHoraCorte(event.target.value)}
-              className="h-11 w-full max-w-[180px] rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-            />
-            <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
-              Los pedidos recibidos después de esta hora salen el siguiente día
-              de despacho.
-            </p>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex-1">
+              <label
+                htmlFor="despacho-hora-corte"
+                className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+              >
+                <ClockIcon size={16} className="text-[var(--color-primary)]" />
+                Hora de corte
+              </label>
+              <input
+                id="despacho-hora-corte"
+                type="time"
+                value={despachoHoraCorte}
+                onChange={(event) => setDespachoHoraCorte(event.target.value)}
+                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+              <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                Los pedidos recibidos después de esta hora salen el siguiente
+                día de despacho.
+              </p>
+            </div>
+
+            <div className="flex-1">
+              <label
+                htmlFor="despacho-anticipacion"
+                className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+              >
+                <ClockIcon size={16} className="text-[var(--color-primary)]" />
+                Anticipación (días)
+              </label>
+              <input
+                id="despacho-anticipacion"
+                type="number"
+                min={0}
+                max={30}
+                step={1}
+                value={despachoAnticipacion}
+                onChange={(event) =>
+                  setDespachoAnticipacion(event.target.value)
+                }
+                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+              <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+                Días mínimos necesarios para preparar el pedido.
+              </p>
+            </div>
           </div>
 
           <div className="flex justify-end">

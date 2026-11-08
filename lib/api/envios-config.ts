@@ -19,12 +19,14 @@ export type UpdateEnvioConfigPayload = {
 export type DespachoConfig = {
   diasSemana: number[];
   horaCorte: string;
+  anticipacionDias: number;
   configurado: boolean;
 };
 
 export type UpdateDespachoConfigPayload = {
   diasSemana: number[];
   horaCorte: string;
+  anticipacionDias: number;
 };
 
 export const enviosConfigApi = {
