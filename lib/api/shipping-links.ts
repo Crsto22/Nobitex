@@ -15,12 +15,22 @@ export type PublicShippingDespacho = {
   fechasDisponibles: string[];
 };
 
+export type PublicShippingRecojo = {
+  diasSemana: number[];
+  horaCorte: string;
+  anticipacionDias: number;
+  usaDespacho: boolean;
+  fechasDisponibles: string[];
+  fechaListo: string | null;
+};
+
 export type PublicShippingLink = {
   estado: "pendiente" | "recibido";
   venta: { correlativo: string };
   negocio: { nombreComercial: string; logoUrl: string | null };
   metodosEnvio: PublicShippingMetodo[];
   despacho: PublicShippingDespacho | null;
+  recojo: PublicShippingRecojo | null;
 };
 
 export type SubmitShippingDetails = {
@@ -28,7 +38,7 @@ export type SubmitShippingDetails = {
   dni: string;
   celular: string;
   metodo: string;
-  fechaEnvio: string;
+  fechaEnvio?: string;
   agencia?: SaleShippingAgency;
   agenciaExternalId?: string;
   direccionEntrega?: string;

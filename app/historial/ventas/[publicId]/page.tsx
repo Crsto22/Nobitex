@@ -20,6 +20,7 @@ import {
   ArrowsClockwiseIcon,
   LinkIcon,
   HouseIcon,
+  HourglassMediumIcon,
   MotorcycleIcon,
   StorefrontIcon,
   TruckIcon,
@@ -803,25 +804,31 @@ export default function VentaDetallePage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-primary)]/10">
-                  {venta.envio?.metodoEnvio === "RECOJO" ? (
+                  {venta.envio?.estado !== "recibido" ? (
+                    <HourglassMediumIcon
+                      size={22}
+                      weight="fill"
+                      className="text-[#b45309]"
+                    />
+                  ) : venta.envio.metodoEnvio === "RECOJO" ? (
                     <StorefrontIcon
                       size={22}
                       weight="fill"
                       className="text-[var(--color-primary)]"
                     />
-                  ) : venta.envio?.metodoEnvio === "MOTORIZADO" ? (
+                  ) : venta.envio.metodoEnvio === "MOTORIZADO" ? (
                     <MotorcycleIcon
                       size={22}
                       weight="fill"
                       className="text-[var(--color-primary)]"
                     />
-                  ) : venta.envio?.metodoEnvio === "DOMICILIO" ? (
+                  ) : venta.envio.metodoEnvio === "DOMICILIO" ? (
                     <HouseIcon
                       size={22}
                       weight="fill"
                       className="text-[var(--color-primary)]"
                     />
-                  ) : venta.envio?.agencia ? (
+                  ) : venta.envio.agencia ? (
                     <Image
                       src={
                         venta.envio.agencia === "OLVA"

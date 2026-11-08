@@ -17,6 +17,7 @@ import {
   PaperPlaneTiltIcon,
   LinkIcon,
   TruckIcon,
+  StorefrontIcon,
   CheckIcon,
   HourglassMediumIcon,
 } from "@phosphor-icons/react/ssr";
@@ -910,26 +911,32 @@ export default function HistorialVentasPage() {
                         }
                         aria-label="Abrir enlace de envío"
                       >
-                        <TruckIcon
-                          size={24}
-                          weight="fill"
-                          className={cn(
-                            "transition-opacity group-hover:opacity-0",
-                            venta.envio.estado !== "recibido" &&
-                              "animate-pulse group-hover:animate-none",
-                          )}
-                        />
                         {venta.envio.estado === "recibido" ? (
-                          <CheckIcon
-                            size={22}
-                            weight="bold"
-                            className="absolute opacity-0 transition-opacity group-hover:opacity-100"
-                          />
+                          <>
+                            {venta.envio.metodoEnvio === "RECOJO" ? (
+                              <StorefrontIcon
+                                size={24}
+                                weight="fill"
+                                className="transition-opacity group-hover:opacity-0"
+                              />
+                            ) : (
+                              <TruckIcon
+                                size={24}
+                                weight="fill"
+                                className="transition-opacity group-hover:opacity-0"
+                              />
+                            )}
+                            <CheckIcon
+                              size={22}
+                              weight="bold"
+                              className="absolute opacity-0 transition-opacity group-hover:opacity-100"
+                            />
+                          </>
                         ) : (
                           <HourglassMediumIcon
-                            size={20}
+                            size={22}
                             weight="fill"
-                            className="absolute opacity-0 transition-opacity group-hover:opacity-100"
+                            className="animate-pulse"
                           />
                         )}
                       </button>

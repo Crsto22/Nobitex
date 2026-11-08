@@ -35,6 +35,7 @@ import {
   type PublicShippingDespacho,
   type PublicShippingLink,
   type PublicShippingMetodo,
+  type PublicShippingRecojo,
   type SearchShippingAgenciesOptions,
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
@@ -104,6 +105,7 @@ export default function ShippingDetailsPage() {
   const isCourier = selectedMetodo?.tipo === "courier";
   const confirmStep: FormStep = isRecojo ? 3 : 4;
   const despacho = link?.despacho ?? null;
+  const recojo = link?.recojo ?? null;
 
   useEffect(() => {
     let active = true;
@@ -252,7 +254,7 @@ export default function ShippingDetailsPage() {
     if (step !== confirmStep || !form.metodo || isSubmitting) {
       return;
     }
-    if (!form.fechaEnvio) {
+    if (!isRecojo && !form.fechaEnvio) {
       return;
     }
     if (!isRecojo && !isDomicilio && !form.agenciaExternalId) {
@@ -269,7 +271,7 @@ export default function ShippingDetailsPage() {
         dni: form.dni,
         celular: form.celular,
         metodo: form.metodo,
-        fechaEnvio: form.fechaEnvio,
+        fechaEnvio: isRecojo ? undefined : form.fechaEnvio,
         agencia:
           isRecojo || isDomicilio
             ? undefined
@@ -338,7 +340,7 @@ export default function ShippingDetailsPage() {
             current={step}
             labels={
               isRecojo
-                ? ["Datos", "Fecha", "Confirmar"]
+                ? ["Datos", "Listo", "Confirmar"]
                 : ["Datos", "Fecha", isDomicilio ? "Dirección" : "Agencia", "Confirmar"]
             }
           />
@@ -361,15 +363,26 @@ export default function ShippingDetailsPage() {
               ) : null}
 
               {step === 2 && form.metodo ? (
-                <StepShippingDate
-                  despacho={despacho}
-                  selected={form.fechaEnvio}
-                  onSelect={(value) =>
-                    setForm((current) => ({ ...current, fechaEnvio: value }))
-                  }
-                  onBack={() => setStep(1)}
-                  onContinue={() => setStep(3)}
-                />
+                isRecojo ? (
+                  <StepPickupReady
+                    recojo={recojo}
+                    onBack={() => setStep(1)}
+                    onContinue={() => setStep(3)}
+                  />
+                ) : (
+                  <StepShippingDate
+                    despacho={despacho}
+                    selected={form.fechaEnvio}
+                    onSelect={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        fechaEnvio: value,
+                      }))
+                    }
+                    onBack={() => setStep(1)}
+                    onContinue={() => setStep(3)}
+                  />
+                )
               ) : null}
 
               {step === 3 && form.metodo && isDomicilio ? (
@@ -433,6 +446,7 @@ export default function ShippingDetailsPage() {
                   form={form}
                   metodo={selectedMetodo}
                   agency={isRecojo || isDomicilio ? null : selectedAgency}
+                  fechaListo={recojo?.fechaListo ?? null}
                   isSubmitting={isSubmitting}
                   onBack={() => setStep(isRecojo ? 2 : 3)}
                 />
@@ -736,6 +750,71 @@ function StepShippingDate({
   );
 }
 
+function StepPickupReady({
+  recojo,
+  onBack,
+  onContinue,
+}: {
+  recojo: PublicShippingRecojo | null;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <>
+      <StepTitle
+        title="Recojo en tienda"
+        subtitle="Así preparamos tu pedido para que lo recojas."
+      />
+      {!recojo || !recojo.fechaListo ? (
+        <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center">
+          <p className="text-sm font-black text-[var(--color-text)]">
+            El negocio aún no habilitó las fechas de recojo
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+            Contacta al negocio para coordinar tu pedido.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-2xl bg-[#10b981]/10 px-5 py-6 text-center">
+            <p className="text-xs font-bold uppercase text-[#047857]">
+              Tu pedido estará listo
+            </p>
+            <p className="mt-2 text-2xl font-black capitalize text-[#047857]">
+              {formatFechaEnvio(recojo.fechaListo)}
+            </p>
+          </div>
+          {recojo.anticipacionDias > 0 ? (
+            <p className="rounded-xl bg-[var(--color-input-bg)] px-4 py-3 text-xs text-[var(--color-muted-foreground)]">
+              El negocio necesita{" "}
+              <span className="font-bold text-[var(--color-text)]">
+                {recojo.anticipacionDias} día
+                {recojo.anticipacionDias === 1 ? "" : "s"}
+              </span>{" "}
+              para preparar tu pedido.
+            </p>
+          ) : null}
+        </>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={onBack} className="public-secondary-button">
+          <ArrowLeftIcon size={19} />
+          Atrás
+        </button>
+        <button
+          type="button"
+          disabled={!recojo?.fechaListo}
+          onClick={onContinue}
+          className="public-primary-button"
+        >
+          Continuar
+          <ArrowRightIcon size={19} />
+        </button>
+      </div>
+    </>
+  );
+}
+
 function StepTwo({
   courier,
   agencyQuery,
@@ -1010,6 +1089,7 @@ function StepThree({
   form,
   metodo,
   agency,
+  fechaListo,
   isSubmitting,
   onBack,
 }: {
@@ -1025,10 +1105,12 @@ function StepThree({
   };
   metodo: PublicShippingMetodo;
   agency: PublicShippingAgency | null;
+  fechaListo: string | null;
   isSubmitting: boolean;
   onBack: () => void;
 }) {
   const isDomicilio = metodo.tipo === "domicilio";
+  const isRecojo = metodo.tipo === "recojo";
   return (
     <>
       <StepTitle
@@ -1041,8 +1123,14 @@ function StepThree({
         <SummaryRow label="Celular" value={form.celular} />
         <SummaryRow label="Método" value={metodo.nombre} />
         <SummaryRow
-          label="Fecha de envío"
-          value={formatFechaEnvio(form.fechaEnvio)}
+          label={isRecojo ? "Listo para recojo" : "Fecha de envío"}
+          value={
+            isRecojo
+              ? fechaListo
+                ? formatFechaEnvio(fechaListo)
+                : "Por confirmar"
+              : formatFechaEnvio(form.fechaEnvio)
+          }
         />
         <div className="border-t border-[var(--color-border)] pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--color-muted-foreground)]">

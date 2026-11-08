@@ -29,6 +29,21 @@ export type UpdateDespachoConfigPayload = {
   anticipacionDias: number;
 };
 
+export type RecojoConfig = {
+  diasSemana: number[];
+  horaCorte: string;
+  anticipacionDias: number;
+  configurado: boolean;
+  usaDespacho: boolean;
+};
+
+export type UpdateRecojoConfigPayload = {
+  usarDespacho: boolean;
+  diasSemana?: number[];
+  horaCorte?: string;
+  anticipacionDias?: number;
+};
+
 export const enviosConfigApi = {
   findAll() {
     return authFetch<EnvioMetodoConfig[]>("/envios-config");
@@ -40,6 +55,17 @@ export const enviosConfigApi = {
 
   updateDespacho(payload: UpdateDespachoConfigPayload) {
     return authFetch<DespachoConfig>("/envios-config/despacho", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  findRecojo() {
+    return authFetch<RecojoConfig>("/envios-config/recojo");
+  },
+
+  updateRecojo(payload: UpdateRecojoConfigPayload) {
+    return authFetch<RecojoConfig>("/envios-config/recojo", {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
