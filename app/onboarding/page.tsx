@@ -60,6 +60,7 @@ type PlanCapability = {
 type PlanFeatureItem = {
   label: string;
   included: boolean;
+  isNew?: boolean;
 };
 
 const initialBranch = {
@@ -982,7 +983,7 @@ function PlanDetail({ icon: IconComponent, label, value }: PlanCapability) {
   );
 }
 
-function PlanFeature({ label, included }: PlanFeatureItem) {
+function PlanFeature({ label, included, isNew }: PlanFeatureItem) {
   const FeatureIcon = included ? CheckCircleIcon : XCircleIcon;
 
   return (
@@ -1000,7 +1001,14 @@ function PlanFeature({ label, included }: PlanFeatureItem) {
           included ? "shrink-0 text-[#10b981]" : "shrink-0 text-[#cbd5e1]"
         }
       />
-      <span>{label}</span>
+      <span className="flex flex-wrap items-center gap-1.5">
+        {label}
+        {isNew ? (
+          <span className="rounded-full bg-[#fd741a] px-1.5 py-0.5 text-[8px] font-black uppercase leading-none text-white">
+            Nuevo
+          </span>
+        ) : null}
+      </span>
     </div>
   );
 }
@@ -1309,6 +1317,11 @@ function getPosFeatureItems(plan: PlanDefinition): PlanFeatureItem[] {
     {
       label: "GRE y conductores",
       included: keys.has("gre-remitente") && keys.has("conductores"),
+    },
+    {
+      label: "Enlace de Envíos",
+      included: keys.has("envios-config"),
+      isNew: true,
     },
     {
       label:

@@ -573,7 +573,7 @@ function PlanCard({
       DatabaseIcon,
     ],
   ] as const;
-  const features = [
+  const features: Array<[string, string, boolean?]> = [
     ["Facturación electrónica", "comprobantes"],
     ["Ventas POS", "ventas-pos"],
     ["Caja", "caja"],
@@ -584,7 +584,8 @@ function PlanCard({
     ["Reporte de clientes", "reportes-clientes"],
     ["Reporte de usuarios", "reportes-usuarios"],
     ["GRE y conductores", "gre-remitente"],
-  ] as const;
+    ["Enlace de Envíos", "envios-config", true],
+  ];
 
   return (
     <article
@@ -669,7 +670,7 @@ function PlanCard({
           FUNCIONALIDADES
         </p>
         <div className="space-y-2">
-          {features.map(([label, moduleKey]) => {
+          {features.map(([label, moduleKey, isNew]) => {
             const included = plan.moduleKeys.includes(moduleKey);
             const Icon = included ? CheckCircleIcon : XCircleIcon;
             return (
@@ -690,7 +691,14 @@ function PlanCard({
                     included ? "text-[#10b981]" : "text-[#cbd5e1]",
                   )}
                 />
-                <span>{label}</span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {label}
+                  {isNew ? (
+                    <span className="rounded-full bg-[#fd741a] px-1.5 py-0.5 text-[8px] font-black uppercase leading-none text-white">
+                      Nuevo
+                    </span>
+                  ) : null}
+                </span>
               </div>
             );
           })}
