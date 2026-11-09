@@ -5,6 +5,8 @@ import {
   ArrowClockwiseIcon,
   BuildingsIcon,
   CaretDownIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
@@ -21,6 +23,8 @@ type FilterBarProps = {
   isRefreshing?: boolean;
   allowAllBranches?: boolean;
   ownOperations?: boolean;
+  hideAmounts?: boolean;
+  onToggleAmounts?: () => void;
 };
 
 export function FilterBar({
@@ -33,6 +37,8 @@ export function FilterBar({
   isRefreshing = false,
   allowAllBranches = true,
   ownOperations = false,
+  hideAmounts = false,
+  onToggleAmounts,
 }: FilterBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const branchOptions = [
@@ -102,6 +108,20 @@ export function FilterBar({
             className={cn(isRefreshing && "animate-spin")}
           />
           Actualizar
+        </button>
+        <button
+          type="button"
+          onClick={onToggleAmounts}
+          aria-label={hideAmounts ? "Mostrar montos" : "Ocultar montos"}
+          aria-pressed={hideAmounts}
+          title={hideAmounts ? "Mostrar montos" : "Ocultar montos"}
+          className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--color-sidebar-bg)] text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-button-hover)]"
+        >
+          {hideAmounts ? (
+            <EyeSlashIcon size={18} weight="bold" />
+          ) : (
+            <EyeIcon size={18} weight="bold" />
+          )}
         </button>
       </div>
     </div>

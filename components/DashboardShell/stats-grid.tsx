@@ -276,12 +276,21 @@ function parseMoney(amount: string | number) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function buildStatsData(summary: DashboardSummary): StatCardProps[] {
+const hiddenAmount = "S/ ••••";
+
+function buildStatsData(
+  summary: DashboardSummary,
+  hideAmounts: boolean,
+): StatCardProps[] {
   return [
     {
       label: "Ventas del filtro",
-      value: formatCurrency(summary.salesFilterTotal),
-      animatedCurrencyValue: parseMoney(summary.salesFilterTotal),
+      value: hideAmounts
+        ? hiddenAmount
+        : formatCurrency(summary.salesFilterTotal),
+      animatedCurrencyValue: hideAmounts
+        ? undefined
+        : parseMoney(summary.salesFilterTotal),
       icon: <BankIcon size={18} weight="bold" />,
       iconBg: "bg-[#eff6ff]",
       iconColor: "text-[#3b82f6]",
@@ -290,8 +299,12 @@ function buildStatsData(summary: DashboardSummary): StatCardProps[] {
     },
     {
       label: "Ventas del periodo",
-      value: formatCurrency(summary.periodSalesTotal),
-      animatedCurrencyValue: parseMoney(summary.periodSalesTotal),
+      value: hideAmounts
+        ? hiddenAmount
+        : formatCurrency(summary.periodSalesTotal),
+      animatedCurrencyValue: hideAmounts
+        ? undefined
+        : parseMoney(summary.periodSalesTotal),
       icon: <BagIcon size={18} weight="bold" />,
       iconBg: "bg-white/20",
       iconColor: "text-white",
@@ -300,8 +313,10 @@ function buildStatsData(summary: DashboardSummary): StatCardProps[] {
     },
     {
       label: "Ticket promedio",
-      value: formatCurrency(summary.averageTicket),
-      animatedCurrencyValue: parseMoney(summary.averageTicket),
+      value: hideAmounts ? hiddenAmount : formatCurrency(summary.averageTicket),
+      animatedCurrencyValue: hideAmounts
+        ? undefined
+        : parseMoney(summary.averageTicket),
       icon: <FileTextIcon size={18} weight="bold" />,
       iconBg: "bg-[#ecfdf5]",
       iconColor: "text-[#10b981]",
@@ -322,8 +337,12 @@ function buildStatsData(summary: DashboardSummary): StatCardProps[] {
     },
     {
       label: "Monto anulado",
-      value: formatCurrency(summary.annulledAmount),
-      animatedCurrencyValue: parseMoney(summary.annulledAmount),
+      value: hideAmounts
+        ? hiddenAmount
+        : formatCurrency(summary.annulledAmount),
+      animatedCurrencyValue: hideAmounts
+        ? undefined
+        : parseMoney(summary.annulledAmount),
       icon: <TrashIcon size={18} weight="bold" />,
       iconBg: "bg-[#fff7ed]",
       iconColor: "text-[#f97316]",
@@ -331,9 +350,15 @@ function buildStatsData(summary: DashboardSummary): StatCardProps[] {
   ];
 }
 
-export function StatsGrid({ summary }: { summary?: DashboardSummary | null }) {
+export function StatsGrid({
+  summary,
+  hideAmounts = false,
+}: {
+  summary?: DashboardSummary | null;
+  hideAmounts?: boolean;
+}) {
   const currentSummary = summary ?? emptySummary;
-  const mainStatsData = buildStatsData(currentSummary);
+  const mainStatsData = buildStatsData(currentSummary, hideAmounts);
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">

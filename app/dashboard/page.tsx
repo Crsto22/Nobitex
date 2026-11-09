@@ -28,7 +28,12 @@ export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const assistantMessage = getAssistantMessage(dashboard, isLoadingDashboard);
+  const [hideAmounts, setHideAmounts] = useState(false);
+  const assistantMessage = getAssistantMessage(
+    dashboard,
+    isLoadingDashboard,
+    hideAmounts,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -119,17 +124,20 @@ export default function DashboardPage() {
           isRefreshing={isLoadingDashboard}
           allowAllBranches={!user?.sucursalId}
           ownOperations={user?.visibilidadOperaciones === "propias"}
+          hideAmounts={hideAmounts}
+          onToggleAmounts={() => setHideAmounts((value) => !value)}
         />
         {dashboardError ? (
           <div className="rounded-2xl bg-[#ef4444]/10 px-4 py-3 text-sm font-circular-regular text-[#ef4444]">
             {dashboardError}
           </div>
         ) : null}
-        <StatsGrid summary={dashboard?.summary} />
+        <StatsGrid summary={dashboard?.summary} hideAmounts={hideAmounts} />
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[2fr_1fr_1fr]">
           <SalesTrendChart
             data={dashboard?.salesTrend.data}
             granularity={dashboard?.salesTrend.granularity}
+            hideAmounts={hideAmounts}
           />
           <TopVariantsChart data={dashboard?.topVariants} />
           <PaymentMethodsChart data={dashboard?.paymentMethods} />
@@ -190,6 +198,7 @@ export default function DashboardPage() {
 function getAssistantMessage(
   dashboard: DashboardResponse | null,
   isLoading: boolean,
+  hideAmounts: boolean,
 ) {
   if (isLoading && !dashboard) {
     return "Estoy revisando tus ventas para darte un resumen.";
@@ -201,10 +210,11 @@ function getAssistantMessage(
 
   const total = formatCurrency(Number(dashboard.summary.salesFilterTotal) || 0);
   const topProduct = dashboard.topVariants[0];
+  const totalText = hideAmounts ? "" : ` por ${total}`;
 
   if (topProduct) {
-    return `Registraste ${dashboard.summary.emittedCount} ventas por ${total}. ${topProduct.productName ?? topProduct.name} fue tu producto mas vendido con ${topProduct.units} unidades.`;
+    return `Registraste ${dashboard.summary.emittedCount} ventas${totalText}. ${topProduct.productName ?? topProduct.name} fue tu producto mas vendido con ${topProduct.units} unidades.`;
   }
 
-  return `Registraste ${dashboard.summary.emittedCount} ventas por ${total} en el periodo seleccionado.`;
+  return `Registraste ${dashboard.summary.emittedCount} ventas${totalText} en el periodo seleccionado.`;
 }

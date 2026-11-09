@@ -15,12 +15,15 @@ const emptySalesTrendData: DashboardSalesTrendItem[] = [];
 const CustomTooltip = ({
   active,
   payload,
-}: TooltipContentProps) => {
+  hideAmounts = false,
+}: TooltipContentProps & { hideAmounts?: boolean }) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl bg-[var(--color-sidebar-active)] px-4 py-2 shadow-lg">
         <p className="font-circular-bold text-sm font-circular-bold text-white">
-          + S/ {Number(payload[0].value).toLocaleString()}
+          {hideAmounts
+            ? "+ S/ ••••"
+            : `+ S/ ${Number(payload[0].value).toLocaleString()}`}
         </p>
       </div>
     );
@@ -31,9 +34,11 @@ const CustomTooltip = ({
 export function SalesTrendChart({
   data = emptySalesTrendData,
   granularity = "day",
+  hideAmounts = false,
 }: {
   data?: DashboardSalesTrendItem[];
   granularity?: "hour" | "day";
+  hideAmounts?: boolean;
 }) {
   const subtitle =
     granularity === "hour" ? "Hoy por hora" : "Periodo seleccionado por dia";
@@ -71,10 +76,19 @@ export function SalesTrendChart({
               axisLine={false}
               tickLine={false}
               tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
-              tickFormatter={(value) => `${(Number(value) / 1000).toFixed(0)}k`}
+              tickFormatter={
+                hideAmounts
+                  ? () => ""
+                  : (value) => `${(Number(value) / 1000).toFixed(0)}k`
+              }
               dx={-10}
             />
-            <Tooltip content={CustomTooltip} cursor={false} />
+            <Tooltip
+              content={(props) => (
+                <CustomTooltip {...props} hideAmounts={hideAmounts} />
+              )}
+              cursor={false}
+            />
             <Area
               type="monotone"
               dataKey="value"
