@@ -180,6 +180,7 @@ export function RegisterPage() {
   const [activationProgress, setActivationProgress] = useState(0);
   const [passwordError, setPasswordError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [acceptedLegalTerms, setAcceptedLegalTerms] = useState(false);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const onboardingTokenRef = useRef("");
   const [visiblePasswords, setVisiblePasswords] = useState({
@@ -354,6 +355,16 @@ export function RegisterPage() {
       return;
     }
 
+    if (currentStep === 0 && !acceptedLegalTerms) {
+      showToast({
+        title: "Aceptación requerida",
+        description:
+          "Acepta los Términos y Condiciones y la Política de Privacidad para continuar.",
+        variant: "warning",
+      });
+      return;
+    }
+
     if (
       currentStep === 0 &&
       accountData.password !== accountData.confirmPassword
@@ -369,6 +380,7 @@ export function RegisterPage() {
       if (currentStep === 0) {
         await authApi.register({
           turnstileToken,
+          acceptedLegalTerms,
           nombre: accountData.firstName,
           apellido: accountData.lastName,
           email: accountData.email,
@@ -715,6 +727,38 @@ export function RegisterPage() {
                           onTokenChange={setTurnstileToken}
                           resetKey={turnstileResetKey}
                         />
+
+                        <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1 text-sm leading-5 text-[#525b75]">
+                          <input
+                            type="checkbox"
+                            checked={acceptedLegalTerms}
+                            onChange={(event) =>
+                              setAcceptedLegalTerms(event.target.checked)
+                            }
+                            className="mt-1 size-4 shrink-0 accent-[#101d69]"
+                          />
+                          <span>
+                            He leído y acepto los{" "}
+                            <a
+                              href="https://nuvex.pe/terminos"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-circular-bold text-[var(--color-primary)] underline underline-offset-2"
+                            >
+                              Términos y Condiciones
+                            </a>{" "}
+                            y la{" "}
+                            <a
+                              href="https://nuvex.pe/privacidad"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-circular-bold text-[var(--color-primary)] underline underline-offset-2"
+                            >
+                              Política de Privacidad
+                            </a>
+                            .
+                          </span>
+                        </label>
                       </>
                     )}
 
@@ -781,6 +825,7 @@ export function RegisterPage() {
                         type="button"
                         disabled={
                           isSubmitting || (currentStep === 0 && !turnstileToken)
+                            || (currentStep === 0 && !acceptedLegalTerms)
                         }
                         onClick={handleNext}
                         className="h-11 flex-1 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"

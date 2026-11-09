@@ -2,6 +2,7 @@ import { apiRequest } from "@/lib/api/client";
 
 export type RegisterPayload = {
   turnstileToken: string;
+  acceptedLegalTerms: boolean;
   nombre: string;
   apellido: string;
   email: string;
