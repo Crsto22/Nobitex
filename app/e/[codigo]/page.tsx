@@ -35,6 +35,7 @@ import {
   type PublicShippingDespacho,
   type PublicShippingLink,
   type PublicShippingMetodo,
+  type PublicShippingProducto,
   type PublicShippingRecojo,
   type SearchShippingAgenciesOptions,
 } from "@/lib/api/shipping-links";
@@ -358,6 +359,7 @@ export default function ShippingDetailsPage() {
                 <StepOne
                   form={form}
                   metodos={link.metodosEnvio}
+                  productos={link.productos ?? []}
                   onFormChange={setForm}
                   onMetodoChange={chooseMetodo}
                   onContinue={continueFromStepOne}
@@ -447,6 +449,7 @@ export default function ShippingDetailsPage() {
                 <StepThree
                   form={form}
                   metodo={selectedMetodo}
+                  productos={link.productos ?? []}
                   agency={isRecojo || isDomicilio ? null : selectedAgency}
                   fechaListo={recojo?.fechaListo ?? null}
                   isSubmitting={isSubmitting}
@@ -470,6 +473,7 @@ export default function ShippingDetailsPage() {
 function StepOne({
   form,
   metodos,
+  productos,
   onFormChange,
   onMetodoChange,
   onContinue,
@@ -486,6 +490,7 @@ function StepOne({
     referenciaEntrega: string;
   };
   metodos: PublicShippingMetodo[];
+  productos: PublicShippingProducto[];
   onFormChange: React.Dispatch<React.SetStateAction<typeof form>>;
   onMetodoChange: (metodo: string) => void;
   onContinue: () => void;
@@ -498,6 +503,7 @@ function StepOne({
         title="Datos de envío"
         subtitle="Completa tus datos y elige la empresa que transportará tu pedido."
       />
+      <OrderProducts productos={productos} />
       <Field icon={<UserIcon size={19} />} label="Nombre completo">
         <input
           required
@@ -522,49 +528,51 @@ function StepOne({
           </span>
           Documento de identidad
         </span>
-        <div className="mb-2 grid grid-cols-2 gap-2">
-          {(["DNI", "CE"] as const).map((tipo) => {
-            const selected = form.tipoDocumento === tipo;
-            return (
-              <button
-                key={tipo}
-                type="button"
-                onClick={() =>
-                  onFormChange((current) => ({
-                    ...current,
-                    tipoDocumento: tipo,
-                    dni: "",
-                  }))
-                }
-                className={`h-9 rounded-xl text-sm font-black transition-colors ${
-                  selected
-                    ? "bg-[var(--color-primary)] text-white"
-                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-                }`}
-              >
-                {tipo}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <div className="grid shrink-0 grid-cols-2 gap-1.5">
+            {(["DNI", "CE"] as const).map((tipo) => {
+              const selected = form.tipoDocumento === tipo;
+              return (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() =>
+                    onFormChange((current) => ({
+                      ...current,
+                      tipoDocumento: tipo,
+                      dni: "",
+                    }))
+                  }
+                  className={`h-12 w-12 rounded-xl text-sm font-black transition-colors ${
+                    selected
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                  }`}
+                >
+                  {tipo}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            required
+            inputMode="numeric"
+            pattern={form.tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{9,12}"}
+            minLength={form.tipoDocumento === "DNI" ? 8 : 9}
+            maxLength={form.tipoDocumento === "DNI" ? 8 : 12}
+            value={form.dni}
+            onChange={(event) =>
+              onFormChange((current) => ({
+                ...current,
+                dni: event.target.value
+                  .replace(/\D/g, "")
+                  .slice(0, current.tipoDocumento === "DNI" ? 8 : 12),
+              }))
+            }
+            className="public-shipping-input min-w-0 flex-1"
+            placeholder={form.tipoDocumento === "DNI" ? "12345678" : "001234567"}
+          />
         </div>
-        <input
-          required
-          inputMode="numeric"
-          pattern={form.tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{9,12}"}
-          minLength={form.tipoDocumento === "DNI" ? 8 : 9}
-          maxLength={form.tipoDocumento === "DNI" ? 8 : 12}
-          value={form.dni}
-          onChange={(event) =>
-            onFormChange((current) => ({
-              ...current,
-              dni: event.target.value
-                .replace(/\D/g, "")
-                .slice(0, current.tipoDocumento === "DNI" ? 8 : 12),
-            }))
-          }
-          className="public-shipping-input"
-          placeholder={form.tipoDocumento === "DNI" ? "12345678" : "001234567"}
-        />
       </div>
       <Field icon={<PhoneIcon size={19} />} label="Celular">
         <input
@@ -712,7 +720,7 @@ function StepShippingDate({
         subtitle="Elige cuándo quieres que salga tu pedido."
       />
       {!despacho ? (
-        <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center">
+        <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center">
           <p className="text-sm font-black text-[var(--color-text)]">
             El negocio aún no habilitó las fechas de envío
           </p>
@@ -723,7 +731,7 @@ function StepShippingDate({
       ) : (
         <>
           {despacho.horaCorte ? (
-            <p className="rounded-xl bg-[var(--color-input-bg)] px-4 py-3 text-xs text-[var(--color-muted-foreground)]">
+            <p className="rounded-2xl bg-[var(--color-input-bg)] px-4 py-3 text-xs text-[var(--color-muted-foreground)]">
               Los pedidos después de las{" "}
               <span className="font-bold text-[var(--color-text)]">
                 {despacho.horaCorte}
@@ -732,7 +740,7 @@ function StepShippingDate({
             </p>
           ) : null}
           {despacho.anticipacionDias > 0 ? (
-            <p className="rounded-xl bg-[#f59e0b]/10 px-4 py-3 text-xs text-[#b45309]">
+            <p className="rounded-2xl bg-[#f59e0b]/10 px-4 py-3 text-xs text-[#b45309]">
               El negocio necesita{" "}
               <span className="font-bold">
                 {despacho.anticipacionDias} día
@@ -1124,6 +1132,7 @@ function StepDeliveryAddress({
 function StepThree({
   form,
   metodo,
+  productos,
   agency,
   fechaListo,
   isSubmitting,
@@ -1141,6 +1150,7 @@ function StepThree({
     referenciaEntrega: string;
   };
   metodo: PublicShippingMetodo;
+  productos: PublicShippingProducto[];
   agency: PublicShippingAgency | null;
   fechaListo: string | null;
   isSubmitting: boolean;
@@ -1154,6 +1164,7 @@ function StepThree({
         title="Confirma tus datos"
         subtitle="Revisa la información antes de enviarla al negocio."
       />
+      <OrderProducts productos={productos} />
       <div className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-4">
         <SummaryRow label="Cliente" value={form.nombreCompleto} />
         <SummaryRow label={form.tipoDocumento} value={form.dni} />
@@ -1294,6 +1305,37 @@ function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
     <div className="text-center">
       <h1 className="text-2xl font-black text-[var(--color-text)]">{title}</h1>
       <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">{subtitle}</p>
+    </div>
+  );
+}
+
+function OrderProducts({
+  productos,
+}: {
+  productos: PublicShippingProducto[];
+}) {
+  if (!productos.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-4">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
+        Productos de tu compra
+      </p>
+      <ul className="mt-2 space-y-2">
+        {productos.map((producto, index) => (
+          <li
+            key={`${producto.nombre}-${index}`}
+            className="flex items-start justify-between gap-3 text-sm"
+          >
+            <span className="min-w-0 text-[var(--color-text)]">
+              {producto.nombre}
+            </span>
+            <span className="shrink-0 rounded-full bg-[var(--color-primary)]/10 px-2.5 py-0.5 text-xs font-black text-[var(--color-primary)]">
+              x{producto.cantidad}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

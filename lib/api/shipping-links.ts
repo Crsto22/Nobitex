@@ -24,10 +24,16 @@ export type PublicShippingRecojo = {
   fechaListo: string | null;
 };
 
+export type PublicShippingProducto = {
+  nombre: string;
+  cantidad: number;
+};
+
 export type PublicShippingLink = {
   estado: "pendiente" | "recibido";
   venta: { correlativo: string };
   negocio: { nombreComercial: string; logoUrl: string | null };
+  productos?: PublicShippingProducto[];
   metodosEnvio: PublicShippingMetodo[];
   despacho: PublicShippingDespacho | null;
   recojo: PublicShippingRecojo | null;
