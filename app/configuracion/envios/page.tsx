@@ -318,6 +318,33 @@ export default function EnviosConfigPage() {
     [withStatus],
   );
 
+  const despachoDiasResumen = useMemo(() => {
+    if (!despacho?.configurado) return "Sin configurar";
+    const dias = [...despacho.diasSemana].sort((a, b) => a - b);
+    if (dias.length === 7) return "Todos los días";
+    if (dias.length === 0) return "Sin días";
+    return dispatchWeekdays
+      .filter((day) => dias.includes(day.value))
+      .map((day) => day.full)
+      .join(" · ");
+  }, [despacho]);
+
+  const direccionTienda = useMemo(
+    () =>
+      configs.find((config) => config.metodo === "RECOJO")?.direccion ||
+      "Sin dirección",
+    [configs],
+  );
+
+  const despachoHoraCorteResumen = despacho?.configurado
+    ? despacho.horaCorte
+    : "—";
+  const despachoAnticipacionResumen = despacho?.configurado
+    ? `${despacho.anticipacionDias} ${
+        despacho.anticipacionDias === 1 ? "día" : "días"
+      }`
+    : "—";
+
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return withStatus.filter((item) => {
@@ -406,13 +433,22 @@ export default function EnviosConfigPage() {
   return (
     <DashboardShell headerTitle="Envíos">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-          <MetricCard
-            icon={<TruckIcon size={22} weight="fill" />}
-            label="Total Métodos"
-            value={totals.total}
-            tone="primary"
-          />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f97316]/10 text-[#f97316]">
+                <StorefrontIcon size={22} weight="fill" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+                  Dirección de tienda
+                </p>
+                <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+                  {direccionTienda}
+                </p>
+              </div>
+            </div>
+          </div>
           <MetricCard
             icon={<CheckCircleIcon size={22} weight="fill" />}
             label="Activos"
@@ -425,6 +461,30 @@ export default function EnviosConfigPage() {
             value={totals.inactivos}
             tone="warning"
           />
+          <button
+            type="button"
+            onClick={() => setIsConfigOpen(true)}
+            aria-label="Configurar despacho"
+            className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 text-left shadow-sm transition-colors hover:bg-[var(--color-button-hover)]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                <GearSixIcon size={22} weight="fill" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+                  Despacho:{" "}
+                  <span className="font-circular-bold text-[var(--color-text)]">
+                    {despachoDiasResumen}
+                  </span>
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-[var(--color-muted-foreground)]">
+                  <span>Corte: {despachoHoraCorteResumen}</span>
+                  <span>Anticipación: {despachoAnticipacionResumen}</span>
+                </div>
+              </div>
+            </div>
+          </button>
         </div>
 
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:flex-row lg:items-center lg:px-6 dark:bg-[var(--color-background)]">

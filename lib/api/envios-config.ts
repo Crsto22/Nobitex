@@ -73,7 +73,7 @@ export const enviosConfigApi = {
 
   update(metodo: SaleShippingAgency | string, payload: UpdateEnvioConfigPayload) {
     return authFetch<EnvioMetodoConfig>(
-      `/envios-config/${encodeURIComponent(metodo)}`,
+      `/envios-config/metodo/${encodeURIComponent(metodo)}`,
       {
         method: "PATCH",
         body: JSON.stringify(payload),
