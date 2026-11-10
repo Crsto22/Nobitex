@@ -797,17 +797,6 @@ function StepShippingDate({
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const carouselRef = useRef<HTMLDivElement>(null);
-
-  const scrollFechas = (direction: -1 | 1) => {
-    const container = carouselRef.current;
-    if (!container) return;
-    container.scrollBy({
-      left: direction * Math.max(container.clientWidth * 0.7, 160),
-      behavior: "smooth",
-    });
-  };
-
   return (
     <>
       <StepTitle
@@ -844,55 +833,30 @@ function StepShippingDate({
               para preparar tu pedido.
             </p>
           ) : null}
-          <div className="mx-auto w-full max-w-md">
-            <div
-              ref={carouselRef}
-              className="scrollbar-hidden -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-2"
-            >
-              {despacho.fechasDisponibles.map((fecha) => {
-                const isSelected = fecha === selected;
-                return (
-                  <button
-                    key={fecha}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => onSelect(fecha)}
-                    className={`flex size-[76px] shrink-0 snap-start flex-col items-center justify-center rounded-full transition-colors sm:size-[88px] ${
-                      isSelected
-                        ? "bg-[#059669] text-white"
-                        : "bg-[var(--color-sidebar-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-                    }`}
-                  >
-                    <span className="text-[10px] font-bold uppercase opacity-80">
-                      {formatFechaEnvioWeekday(fecha)}
-                    </span>
-                    <span className="text-sm font-black">
-                      {formatFechaEnvioDay(fecha)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {despacho.fechasDisponibles.length > 3 ? (
-              <div className="mt-1 flex items-center justify-center gap-2">
+          <div className="mx-auto grid w-full max-w-md grid-cols-4 justify-items-center gap-2 lg:grid-cols-6">
+            {despacho.fechasDisponibles.map((fecha) => {
+              const isSelected = fecha === selected;
+              return (
                 <button
+                  key={fecha}
                   type="button"
-                  onClick={() => scrollFechas(-1)}
-                  aria-label="Fecha anterior"
-                  className="grid size-8 place-items-center rounded-full bg-[var(--color-sidebar-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                  aria-pressed={isSelected}
+                  onClick={() => onSelect(fecha)}
+                  className={`flex size-[64px] flex-col items-center justify-center rounded-full transition-colors sm:size-[76px] ${
+                    isSelected
+                      ? "bg-[#059669] text-white"
+                      : "bg-[var(--color-sidebar-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                  }`}
                 >
-                  <CaretLeftIcon size={14} weight="bold" />
+                  <span className="text-[10px] font-bold uppercase opacity-80">
+                    {formatFechaEnvioWeekday(fecha)}
+                  </span>
+                  <span className="text-sm font-black">
+                    {formatFechaEnvioDay(fecha)}
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => scrollFechas(1)}
-                  aria-label="Fecha siguiente"
-                  className="grid size-8 place-items-center rounded-full bg-[var(--color-sidebar-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-                >
-                  <CaretRightIcon size={14} weight="bold" />
-                </button>
-              </div>
-            ) : null}
+              );
+            })}
           </div>
         </>
       )}
