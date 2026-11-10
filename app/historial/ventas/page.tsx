@@ -36,6 +36,7 @@ import {
   type VentaTipoComprobante,
 } from "@/lib/api/sales";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { useAuth } from "@/lib/auth/auth-provider";
 import { AnnulSaleModal } from "@/components/Ventas/annul-sale-modal";
 import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { HistoryPeriodFilter } from "@/components/History/history-period-filter";
@@ -315,6 +316,9 @@ export default function HistorialVentasPage() {
   const statusRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
   const toast = useSystemToast();
+  const { user } = useAuth();
+  const canUseShipping =
+    user?.moduleKeys?.includes("envios-config") ?? false;
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -892,7 +896,9 @@ export default function HistorialVentasPage() {
 
                   {/* Total */}
                   <div className="flex items-center gap-4 md:justify-end">
-                    {venta.envio ? (
+                    {canUseShipping &&
+                    venta.envio &&
+                    venta.estado !== "anulada" ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -984,7 +990,7 @@ export default function HistorialVentasPage() {
                           <EyeIcon size={16} weight="bold" />
                           Ver detalle
                         </button>
-                        {venta.estado !== "anulada" ? (
+                        {venta.estado !== "anulada" && canUseShipping ? (
                           <button
                             type="button"
                             onClick={() => {

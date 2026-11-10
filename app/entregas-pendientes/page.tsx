@@ -30,6 +30,7 @@ import {
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { Select } from "@/components/ui/select";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
+import { useAuth } from "@/lib/auth/auth-provider";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   GenericClientAvatar,
@@ -211,6 +212,9 @@ export default function DeliveriesPage() {
     null,
   );
   const toast = useSystemToast();
+  const { user } = useAuth();
+  const canUseShipping =
+    user?.moduleKeys?.includes("envios-config") ?? false;
 
   const dateFilter = useMemo(() => {
     const empty = {
@@ -771,6 +775,7 @@ export default function DeliveriesPage() {
               <DeliveryRow
                 key={sale.publicId}
                 sale={sale}
+                canManageLink={canUseShipping}
                 onClientDelivery={() => setFulfillment(sale)}
                 onManageLink={() => setShippingLinkSale(sale)}
                 onMarkShipped={() => void loadDeliveries()}
@@ -949,6 +954,7 @@ function FilterSelect({
 
 function DeliveryRow({
   sale,
+  canManageLink,
   onClientDelivery,
   onManageLink,
   onMarkShipped,
@@ -958,6 +964,7 @@ function DeliveryRow({
   onPrintLabel,
 }: {
   sale: VentaResponse;
+  canManageLink: boolean;
   onClientDelivery: () => void;
   onManageLink: () => void;
   onMarkShipped: () => void;
@@ -1229,7 +1236,9 @@ function DeliveryRow({
                           ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Comparte o revisa el enlace de envío"}
+                        : canManageLink
+                          ? "Comparte o revisa el enlace de envío"
+                          : "Esperando datos del cliente"}
                     </p>
                   </div>
                 </div>
@@ -1274,7 +1283,7 @@ function DeliveryRow({
                 Entregar al cliente
               </PrimaryButton>
             )
-          ) : sale.envio?.estado !== "recibido" ? (
+          ) : canManageLink && sale.envio?.estado !== "recibido" ? (
             <PrimaryButton onClick={onManageLink} icon={LinkIcon}>
               Gestionar enlace
             </PrimaryButton>

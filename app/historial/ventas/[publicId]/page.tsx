@@ -38,6 +38,7 @@ import {
 import { AnnulSaleModal } from "@/components/Ventas/annul-sale-modal";
 import { ConvertSaleModal } from "@/components/Ventas/convert-sale-modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { useAuth } from "@/lib/auth/auth-provider";
 import { documentFileName } from "@/lib/document-file-name";
 import { canRetrySunatBaja } from "@/lib/sunat-baja-retry";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
@@ -325,6 +326,9 @@ export default function VentaDetallePage() {
     "xml" | "cdr" | null
   >(null);
   const toast = useSystemToast();
+  const { user } = useAuth();
+  const canUseShipping =
+    user?.moduleKeys?.includes("envios-config") ?? false;
 
   useEffect(() => {
     if (!publicId) return;
@@ -799,7 +803,7 @@ export default function VentaDetallePage() {
         </div>
 
         {/* Datos de envio */}
-        {(venta.estado !== "anulada" || venta.envio) && (
+        {venta.estado !== "anulada" && canUseShipping && (
           <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3">
@@ -954,16 +958,14 @@ export default function VentaDetallePage() {
                   )}
                 </div>
               </div>
-              {venta.estado !== "anulada" ? (
-                <button
-                  type="button"
-                  onClick={() => setIsShippingModalOpen(true)}
-                  className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white hover:opacity-90"
-                >
-                  <LinkIcon size={16} weight="bold" />
-                  {venta.envio ? "Gestionar enlace" : "Generar enlace"}
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => setIsShippingModalOpen(true)}
+                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white hover:opacity-90"
+              >
+                <LinkIcon size={16} weight="bold" />
+                {venta.envio ? "Gestionar enlace" : "Generar enlace"}
+              </button>
             </div>
           </div>
         )}
