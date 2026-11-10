@@ -43,6 +43,37 @@ import { documentFileName } from "@/lib/document-file-name";
 import { canRetrySunatBaja } from "@/lib/sunat-baja-retry";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
 
+const paymentConfig: Record<
+  string,
+  { src: string; label: string; bgColor: string }
+> = {
+  efectivo: {
+    src: "/svg/metodo-pago/efectivo.png",
+    label: "Efectivo",
+    bgColor: "bg-[#10b981]",
+  },
+  yape: {
+    src: "/svg/metodo-pago/Yape.svg",
+    label: "Yape",
+    bgColor: "bg-[#a221af]",
+  },
+  plin: {
+    src: "/svg/metodo-pago/Plin.svg",
+    label: "Plin",
+    bgColor: "bg-[#00E2CE]",
+  },
+  transferencia: {
+    src: "/svg/metodo-pago/transferencia.png",
+    label: "Transferencia",
+    bgColor: "bg-[#3b82f6]",
+  },
+  tarjeta: {
+    src: "/svg/metodo-pago/transferencia.png",
+    label: "Tarjeta",
+    bgColor: "bg-[#6366f1]",
+  },
+};
+
 const statusConfig: Record<
   VentaEstado,
   { label: string; bg: string; text: string }
@@ -567,6 +598,8 @@ export default function VentaDetallePage() {
   const annulMode = showBajaAction ? "baja" : "annul";
   const showSunatBaja = hasSunatBaja(venta);
   const showConsultSunatBaja = showSunatBaja && canConsultSunatBaja(venta);
+  const showAnnulledInfo = venta.estado === "anulada" && Boolean(venta.anuladoAt);
+  const showShippingCard = venta.estado !== "anulada" && canUseShipping;
 
   return (
     <DashboardShell
@@ -599,8 +632,15 @@ export default function VentaDetallePage() {
     >
       <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-4 lg:px-6">
         {/* Header */}
-        <div className="flex flex-col gap-3 rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
+        <div
+          className={`grid gap-4 ${
+            showAnnulledInfo
+              ? "lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]"
+              : ""
+          }`}
+        >
+          <div className="flex flex-col gap-3 rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleDownloadPdf}
@@ -745,15 +785,42 @@ export default function VentaDetallePage() {
               </>
             ) : null}
           </div>
-          <span
-            className={cn(
-              "inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-circular-bold",
-              status.bg,
-              status.text,
-            )}
-          >
-            {status.label}
-          </span>
+            <span
+              className={cn(
+                "inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-circular-bold",
+                status.bg,
+                status.text,
+              )}
+            >
+              {status.label}
+            </span>
+          </div>
+
+          {showAnnulledInfo ? (
+            <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ef4444]/10">
+                  <WarningCircleIcon
+                    size={22}
+                    weight="fill"
+                    className="text-[#ef4444]"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-black text-[#ef4444]">
+                    Venta anulada
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                    {venta.anuladoRazon}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-muted-foreground)] font-circular-regular">
+                    {formatDate(venta.anuladoAt!)} ·{" "}
+                    {formatTime(venta.anuladoAt!)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Date / Time / Sucursal */}
@@ -780,6 +847,11 @@ export default function VentaDetallePage() {
           )}
         </div>
 
+        <div
+          className={`grid gap-4 ${
+            showShippingCard ? "lg:grid-cols-2 lg:items-start" : ""
+          }`}
+        >
         {/* Cliente */}
         <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
           <div className="flex items-center gap-3">
@@ -803,16 +875,30 @@ export default function VentaDetallePage() {
         </div>
 
         {/* Datos de envio */}
-        {venta.estado !== "anulada" && canUseShipping && (
+        {showShippingCard && (
           <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-primary)]/10">
-                  {venta.envio?.estado !== "recibido" ? (
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl ${
+                    !venta.envio
+                      ? "bg-[#3b82f6]"
+                      : venta.envio.estado !== "recibido"
+                        ? "bg-[#f59e0b]"
+                        : "bg-[var(--color-primary)]/10"
+                  }`}
+                >
+                  {!venta.envio ? (
+                    <TruckIcon
+                      size={22}
+                      weight="fill"
+                      className="text-white"
+                    />
+                  ) : venta.envio.estado !== "recibido" ? (
                     <HourglassMediumIcon
                       size={22}
                       weight="fill"
-                      className="text-[#b45309]"
+                      className="text-white"
                     />
                   ) : venta.envio.metodoEnvio === "RECOJO" ? (
                     <StorefrontIcon
@@ -961,7 +1047,15 @@ export default function VentaDetallePage() {
               <button
                 type="button"
                 onClick={() => setIsShippingModalOpen(true)}
-                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white hover:opacity-90"
+                className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-2 py-2 text-[10px] font-circular-bold leading-none text-white transition-opacity hover:opacity-90 sm:hidden"
+              >
+                <LinkIcon size={17} weight="bold" />
+                {venta.envio ? "Gestionar" : "Generar"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsShippingModalOpen(true)}
+                className="hidden h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-opacity hover:opacity-90 sm:flex"
               >
                 <LinkIcon size={16} weight="bold" />
                 {venta.envio ? "Gestionar enlace" : "Generar enlace"}
@@ -969,6 +1063,7 @@ export default function VentaDetallePage() {
             </div>
           </div>
         )}
+        </div>
 
         {/* SUNAT */}
         {electronicSale && (
@@ -1140,8 +1235,10 @@ export default function VentaDetallePage() {
           </div>
         )}
 
-        {/* Productos */}
-        <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+        {/* Productos y pagos */}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:items-start">
+          {/* Productos */}
+          <div className="order-1 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm lg:order-none lg:col-start-1 lg:row-start-1">
           <p className="mb-4 text-sm font-black text-[var(--color-text)]">
             Productos ({venta.detalles.length})
           </p>
@@ -1210,6 +1307,7 @@ export default function VentaDetallePage() {
           </div>
         </div>
 
+        <div className="order-3 space-y-4 lg:order-none lg:col-start-2 lg:row-start-1">
         {venta.cuentaPorCobrar ? (
           <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1297,51 +1395,79 @@ export default function VentaDetallePage() {
               Pagos
             </p>
             <div className="space-y-2">
-              {venta.pagos.map((pago) => (
-                <div
-                  key={pago.id}
-                  className="flex items-start justify-between gap-4 rounded-xl bg-[var(--color-card)] px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-circular-bold text-[var(--color-text)]">
-                      {pago.metodoPago.nombre}
-                    </p>
-                    {pago.referencia && (
-                      <p className="text-xs text-[var(--color-muted-foreground)] font-circular-regular">
-                        Ref: {pago.referencia}
-                      </p>
-                    )}
-                    {(pago.montoRecibido || Number(pago.vuelto) > 0) && (
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-circular-bold">
-                        {pago.montoRecibido ? (
-                          <span className="rounded-full bg-[var(--color-input-bg)] px-2 py-1 text-[var(--color-muted-foreground)]">
-                            Recibido: {formatPrice(pago.montoRecibido)}
-                          </span>
-                        ) : null}
-                        {Number(pago.vuelto) > 0 ? (
-                          <span className="rounded-full bg-[#10b981]/10 px-2 py-1 text-[#10b981]">
-                            Vuelto: {formatPrice(pago.vuelto)}
-                          </span>
-                        ) : null}
+              {venta.pagos.map((pago) => {
+                const methodKey = (
+                  pago.metodoPago.codigo ||
+                  pago.metodoPago.nombreKey ||
+                  pago.metodoPago.nombre
+                )
+                  .trim()
+                  .toLowerCase();
+                const paymentVisual = paymentConfig[methodKey];
+
+                return (
+                  <div
+                    key={pago.id}
+                    className="flex items-start justify-between gap-4 rounded-xl bg-[var(--color-card)] px-4 py-3"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      {paymentVisual ? (
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${paymentVisual.bgColor}`}
+                        >
+                          <Image
+                            src={paymentVisual.src}
+                            alt={paymentVisual.label}
+                            width={24}
+                            height={24}
+                            unoptimized
+                            className="h-6 w-6 object-contain"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="min-w-0">
+                        <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                          {pago.metodoPago.nombre}
+                        </p>
+                        {pago.referencia && (
+                          <p className="text-xs text-[var(--color-muted-foreground)] font-circular-regular">
+                            Ref: {pago.referencia}
+                          </p>
+                        )}
+                        {(pago.montoRecibido || Number(pago.vuelto) > 0) && (
+                          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-circular-bold">
+                            {pago.montoRecibido ? (
+                              <span className="rounded-full bg-[var(--color-input-bg)] px-2 py-1 text-[var(--color-muted-foreground)]">
+                                Recibido: {formatPrice(pago.montoRecibido)}
+                              </span>
+                            ) : null}
+                            {Number(pago.vuelto) > 0 ? (
+                              <span className="rounded-full bg-[#10b981]/10 px-2 py-1 text-[#10b981]">
+                                Vuelto: {formatPrice(pago.vuelto)}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[10px] font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                        Monto aplicado
+                      </p>
+                      <p className="font-circular-bold text-sm font-circular-bold text-[var(--color-text)]">
+                        {formatPrice(pago.monto)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10px] font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                      Monto aplicado
-                    </p>
-                    <p className="font-circular-bold text-sm font-circular-bold text-[var(--color-text)]">
-                      {formatPrice(pago.monto)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
+        </div>
 
         {/* Resumen */}
-        <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
+        <div className="order-2 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm lg:order-none lg:col-start-1 lg:row-start-2">
           <div className="space-y-2">
             {electronicSale ? (
               <>
@@ -1414,6 +1540,7 @@ export default function VentaDetallePage() {
             </div>
           </div>
         </div>
+        </div>
 
         {/* Observaciones */}
         {venta.observaciones && (
@@ -1424,32 +1551,6 @@ export default function VentaDetallePage() {
             <p className="text-sm text-[var(--color-muted-foreground)]">
               {venta.observaciones}
             </p>
-          </div>
-        )}
-
-        {/* Anulada info */}
-        {venta.estado === "anulada" && venta.anuladoAt && (
-          <div className="rounded-2xl bg-[#ef4444]/5 p-5 shadow-sm ring-1 ring-[#ef4444]/20">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ef4444]/10">
-                <WarningCircleIcon
-                  size={22}
-                  weight="fill"
-                  className="text-[#ef4444]"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-black text-[#ef4444]">
-                  Venta anulada
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                  {venta.anuladoRazon}
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted-foreground)] font-circular-regular">
-                  {formatDate(venta.anuladoAt)} · {formatTime(venta.anuladoAt)}
-                </p>
-              </div>
-            </div>
           </div>
         )}
 
