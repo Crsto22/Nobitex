@@ -670,7 +670,7 @@ html[data-sidebar-expanded-sections]:not(
 }
 @layer components {
   .public-shipping-input {
-    @apply h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none transition-colors placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20;
+    @apply h-12 w-full rounded-xl border-0 bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none transition-colors placeholder:text-[var(--color-placeholder)] focus:bg-[var(--color-button-hover)] focus:shadow-none;
   }
 
   .public-primary-button {
@@ -678,7 +678,7 @@ html[data-sidebar-expanded-sections]:not(
   }
 
   .public-secondary-button {
-    @apply flex h-13 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] px-4 text-sm font-black text-[var(--color-text)] hover:bg-[var(--color-button-hover)];
+    @apply flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-sidebar-bg)] px-4 text-sm font-black text-[var(--color-text)] hover:bg-[var(--color-button-hover)];
   }
 
   .shipping-agency-marker {

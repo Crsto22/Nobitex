@@ -13,6 +13,9 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   BuildingsIcon,
+  CaretDownIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
   CheckCircleIcon,
   HouseIcon,
   IdentificationCardIcon,
@@ -22,6 +25,7 @@ import {
   MotorcycleIcon,
   PaperPlaneTiltIcon,
   PhoneIcon,
+  ShoppingCartIcon,
   SpinnerGapIcon,
   StorefrontIcon,
   UserIcon,
@@ -41,26 +45,34 @@ import {
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
 
-const metodoVisuals: Record<string, { image?: string; selectedBg: string }> = {
+const metodoVisuals: Record<
+  string,
+  { image?: string; selectedBg: string; iconColor?: string; checkColor?: string }
+> = {
   SHALOM: {
     image: "/envios/shalom.svg",
-    selectedBg: "bg-[#e52421]/10 ring-2 ring-[#e52421]/30",
+    selectedBg: "bg-[#e52421] ring-2 ring-[#e52421]",
+    checkColor: "text-white",
   },
   OLVA: {
     image: "/envios/olva.webp",
-    selectedBg: "bg-[#f5c518]/15 ring-2 ring-[#f5c518]/40",
+    selectedBg: "bg-[#fba832] ring-2 ring-[#fba832]",
+    checkColor: "text-[#1f2937]",
   },
   RECOJO: {
-    selectedBg:
-      "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
+    selectedBg: "bg-[#f97316] ring-2 ring-[#f97316]",
+    iconColor: "text-[#f97316]",
+    checkColor: "text-white",
   },
   MOTORIZADO: {
-    selectedBg:
-      "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
+    selectedBg: "bg-[#3b82f6] ring-2 ring-[#3b82f6]",
+    iconColor: "text-[#3b82f6]",
+    checkColor: "text-white",
   },
   DOMICILIO: {
-    selectedBg:
-      "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30",
+    selectedBg: "bg-[#10b981] ring-2 ring-[#10b981]",
+    iconColor: "text-[#10b981]",
+    checkColor: "text-white",
   },
 };
 
@@ -336,30 +348,57 @@ export default function ShippingDetailsPage() {
 
   return (
     <PublicShell>
-      <PublicHeader link={link} />
-      {!isComplete ? (
-        <div className="bg-[var(--color-background)] px-4 py-3 sm:px-5">
-          <StepIndicator
-            current={step}
-            labels={
-              isRecojo
-                ? ["Datos", "Listo", "Confirmar"]
-                : ["Datos", "Fecha", isDomicilio ? "Dirección" : "Agencia", "Confirmar"]
-            }
-          />
-        </div>
-      ) : null}
-      <div className="flex flex-1 justify-center px-4 py-7 sm:px-5">
-        <div className={`w-full ${step === 3 ? "max-w-3xl" : "max-w-md"}`}>
+      <PublicHeader link={link} productos={link.productos ?? []} />
+      <div className="flex flex-1 justify-center px-4 pb-6 pt-2 sm:px-5 sm:pt-3 lg:py-10">
+        <div className="w-full max-w-6xl">
           {isComplete ? (
-            <SuccessState businessName={link.negocio.nombreComercial} />
+            <div className="mx-auto w-full max-w-md">
+              <SuccessState businessName={link.negocio.nombreComercial} />
+            </div>
           ) : (
-            <form ref={formRef} onSubmit={submit} className="space-y-5">
+            <>
+              <div
+                className={`grid gap-6 lg:mx-auto lg:max-w-5xl lg:items-start lg:gap-14 ${
+                  link.productos?.length
+                    ? "lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]"
+                    : ""
+                }`}
+              >
+                {link.productos?.length ? (
+                  <aside className="hidden lg:sticky lg:top-24 lg:block">
+                    <ProductSummaryCard productos={link.productos} />
+                  </aside>
+                ) : null}
+                <div
+                  className={`mx-auto w-full lg:mx-0 ${
+                    step === 3 ? "max-w-3xl" : "max-w-md lg:max-w-xl"
+                  }`}
+                >
+                  {step === 1 ? (
+                    <div className="mb-2 sm:mb-4">
+                      <StepTitle title="Datos de envío" />
+                    </div>
+                  ) : null}
+                  <div className="sticky top-[70px] z-30 -mx-2 mb-6 bg-[var(--color-background)] px-2 py-2">
+                    <StepIndicator
+                      current={step}
+                      labels={
+                        isRecojo
+                          ? ["Datos", "Listo", "Confirmar"]
+                          : [
+                              "Datos",
+                              "Fecha",
+                              isDomicilio ? "Dirección" : "Agencia",
+                              "Confirmar",
+                            ]
+                      }
+                    />
+                  </div>
+                  <form ref={formRef} onSubmit={submit} className="space-y-5">
               {step === 1 ? (
                 <StepOne
                   form={form}
                   metodos={link.metodosEnvio}
-                  productos={link.productos ?? []}
                   onFormChange={setForm}
                   onMetodoChange={chooseMetodo}
                   onContinue={continueFromStepOne}
@@ -449,7 +488,6 @@ export default function ShippingDetailsPage() {
                 <StepThree
                   form={form}
                   metodo={selectedMetodo}
-                  productos={link.productos ?? []}
                   agency={isRecojo || isDomicilio ? null : selectedAgency}
                   fechaListo={recojo?.fechaListo ?? null}
                   isSubmitting={isSubmitting}
@@ -462,7 +500,10 @@ export default function ShippingDetailsPage() {
                   {error}
                 </p>
               ) : null}
-            </form>
+                  </form>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -473,7 +514,6 @@ export default function ShippingDetailsPage() {
 function StepOne({
   form,
   metodos,
-  productos,
   onFormChange,
   onMetodoChange,
   onContinue,
@@ -490,20 +530,29 @@ function StepOne({
     referenciaEntrega: string;
   };
   metodos: PublicShippingMetodo[];
-  productos: PublicShippingProducto[];
   onFormChange: React.Dispatch<React.SetStateAction<typeof form>>;
   onMetodoChange: (metodo: string) => void;
   onContinue: () => void;
 }) {
   const selectedMetodo =
     metodos.find((metodo) => metodo.metodo === form.metodo) ?? null;
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const cardWidthClass =
+    metodos.length <= 2
+      ? "w-[calc(50%-0.375rem)] max-w-[240px]"
+      : "w-[calc(50%-0.375rem)] max-w-[240px] xl:w-[calc(33.333%-0.5rem)]";
+
+  const scrollMetodos = (direction: -1 | 1) => {
+    const container = carouselRef.current;
+    if (!container) return;
+    container.scrollBy({
+      left: direction * Math.max(container.clientWidth * 0.8, 180),
+      behavior: "smooth",
+    });
+  };
+
   return (
     <>
-      <StepTitle
-        title="Datos de envío"
-        subtitle="Completa tus datos y elige la empresa que transportará tu pedido."
-      />
-      <OrderProducts productos={productos} />
       <Field icon={<UserIcon size={19} />} label="Nombre completo">
         <input
           required
@@ -543,7 +592,7 @@ function StepOne({
                       dni: "",
                     }))
                   }
-                  className={`h-12 w-12 rounded-xl text-sm font-black transition-colors ${
+                  className={`h-12 w-12 rounded-full text-sm font-black transition-colors ${
                     selected
                       ? "bg-[var(--color-primary)] text-white"
                       : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
@@ -594,25 +643,58 @@ function StepOne({
         />
       </Field>
       <fieldset>
-        <legend className="mb-2 flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-          <BuildingsIcon size={19} className="text-[var(--color-primary)]" />
-          Método de envío
-        </legend>
+        <legend className="sr-only">Método de envío</legend>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+            <BuildingsIcon size={19} className="text-[var(--color-primary)]" />
+            Método de envío
+          </span>
+          {metodos.length > 2 ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => scrollMetodos(-1)}
+                aria-label="Método anterior"
+                className="grid size-8 place-items-center rounded-full bg-[var(--color-sidebar-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <CaretLeftIcon size={14} weight="bold" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollMetodos(1)}
+                aria-label="Método siguiente"
+                className="grid size-8 place-items-center rounded-full bg-[var(--color-sidebar-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <CaretRightIcon size={14} weight="bold" />
+              </button>
+            </div>
+          ) : null}
+        </div>
         {metodos.length === 0 ? (
           <p className="rounded-xl bg-[var(--color-input-bg)] px-4 py-6 text-center text-sm text-[var(--color-muted-foreground)]">
             No hay métodos de envío disponibles. Contacta al negocio.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div
+            ref={carouselRef}
+            className="scrollbar-hidden -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 py-2"
+          >
             {metodos.map((metodo) => {
               const visual = metodoVisuals[metodo.metodo];
               const selected = form.metodo === metodo.metodo;
+              const iconColor = selected
+                ? "text-white"
+                : (visual?.iconColor ?? "text-[var(--color-primary)]");
+              const textColor = selected
+                ? "text-white"
+                : "text-[var(--color-text)]";
               return (
                 <button
                   key={metodo.metodo}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => onMetodoChange(metodo.metodo)}
-                  className={`relative flex h-28 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl p-2 transition-all ${
+                  className={`relative flex h-28 shrink-0 snap-start flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl p-2 transition-all ${cardWidthClass} ${
                     selected
                       ? (visual?.selectedBg ??
                         "bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]/30")
@@ -624,9 +706,9 @@ function StepOne({
                       <StorefrontIcon
                         size={40}
                         weight="fill"
-                        className="text-[var(--color-primary)]"
+                        className={iconColor}
                       />
-                      <span className="text-sm font-black text-[var(--color-text)]">
+                      <span className={`text-sm font-black ${textColor}`}>
                         {metodo.nombre}
                       </span>
                     </>
@@ -635,9 +717,9 @@ function StepOne({
                       <MotorcycleIcon
                         size={40}
                         weight="fill"
-                        className="text-[var(--color-primary)]"
+                        className={iconColor}
                       />
-                      <span className="text-sm font-black text-[var(--color-text)]">
+                      <span className={`text-sm font-black ${textColor}`}>
                         {metodo.nombre}
                       </span>
                     </>
@@ -646,9 +728,9 @@ function StepOne({
                       <HouseIcon
                         size={40}
                         weight="fill"
-                        className="text-[var(--color-primary)]"
+                        className={iconColor}
                       />
-                      <span className="text-sm font-black text-[var(--color-text)]">
+                      <span className={`text-sm font-black ${textColor}`}>
                         {metodo.nombre}
                       </span>
                     </>
@@ -662,7 +744,7 @@ function StepOne({
                       className="h-full w-auto max-w-full rounded-2xl object-contain"
                     />
                   ) : (
-                    <span className="text-sm font-black text-[var(--color-text)]">
+                    <span className={`text-sm font-black ${textColor}`}>
                       {metodo.nombre}
                     </span>
                   )}
@@ -670,7 +752,9 @@ function StepOne({
                     <CheckCircleIcon
                       size={21}
                       weight="fill"
-                      className="absolute right-2 top-2 text-[var(--color-primary)]"
+                      className={`absolute right-2 top-2 ${
+                        visual?.checkColor ?? "text-white"
+                      }`}
                     />
                   ) : null}
                 </button>
@@ -713,6 +797,17 @@ function StepShippingDate({
   onBack: () => void;
   onContinue: () => void;
 }) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollFechas = (direction: -1 | 1) => {
+    const container = carouselRef.current;
+    if (!container) return;
+    container.scrollBy({
+      left: direction * Math.max(container.clientWidth * 0.7, 160),
+      behavior: "smooth",
+    });
+  };
+
   return (
     <>
       <StepTitle
@@ -749,29 +844,55 @@ function StepShippingDate({
               para preparar tu pedido.
             </p>
           ) : null}
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {despacho.fechasDisponibles.map((fecha) => {
-              const isSelected = fecha === selected;
-              return (
+          <div className="mx-auto w-full max-w-md">
+            <div
+              ref={carouselRef}
+              className="scrollbar-hidden -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-2"
+            >
+              {despacho.fechasDisponibles.map((fecha) => {
+                const isSelected = fecha === selected;
+                return (
+                  <button
+                    key={fecha}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => onSelect(fecha)}
+                    className={`flex size-[76px] shrink-0 snap-start flex-col items-center justify-center rounded-full transition-colors sm:size-[88px] ${
+                      isSelected
+                        ? "bg-[#059669] text-white"
+                        : "bg-[var(--color-sidebar-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                    }`}
+                  >
+                    <span className="text-[10px] font-bold uppercase opacity-80">
+                      {formatFechaEnvioWeekday(fecha)}
+                    </span>
+                    <span className="text-sm font-black">
+                      {formatFechaEnvioDay(fecha)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {despacho.fechasDisponibles.length > 3 ? (
+              <div className="mt-1 flex items-center justify-center gap-2">
                 <button
-                  key={fecha}
                   type="button"
-                  onClick={() => onSelect(fecha)}
-                  className={`flex flex-col items-center rounded-xl border px-2 py-3 transition-colors ${
-                    isSelected
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                      : "border-[var(--color-border)] bg-[var(--color-sidebar-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-                  }`}
+                  onClick={() => scrollFechas(-1)}
+                  aria-label="Fecha anterior"
+                  className="grid size-8 place-items-center rounded-full bg-[var(--color-sidebar-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
                 >
-                  <span className="text-[10px] font-bold uppercase opacity-80">
-                    {formatFechaEnvioWeekday(fecha)}
-                  </span>
-                  <span className="text-sm font-black">
-                    {formatFechaEnvioDay(fecha)}
-                  </span>
+                  <CaretLeftIcon size={14} weight="bold" />
                 </button>
-              );
-            })}
+                <button
+                  type="button"
+                  onClick={() => scrollFechas(1)}
+                  aria-label="Fecha siguiente"
+                  className="grid size-8 place-items-center rounded-full bg-[var(--color-sidebar-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                >
+                  <CaretRightIcon size={14} weight="bold" />
+                </button>
+              </div>
+            ) : null}
           </div>
         </>
       )}
@@ -908,10 +1029,7 @@ function StepTwo({
 
   return (
     <>
-      <StepTitle
-        title={`Elige tu agencia ${courierLabel}`}
-        subtitle="Busca por distrito, usa tu ubicación o selecciona un pin del mapa."
-      />
+      <StepTitle title={`Elige tu agencia ${courierLabel}`} />
       <div className="grid grid-cols-[1fr_auto] gap-2 sm:gap-3">
         <div className="relative">
           <MagnifyingGlassIcon
@@ -936,7 +1054,7 @@ function StepTwo({
           onClick={onLocate}
           disabled={isLocating}
           aria-label="Ubicarme"
-          className="flex h-12 w-12 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] text-sm font-black text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 disabled:opacity-60 sm:w-auto sm:px-5"
+          className="flex h-12 w-12 items-center justify-center gap-2 rounded-xl bg-[var(--color-input-bg)] text-sm font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] disabled:opacity-60 sm:w-auto sm:px-5"
         >
           {isLocating ? (
             <SpinnerGapIcon size={18} className="animate-spin" />
@@ -1008,10 +1126,10 @@ function StepTwo({
             }}
             type="button"
             onClick={() => onSelect(agency)}
-            className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+            className={`w-full rounded-xl px-4 py-3 text-left transition-colors ${
               selectedAgency?.externalId === agency.externalId
-                ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
-                : "border-[var(--color-border)] bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]"
+                ? "bg-[var(--color-primary)]/10"
+                : "bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]"
             }`}
           >
             <div className="flex items-start gap-3">
@@ -1097,7 +1215,7 @@ function StepDeliveryAddress({
           rows={3}
           value={direccion}
           onChange={(event) => onDireccionChange(event.target.value)}
-          className="public-shipping-input min-h-[88px] resize-none"
+          className="public-shipping-input min-h-[88px] resize-none border-0"
           placeholder="Ej. Av. Los Álamos 123, Dpto. 201, Arequipa"
         />
       </Field>
@@ -1106,7 +1224,7 @@ function StepDeliveryAddress({
           maxLength={300}
           value={referencia}
           onChange={(event) => onReferenciaChange(event.target.value)}
-          className="public-shipping-input"
+          className="public-shipping-input border-0"
           placeholder="Ej. Frente al parque, portón azul"
         />
       </Field>
@@ -1132,7 +1250,6 @@ function StepDeliveryAddress({
 function StepThree({
   form,
   metodo,
-  productos,
   agency,
   fechaListo,
   isSubmitting,
@@ -1150,7 +1267,6 @@ function StepThree({
     referenciaEntrega: string;
   };
   metodo: PublicShippingMetodo;
-  productos: PublicShippingProducto[];
   agency: PublicShippingAgency | null;
   fechaListo: string | null;
   isSubmitting: boolean;
@@ -1164,8 +1280,7 @@ function StepThree({
         title="Confirma tus datos"
         subtitle="Revisa la información antes de enviarla al negocio."
       />
-      <OrderProducts productos={productos} />
-      <div className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-4">
+      <div className="space-y-3 rounded-2xl bg-[var(--color-sidebar-bg)] p-4">
         <SummaryRow label="Cliente" value={form.nombreCompleto} />
         <SummaryRow label={form.tipoDocumento} value={form.dni} />
         <SummaryRow label="Celular" value={form.celular} />
@@ -1235,10 +1350,22 @@ function StepThree({
   );
 }
 
-function PublicHeader({ link }: { link: PublicShippingLink }) {
+function PublicHeader({
+  link,
+  productos,
+}: {
+  link: PublicShippingLink;
+  productos: PublicShippingProducto[];
+}) {
+  const [isProductsOpen, setIsProductsOpen] = useState(false);
+  const totalUnits = productos.reduce(
+    (total, producto) => total + producto.cantidad,
+    0,
+  );
+
   return (
-    <header className="sticky top-0 z-[1100] w-full border-b border-gray-200 bg-[var(--color-background)] px-5 py-4">
-      <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
+    <header className="sticky top-0 z-[1100] w-full border-b border-gray-200 bg-[var(--color-background)]">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-5 py-4">
         <Image
           src={link.negocio.logoUrl || "/Logo/Nuvex.png"}
           alt={link.negocio.nombreComercial}
@@ -1256,7 +1383,55 @@ function PublicHeader({ link }: { link: PublicShippingLink }) {
             Formulario seguro con Nuvex
           </p>
         </div>
+        {productos.length ? (
+          <button
+            type="button"
+            onClick={() => setIsProductsOpen((open) => !open)}
+            aria-expanded={isProductsOpen}
+            aria-controls="mobile-order-products"
+            aria-label="Ver productos de tu compra"
+            className="ml-auto flex h-10 shrink-0 items-center gap-2 rounded-full bg-[var(--color-sidebar-bg)] px-3 text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] lg:hidden"
+          >
+            <span className="relative">
+              <ShoppingCartIcon size={19} weight="fill" />
+              <span className="absolute -right-2 -top-2 grid min-w-4 place-items-center rounded-full bg-[var(--color-primary)] px-1 text-[9px] font-black leading-4 text-white">
+                {totalUnits}
+              </span>
+            </span>
+            <CaretDownIcon
+              size={14}
+              weight="bold"
+              className={`transition-transform duration-200 ${
+                isProductsOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        ) : null}
       </div>
+      {isProductsOpen ? (
+        <button
+          type="button"
+          aria-label="Cerrar carrito"
+          onClick={() => setIsProductsOpen(false)}
+          className="fixed inset-x-0 bottom-0 top-[70px] z-[1098] bg-black/25 backdrop-blur-[1px] lg:hidden"
+        />
+      ) : null}
+      {productos.length ? (
+        <div
+          id="mobile-order-products"
+          className={`absolute inset-x-0 top-full z-[1099] grid overflow-hidden bg-[var(--color-background)] transition-all duration-300 ease-out lg:hidden ${
+            isProductsOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="mx-auto w-full max-w-6xl px-5 pb-4">
+              <div className="rounded-2xl p-2">
+                <ProductList productos={productos} compact />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -1272,9 +1447,6 @@ function StepIndicator({
   const activeIndex = Math.min(current, total);
   return (
     <div className="mx-auto w-full max-w-md">
-      <p className="mb-2 text-center text-xs font-bold text-[var(--color-muted-foreground)]">
-        Paso {activeIndex} de {total} · {labels[activeIndex - 1]}
-      </p>
       <div
         className="grid gap-2"
         style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
@@ -1285,10 +1457,10 @@ function StepIndicator({
           return (
             <div
               key={label}
-              className="relative h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]"
+              className="relative h-1.5 overflow-hidden rounded-full bg-[#10b981]/15"
             >
               <div
-                className={`h-full rounded-full bg-[var(--color-primary)] transition-all duration-500 ease-out ${
+                className={`h-full rounded-full bg-[#10b981] transition-all duration-500 ease-out ${
                   active ? "w-full" : "w-0"
                 }`}
               />
@@ -1300,43 +1472,77 @@ function StepIndicator({
   );
 }
 
-function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
+function StepTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="text-center">
       <h1 className="text-2xl font-black text-[var(--color-text)]">{title}</h1>
-      <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">{subtitle}</p>
+      {subtitle ? (
+        <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+          {subtitle}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function OrderProducts({
+function ProductSummaryCard({
   productos,
 }: {
   productos: PublicShippingProducto[];
 }) {
-  if (!productos.length) return null;
+  const totalUnits = productos.reduce(
+    (total, producto) => total + producto.cantidad,
+    0,
+  );
 
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-sidebar-bg)] p-4">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        Productos de tu compra
-      </p>
-      <ul className="mt-2 space-y-2">
-        {productos.map((producto, index) => (
-          <li
-            key={`${producto.nombre}-${index}`}
-            className="flex items-start justify-between gap-3 text-sm"
-          >
-            <span className="min-w-0 text-[var(--color-text)]">
-              {producto.nombre}
-            </span>
-            <span className="shrink-0 rounded-full bg-[var(--color-primary)]/10 px-2.5 py-0.5 text-xs font-black text-[var(--color-primary)]">
-              x{producto.cantidad}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <section className="overflow-hidden rounded-3xl">
+      <div className="px-5 py-5">
+        <span className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[var(--color-primary)]">
+          <ShoppingCartIcon size={13} weight="fill" />
+          Tu pedido
+        </span>
+        <h2 className="mt-3 text-xl font-black text-[var(--color-text)]">
+          Productos de tu compra
+        </h2>
+        <p className="mt-1 text-xs font-semibold text-[var(--color-muted-foreground)]">
+          {productos.length}{" "}
+          {productos.length === 1 ? "producto" : "productos"} · {totalUnits}{" "}
+          {totalUnits === 1 ? "unidad" : "unidades"}
+        </p>
+      </div>
+      <div className="p-2">
+        <ProductList productos={productos} />
+      </div>
+    </section>
+  );
+}
+
+function ProductList({
+  productos,
+  compact = false,
+}: {
+  productos: PublicShippingProducto[];
+  compact?: boolean;
+}) {
+  return (
+    <ul className="space-y-1">
+      {productos.map((producto, index) => (
+        <li
+          key={`${producto.nombre}-${index}`}
+          className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${
+            compact ? "" : "hover:bg-[var(--color-button-hover)]"
+          }`}
+        >
+          <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--color-text)]">
+            {producto.nombre}
+          </span>
+          <span className="shrink-0 rounded-full bg-[var(--color-primary)]/10 px-2.5 py-1 text-xs font-black text-[var(--color-primary)]">
+            x{producto.cantidad}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
