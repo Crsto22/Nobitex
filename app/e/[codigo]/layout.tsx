@@ -20,16 +20,8 @@ export async function generateMetadata({
     const link = await shippingLinksApi.findOne(codigo);
     const business =
       link.negocio.nombreComercial?.trim() || "Formulario de envío";
-    const preview = link.preview ?? null;
-    const title =
-      preview?.titulo?.trim() || `${business} — Datos de envío`;
-    const description =
-      preview?.descripcion?.trim() ||
-      `Completa tus datos de envío para tu pedido ${link.venta.correlativo}.`;
-    const version = preview?.actualizadoAt
-      ? `?v=${encodeURIComponent(preview.actualizadoAt)}`
-      : "";
-    const imagePath = `${path}/opengraph-image${version}`;
+    const title = `${business} — Datos de envío`;
+    const description = `Completa tus datos de envío para tu pedido ${link.venta.correlativo}.`;
 
     return {
       title,
@@ -41,20 +33,11 @@ export async function generateMetadata({
         title,
         description,
         url: path,
-        images: [
-          {
-            url: imagePath,
-            width: 1200,
-            height: 630,
-            alt: "Datos de envío",
-          },
-        ],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
-        images: [imagePath],
       },
     };
   } catch {

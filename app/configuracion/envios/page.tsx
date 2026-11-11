@@ -7,7 +7,6 @@ import {
   CheckCircleIcon,
   ClockIcon,
   DotsThreeVerticalIcon,
-  EyeIcon,
   GearSixIcon,
   HouseIcon,
   MagnifyingGlassIcon,
@@ -24,12 +23,9 @@ import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   enviosConfigApi,
-  envioPreviewColors,
   type DespachoConfig,
   type EnvioMetodoConfig,
-  type EnvioPreviewConfig,
 } from "@/lib/api/envios-config";
-import { useAuth } from "@/lib/auth/auth-provider";
 import { cn } from "@/lib/utils";
 
 type EnvioStatusFilter = "todos" | "active" | "inactive";
@@ -68,12 +64,6 @@ const statusOptions: { label: string; value: EnvioStatusFilter }[] = [
   { label: "Inactivo", value: "inactive" },
 ];
 
-const envioPreviewEscalas = [
-  { label: "Compacto", value: 70 },
-  { label: "Normal", value: 100 },
-  { label: "Grande", value: 135 },
-];
-
 const dispatchWeekdays = [
   { value: 0, label: "D", full: "Domingo" },
   { value: 1, label: "L", full: "Lunes" },
@@ -88,7 +78,6 @@ const allWeekdays = dispatchWeekdays.map((day) => day.value);
 
 export default function EnviosConfigPage() {
   const { showToast } = useSystemToast();
-  const { companyInfo } = useAuth();
   const [configs, setConfigs] = useState<EnvioMetodoConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,14 +110,6 @@ export default function EnviosConfigPage() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isRecojoOpen, setIsRecojoOpen] = useState(false);
   const [savingRecojo, setSavingRecojo] = useState(false);
-  const [preview, setPreview] = useState<EnvioPreviewConfig | null>(null);
-  const [previewTitulo, setPreviewTitulo] = useState("");
-  const [previewDescripcion, setPreviewDescripcion] = useState("");
-  const [previewTextoCentral, setPreviewTextoCentral] = useState("");
-  const [previewColor, setPreviewColor] = useState("#101D69");
-  const [previewEscala, setPreviewEscala] = useState(100);
-  const [savingPreview, setSavingPreview] = useState(false);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -201,25 +182,6 @@ export default function EnviosConfigPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadRecojo();
   }, [loadRecojo]);
-
-  const loadPreview = useCallback(async () => {
-    try {
-      const data = await enviosConfigApi.findPreview();
-      setPreview(data);
-      setPreviewTitulo(data.titulo ?? "");
-      setPreviewDescripcion(data.descripcion ?? "");
-      setPreviewTextoCentral(data.textoCentral ?? "");
-      setPreviewColor(data.colorPrimario);
-      setPreviewEscala(data.escalaContenido ?? 100);
-    } catch {
-      setPreview(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadPreview();
-  }, [loadPreview]);
 
   const saveDespacho = async () => {
     if (savingDespacho) return;
@@ -335,40 +297,6 @@ export default function EnviosConfigPage() {
       });
     } finally {
       setSavingRecojo(false);
-    }
-  };
-
-  const savePreview = async () => {
-    if (savingPreview) return;
-    setSavingPreview(true);
-    try {
-      const updated = await enviosConfigApi.updatePreview({
-        titulo: previewTitulo.trim() || null,
-        descripcion: previewDescripcion.trim() || null,
-        colorPrimario: previewColor,
-        textoCentral: previewTextoCentral.trim() || null,
-        escalaContenido: previewEscala,
-      });
-      setPreview(updated);
-      setPreviewTitulo(updated.titulo ?? "");
-      setPreviewDescripcion(updated.descripcion ?? "");
-      setPreviewTextoCentral(updated.textoCentral ?? "");
-      setPreviewColor(updated.colorPrimario);
-      setPreviewEscala(updated.escalaContenido ?? 100);
-      showToast({
-        title: "Vista previa guardada",
-        description: "Los nuevos enlaces usarán esta vista previa.",
-        variant: "success",
-      });
-    } catch (error: unknown) {
-      showToast({
-        title: "No se pudo guardar la vista previa",
-        description:
-          error instanceof Error ? error.message : "Intenta nuevamente.",
-        variant: "error",
-      });
-    } finally {
-      setSavingPreview(false);
     }
   };
 
@@ -606,15 +534,6 @@ export default function EnviosConfigPage() {
               {!despacho?.configurado ? (
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#f59e0b]" />
               ) : null}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPreviewModalOpen(true)}
-              aria-label="Vista previa del enlace"
-              title="Vista previa del enlace"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <EyeIcon size={20} weight="bold" />
             </button>
           </div>
         </div>
@@ -1131,42 +1050,6 @@ export default function EnviosConfigPage() {
       </Modal>
 
       <Modal
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        title="Vista previa del enlace"
-        size="xl"
-      >
-        <div className="space-y-5">
-          <EnvioPreviewFields
-            idPrefix="modal"
-            companyLogoUrl={companyInfo?.logoUrl ?? null}
-            companyName={companyInfo?.nombreComercial ?? null}
-            titulo={previewTitulo}
-            descripcion={previewDescripcion}
-            textoCentral={previewTextoCentral}
-            color={previewColor}
-            escala={previewEscala}
-            lastUpdated={preview?.actualizadoAt ?? null}
-            onTituloChange={setPreviewTitulo}
-            onDescripcionChange={setPreviewDescripcion}
-            onTextoCentralChange={setPreviewTextoCentral}
-            onColorChange={setPreviewColor}
-            onEscalaChange={setPreviewEscala}
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void savePreview()}
-              disabled={savingPreview}
-              className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {savingPreview ? "Guardando..." : "Guardar vista previa"}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
         isOpen={direccionModal !== null}
         onClose={() => setDireccionModal(null)}
         title="Dirección de recojo"
@@ -1318,251 +1201,4 @@ function DropdownFilter({
       )}
     </div>
   );
-}
-
-function EnvioPreviewFields({
-  idPrefix,
-  companyLogoUrl,
-  companyName,
-  titulo,
-  descripcion,
-  textoCentral,
-  color,
-  escala,
-  lastUpdated,
-  onTituloChange,
-  onDescripcionChange,
-  onTextoCentralChange,
-  onColorChange,
-  onEscalaChange,
-}: {
-  idPrefix: string;
-  companyLogoUrl?: string | null;
-  companyName?: string | null;
-  titulo: string;
-  descripcion: string;
-  textoCentral: string;
-  color: string;
-  escala: number;
-  lastUpdated?: string | null;
-  onTituloChange: (value: string) => void;
-  onDescripcionChange: (value: string) => void;
-  onTextoCentralChange: (value: string) => void;
-  onColorChange: (value: string) => void;
-  onEscalaChange: (value: number) => void;
-}) {
-  return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] lg:items-start">
-      <div className="space-y-4">
-        <div>
-          <label
-            htmlFor={`${idPrefix}-titulo`}
-            className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-          >
-            <span>Título del enlace</span>
-            <span>{titulo.length}/60</span>
-          </label>
-          <input
-            id={`${idPrefix}-titulo`}
-            maxLength={60}
-            value={titulo}
-            onChange={(event) => onTituloChange(event.target.value)}
-            placeholder={`${companyName ?? "Nuvex"} — Datos de envío`}
-            className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor={`${idPrefix}-descripcion`}
-            className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-          >
-            <span>Descripción</span>
-            <span>{descripcion.length}/120</span>
-          </label>
-          <textarea
-            id={`${idPrefix}-descripcion`}
-            rows={2}
-            maxLength={120}
-            value={descripcion}
-            onChange={(event) => onDescripcionChange(event.target.value)}
-            placeholder="Completa tus datos de envío para tu pedido."
-            className="min-h-[64px] w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-2 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor={`${idPrefix}-texto-central`}
-            className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-          >
-            <span>Texto central de la imagen</span>
-            <span>{textoCentral.length}/40</span>
-          </label>
-          <input
-            id={`${idPrefix}-texto-central`}
-            maxLength={40}
-            value={textoCentral}
-            onChange={(event) => onTextoCentralChange(event.target.value)}
-            placeholder="Registra tu envío"
-            className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-          />
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-            Color de fondo
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {envioPreviewColors.map((option) => {
-              const selected = color === option.value;
-              return (
-                <button
-                  key={option.key}
-                  type="button"
-                  title={option.label}
-                  aria-label={option.label}
-                  aria-pressed={selected}
-                  onClick={() => onColorChange(option.value)}
-                  className={cn(
-                    "grid size-9 place-items-center rounded-full transition-transform",
-                    selected
-                      ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-sidebar-bg)]"
-                      : "",
-                  )}
-                  style={{ backgroundColor: option.value }}
-                >
-                  {selected ? (
-                    <CheckCircleIcon
-                      size={16}
-                      weight="fill"
-                      className="text-white"
-                    />
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-            Tamaño del contenido
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {envioPreviewEscalas.map((option) => {
-              const selected = escala === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => onEscalaChange(option.value)}
-                  className={cn(
-                    "rounded-xl px-4 py-2 text-sm font-circular-bold transition-colors",
-                    selected
-                      ? "bg-[var(--color-primary)] text-white"
-                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                  )}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-2xl bg-[#0b141a] p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="grid size-6 place-items-center rounded-full bg-[#25d366] text-[10px] font-black text-white">
-            W
-          </span>
-          <p className="text-xs font-bold text-white/80">WhatsApp</p>
-        </div>
-        <div className="rounded-xl bg-[#e5ddd5] p-2">
-          <div className="rounded-lg bg-white p-1 shadow">
-        <div
-          className="relative flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-lg p-3"
-          style={{ background: previewGradient(color) }}
-        >
-          <div className="relative z-10 flex h-full w-full flex-col items-center justify-between py-2">
-            <div className="flex flex-1 items-start justify-center">
-              {companyLogoUrl ? (
-                <span
-                  className="inline-flex"
-                  style={{
-                    transform: `scale(${escala / 100})`,
-                    transformOrigin: "top center",
-                  }}
-                >
-                  <Image
-                    src={companyLogoUrl}
-                    alt={companyName ?? "Logo"}
-                    width={44}
-                    height={44}
-                    unoptimized
-                    className="h-11 w-11 rounded-xl bg-white object-contain p-1 shadow-sm"
-                  />
-                </span>
-              ) : null}
-            </div>
-            <span className="rounded-full bg-black/45 px-3 py-1.5 text-lg font-black leading-tight text-white">
-              {textoCentral || "Registra tu envío"}
-            </span>
-          </div>
-        </div>
-            <div className="px-1 pt-2">
-              <p className="text-[10px] text-[#7f8c8d]">nuvex.app</p>
-              <p className="truncate text-sm font-bold text-[#1f1f23]">
-                {titulo || `${companyName ?? "Nuvex"} — Datos de envío`}
-              </p>
-              <p className="mt-0.5 text-xs text-[#7f8c8d]">
-                {descripcion || "Completa tus datos de envío para tu pedido."}
-              </p>
-            </div>
-          </div>
-          <div className="mt-1 flex justify-end pr-1 text-[10px] text-[#54656f]">
-            10:42
-          </div>
-        </div>
-        {lastUpdated ? (
-          <p className="mt-2 text-[10px] text-white/50">
-            Última actualización:{" "}
-            {new Date(lastUpdated).toLocaleString("es-PE", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const normalized = hex.replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return [16, 29, 105];
-  return [
-    parseInt(normalized.slice(0, 2), 16),
-    parseInt(normalized.slice(2, 4), 16),
-    parseInt(normalized.slice(4, 6), 16),
-  ];
-}
-
-function shiftColor(hex: string, amount: number): string {
-  const [r, g, b] = hexToRgb(hex);
-  const shift = (channel: number) =>
-    Math.max(
-      0,
-      Math.min(
-        255,
-        Math.round(
-          amount >= 0
-            ? channel + (255 - channel) * amount
-            : channel * (1 + amount),
-        ),
-      ),
-    );
-  return `rgb(${shift(r)}, ${shift(g)}, ${shift(b)})`;
-}
-
-function previewGradient(color: string): string {
-  return `linear-gradient(135deg, ${shiftColor(color, -0.28)} 0%, ${color} 55%, ${shiftColor(color, 0.22)} 100%)`;
 }
