@@ -1499,25 +1499,23 @@ function EnvioPreviewFields({
               />
             </>
           ) : null}
-          <div className="relative z-10 flex h-full w-full flex-col items-center justify-between py-1">
+          <div
+            className="relative z-10 flex h-full w-full flex-col items-center justify-between py-1"
+            style={{
+              transform: `scale(${escala / 100})`,
+              transformOrigin: "bottom center",
+            }}
+          >
             <div className="flex flex-1 items-start justify-center pt-1">
               {escala < 1.2 && companyLogoUrl ? (
-                <span
-                  className="inline-flex"
-                  style={{
-                    transform: `scale(${escala / 100})`,
-                    transformOrigin: "top center",
-                  }}
-                >
-                  <Image
-                    src={companyLogoUrl}
-                    alt={companyName ?? "Logo"}
-                    width={44}
-                    height={44}
-                    unoptimized
-                    className="h-11 w-11 rounded-xl bg-white object-contain p-1 shadow-sm"
-                  />
-                </span>
+                <Image
+                  src={companyLogoUrl}
+                  alt={companyName ?? "Logo"}
+                  width={44}
+                  height={44}
+                  unoptimized
+                  className="h-11 w-11 rounded-xl bg-white object-contain p-1 shadow-sm"
+                />
               ) : null}
             </div>
             <span className="rounded-full bg-black/45 px-3 py-1.5 text-lg font-black leading-tight text-white">
