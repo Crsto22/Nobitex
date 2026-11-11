@@ -128,21 +128,6 @@ const catalogProfileOptions = [
   },
 ] as const;
 
-const productModeOptions = [
-  {
-    value: "pos",
-    label: "POS",
-    description: "Ventas, stock, caja y comprobantes",
-    image: "/img/caja.png",
-  },
-  {
-    value: "attendance",
-    label: "Asistencias",
-    description: "Marcajes, trabajadores y puntos QR",
-    image: "/img/asistencias.png",
-  },
-] as const;
-
 const activationIntervalMs = 220;
 
 type AccountFormData = {
@@ -199,7 +184,7 @@ export function RegisterPage() {
     verificationCode: "",
   });
   const [companyData, setCompanyData] = useState<CompanyFormData>({
-    productMode: "",
+    productMode: "pos",
     catalogProfile: "",
     nombreComercial: "",
     noCuentaConRuc: false,
@@ -322,8 +307,6 @@ export function RegisterPage() {
         return {
           ...currentData,
           productMode: value as ProductMode,
-          catalogProfile:
-            value === "attendance" ? "" : currentData.catalogProfile,
         };
       }
 
@@ -433,18 +416,9 @@ export function RegisterPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const productMode = companyData.productMode;
-    if (!productMode) {
-      showToast({
-        title: "Selecciona que quieres usar",
-        description: "Elige POS, Asistencias o ambos.",
-        variant: "warning",
-      });
-      return;
-    }
+    const productMode: ProductMode = "pos";
 
-    const catalogProfile =
-      productMode === "attendance" ? "otros" : companyData.catalogProfile;
+    const catalogProfile = companyData.catalogProfile;
     if (!catalogProfile) {
       showToast({
         title: "Selecciona qué productos venderás",
@@ -510,10 +484,7 @@ export function RegisterPage() {
       setIsComplete(true);
       showToast({
         title: "Empresa registrada",
-        description:
-          productMode === "attendance"
-            ? "Estamos activando tus asistencias."
-            : "Estamos activando tu entorno.",
+        description: "Estamos activando tu entorno.",
         variant: "success",
       });
     } catch (error) {
@@ -835,12 +806,7 @@ export function RegisterPage() {
                     ) : (
                       <Button
                         type="submit"
-                        disabled={
-                          isSubmitting ||
-                          !companyData.productMode ||
-                          (companyData.productMode !== "attendance" &&
-                            !companyData.catalogProfile)
-                        }
+                        disabled={isSubmitting || !companyData.catalogProfile}
                         className="h-11 flex-1 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"
                       >
                         {isSubmitting ? "Creando empresa..." : "Crear cuenta"}
@@ -1111,28 +1077,6 @@ type CompanyStepProps = {
 };
 
 function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
-  const posSelected =
-    companyData.productMode === "pos" || companyData.productMode === "both";
-  const attendanceSelected =
-    companyData.productMode === "attendance" ||
-    companyData.productMode === "both";
-
-  const toggleMode = (mode: "pos" | "attendance") => {
-    const nextPos = mode === "pos" ? !posSelected : posSelected;
-    const nextAttendance =
-      mode === "attendance" ? !attendanceSelected : attendanceSelected;
-    const nextProductMode: ProductMode | "" =
-      nextPos && nextAttendance
-        ? "both"
-        : nextPos
-          ? "pos"
-          : nextAttendance
-            ? "attendance"
-            : "";
-
-    updateCompanyValue("productMode", nextProductMode);
-  };
-
   const ropaSelected =
     companyData.catalogProfile === "ropa" ||
     companyData.catalogProfile === "ropa_calzado";
@@ -1166,69 +1110,8 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
     <>
       <fieldset>
         <legend className="text-sm font-circular-bold text-[var(--color-text)]">
-          ¿Qué quieres usar?
+          ¿Qué productos venderás?
         </legend>
-        <div className="mt-2 grid gap-3 lg:grid-cols-2">
-          {productModeOptions.map((option) => {
-            const selected =
-              option.value === "pos" ? posSelected : attendanceSelected;
-
-            return (
-              <label
-                key={option.value}
-                className={`relative flex min-h-24 cursor-pointer items-center gap-3 rounded-[14px] p-4 transition-colors ${
-                  selected
-                    ? "bg-[var(--color-primary)] text-white"
-                    : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  name="productMode"
-                  value={option.value}
-                  checked={selected}
-                  onChange={() => toggleMode(option.value)}
-                  className="sr-only"
-                />
-                <Image
-                  src={option.image}
-                  alt=""
-                  width={48}
-                  height={48}
-                  className="size-12 shrink-0 object-contain"
-                />
-                <span className="min-w-0">
-                  <span className="block text-sm font-circular-bold">
-                    {option.label}
-                  </span>
-                  <span
-                    className={`mt-1 block text-xs ${
-                      selected
-                        ? "text-white/75"
-                        : "text-[var(--color-muted-foreground)]"
-                    }`}
-                  >
-                    {option.description}
-                  </span>
-                </span>
-                {selected && (
-                  <CheckCircleIcon
-                    size={18}
-                    weight="fill"
-                    className="absolute right-3 top-3"
-                  />
-                )}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      {companyData.productMode && companyData.productMode !== "attendance" && (
-        <fieldset>
-          <legend className="text-sm font-circular-bold text-[var(--color-text)]">
-            ¿Qué productos venderás?
-          </legend>
           <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {catalogProfileOptions.map((option) => {
               const isOtros = option.value === "otros";
@@ -1289,8 +1172,7 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
               );
             })}
           </div>
-        </fieldset>
-      )}
+      </fieldset>
 
       <div>
         <RegisterInput
