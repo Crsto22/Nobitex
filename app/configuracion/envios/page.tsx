@@ -1482,40 +1482,25 @@ function EnvioPreviewFields({
           className="relative flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-lg p-3"
           style={{ background: previewGradient(color) }}
         >
-          {escala >= 1.2 && companyLogoUrl ? (
-            <>
-              <div className="absolute inset-0 bg-white" />
-              <Image
-                src={companyLogoUrl}
-                alt={companyName ?? "Logo"}
-                width={320}
-                height={150}
-                unoptimized
-                className="absolute inset-0 h-full w-full object-contain p-3"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: previewOverlay(color) }}
-              />
-            </>
-          ) : null}
-          <div
-            className="relative z-10 flex h-full w-full flex-col items-center justify-between py-1"
-            style={{
-              transform: `scale(${escala / 100})`,
-              transformOrigin: "bottom center",
-            }}
-          >
-            <div className="flex flex-1 items-start justify-center pt-1">
-              {escala < 1.2 && companyLogoUrl ? (
-                <Image
-                  src={companyLogoUrl}
-                  alt={companyName ?? "Logo"}
-                  width={44}
-                  height={44}
-                  unoptimized
-                  className="h-11 w-11 rounded-xl bg-white object-contain p-1 shadow-sm"
-                />
+          <div className="relative z-10 flex h-full w-full flex-col items-center justify-between py-2">
+            <div className="flex flex-1 items-start justify-center">
+              {companyLogoUrl ? (
+                <span
+                  className="inline-flex"
+                  style={{
+                    transform: `scale(${escala / 100})`,
+                    transformOrigin: "top center",
+                  }}
+                >
+                  <Image
+                    src={companyLogoUrl}
+                    alt={companyName ?? "Logo"}
+                    width={44}
+                    height={44}
+                    unoptimized
+                    className="h-11 w-11 rounded-xl bg-white object-contain p-1 shadow-sm"
+                  />
+                </span>
               ) : null}
             </div>
             <span className="rounded-full bg-black/45 px-3 py-1.5 text-lg font-black leading-tight text-white">
@@ -1580,9 +1565,4 @@ function shiftColor(hex: string, amount: number): string {
 
 function previewGradient(color: string): string {
   return `linear-gradient(135deg, ${shiftColor(color, -0.28)} 0%, ${color} 55%, ${shiftColor(color, 0.22)} 100%)`;
-}
-
-function previewOverlay(color: string): string {
-  const [r, g, b] = hexToRgb(color);
-  return `rgba(${r}, ${g}, ${b}, 0.45)`;
 }

@@ -106,9 +106,6 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
   const overlayColor =
     textColor === "#ffffff" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.06)";
   const escala = (preview?.escalaContenido ?? 100) / 100;
-  const isLogoFull = escala >= 1.2;
-  const [tintR, tintG, tintB] = hexToRgb(color);
-  const tintOverlay = `rgba(${tintR}, ${tintG}, ${tintB}, 0.45)`;
 
   return new ImageResponse(
     (
@@ -119,44 +116,13 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           display: "flex",
           flexDirection: "column",
           position: "relative",
-          padding: isLogoFull && logo ? "44px 56px" : "64px 72px",
+          padding: "64px 72px",
           background: previewGradient(color),
           color: textColor,
           fontFamily: "sans-serif",
           overflow: "hidden",
         }}
       >
-        {isLogoFull && logo ? (
-          <>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 48,
-              }}
-            >
-              <img
-                src={logo}
-                alt={business}
-                width={1048}
-                height={542}
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
-              />
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: tintOverlay,
-                display: "flex",
-              }}
-            />
-          </>
-        ) : null}
         <div
           style={{
             position: "absolute",
@@ -190,45 +156,43 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             position: "relative",
           }}
         >
-          {isLogoFull && logo ? null : (
-            <div
-              style={{
-                width: Math.round(112 * escala),
-                height: Math.round(112 * escala),
-                borderRadius: Math.round(28 * escala),
-                background: "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: Math.round(14 * escala),
-                overflow: "hidden",
-              }}
-            >
-              {logo ? (
-                <img
-                  src={logo}
-                  alt={business}
-                  width={Math.round(84 * escala)}
-                  height={Math.round(84 * escala)}
-                  style={{
-                    width: Math.round(84 * escala),
-                    height: Math.round(84 * escala),
-                    objectFit: "contain",
-                  }}
-                />
-              ) : (
-                <span
-                  style={{
-                    fontSize: Math.round(52 * escala),
-                    fontWeight: 800,
-                    color: "#101D69",
-                  }}
-                >
-                  {initial}
-                </span>
-              )}
-            </div>
-          )}
+          <div
+            style={{
+              width: Math.round(112 * escala),
+              height: Math.round(112 * escala),
+              borderRadius: Math.round(28 * escala),
+              background: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: Math.round(14 * escala),
+              overflow: "hidden",
+            }}
+          >
+            {logo ? (
+              <img
+                src={logo}
+                alt={business}
+                width={Math.round(84 * escala)}
+                height={Math.round(84 * escala)}
+                style={{
+                  width: Math.round(84 * escala),
+                  height: Math.round(84 * escala),
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  fontSize: Math.round(52 * escala),
+                  fontWeight: 800,
+                  color: "#101D69",
+                }}
+              >
+                {initial}
+              </span>
+            )}
+          </div>
           <div
             style={{
               display: "flex",
@@ -238,7 +202,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           >
             <span
               style={{
-                fontSize: Math.round(22 * escala),
+                fontSize: 22,
                 fontWeight: 700,
                 letterSpacing: 4,
                 color: mutedColor,
@@ -248,9 +212,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             </span>
             <span
               style={{
-                fontSize: Math.round(
-                  (business.length > 22 ? 46 : 56) * escala,
-                ),
+                fontSize: business.length > 22 ? 46 : 56,
                 fontWeight: 800,
                 lineHeight: 1.05,
                 marginTop: 8,
@@ -273,18 +235,14 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
         >
           <span
             style={{
-              fontSize: Math.round(
-                (textoCentral.length > 22 ? 46 : 56) * escala,
-              ),
+              fontSize: textoCentral.length > 22 ? 46 : 56,
               fontWeight: 900,
               lineHeight: 1.08,
               maxWidth: 880,
               color: "#ffffff",
               background: "rgba(0,0,0,0.45)",
               borderRadius: 999,
-              padding: `${Math.round(14 * escala)}px ${Math.round(
-                30 * escala,
-              )}px`,
+              padding: "14px 30px",
             }}
           >
             {textoCentral}
@@ -302,7 +260,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: Math.round(18 * escala),
+                fontSize: 18,
                 fontWeight: 700,
                 letterSpacing: 3,
                 color: mutedColor,
@@ -312,7 +270,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             </span>
             <span
               style={{
-                fontSize: Math.round(42 * escala),
+                fontSize: 42,
                 fontWeight: 800,
                 marginTop: 6,
               }}
@@ -324,20 +282,13 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: Math.round(12 * escala),
+              gap: 12,
               borderRadius: 999,
               background: overlayColor,
-              padding: `${Math.round(14 * escala)}px ${Math.round(
-                26 * escala,
-              )}px`,
+              padding: "14px 26px",
             }}
           >
-            <span
-              style={{
-                fontSize: Math.round(22 * escala),
-                fontWeight: 700,
-              }}
-            >
+            <span style={{ fontSize: 22, fontWeight: 700 }}>
               Formulario seguro con Nuvex
             </span>
           </div>
