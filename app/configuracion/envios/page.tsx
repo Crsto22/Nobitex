@@ -1478,29 +1478,43 @@ function EnvioPreviewFields({
         </div>
         <div className="rounded-xl bg-[#e5ddd5] p-2">
           <div className="rounded-lg bg-white p-1 shadow">
-            <div
-              className="flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-lg p-3 text-center"
-              style={{ background: previewGradient(color) }}
-            >
+        <div className="relative flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-lg p-3 text-center">
+          {escala >= 1.2 && companyLogoUrl ? (
+            <>
+              <div className="absolute inset-0 bg-white" />
+              <Image
+                src={companyLogoUrl}
+                alt={companyName ?? "Logo"}
+                width={320}
+                height={150}
+                unoptimized
+                className="absolute inset-0 h-full w-full object-contain p-3"
+              />
               <div
-                className="flex flex-col items-center"
-                style={{ transform: `scale(${escala / 100})` }}
-              >
-                {companyLogoUrl ? (
-                  <Image
-                    src={companyLogoUrl}
-                    alt={companyName ?? "Logo"}
-                    width={44}
-                    height={44}
-                    unoptimized
-                    className="mb-2 h-11 w-11 rounded-xl bg-white object-contain p-1"
-                  />
-                ) : null}
-                <span className="rounded-full bg-black/35 px-3 py-1.5 text-lg font-black leading-tight text-white">
-                  {textoCentral || "Registra tu envío"}
-                </span>
-              </div>
-            </div>
+                className="absolute inset-0"
+                style={{ background: previewOverlay(color) }}
+              />
+            </>
+          ) : null}
+          <div className="relative z-10 flex h-full flex-col items-center justify-center p-3 text-center">
+            {escala < 1.2 && companyLogoUrl ? (
+              <Image
+                src={companyLogoUrl}
+                alt={companyName ?? "Logo"}
+                width={44}
+                height={44}
+                unoptimized
+                className={cn(
+                  "mb-2 rounded-xl bg-white object-contain p-1",
+                  escala < 1 ? "h-8 w-8" : "h-11 w-11",
+                )}
+              />
+            ) : null}
+            <span className="rounded-full bg-black/35 px-3 py-1.5 text-lg font-black leading-tight text-white">
+              {textoCentral || "Registra tu envío"}
+            </span>
+          </div>
+        </div>
             <div className="px-1 pt-2">
               <p className="text-[10px] text-[#7f8c8d]">nuvex.app</p>
               <p className="truncate text-sm font-bold text-[#1f1f23]">
@@ -1539,19 +1553,7 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
-function shiftColor(hex: string, amount: number): string {
-  const [r, g, b] = hexToRgb(hex);
-  const shift = (channel: number) =>
-    Math.max(
-      0,
-      Math.min(
-        255,
-        Math.round(amount >= 0 ? channel + (255 - channel) * amount : channel * (1 + amount)),
-      ),
-    );
-  return `rgb(${shift(r)}, ${shift(g)}, ${shift(b)})`;
-}
-
-function previewGradient(color: string): string {
-  return `linear-gradient(135deg, ${shiftColor(color, -0.28)} 0%, ${color} 55%, ${shiftColor(color, 0.22)} 100%)`;
+function previewOverlay(color: string): string {
+  const [r, g, b] = hexToRgb(color);
+  return `rgba(${r}, ${g}, ${b}, 0.62)`;
 }
