@@ -22,6 +22,43 @@ async function loadLink(codigo: string): Promise<PublicShippingLink | null> {
   }
 }
 
+function hexToRgb(hex: string): [number, number, number] {
+  const normalized = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return [16, 29, 105];
+  return [
+    parseInt(normalized.slice(0, 2), 16),
+    parseInt(normalized.slice(2, 4), 16),
+    parseInt(normalized.slice(4, 6), 16),
+  ];
+}
+
+function shiftColor(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const shift = (channel: number) =>
+    Math.max(
+      0,
+      Math.min(
+        255,
+        Math.round(
+          amount >= 0
+            ? channel + (255 - channel) * amount
+            : channel * (1 + amount),
+        ),
+      ),
+    );
+  return `rgb(${shift(r)}, ${shift(g)}, ${shift(b)})`;
+}
+
+function previewGradient(color: string): string {
+  return `linear-gradient(135deg, ${shiftColor(color, -0.28)} 0%, ${color} 55%, ${shiftColor(color, 0.22)} 100%)`;
+}
+
+function previewTextColor(color: string): string {
+  const [r, g, b] = hexToRgb(color);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62 ? "#111827" : "#ffffff";
+}
+
 async function resolveLogoSource(logoUrl: string | null): Promise<string | null> {
   if (!logoUrl) return null;
 
@@ -58,6 +95,16 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
   const correlativo = link?.venta.correlativo?.trim();
   const logo = await resolveLogoSource(link?.negocio.logoUrl ?? null);
   const initial = business.slice(0, 1).toUpperCase();
+  const preview = link?.preview ?? null;
+  const previewColor = preview?.colorPrimario ?? "";
+  const color = /^#[0-9a-fA-F]{6}$/.test(previewColor) ? previewColor : "#101D69";
+  const textoCentral =
+    preview?.textoCentral?.trim() || "Registra tu envío";
+  const textColor = previewTextColor(color);
+  const mutedColor =
+    textColor === "#ffffff" ? "rgba(255,255,255,0.78)" : "rgba(17,24,39,0.72)";
+  const overlayColor =
+    textColor === "#ffffff" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.06)";
 
   return new ImageResponse(
     (
@@ -69,9 +116,8 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           flexDirection: "column",
           position: "relative",
           padding: "64px 72px",
-          background:
-            "linear-gradient(135deg, #070d33 0%, #101D69 55%, #1f2f9e 100%)",
-          color: "#ffffff",
+          background: previewGradient(color),
+          color: textColor,
           fontFamily: "sans-serif",
           overflow: "hidden",
         }}
@@ -84,7 +130,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             width: 420,
             height: 420,
             borderRadius: 420,
-            background: "rgba(255,255,255,0.08)",
+            background: overlayColor,
             display: "flex",
           }}
         />
@@ -96,7 +142,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             width: 380,
             height: 380,
             borderRadius: 380,
-            background: "rgba(99,102,241,0.28)",
+            background: overlayColor,
             display: "flex",
           }}
         />
@@ -148,7 +194,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
                 fontSize: 22,
                 fontWeight: 700,
                 letterSpacing: 4,
-                color: "#a5b4fc",
+                color: mutedColor,
               }}
             >
               DATOS DE ENVÍO
@@ -169,27 +215,34 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
         <div
           style={{
             display: "flex",
+            flex: 1,
             flexDirection: "column",
-            marginTop: 44,
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
             position: "relative",
           }}
         >
-          <span style={{ fontSize: 34, fontWeight: 700, color: "#e0e7ff" }}>
-            Confirma cómo quieres recibir tu pedido
+          <span
+            style={{
+              fontSize: textoCentral.length > 22 ? 52 : 66,
+              fontWeight: 900,
+              lineHeight: 1.08,
+              maxWidth: 880,
+            }}
+          >
+            {textoCentral}
           </span>
           <span
             style={{
-              fontSize: 24,
-              fontWeight: 400,
-              color: "#c7d2fe",
-              marginTop: 14,
+              marginTop: 18,
+              fontSize: 22,
+              color: mutedColor,
             }}
           >
-            Completa tus datos y elige el método de envío en pocos pasos.
+            Confirma cómo recibir tu pedido
           </span>
         </div>
-
-        <div style={{ display: "flex", flex: 1 }} />
 
         <div
           style={{
@@ -205,7 +258,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
                 fontSize: 18,
                 fontWeight: 700,
                 letterSpacing: 3,
-                color: "#a5b4fc",
+                color: mutedColor,
               }}
             >
               PEDIDO
@@ -220,7 +273,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
               alignItems: "center",
               gap: 12,
               borderRadius: 999,
-              background: "rgba(255,255,255,0.14)",
+              background: overlayColor,
               padding: "14px 26px",
             }}
           >

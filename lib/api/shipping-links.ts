@@ -29,11 +29,20 @@ export type PublicShippingProducto = {
   cantidad: number;
 };
 
+export type PublicShippingLinkPreview = {
+  titulo: string | null;
+  descripcion: string | null;
+  colorPrimario: string;
+  textoCentral: string | null;
+  actualizadoAt: string | null;
+};
+
 export type PublicShippingLink = {
   estado: "pendiente" | "recibido";
   venta: { correlativo: string };
   negocio: { nombreComercial: string; logoUrl: string | null };
   productos?: PublicShippingProducto[];
+  preview?: PublicShippingLinkPreview | null;
   metodosEnvio: PublicShippingMetodo[];
   despacho: PublicShippingDespacho | null;
   recojo: PublicShippingRecojo | null;

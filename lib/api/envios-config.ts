@@ -44,6 +44,39 @@ export type UpdateRecojoConfigPayload = {
   anticipacionDias?: number;
 };
 
+export type EnvioPreviewColor = {
+  key: string;
+  label: string;
+  value: string;
+};
+
+export const envioPreviewColors: EnvioPreviewColor[] = [
+  { key: "azul-nuvex", label: "Azul Nuvex", value: "#101D69" },
+  { key: "negro", label: "Negro", value: "#111827" },
+  { key: "verde", label: "Verde", value: "#047857" },
+  { key: "naranja", label: "Naranja", value: "#EA580C" },
+  { key: "rojo", label: "Rojo", value: "#B91C1C" },
+  { key: "morado", label: "Morado", value: "#6D28D9" },
+  { key: "turquesa", label: "Turquesa", value: "#0F766E" },
+  { key: "vino", label: "Vino", value: "#7F1D1D" },
+];
+
+export type EnvioPreviewConfig = {
+  titulo: string | null;
+  descripcion: string | null;
+  colorPrimario: string;
+  textoCentral: string | null;
+  configurado: boolean;
+  actualizadoAt: string | null;
+};
+
+export type UpdateEnvioPreviewConfigPayload = {
+  titulo?: string | null;
+  descripcion?: string | null;
+  colorPrimario: string;
+  textoCentral?: string | null;
+};
+
 export const enviosConfigApi = {
   findAll() {
     return authFetch<EnvioMetodoConfig[]>("/envios-config");
@@ -62,6 +95,17 @@ export const enviosConfigApi = {
 
   findRecojo() {
     return authFetch<RecojoConfig>("/envios-config/recojo");
+  },
+
+  findPreview() {
+    return authFetch<EnvioPreviewConfig>("/envios-config/preview");
+  },
+
+  updatePreview(payload: UpdateEnvioPreviewConfigPayload) {
+    return authFetch<EnvioPreviewConfig>("/envios-config/preview", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
   },
 
   updateRecojo(payload: UpdateRecojoConfigPayload) {
