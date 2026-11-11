@@ -158,14 +158,14 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
         >
           <div
             style={{
-              width: Math.round(132 * escala),
-              height: Math.round(132 * escala),
-              borderRadius: Math.round(30 * escala),
+              width: Math.round(112 * escala),
+              height: Math.round(112 * escala),
+              borderRadius: Math.round(28 * escala),
               background: "#ffffff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: Math.round(16 * escala),
+              padding: Math.round(14 * escala),
               overflow: "hidden",
             }}
           >
@@ -173,18 +173,18 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
               <img
                 src={logo}
                 alt={business}
-                width={Math.round(100 * escala)}
-                height={Math.round(100 * escala)}
+                width={Math.round(84 * escala)}
+                height={Math.round(84 * escala)}
                 style={{
-                  width: Math.round(100 * escala),
-                  height: Math.round(100 * escala),
+                  width: Math.round(84 * escala),
+                  height: Math.round(84 * escala),
                   objectFit: "contain",
                 }}
               />
             ) : (
               <span
                 style={{
-                  fontSize: Math.round(60 * escala),
+                  fontSize: Math.round(52 * escala),
                   fontWeight: 800,
                   color: "#101D69",
                 }}
@@ -213,7 +213,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             <span
               style={{
                 fontSize: Math.round(
-                  (business.length > 22 ? 46 : 56) * escala,
+                  (business.length > 22 ? 42 : 50) * escala,
                 ),
                 fontWeight: 800,
                 lineHeight: 1.05,
@@ -239,11 +239,17 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           <span
             style={{
               fontSize: Math.round(
-                (textoCentral.length > 22 ? 52 : 66) * escala,
+                (textoCentral.length > 22 ? 46 : 56) * escala,
               ),
               fontWeight: 900,
               lineHeight: 1.08,
               maxWidth: 880,
+              color: "#ffffff",
+              background: "rgba(0,0,0,0.32)",
+              borderRadius: 999,
+              padding: `${Math.round(14 * escala)}px ${Math.round(
+                30 * escala,
+              )}px`,
             }}
           >
             {textoCentral}
@@ -270,7 +276,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: Math.round(18 * escala),
+                fontSize: Math.round(16 * escala),
                 fontWeight: 700,
                 letterSpacing: 3,
                 color: mutedColor,
@@ -280,7 +286,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             </span>
             <span
               style={{
-                fontSize: Math.round(42 * escala),
+                fontSize: Math.round(38 * escala),
                 fontWeight: 800,
                 marginTop: 6,
               }}
@@ -292,15 +298,20 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: Math.round(12 * escala),
+              gap: Math.round(10 * escala),
               borderRadius: 999,
               background: overlayColor,
-              padding: `${Math.round(14 * escala)}px ${Math.round(
-                26 * escala,
+              padding: `${Math.round(12 * escala)}px ${Math.round(
+                22 * escala,
               )}px`,
             }}
           >
-            <span style={{ fontSize: Math.round(22 * escala), fontWeight: 700 }}>
+            <span
+              style={{
+                fontSize: Math.round(20 * escala),
+                fontWeight: 700,
+              }}
+            >
               Formulario seguro con Nuvex
             </span>
           </div>

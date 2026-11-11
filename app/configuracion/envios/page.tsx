@@ -69,9 +69,9 @@ const statusOptions: { label: string; value: EnvioStatusFilter }[] = [
 ];
 
 const envioPreviewEscalas = [
-  { label: "Compacto", value: 90 },
+  { label: "Compacto", value: 70 },
   { label: "Normal", value: 100 },
-  { label: "Grande", value: 110 },
+  { label: "Grande", value: 135 },
 ];
 
 const dispatchWeekdays = [
@@ -1496,10 +1496,7 @@ function EnvioPreviewFields({
                     className="mb-2 h-11 w-11 rounded-xl bg-white object-contain p-1"
                   />
                 ) : null}
-                <span
-                  className="text-lg font-black leading-tight"
-                  style={{ color: previewTextColor(color) }}
-                >
+                <span className="rounded-full bg-black/35 px-3 py-1.5 text-lg font-black leading-tight text-white">
                   {textoCentral || "Registra tu envío"}
                 </span>
               </div>
@@ -1557,10 +1554,4 @@ function shiftColor(hex: string, amount: number): string {
 
 function previewGradient(color: string): string {
   return `linear-gradient(135deg, ${shiftColor(color, -0.28)} 0%, ${color} 55%, ${shiftColor(color, 0.22)} 100%)`;
-}
-
-function previewTextColor(color: string): string {
-  const [r, g, b] = hexToRgb(color);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.62 ? "#111827" : "#ffffff";
 }
