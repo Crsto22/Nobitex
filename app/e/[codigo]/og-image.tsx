@@ -108,7 +108,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
   const escala = (preview?.escalaContenido ?? 100) / 100;
   const isLogoFull = escala >= 1.2;
   const [tintR, tintG, tintB] = hexToRgb(color);
-  const tintOverlay = `rgba(${tintR}, ${tintG}, ${tintB}, 0.62)`;
+  const tintOverlay = `rgba(${tintR}, ${tintG}, ${tintB}, 0.45)`;
 
   return new ImageResponse(
     (
@@ -259,15 +259,14 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           </div>
         </div>
 
+        <div style={{ display: "flex", flex: 1 }} />
+
         <div
           style={{
             display: "flex",
-            flex: 1,
-            flexDirection: "column",
-            alignItems: "center",
             justifyContent: "center",
-            textAlign: "center",
             position: "relative",
+            marginBottom: 22,
           }}
         >
           <span
@@ -277,21 +276,12 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
               lineHeight: 1.08,
               maxWidth: 880,
               color: "#ffffff",
-              background: "rgba(0,0,0,0.32)",
+              background: "rgba(0,0,0,0.45)",
               borderRadius: 999,
               padding: "14px 30px",
             }}
           >
             {textoCentral}
-          </span>
-          <span
-            style={{
-              marginTop: 18,
-              fontSize: 22,
-              color: mutedColor,
-            }}
-          >
-            Confirma cómo recibir tu pedido
           </span>
         </div>
 
