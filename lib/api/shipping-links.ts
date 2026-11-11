@@ -34,6 +34,7 @@ export type PublicShippingLinkPreview = {
   descripcion: string | null;
   colorPrimario: string;
   textoCentral: string | null;
+  escalaContenido: number;
   actualizadoAt: string | null;
 };
 

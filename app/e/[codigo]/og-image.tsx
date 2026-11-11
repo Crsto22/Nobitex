@@ -105,6 +105,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
     textColor === "#ffffff" ? "rgba(255,255,255,0.78)" : "rgba(17,24,39,0.72)";
   const overlayColor =
     textColor === "#ffffff" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.06)";
+  const escala = (preview?.escalaContenido ?? 100) / 100;
 
   return new ImageResponse(
     (
@@ -157,14 +158,14 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
         >
           <div
             style={{
-              width: 132,
-              height: 132,
-              borderRadius: 30,
+              width: Math.round(132 * escala),
+              height: Math.round(132 * escala),
+              borderRadius: Math.round(30 * escala),
               background: "#ffffff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: 16,
+              padding: Math.round(16 * escala),
               overflow: "hidden",
             }}
           >
@@ -172,12 +173,22 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
               <img
                 src={logo}
                 alt={business}
-                width={100}
-                height={100}
-                style={{ width: 100, height: 100, objectFit: "contain" }}
+                width={Math.round(100 * escala)}
+                height={Math.round(100 * escala)}
+                style={{
+                  width: Math.round(100 * escala),
+                  height: Math.round(100 * escala),
+                  objectFit: "contain",
+                }}
               />
             ) : (
-              <span style={{ fontSize: 60, fontWeight: 800, color: "#101D69" }}>
+              <span
+                style={{
+                  fontSize: Math.round(60 * escala),
+                  fontWeight: 800,
+                  color: "#101D69",
+                }}
+              >
                 {initial}
               </span>
             )}
@@ -191,7 +202,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           >
             <span
               style={{
-                fontSize: 22,
+                fontSize: Math.round(22 * escala),
                 fontWeight: 700,
                 letterSpacing: 4,
                 color: mutedColor,
@@ -201,7 +212,9 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             </span>
             <span
               style={{
-                fontSize: business.length > 22 ? 46 : 56,
+                fontSize: Math.round(
+                  (business.length > 22 ? 46 : 56) * escala,
+                ),
                 fontWeight: 800,
                 lineHeight: 1.05,
                 marginTop: 8,
@@ -225,7 +238,9 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
         >
           <span
             style={{
-              fontSize: textoCentral.length > 22 ? 52 : 66,
+              fontSize: Math.round(
+                (textoCentral.length > 22 ? 52 : 66) * escala,
+              ),
               fontWeight: 900,
               lineHeight: 1.08,
               maxWidth: 880,
@@ -236,7 +251,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           <span
             style={{
               marginTop: 18,
-              fontSize: 22,
+              fontSize: Math.round(22 * escala),
               color: mutedColor,
             }}
           >
@@ -255,7 +270,7 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: 18,
+                fontSize: Math.round(18 * escala),
                 fontWeight: 700,
                 letterSpacing: 3,
                 color: mutedColor,
@@ -263,7 +278,13 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             >
               PEDIDO
             </span>
-            <span style={{ fontSize: 42, fontWeight: 800, marginTop: 6 }}>
+            <span
+              style={{
+                fontSize: Math.round(42 * escala),
+                fontWeight: 800,
+                marginTop: 6,
+              }}
+            >
               {correlativo || "Enlace de envío"}
             </span>
           </div>
@@ -271,13 +292,15 @@ export async function buildShippingOgImage({ params }: ShippingOgImageProps) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              gap: Math.round(12 * escala),
               borderRadius: 999,
               background: overlayColor,
-              padding: "14px 26px",
+              padding: `${Math.round(14 * escala)}px ${Math.round(
+                26 * escala,
+              )}px`,
             }}
           >
-            <span style={{ fontSize: 22, fontWeight: 700 }}>
+            <span style={{ fontSize: Math.round(22 * escala), fontWeight: 700 }}>
               Formulario seguro con Nuvex
             </span>
           </div>

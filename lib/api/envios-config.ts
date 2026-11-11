@@ -66,6 +66,7 @@ export type EnvioPreviewConfig = {
   descripcion: string | null;
   colorPrimario: string;
   textoCentral: string | null;
+  escalaContenido: number;
   configurado: boolean;
   actualizadoAt: string | null;
 };
@@ -75,6 +76,7 @@ export type UpdateEnvioPreviewConfigPayload = {
   descripcion?: string | null;
   colorPrimario: string;
   textoCentral?: string | null;
+  escalaContenido: number;
 };
 
 export const enviosConfigApi = {

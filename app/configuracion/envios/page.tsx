@@ -68,6 +68,12 @@ const statusOptions: { label: string; value: EnvioStatusFilter }[] = [
   { label: "Inactivo", value: "inactive" },
 ];
 
+const envioPreviewEscalas = [
+  { label: "Compacto", value: 90 },
+  { label: "Normal", value: 100 },
+  { label: "Grande", value: 110 },
+];
+
 const dispatchWeekdays = [
   { value: 0, label: "D", full: "Domingo" },
   { value: 1, label: "L", full: "Lunes" },
@@ -120,7 +126,9 @@ export default function EnviosConfigPage() {
   const [previewDescripcion, setPreviewDescripcion] = useState("");
   const [previewTextoCentral, setPreviewTextoCentral] = useState("");
   const [previewColor, setPreviewColor] = useState("#101D69");
+  const [previewEscala, setPreviewEscala] = useState(100);
   const [savingPreview, setSavingPreview] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -202,6 +210,7 @@ export default function EnviosConfigPage() {
       setPreviewDescripcion(data.descripcion ?? "");
       setPreviewTextoCentral(data.textoCentral ?? "");
       setPreviewColor(data.colorPrimario);
+      setPreviewEscala(data.escalaContenido ?? 100);
     } catch {
       setPreview(null);
     }
@@ -338,12 +347,14 @@ export default function EnviosConfigPage() {
         descripcion: previewDescripcion.trim() || null,
         colorPrimario: previewColor,
         textoCentral: previewTextoCentral.trim() || null,
+        escalaContenido: previewEscala,
       });
       setPreview(updated);
       setPreviewTitulo(updated.titulo ?? "");
       setPreviewDescripcion(updated.descripcion ?? "");
       setPreviewTextoCentral(updated.textoCentral ?? "");
       setPreviewColor(updated.colorPrimario);
+      setPreviewEscala(updated.escalaContenido ?? 100);
       showToast({
         title: "Vista previa guardada",
         description: "Los nuevos enlaces usarán esta vista previa.",
@@ -548,181 +559,6 @@ export default function EnviosConfigPage() {
           </button>
         </div>
 
-        <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#25d366]/15 text-[#25d366]">
-                <EyeIcon size={22} weight="fill" />
-              </span>
-              <div>
-                <p className="text-sm font-black text-[var(--color-text)]">
-                  Vista previa del enlace
-                </p>
-                <p className="text-xs text-[var(--color-muted-foreground)]">
-                  Personaliza cómo se ve al compartir en WhatsApp
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => void savePreview()}
-              disabled={savingPreview}
-              className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {savingPreview ? "Guardando..." : "Guardar vista previa"}
-            </button>
-          </div>
-
-          <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] lg:items-start">
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="preview-titulo"
-                  className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-                >
-                  <span>Título del enlace</span>
-                  <span>{previewTitulo.length}/60</span>
-                </label>
-                <input
-                  id="preview-titulo"
-                  maxLength={60}
-                  value={previewTitulo}
-                  onChange={(event) => setPreviewTitulo(event.target.value)}
-                  placeholder={`${companyInfo?.nombreComercial ?? "Nuvex"} — Datos de envío`}
-                  className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="preview-descripcion"
-                  className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-                >
-                  <span>Descripción</span>
-                  <span>{previewDescripcion.length}/120</span>
-                </label>
-                <textarea
-                  id="preview-descripcion"
-                  rows={2}
-                  maxLength={120}
-                  value={previewDescripcion}
-                  onChange={(event) => setPreviewDescripcion(event.target.value)}
-                  placeholder="Completa tus datos de envío para tu pedido."
-                  className="min-h-[64px] w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-2 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="preview-texto-central"
-                  className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
-                >
-                  <span>Texto central de la imagen</span>
-                  <span>{previewTextoCentral.length}/40</span>
-                </label>
-                <input
-                  id="preview-texto-central"
-                  maxLength={40}
-                  value={previewTextoCentral}
-                  onChange={(event) => setPreviewTextoCentral(event.target.value)}
-                  placeholder="Registra tu envío"
-                  className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                />
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
-                  Color de fondo
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {envioPreviewColors.map((color) => {
-                    const selected = previewColor === color.value;
-                    return (
-                      <button
-                        key={color.key}
-                        type="button"
-                        title={color.label}
-                        aria-label={color.label}
-                        aria-pressed={selected}
-                        onClick={() => setPreviewColor(color.value)}
-                        className={cn(
-                          "grid size-9 place-items-center rounded-full transition-transform",
-                          selected
-                            ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-sidebar-bg)]"
-                            : "",
-                        )}
-                        style={{ backgroundColor: color.value }}
-                      >
-                        {selected ? (
-                          <CheckCircleIcon
-                            size={16}
-                            weight="fill"
-                            className="text-white"
-                          />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-[#0b141a] p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="grid size-6 place-items-center rounded-full bg-[#25d366] text-[10px] font-black text-white">
-                  W
-                </span>
-                <p className="text-xs font-bold text-white/80">WhatsApp</p>
-              </div>
-              <div className="rounded-xl bg-[#e5ddd5] p-2">
-                <div className="rounded-lg bg-white p-1 shadow">
-                  <div
-                    className="flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-lg p-3 text-center"
-                    style={{ background: previewGradient(previewColor) }}
-                  >
-                    {companyInfo?.logoUrl ? (
-                      <Image
-                        src={companyInfo.logoUrl}
-                        alt={companyInfo.nombreComercial ?? "Logo"}
-                        width={44}
-                        height={44}
-                        unoptimized
-                        className="mb-2 h-11 w-11 rounded-xl bg-white object-contain p-1"
-                      />
-                    ) : null}
-                    <span
-                      className="text-lg font-black leading-tight"
-                      style={{ color: previewTextColor(previewColor) }}
-                    >
-                      {previewTextoCentral || "Registra tu envío"}
-                    </span>
-                  </div>
-                  <div className="px-1 pt-2">
-                    <p className="text-[10px] text-[#7f8c8d]">nuvex.app</p>
-                    <p className="truncate text-sm font-bold text-[#1f1f23]">
-                      {previewTitulo ||
-                        `${companyInfo?.nombreComercial ?? "Nuvex"} — Datos de envío`}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[#7f8c8d]">
-                      {previewDescripcion ||
-                        "Completa tus datos de envío para tu pedido."}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-1 flex justify-end pr-1 text-[10px] text-[#54656f]">
-                  10:42
-                </div>
-              </div>
-              {preview?.actualizadoAt ? (
-                <p className="mt-2 text-[10px] text-white/50">
-                  Última actualización:{" "}
-                  {new Date(preview.actualizadoAt).toLocaleString("es-PE", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
         <div className="sticky -top-4 z-30 -mx-4 flex flex-col gap-3 bg-white px-4 py-2 lg:-mx-6 lg:flex-row lg:items-center lg:px-6 dark:bg-[var(--color-background)]">
           <label className="relative flex-1">
             <MagnifyingGlassIcon
@@ -770,6 +606,15 @@ export default function EnviosConfigPage() {
               {!despacho?.configurado ? (
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#f59e0b]" />
               ) : null}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPreviewModalOpen(true)}
+              aria-label="Vista previa del enlace"
+              title="Vista previa del enlace"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[var(--color-input-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <EyeIcon size={20} weight="bold" />
             </button>
           </div>
         </div>
@@ -1286,6 +1131,42 @@ export default function EnviosConfigPage() {
       </Modal>
 
       <Modal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        title="Vista previa del enlace"
+        size="xl"
+      >
+        <div className="space-y-5">
+          <EnvioPreviewFields
+            idPrefix="modal"
+            companyLogoUrl={companyInfo?.logoUrl ?? null}
+            companyName={companyInfo?.nombreComercial ?? null}
+            titulo={previewTitulo}
+            descripcion={previewDescripcion}
+            textoCentral={previewTextoCentral}
+            color={previewColor}
+            escala={previewEscala}
+            lastUpdated={preview?.actualizadoAt ?? null}
+            onTituloChange={setPreviewTitulo}
+            onDescripcionChange={setPreviewDescripcion}
+            onTextoCentralChange={setPreviewTextoCentral}
+            onColorChange={setPreviewColor}
+            onEscalaChange={setPreviewEscala}
+          />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void savePreview()}
+              disabled={savingPreview}
+              className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[var(--color-primary)] px-4 text-xs font-circular-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {savingPreview ? "Guardando..." : "Guardar vista previa"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
         isOpen={direccionModal !== null}
         onClose={() => setDireccionModal(null)}
         title="Dirección de recojo"
@@ -1435,6 +1316,218 @@ function DropdownFilter({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function EnvioPreviewFields({
+  idPrefix,
+  companyLogoUrl,
+  companyName,
+  titulo,
+  descripcion,
+  textoCentral,
+  color,
+  escala,
+  lastUpdated,
+  onTituloChange,
+  onDescripcionChange,
+  onTextoCentralChange,
+  onColorChange,
+  onEscalaChange,
+}: {
+  idPrefix: string;
+  companyLogoUrl?: string | null;
+  companyName?: string | null;
+  titulo: string;
+  descripcion: string;
+  textoCentral: string;
+  color: string;
+  escala: number;
+  lastUpdated?: string | null;
+  onTituloChange: (value: string) => void;
+  onDescripcionChange: (value: string) => void;
+  onTextoCentralChange: (value: string) => void;
+  onColorChange: (value: string) => void;
+  onEscalaChange: (value: number) => void;
+}) {
+  return (
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] lg:items-start">
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor={`${idPrefix}-titulo`}
+            className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+          >
+            <span>Título del enlace</span>
+            <span>{titulo.length}/60</span>
+          </label>
+          <input
+            id={`${idPrefix}-titulo`}
+            maxLength={60}
+            value={titulo}
+            onChange={(event) => onTituloChange(event.target.value)}
+            placeholder={`${companyName ?? "Nuvex"} — Datos de envío`}
+            className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`${idPrefix}-descripcion`}
+            className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+          >
+            <span>Descripción</span>
+            <span>{descripcion.length}/120</span>
+          </label>
+          <textarea
+            id={`${idPrefix}-descripcion`}
+            rows={2}
+            maxLength={120}
+            value={descripcion}
+            onChange={(event) => onDescripcionChange(event.target.value)}
+            placeholder="Completa tus datos de envío para tu pedido."
+            className="min-h-[64px] w-full resize-none rounded-[14px] bg-[var(--color-input-bg)] px-4 py-2 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`${idPrefix}-texto-central`}
+            className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-[var(--color-muted-foreground)]"
+          >
+            <span>Texto central de la imagen</span>
+            <span>{textoCentral.length}/40</span>
+          </label>
+          <input
+            id={`${idPrefix}-texto-central`}
+            maxLength={40}
+            value={textoCentral}
+            onChange={(event) => onTextoCentralChange(event.target.value)}
+            placeholder="Registra tu envío"
+            className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+          />
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+            Color de fondo
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {envioPreviewColors.map((option) => {
+              const selected = color === option.value;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  title={option.label}
+                  aria-label={option.label}
+                  aria-pressed={selected}
+                  onClick={() => onColorChange(option.value)}
+                  className={cn(
+                    "grid size-9 place-items-center rounded-full transition-transform",
+                    selected
+                      ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-sidebar-bg)]"
+                      : "",
+                  )}
+                  style={{ backgroundColor: option.value }}
+                >
+                  {selected ? (
+                    <CheckCircleIcon
+                      size={16}
+                      weight="fill"
+                      className="text-white"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-bold text-[var(--color-muted-foreground)]">
+            Tamaño del contenido
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {envioPreviewEscalas.map((option) => {
+              const selected = escala === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => onEscalaChange(option.value)}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-sm font-circular-bold transition-colors",
+                    selected
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-[#0b141a] p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="grid size-6 place-items-center rounded-full bg-[#25d366] text-[10px] font-black text-white">
+            W
+          </span>
+          <p className="text-xs font-bold text-white/80">WhatsApp</p>
+        </div>
+        <div className="rounded-xl bg-[#e5ddd5] p-2">
+          <div className="rounded-lg bg-white p-1 shadow">
+            <div
+              className="flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-lg p-3 text-center"
+              style={{ background: previewGradient(color) }}
+            >
+              <div
+                className="flex flex-col items-center"
+                style={{ transform: `scale(${escala / 100})` }}
+              >
+                {companyLogoUrl ? (
+                  <Image
+                    src={companyLogoUrl}
+                    alt={companyName ?? "Logo"}
+                    width={44}
+                    height={44}
+                    unoptimized
+                    className="mb-2 h-11 w-11 rounded-xl bg-white object-contain p-1"
+                  />
+                ) : null}
+                <span
+                  className="text-lg font-black leading-tight"
+                  style={{ color: previewTextColor(color) }}
+                >
+                  {textoCentral || "Registra tu envío"}
+                </span>
+              </div>
+            </div>
+            <div className="px-1 pt-2">
+              <p className="text-[10px] text-[#7f8c8d]">nuvex.app</p>
+              <p className="truncate text-sm font-bold text-[#1f1f23]">
+                {titulo || `${companyName ?? "Nuvex"} — Datos de envío`}
+              </p>
+              <p className="mt-0.5 text-xs text-[#7f8c8d]">
+                {descripcion || "Completa tus datos de envío para tu pedido."}
+              </p>
+            </div>
+          </div>
+          <div className="mt-1 flex justify-end pr-1 text-[10px] text-[#54656f]">
+            10:42
+          </div>
+        </div>
+        {lastUpdated ? (
+          <p className="mt-2 text-[10px] text-white/50">
+            Última actualización:{" "}
+            {new Date(lastUpdated).toLocaleString("es-PE", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
