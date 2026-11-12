@@ -1,12 +1,14 @@
-import { authFetch } from "@/lib/api/auth-fetch";
+import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
 
 export type CashRegisterStatus = "abierta" | "cerrada";
 export type CashMovementType =
   | "apertura"
   | "venta"
+  | "cobranza"
   | "ingreso"
   | "retiro"
-  | "anulacion_venta";
+  | "anulacion_venta"
+  | "anulacion_cobranza";
 
 export type CashAmount = {
   metodoPagoId: string;
@@ -149,4 +151,45 @@ export const cashRegisterApi = {
   findOne(publicId: string) {
     return authFetch<CashRegisterSession>(`/cash-register/${publicId}`);
   },
+
+  downloadPdf(publicId: string, format: CashRegisterPdfFormat) {
+    const params = new URLSearchParams({ format });
+    return authBlobFetch(
+      `/cash-register/${encodeURIComponent(publicId)}/pdf?${params.toString()}`,
+    );
+  },
 };
+
+export type CashRegisterPdfFormat = "ticket80" | "a4";
+
+export async function downloadCashRegisterReport(
+  session: Pick<CashRegisterSession, "publicId" | "sucursal" | "openedAt">,
+  format: CashRegisterPdfFormat,
+) {
+  const blob = await cashRegisterApi.downloadPdf(session.publicId, format);
+  const slug =
+    session.sucursal.nombre
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "caja";
+  const date = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "America/Lima",
+  }).format(new Date(session.openedAt));
+  const suffix = format === "a4" ? "a4" : "80mm";
+
+  triggerBlobDownload(blob, `arqueo-caja-${slug}-${date}-${suffix}.pdf`);
+}
+
+function triggerBlobDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}

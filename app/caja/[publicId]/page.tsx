@@ -9,17 +9,27 @@ import {
   ArrowUpIcon,
   CalendarBlankIcon,
   CaretRightIcon,
+  ClipboardTextIcon,
   ClockIcon,
+  CreditCardIcon,
+  FilePdfIcon,
   LockKeyIcon,
+  MoneyIcon,
   ReceiptIcon,
+  ScalesIcon,
+  TrendUpIcon,
   UserCircleIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   cashRegisterApi,
+  downloadCashRegisterReport,
   type CashMovement,
+  type CashRegisterPaymentMethod,
+  type CashRegisterPdfFormat,
   type CashRegisterSession,
   type CashRegisterStatus,
 } from "@/lib/api/cash-register";
@@ -33,6 +43,47 @@ const statusConfig: Record<
   cerrada: { label: "Cerrada", bg: "bg-[#6b7280]", text: "text-white" },
 };
 
+const paymentMethodIconConfig: Record<
+  string,
+  { src: string; label: string; bgColor: string }
+> = {
+  efectivo: {
+    src: "/svg/metodo-pago/efectivo.png",
+    label: "Efectivo",
+    bgColor: "bg-[#10b981]",
+  },
+  yape: {
+    src: "/svg/metodo-pago/Yape.svg",
+    label: "Yape",
+    bgColor: "bg-[#a221af]",
+  },
+  plin: {
+    src: "/svg/metodo-pago/Plin.svg",
+    label: "Plin",
+    bgColor: "bg-[#00E2CE]",
+  },
+  transferencia: {
+    src: "/svg/metodo-pago/transferencia.png",
+    label: "Transferencia",
+    bgColor: "bg-[#3b82f6]",
+  },
+  tarjeta: {
+    src: "/svg/metodo-pago/transferencia.png",
+    label: "Tarjeta",
+    bgColor: "bg-[#6366f1]",
+  },
+};
+
+function getPaymentMethodIcon(method: CashRegisterPaymentMethod | null) {
+  const key =
+    method?.codigo?.trim().toLowerCase() ||
+    method?.nombreKey?.trim().toLowerCase() ||
+    method?.nombre?.trim().toLowerCase() ||
+    "";
+
+  return paymentMethodIconConfig[key] ?? null;
+}
+
 const movementConfig = {
   apertura: {
     label: "Apertura",
@@ -43,6 +94,11 @@ const movementConfig = {
     label: "Venta",
     icon: ReceiptIcon,
     tone: "text-[#10b981] bg-[#10b981]/10",
+  },
+  cobranza: {
+    label: "Cobranza",
+    icon: ArrowUpIcon,
+    tone: "text-[#0ea5e9] bg-[#0ea5e9]/10",
   },
   ingreso: {
     label: "Ingreso",
@@ -56,6 +112,11 @@ const movementConfig = {
   },
   anulacion_venta: {
     label: "Anulacion",
+    icon: ArrowDownIcon,
+    tone: "text-[#ef4444] bg-[#ef4444]/10",
+  },
+  anulacion_cobranza: {
+    label: "Anulacion cobranza",
     icon: ArrowDownIcon,
     tone: "text-[#ef4444] bg-[#ef4444]/10",
   },
@@ -84,8 +145,11 @@ export default function CajaDetallePage() {
   const router = useRouter();
   const params = useParams();
   const publicId = params.publicId as string;
+  const { showToast } = useSystemToast();
   const [session, setSession] = useState<CashRegisterSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [downloadingReport, setDownloadingReport] =
+    useState<CashRegisterPdfFormat | null>(null);
 
   useEffect(() => {
     if (!publicId) return;
@@ -158,6 +222,23 @@ export default function CajaDetallePage() {
   const status = statusConfig[session.estado];
   const expected = session.montoEsperadoActual ?? session.montoEsperado;
 
+  const handleDownloadReport = async (format: CashRegisterPdfFormat) => {
+    setDownloadingReport(format);
+
+    try {
+      await downloadCashRegisterReport(session, format);
+    } catch (error) {
+      showToast({
+        title: "No se pudo descargar el informe",
+        description:
+          error instanceof Error ? error.message : "Intentalo nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setDownloadingReport(null);
+    }
+  };
+
   return (
     <DashboardShell
       headerTitle={
@@ -186,25 +267,58 @@ export default function CajaDetallePage() {
               {session.sucursal.nombre}
             </p>
           </div>
-          <span
-            className={cn(
-              "inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-circular-bold",
-              status.bg,
-              status.text,
-            )}
-          >
-            {status.label}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={downloadingReport === "ticket80"}
+              onClick={() => handleDownloadReport("ticket80")}
+              className="flex h-9 items-center gap-2 rounded-[12px] bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <ReceiptIcon size={15} weight="bold" />
+              {downloadingReport === "ticket80"
+                ? "Descargando..."
+                : "Ticket 80 mm"}
+            </button>
+            <button
+              type="button"
+              disabled={downloadingReport === "a4"}
+              onClick={() => handleDownloadReport("a4")}
+              className="flex h-9 items-center gap-2 rounded-[12px] bg-[var(--color-card)] px-3 text-xs font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <FilePdfIcon size={15} weight="bold" />
+              {downloadingReport === "a4" ? "Descargando..." : "Informe A4"}
+            </button>
+            <span
+              className={cn(
+                "inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-circular-bold",
+                status.bg,
+                status.text,
+              )}
+            >
+              {status.label}
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DetailCard label="Inicial" value={formatMoney(session.montoInicial)} />
-          <DetailCard label="Esperado" value={formatMoney(expected)} tone="success" />
           <DetailCard
+            icon={<MoneyIcon size={22} weight="fill" />}
+            label="Inicial"
+            value={formatMoney(session.montoInicial)}
+          />
+          <DetailCard
+            icon={<TrendUpIcon size={22} weight="fill" />}
+            label="Esperado"
+            value={formatMoney(expected)}
+            tone="success"
+          />
+          <DetailCard
+            icon={<ClipboardTextIcon size={22} weight="fill" />}
             label="Declarado"
             value={formatMoney(session.montoDeclarado)}
           />
           <DetailCard
+            icon={<ScalesIcon size={22} weight="fill" />}
             label="Diferencia"
             value={formatMoney(session.diferencia)}
             tone={Number(session.diferencia ?? 0) === 0 ? "default" : "warning"}
@@ -242,19 +356,45 @@ export default function CajaDetallePage() {
               </p>
               <div className="space-y-2">
                 {(session.totalesPorMetodoPago ?? []).length > 0 ? (
-                  session.totalesPorMetodoPago!.map((item) => (
-                    <div
-                      key={item.metodoPago?.id ?? "sin-metodo"}
-                      className="flex items-center justify-between rounded-xl bg-[var(--color-card)] px-4 py-3"
-                    >
-                      <span className="text-sm font-circular-bold text-[var(--color-text)]">
-                        {item.metodoPago?.nombre ?? "Sin metodo"}
-                      </span>
-                      <span className="text-sm font-circular-bold text-[var(--color-text)]">
-                        {formatMoney(item.monto)}
-                      </span>
-                    </div>
-                  ))
+                  session.totalesPorMetodoPago!.map((item) => {
+                    const icon = getPaymentMethodIcon(item.metodoPago);
+
+                    return (
+                      <div
+                        key={item.metodoPago?.id ?? "sin-metodo"}
+                        className="flex items-center justify-between rounded-xl bg-[var(--color-card)] px-4 py-3"
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          {icon ? (
+                            <span
+                              className={cn(
+                                "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                                icon.bgColor,
+                              )}
+                            >
+                              <Image
+                                src={icon.src}
+                                width={28}
+                                height={28}
+                                alt={icon.label}
+                                className="h-6 w-6 object-contain"
+                              />
+                            </span>
+                          ) : (
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                              <CreditCardIcon size={18} weight="fill" />
+                            </span>
+                          )}
+                          <span className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+                            {item.metodoPago?.nombre ?? "Sin metodo"}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm font-circular-bold text-[var(--color-text)]">
+                          {formatMoney(item.monto)}
+                        </span>
+                      </div>
+                    );
+                  })
                 ) : (
                   <p className="rounded-xl bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-muted-foreground)]">
                     No hay movimientos por metodo.
@@ -287,10 +427,12 @@ export default function CajaDetallePage() {
 }
 
 function DetailCard({
+  icon,
   label,
   value,
   tone = "default",
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string;
   tone?: "default" | "success" | "warning";
@@ -301,15 +443,38 @@ function DetailCard({
       : tone === "warning"
         ? "text-[#f59e0b]"
         : "text-[var(--color-text)]";
+  const iconTone =
+    tone === "success"
+      ? "bg-[#10b981]/10 text-[#10b981]"
+      : tone === "warning"
+        ? "bg-[#f59e0b]/10 text-[#f59e0b]"
+        : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]";
 
   return (
     <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
-      <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-        {label}
-      </p>
-      <p className={cn("mt-2 text-2xl font-circular-bold leading-none", color)}>
-        {value}
-      </p>
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+            iconTone,
+          )}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+            {label}
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-2xl font-circular-bold leading-none",
+              color,
+            )}
+          >
+            {value}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

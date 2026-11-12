@@ -17,6 +17,8 @@ import {
   ClockIcon,
   DotsThreeVerticalIcon,
   EyeIcon,
+  FilePdfIcon,
+  FileTextIcon,
   LockKeyIcon,
   PlusIcon,
   ReceiptIcon,
@@ -36,7 +38,9 @@ import { CalendarInput } from "@/components/ui/calendar-input";
 import { branchesApi, type Branch } from "@/lib/api/branches";
 import {
   cashRegisterApi,
+  downloadCashRegisterReport,
   type CashMovement,
+  type CashRegisterPdfFormat,
   type CashRegisterSession,
   type CashRegisterStatus,
 } from "@/lib/api/cash-register";
@@ -66,6 +70,11 @@ const movementConfig = {
     icon: ReceiptIcon,
     tone: "text-[#10b981] bg-[#10b981]/10",
   },
+  cobranza: {
+    label: "Cobranza",
+    icon: ArrowUpIcon,
+    tone: "text-[#0ea5e9] bg-[#0ea5e9]/10",
+  },
   ingreso: {
     label: "Ingreso",
     icon: ArrowUpIcon,
@@ -78,6 +87,11 @@ const movementConfig = {
   },
   anulacion_venta: {
     label: "Anulacion",
+    icon: ArrowDownIcon,
+    tone: "text-[#ef4444] bg-[#ef4444]/10",
+  },
+  anulacion_cobranza: {
+    label: "Anulacion cobranza",
     icon: ArrowDownIcon,
     tone: "text-[#ef4444] bg-[#ef4444]/10",
   },
@@ -127,6 +141,9 @@ export default function CajaPage() {
   const [isBranchFilterOpen, setIsBranchFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState<string | null>(
+    null,
+  );
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [detailSession, setDetailSession] =
     useState<CashRegisterSession | null>(null);
@@ -209,6 +226,27 @@ export default function CajaPage() {
   const handleSessionUpdated = (session: CashRegisterSession) => {
     setDetailSession(session);
     loadSessions();
+  };
+
+  const handleDownloadReport = async (
+    session: CashRegisterSession,
+    format: CashRegisterPdfFormat,
+  ) => {
+    setOpenMenuId(null);
+    setDownloadingReport(`${session.publicId}:${format}`);
+
+    try {
+      await downloadCashRegisterReport(session, format);
+    } catch (error) {
+      showToast({
+        title: "No se pudo descargar el informe",
+        description:
+          error instanceof Error ? error.message : "Intentalo nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setDownloadingReport(null);
+    }
   };
 
   return (
@@ -423,7 +461,7 @@ export default function CajaPage() {
                       <DotsThreeVerticalIcon size={20} weight="bold" />
                     </button>
                     {openMenuId === session.publicId ? (
-                      <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+                      <div className="absolute right-0 top-full z-20 mt-2 w-60 rounded-xl bg-[var(--color-card)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
                         <button
                           type="button"
                           onClick={() => {
@@ -434,6 +472,30 @@ export default function CajaPage() {
                         >
                           <EyeIcon size={16} weight="bold" />
                           Ver mas
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            downloadingReport === `${session.publicId}:ticket80`
+                          }
+                          onClick={() =>
+                            handleDownloadReport(session, "ticket80")
+                          }
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <FilePdfIcon size={16} weight="bold" />
+                          Descargar ticket 80 mm
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            downloadingReport === `${session.publicId}:a4`
+                          }
+                          onClick={() => handleDownloadReport(session, "a4")}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <FileTextIcon size={16} weight="bold" />
+                          Descargar informe A4
                         </button>
                         {session.estado === "abierta" ? (
                           <button
