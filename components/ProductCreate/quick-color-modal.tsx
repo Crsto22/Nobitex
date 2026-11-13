@@ -89,28 +89,6 @@ export function QuickColorModal({
           </div>
         </div>
 
-        <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-          <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-            Vista previa
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <div
-              className="h-12 w-12 rounded-full ring-1 ring-black/10"
-              style={{
-                backgroundColor: isValidHex(hex) ? normalizeHex(hex) : "#111827",
-              }}
-            />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-[var(--color-text)]">
-                {name.trim() || "Nombre del color"}
-              </p>
-              <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)] font-circular-regular">
-                {normalizeHex(hex)}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {error ? <p className="text-sm font-circular-regular text-[#d9480f]">{error}</p> : null}
         <div className="flex gap-3 pt-1">
           <Button

@@ -1,30 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   useEffect,
-  useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import type { Icon } from "@phosphor-icons/react";
 import {
-  BarcodeIcon,
   BuildingsIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
   CheckCircleIcon,
-  DatabaseIcon,
+  HouseIcon,
   MapPinIcon,
   PackageIcon,
-  QrCodeIcon,
-  ReceiptIcon,
-  StorefrontIcon,
   TagIcon,
   UsersIcon,
-  XCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { LoadingScreen } from "@/components/loading-screen";
@@ -33,35 +25,12 @@ import { UbigeoSelect } from "@/components/ui/ubigeo-select";
 import { branchesApi, type BranchType } from "@/lib/api/branches";
 import { brandsApi } from "@/lib/api/brands";
 import { categoriesApi } from "@/lib/api/categories";
-import {
-  plansApi,
-  type AttendancePricing,
-  type PlanDefinition,
-} from "@/lib/api/plans";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { getUserDisplayName } from "@/lib/auth/session";
-import { formatCurrency } from "@/lib/intl";
 import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
 
-type OnboardingStage =
-  | "pos-plan"
-  | "attendance-plan"
-  | "branch"
-  | "catalog"
-  | "product";
+type OnboardingStage = "branch" | "catalog" | "product";
 type CatalogKind = "category" | "brand";
-
-type PlanCapability = {
-  label: string;
-  value: string;
-  icon: Icon;
-};
-
-type PlanFeatureItem = {
-  label: string;
-  included: boolean;
-  isNew?: boolean;
-};
 
 const initialBranch = {
   nombre: "",
@@ -70,16 +39,11 @@ const initialBranch = {
   direccion: "",
 };
 
-const includedAttendanceEmployees = 5;
-const includedAttendanceQrPoints = 1;
-const defaultPosTrialDays = 30;
-
 export default function OnboardingPage() {
   const router = useRouter();
   const { showToast } = useSystemToast();
   const {
     user,
-    companyInfo,
     currentPlan,
     setupStatus,
     isLoading,
@@ -88,17 +52,11 @@ export default function OnboardingPage() {
     refreshSetupStatus,
     logout,
   } = useAuth();
-  const [stage, setStage] = useState<OnboardingStage>("pos-plan");
+  const [stage, setStage] = useState<OnboardingStage>("branch");
   const [branchCreated, setBranchCreated] = useState(false);
   const [branch, setBranch] = useState(initialBranch);
   const [isSavingBranch, setIsSavingBranch] = useState(false);
   const [branchError, setBranchError] = useState("");
-  const [plans, setPlans] = useState<PlanDefinition[]>([]);
-  const [posTrialDays, setPosTrialDays] = useState<number | null>(null);
-  const [attendancePricing, setAttendancePricing] =
-    useState<AttendancePricing | null>(null);
-  const [requestedEmployees, setRequestedEmployees] = useState(0);
-  const [requestedQrPoints, setRequestedQrPoints] = useState(0);
   const [catalogValues, setCatalogValues] = useState({
     category: "",
     brand: "",
@@ -113,8 +71,6 @@ export default function OnboardingPage() {
 
   const isOwner = user?.roles.includes("OWNER") ?? false;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
-  const companyName =
-    companyInfo?.nombreComercial ?? user?.empresaNombreComercial ?? "Mi empresa";
   const moduleKeys = [
     ...(user?.moduleKeys ?? []),
     ...(currentPlan?.effectiveModuleKeys ?? []),
@@ -136,31 +92,6 @@ export default function OnboardingPage() {
     : Boolean(setupStatus && !setupStatus.requiresBranch);
   const isExpired =
     currentPlan?.status === "expired" || user?.planStatus === "expired";
-
-  useEffect(() => {
-    let mounted = true;
-
-    void Promise.all([plansApi.findAll(), plansApi.attendancePricing()])
-      .then(([catalog, pricing]) => {
-        if (!mounted) return;
-        const pruebaPlan = catalog.find((plan) => plan.code === "prueba");
-        setPosTrialDays(pruebaPlan?.trialDays ?? null);
-        setPlans(catalog.filter(isPosPlan));
-        setAttendancePricing(pricing);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        showToast({
-          title: "No se pudo cargar planes",
-          description: "Podras continuar con la prueba y solicitar planes despues.",
-          variant: "error",
-        });
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [showToast]);
 
   useEffect(() => {
     if (isLoading || isSetupLoading) return;
@@ -226,14 +157,6 @@ export default function OnboardingPage() {
       />
     );
   }
-
-  const goAfterPosPlan = () => {
-    setStage(flowKind === "both" ? "attendance-plan" : "branch");
-  };
-
-  const goAfterAttendancePlan = () => {
-    setStage("branch");
-  };
 
   const createBranch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -316,75 +239,62 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-dvh overflow-y-auto bg-[var(--color-background)] px-3 py-6 sm:px-4 lg:px-6 lg:py-10">
-      <div className="mx-auto w-full max-w-7xl">
-        <header className="mb-6 flex items-center justify-between gap-4">
-          <Image
-            src="/Logo/Nuvex.png"
-            alt="Nuvex"
-            width={142}
-            height={44}
-            className="h-10 w-auto object-contain"
-            priority
-          />
-          <div className="flex items-center gap-2">
-            {stageFlow.map((item, index) => (
-              <span
-                key={item}
-                className={`h-2.5 rounded-full transition-colors ${
-                  activeStage === item
-                    ? "w-8 bg-[var(--color-primary)]"
-                    : index < currentStep - 1
-                      ? "w-2.5 bg-[#18b981]"
-                      : "w-2.5 bg-[var(--color-border)]"
-                }`}
+    <main className="min-h-dvh bg-[var(--color-sidebar-bg)]">
+      <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(380px,480px)]">
+        <section className="flex min-h-dvh flex-col bg-[var(--color-sidebar-bg)] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="mb-6 flex w-full items-center justify-between gap-4">
+            <div className="lg:hidden">
+              <Image
+                src="/Logo/logopng.webp"
+                alt="Nuvex"
+                width={96}
+                height={22}
+                className="h-auto w-24"
+                style={{ width: "auto", height: "auto" }}
+                priority
               />
-            ))}
-          </div>
-        </header>
-
-        <section className="mb-5 rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-circular-bold text-[var(--color-primary)]">
-                Paso {currentStep} de {stageFlow.length}
-              </p>
-              <h1 className="mt-1 text-2xl font-circular-bold text-[var(--color-text)] sm:text-3xl text-fixed-2xl">
-                Bienvenido, {getUserDisplayName(user)}
-              </h1>
             </div>
-            <div
-              className="nuvex-mascot nuvex-mascot--happy shrink-0 self-center"
-              aria-hidden="true"
-            />
+            <div className="flex items-center gap-2">
+              {stageFlow.map((item, index) => (
+                <span
+                  key={item}
+                  className={`h-2.5 rounded-full transition-colors ${
+                    activeStage === item
+                      ? "w-8 bg-[var(--color-primary)]"
+                      : index < currentStep - 1
+                        ? "w-2.5 bg-[#18b981]"
+                        : "w-2.5 bg-[var(--color-border)]"
+                  }`}
+                />
+              ))}
+            </div>
+            <Link
+              href="https://nuvex.pe"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Ir a nuvex.pe"
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <HouseIcon size={20} weight="bold" />
+            </Link>
           </div>
-        </section>
 
-        {activeStage === "pos-plan" ? (
-          <PosPlanStep
-            plans={plans}
-            companyName={companyName}
-            trialDays={posTrialDays ?? defaultPosTrialDays}
-            onUseTrial={goAfterPosPlan}
-          />
-        ) : null}
+          <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
+            <section className="mb-1 rounded-2xl p-5 sm:p-6">
+              <div>
+                <p className="text-xs font-circular-regular text-[var(--color-primary)]">
+                  Paso {currentStep} de {stageFlow.length}
+                </p>
+                <h1 className="mt-1 text-2xl font-medium text-[var(--color-text)] text-fixed-xl">
+                  Bienvenido, {getUserDisplayName(user)}
+                </h1>
+              </div>
+            </section>
 
-        {activeStage === "attendance-plan" ? (
-          <AttendancePlanStep
-            companyName={companyName}
-            pricing={attendancePricing}
-            employees={requestedEmployees}
-            qrPoints={requestedQrPoints}
-            onEmployeesChange={setRequestedEmployees}
-            onQrPointsChange={setRequestedQrPoints}
-            onUseTrial={goAfterAttendancePlan}
-          />
-        ) : null}
-
-        {activeStage === "branch" ? (
+            {activeStage === "branch" ? (
           <form
             onSubmit={createBranch}
-            className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6"
+            className="onboarding-step rounded-2xl p-5 sm:p-6"
           >
             <SectionTitle
               icon={<BuildingsIcon size={22} weight="fill" />}
@@ -412,14 +322,6 @@ export default function OnboardingPage() {
                   setBranch((current) => ({ ...current, nombre: value }))
                 }
               />
-              <div className="block">
-                <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
-                  Tipo
-                </span>
-                <span className="flex h-11 w-full items-center rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)]">
-                  {branchType === "asistencia" ? "Asistencia" : "Tienda POS"}
-                </span>
-              </div>
               <UbigeoSelect
                 value={branch.ubigeo}
                 onSelect={(item) =>
@@ -430,15 +332,17 @@ export default function OnboardingPage() {
                   }))
                 }
               />
-              <Field
-                label="Direccion"
-                value={branch.direccion}
-                placeholder="Av. Principal 123"
-                onChange={(value) =>
-                  setBranch((current) => ({ ...current, direccion: value }))
-                }
-                icon={<MapPinIcon size={16} />}
-              />
+              <div className="sm:col-span-2">
+                <Field
+                  label="Direccion"
+                  value={branch.direccion}
+                  placeholder="Av. Principal 123"
+                  onChange={(value) =>
+                    setBranch((current) => ({ ...current, direccion: value }))
+                  }
+                  icon={<MapPinIcon size={16} />}
+                />
+              </div>
             </div>
             {branchError ? (
               <p className="mt-4 text-sm text-[#dc2626]">{branchError}</p>
@@ -452,7 +356,7 @@ export default function OnboardingPage() {
         ) : null}
 
         {activeStage === "catalog" ? (
-          <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
+          <section className="onboarding-step rounded-2xl p-5 sm:p-6">
             <SectionTitle
               icon={<PackageIcon size={22} weight="fill" />}
               title="Prepara tu catalogo"
@@ -489,7 +393,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setStage("product")}
-                className="h-11 rounded-[14px] px-5 text-sm font-circular-bold text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]"
+                className="h-11 rounded-2xl px-5 text-sm font-circular-bold text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]"
               >
                 Omitir por ahora
               </button>
@@ -501,7 +405,7 @@ export default function OnboardingPage() {
         ) : null}
 
         {activeStage === "product" ? (
-          <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-6 text-center shadow-sm sm:p-10">
+          <section className="onboarding-step rounded-2xl p-6 text-center sm:p-10">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#e8f1ff] text-[#2563eb]">
               <PackageIcon size={28} weight="fill" />
             </div>
@@ -512,7 +416,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => router.replace("/dashboard")}
-                className="h-11 rounded-[14px] px-5 text-sm font-circular-bold text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]"
+                className="h-11 rounded-2xl px-5 text-sm font-circular-bold text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]"
               >
                 Ir al dashboard
               </button>
@@ -527,6 +431,31 @@ export default function OnboardingPage() {
             </div>
           </section>
         ) : null}
+          </div>
+        </section>
+
+        <aside className="login-dots-bg relative hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 lg:sticky lg:top-0 lg:flex xl:px-10">
+          <div className="flex w-full shrink-0 items-center justify-start">
+            <Image
+              src="/Logo/nuvex_logo.svg"
+              alt="Nuvex"
+              width={160}
+              height={54}
+              className="h-auto w-[160px]"
+              priority
+            />
+          </div>
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <Image
+              src="/img/onboarding.webp"
+              alt="Onboarding"
+              width={520}
+              height={520}
+              className="h-auto w-full max-w-[420px] object-contain"
+              priority
+            />
+          </div>
+        </aside>
       </div>
       <style jsx>{`
         .onboarding-step {
@@ -554,496 +483,6 @@ export default function OnboardingPage() {
   );
 }
 
-function PosPlanStep({
-  plans,
-  companyName,
-  trialDays,
-  onUseTrial,
-}: {
-  plans: PlanDefinition[];
-  companyName?: string | null;
-  trialDays: number;
-  onUseTrial: () => void;
-}) {
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [slide, setSlide] = useState(0);
-  const visiblePlans = plans.slice(0, 4);
-  const totalCards = visiblePlans.length + 1;
-
-  const handleCarouselScroll = () => {
-    const container = carouselRef.current;
-    if (!container) return;
-    let closest = 0;
-    let minDistance = Infinity;
-    Array.from(container.children).forEach((child, index) => {
-      const element = child as HTMLElement;
-      const distance = Math.abs(element.offsetLeft - container.scrollLeft);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closest = index;
-      }
-    });
-    setSlide(closest);
-  };
-
-  const scrollToCard = (index: number) => {
-    const container = carouselRef.current;
-    if (!container) return;
-    const target = Math.max(0, Math.min(totalCards - 1, index));
-    const child = container.children[target] as HTMLElement | undefined;
-    if (child) {
-      container.scrollTo({ left: child.offsetLeft, behavior: "smooth" });
-    }
-    setSlide(target);
-  };
-
-  return (
-    <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
-      <SectionTitle
-        icon={<StorefrontIcon size={22} weight="fill" />}
-        title="Elige tu plan POS"
-        badge="Primer paso"
-      />
-      <div
-        ref={carouselRef}
-        onScroll={handleCarouselScroll}
-        className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:pb-0 xl:grid-cols-5"
-      >
-        <div className="flex w-[82%] shrink-0 snap-center md:w-auto md:shrink">
-          <PlanChoiceCard
-            title="Prueba"
-            description={`Conoce todas las funciones de Nuvex durante ${trialDays} días gratis.`}
-            price="S/ 0.00"
-            capabilities={[
-              { label: "Tiendas", value: "1", icon: StorefrontIcon },
-              { label: "Almacenes", value: "5", icon: BuildingsIcon },
-              { label: "Usuarios", value: "1", icon: UsersIcon },
-              { label: "Productos", value: "50", icon: PackageIcon },
-              {
-                label: "Comprobantes",
-                value: "100 / prueba",
-                icon: ReceiptIcon,
-              },
-              {
-                label: "Consultas DNI/RUC",
-                value: "20 / prueba",
-                icon: DatabaseIcon,
-              },
-            ]}
-            features={[
-              { label: "Ventas POS", included: true },
-              { label: "Caja", included: true },
-              { label: "Catalogo, stock y Kardex", included: true },
-            ]}
-            actionLabel={`${trialDays} días gratis`}
-            actionVariant="primary"
-            onSelect={onUseTrial}
-          />
-        </div>
-        {visiblePlans.map((plan) => (
-          <div
-            key={plan.code}
-            className="flex w-[82%] shrink-0 snap-center md:w-auto md:shrink"
-          >
-            <PlanChoiceCard
-              title={plan.name}
-              description={getPlanDescription(plan.code)}
-              price={formatCurrency(plan.priceMonthly)}
-              period="/ mes"
-              popular={plan.code === "emprendedor"}
-              capabilities={getPosCapabilities(plan)}
-              features={getPosFeatureItems(plan)}
-              actionLabel="Solicitar por WhatsApp"
-              actionVariant="whatsapp"
-              href={buildWhatsAppUrl([
-                "Hola, quiero solicitar un plan POS para Nuvex.",
-                `Empresa: ${companyName ?? "-"}`,
-                `Plan: ${plan.name}`,
-                `Precio mensual: ${formatCurrency(plan.priceMonthly)}`,
-              ])}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 flex items-center justify-center gap-4 md:hidden">
-        <button
-          type="button"
-          aria-label="Plan anterior"
-          onClick={() => scrollToCard(slide - 1)}
-          disabled={slide === 0}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-primary)] text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <CaretLeftIcon size={18} weight="bold" />
-        </button>
-        <span className="text-sm font-circular-bold text-[var(--color-primary)]">
-          {slide + 1} / {totalCards}
-        </span>
-        <button
-          type="button"
-          aria-label="Plan siguiente"
-          onClick={() => scrollToCard(slide + 1)}
-          disabled={slide >= totalCards - 1}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-primary)] text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <CaretRightIcon size={18} weight="bold" />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function AttendancePlanStep({
-  companyName,
-  pricing,
-  employees,
-  qrPoints,
-  onEmployeesChange,
-  onQrPointsChange,
-  onUseTrial,
-}: {
-  companyName?: string | null;
-  pricing: AttendancePricing | null;
-  employees: number;
-  qrPoints: number;
-  onEmployeesChange: (value: number) => void;
-  onQrPointsChange: (value: number) => void;
-  onUseTrial: () => void;
-}) {
-  const employeePrice = Number(pricing?.employeeUnitPrice ?? 0);
-  const qrPrice = Number(pricing?.qrPointUnitPrice ?? 0);
-  const total = employees * employeePrice + qrPoints * qrPrice;
-
-  return (
-    <section className="onboarding-step rounded-[8px] bg-[var(--color-card)] p-5 shadow-sm sm:p-6">
-      <SectionTitle
-        icon={<QrCodeIcon size={22} weight="fill" />}
-        title="Elige tu plan de asistencias"
-        badge="Asistencias"
-      />
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <PlanChoiceCard
-          title="Prueba"
-          description="Controla tus primeras marcaciones sin costo inicial."
-          price="S/ 0.00"
-          capabilities={[
-            {
-              label: "Trabajadores",
-              value: String(includedAttendanceEmployees),
-              icon: UsersIcon,
-            },
-            {
-              label: "Puntos QR",
-              value: String(includedAttendanceQrPoints),
-              icon: QrCodeIcon,
-            },
-            {
-              label: "Consultas DNI/RUC",
-              value: "20 / prueba",
-              icon: DatabaseIcon,
-            },
-          ]}
-          features={[
-            { label: "Marcaje QR", included: true },
-            { label: "Dashboard de asistencia", included: true },
-            { label: "Reportes", included: true },
-          ]}
-          actionLabel="7 dias de prueba"
-          actionVariant="primary"
-          onSelect={onUseTrial}
-        />
-
-        <div className="rounded-[8px] bg-[var(--color-input-bg)] p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-circular-bold text-[var(--color-text)]">
-                Solicitar mayor capacidad
-              </h3>
-              <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                Puedes seguir con la prueba mientras atendemos tu solicitud.
-              </p>
-            </div>
-            <span className="text-xl font-circular-bold text-[var(--color-primary)]">
-              {formatCurrency(total)}
-            </span>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <QuantityInput
-              label="Trabajadores"
-              value={employees}
-              onChange={onEmployeesChange}
-            />
-            <QuantityInput
-              label="Puntos QR"
-              value={qrPoints}
-              onChange={onQrPointsChange}
-            />
-          </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-[var(--color-muted-foreground)]">
-              Las sedes incluidas seran iguales a los puntos QR solicitados.
-            </p>
-            <WhatsAppButton
-              disabled={total <= 0}
-              href={buildWhatsAppUrl([
-                "Hola, quiero solicitar un plan de asistencias para Nuvex.",
-                `Empresa: ${companyName ?? "-"}`,
-                `Agregar trabajadores: ${employees}`,
-                `Agregar puntos QR: ${qrPoints}`,
-                `Sedes incluidas por puntos QR: ${qrPoints}`,
-                `Total mensual estimado: ${formatCurrency(total)}`,
-              ])}
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function QuantityInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  const update = (next: number) => onChange(Math.max(0, next));
-
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm text-[var(--color-muted-foreground)]">
-        {label}
-      </span>
-      <span className="flex h-11 overflow-hidden rounded-[14px] bg-[var(--color-card)]">
-        <button
-          type="button"
-          onClick={() => update(value - 1)}
-          className="w-11 text-lg font-circular-bold text-[var(--color-primary)] hover:bg-[var(--color-button-hover)]"
-        >
-          -
-        </button>
-        <input
-          type="number"
-          min={0}
-          value={value}
-          onChange={(event) => update(Number(event.target.value))}
-          className="min-w-0 flex-1 border-0 bg-transparent text-center text-sm font-circular-bold text-[var(--color-text)] outline-none"
-        />
-        <button
-          type="button"
-          onClick={() => update(value + 1)}
-          className="w-11 text-lg font-circular-bold text-[var(--color-primary)] hover:bg-[var(--color-button-hover)]"
-        >
-          +
-        </button>
-      </span>
-    </label>
-  );
-}
-
-function PlanChoiceCard({
-  title,
-  description,
-  price,
-  period,
-  popular,
-  capabilities,
-  features,
-  actionLabel,
-  actionVariant,
-  href,
-  onSelect,
-}: {
-  title: string;
-  description?: string;
-  price: string;
-  period?: string;
-  popular?: boolean;
-  capabilities: PlanCapability[];
-  features: PlanFeatureItem[];
-  actionLabel: string;
-  actionVariant: "primary" | "whatsapp";
-  href?: string;
-  onSelect?: () => void;
-}) {
-  const rootClassName = `group relative flex w-full cursor-pointer flex-col rounded-3xl bg-[var(--color-card)] p-5 text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 ${
-    popular
-      ? "border-2 border-[var(--color-primary)] shadow-2xl"
-      : "border border-[var(--color-border)] shadow-sm hover:border-[var(--color-primary)]"
-  }`;
-
-  const content = (
-    <>
-      {popular ? (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-primary)] px-4 py-1 text-xs font-circular-bold text-white shadow-lg">
-          Más popular
-        </span>
-      ) : null}
-
-      <h3 className="text-xl font-circular-bold text-[var(--color-primary)]">
-        {title}
-      </h3>
-      {description ? (
-        <p className="mt-1 min-h-12 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-          {description}
-        </p>
-      ) : null}
-      <div className="mt-3 flex flex-wrap items-baseline gap-1">
-        <span className="text-2xl font-circular-bold text-[var(--color-text)] md:text-3xl">
-          {price}
-        </span>
-        {period ? (
-          <span className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-            {period}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-        <p className="mb-3 text-[11px] font-circular-bold uppercase tracking-wide text-[var(--color-primary)]">
-          Capacidad incluida
-        </p>
-        <div className="space-y-2.5">
-          {capabilities.map((item) => (
-            <PlanDetail key={item.label} {...item} />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-        <p className="mb-3 text-[11px] font-circular-bold uppercase tracking-wide text-[var(--color-primary)]">
-          Funcionalidades
-        </p>
-        <div className="space-y-2.5">
-          {features.map((item) => (
-            <PlanFeature key={item.label} {...item} />
-          ))}
-        </div>
-      </div>
-
-      <span
-        className={`mt-auto flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-circular-bold text-white ${
-          actionVariant === "whatsapp"
-            ? "bg-[#16a34a]"
-            : "bg-[var(--color-primary)]"
-        }`}
-      >
-        {actionVariant === "whatsapp" ? (
-          <Image
-            src="/svg/redes-sociales/whatsapp.svg"
-            alt=""
-            width={18}
-            height={18}
-            className="h-4 w-4"
-          />
-        ) : null}
-        {actionLabel}
-      </span>
-    </>
-  );
-
-  if (href) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        className={rootClassName}
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <button type="button" onClick={onSelect} className={rootClassName}>
-      {content}
-    </button>
-  );
-}
-
-function PlanDetail({ icon: IconComponent, label, value }: PlanCapability) {
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <IconComponent
-        size={15}
-        weight="bold"
-        className="shrink-0 text-[var(--color-muted-foreground)]"
-      />
-      <span className="min-w-0 flex-1 text-[var(--color-muted-foreground)]">
-        {label}
-      </span>
-      <span className="text-right font-circular-bold text-[var(--color-text)]">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function PlanFeature({ label, included, isNew }: PlanFeatureItem) {
-  const FeatureIcon = included ? CheckCircleIcon : XCircleIcon;
-
-  return (
-    <div
-      className={`flex items-center gap-2 text-xs ${
-        included
-          ? "text-[var(--color-text)]"
-          : "text-[var(--color-muted-foreground)]"
-      }`}
-    >
-      <FeatureIcon
-        size={15}
-        weight="fill"
-        className={
-          included ? "shrink-0 text-[#10b981]" : "shrink-0 text-[#cbd5e1]"
-        }
-      />
-      <span className="flex flex-wrap items-center gap-1.5">
-        {label}
-        {isNew ? (
-          <span className="rounded-full bg-[#fd741a] px-1.5 py-0.5 text-[8px] font-black uppercase leading-none text-white">
-            Nuevo
-          </span>
-        ) : null}
-      </span>
-    </div>
-  );
-}
-
-function WhatsAppButton({
-  href,
-  disabled,
-}: {
-  href: string;
-  disabled?: boolean;
-}) {
-  return (
-    <a
-      href={disabled ? undefined : href}
-      target="_blank"
-      rel="noreferrer"
-      aria-disabled={disabled}
-      className={`inline-flex h-11 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-circular-bold text-white ${
-        disabled
-          ? "pointer-events-none bg-[#94a3b8]"
-          : "bg-[#16a34a] hover:bg-[#15803d]"
-      }`}
-    >
-      <Image
-        src="/svg/redes-sociales/whatsapp.svg"
-        alt=""
-        width={18}
-        height={18}
-        className="h-4 w-4"
-      />
-      Solicitar por WhatsApp
-    </a>
-  );
-}
-
 function SectionTitle({
   icon,
   title,
@@ -1055,10 +494,10 @@ function SectionTitle({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#e8f1ff] text-[#2563eb]">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
         {icon}
       </span>
-      <h2 className="text-lg font-circular-bold text-[var(--color-text)]">
+      <h2 className="text-lg font-medium text-[var(--color-text)]">
         {title}
       </h2>
       <span className="rounded-full bg-[var(--color-input-bg)] px-3 py-1 text-xs font-circular-bold text-[var(--color-muted-foreground)]">
@@ -1096,7 +535,7 @@ function Field({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={`h-11 w-full rounded-[16px] border-0 bg-[var(--color-input-bg)] pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 ${icon ? "pl-10" : "pl-4"}`}
+          className={`h-11 w-full rounded-2xl border-0 bg-white pr-4 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 ${icon ? "pl-10" : "pl-4"}`}
         />
       </span>
     </label>
@@ -1123,7 +562,7 @@ function CatalogCard({
   onCreate: () => void;
 }) {
   return (
-    <div className="rounded-[8px] bg-[var(--color-input-bg)] p-4">
+    <div className="rounded-2xl p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-circular-bold text-[var(--color-text)]">
         <span className="text-[var(--color-primary)]">{icon}</span>
         {title}
@@ -1139,14 +578,14 @@ function CatalogCard({
             }
           }}
           placeholder={`Nombre de ${title.toLowerCase()}`}
-          className="h-10 min-w-0 flex-1 rounded-[12px] border-0 bg-[var(--color-card)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+          className="h-10 min-w-0 flex-1 rounded-2xl border-0 bg-white px-3 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
         />
         {extra}
         <button
           type="button"
           disabled={!value.trim() || saving}
           onClick={onCreate}
-          className="h-10 rounded-[12px] bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white disabled:opacity-40"
+          className="h-10 rounded-2xl bg-[var(--color-primary)] px-4 text-sm font-circular-bold text-white disabled:opacity-40"
         >
           {saving ? "..." : "Agregar"}
         </button>
@@ -1174,7 +613,7 @@ function PrimaryButton({
   return (
     <button
       {...props}
-      className="h-11 rounded-[14px] bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+      className="h-11 rounded-2xl bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </button>
@@ -1195,8 +634,8 @@ function CenteredState({
   onAction: () => void;
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[var(--color-background)] p-4">
-      <div className="w-full max-w-md rounded-[8px] bg-[var(--color-card)] p-7 text-center shadow-sm">
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--color-sidebar-bg)] p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-7 text-center ring-1 ring-[var(--color-sidebar-action-bg)]">
         {icon ? (
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#fff4e6] text-[#f59f00]">
             {icon}
@@ -1213,7 +652,7 @@ function CenteredState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 h-11 rounded-[14px] bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white"
+          className="mt-5 h-11 rounded-2xl bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white"
         >
           {action}
         </button>
@@ -1223,144 +662,7 @@ function CenteredState({
 }
 
 function getStageFlow(kind: "pos" | "attendance" | "both"): OnboardingStage[] {
-  if (kind === "attendance") return ["attendance-plan", "branch"];
-  if (kind === "both") {
-    return ["pos-plan", "attendance-plan", "branch", "catalog", "product"];
-  }
-  return ["pos-plan", "branch", "catalog", "product"];
+  if (kind === "attendance") return ["branch"];
+  return ["branch", "catalog", "product"];
 }
 
-function isPosPlan(plan: PlanDefinition) {
-  return ![
-    "prueba",
-    "asistencias_basico",
-    "asistencias_pro",
-    "completo_emprende",
-    "completo_empresa",
-  ].includes(plan.code);
-}
-
-function getPosCapabilities(plan: PlanDefinition): PlanCapability[] {
-  return [
-    {
-      label: "Tiendas",
-      value: formatPlanLimit(plan.limits.branches),
-      icon: StorefrontIcon,
-    },
-    {
-      label: "Almacenes",
-      value: formatPlanLimit(plan.limits.warehouses),
-      icon: BuildingsIcon,
-    },
-    {
-      label: "Usuarios",
-      value: formatPlanLimit(plan.limits.users),
-      icon: UsersIcon,
-    },
-    {
-      label: "Productos",
-      value: formatPlanLimit(plan.limits.products),
-      icon: PackageIcon,
-    },
-    {
-      label: "Variantes",
-      value: formatPlanLimit(plan.limits.variants),
-      icon: BarcodeIcon,
-    },
-    {
-      label: "Comprobantes",
-      value: `${formatPlanLimit(plan.limits.documents)} / mes`,
-      icon: ReceiptIcon,
-    },
-    {
-      label: "Consultas DNI/RUC",
-      value: `${formatPlanLimit(plan.limits.documentQueries)} / mes`,
-      icon: DatabaseIcon,
-    },
-  ];
-}
-
-function getPosFeatureItems(plan: PlanDefinition): PlanFeatureItem[] {
-  const keys = new Set(plan.moduleKeys);
-
-  return [
-    {
-      label: "Facturacion electronica",
-      included: keys.has("comprobantes"),
-    },
-    { label: "Ventas POS", included: keys.has("ventas-pos") },
-    { label: "Caja", included: keys.has("caja") },
-    {
-      label: "Cotizaciones y clientes",
-      included: keys.has("cotizaciones") && keys.has("clientes"),
-    },
-    {
-      label: "Catalogo, stock y Kardex",
-      included: keys.has("productos") && keys.has("stock-kardex"),
-    },
-    {
-      label: "Administracion de usuarios",
-      included: keys.has("usuarios"),
-    },
-    {
-      label: "Reportes de ventas y productos",
-      included: keys.has("reportes-ventas") && keys.has("reportes-productos"),
-    },
-    {
-      label: "Reporte de clientes",
-      included: keys.has("reportes-clientes"),
-    },
-    {
-      label: "Reporte de usuarios",
-      included: keys.has("reportes-usuarios"),
-    },
-    {
-      label: "GRE y conductores",
-      included: keys.has("gre-remitente") && keys.has("conductores"),
-    },
-    {
-      label: "Enlace de Envíos",
-      included: keys.has("envios-config"),
-      isNew: true,
-    },
-    {
-      label:
-        plan.code === "empresarial"
-          ? "Soporte prioritario"
-          : "Soporte estandar",
-      included: true,
-    },
-  ];
-}
-
-function getPlanDescription(code: PlanDefinition["code"]) {
-  return {
-    basico: "Para una tienda que empieza a ordenar sus ventas e inventario.",
-    impulsa: "Para negocios que necesitan mas capacidad para seguir creciendo.",
-    emprendedor: "Para negocios en crecimiento con equipo y mas capacidad.",
-    crecimiento: "Para operaciones consolidadas que necesitan control total.",
-    empresarial: "Para empresas con alto volumen y multiples tiendas.",
-    pos_basico: "Para una tienda que empieza a vender con POS.",
-    prueba: "Conoce Nuvex antes de elegir un plan.",
-    asistencias_basico: "Plan anterior de asistencias.",
-    asistencias_pro: "Plan anterior de asistencias.",
-    completo_emprende: "Plan anterior combinado.",
-    completo_empresa: "Plan anterior combinado.",
-  }[code];
-}
-
-function formatPlanLimit(value: number | null) {
-  if (value === null || value < 0) return "Ilimitado";
-  return value.toLocaleString("es-PE");
-}
-
-function buildWhatsAppUrl(lines: string[]) {
-  const phone = (process.env.NEXT_PUBLIC_NUVEX_WHATSAPP ?? "").replace(
-    /\D/g,
-    "",
-  );
-  const text = encodeURIComponent(lines.filter(Boolean).join("\n"));
-  return phone
-    ? `https://wa.me/${phone}?text=${text}`
-    : `https://api.whatsapp.com/send?text=${text}`;
-}

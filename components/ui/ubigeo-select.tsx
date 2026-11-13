@@ -123,7 +123,7 @@ export function UbigeoSelect({
         onClick={handleToggle}
         disabled={disabled}
         className={cn(
-          "flex h-11 w-full items-center justify-between rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none transition-colors hover:bg-[var(--color-button-hover)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-70",
+          "flex h-11 w-full items-center justify-between rounded-2xl bg-white px-4 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none transition-colors hover:bg-[var(--color-button-hover)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-70",
           !displayValue && "text-[var(--color-placeholder)]",
         )}
         aria-label="Ubigeo"

@@ -1,7 +1,5 @@
 "use client";
 
-import { TagIcon } from "@phosphor-icons/react/ssr";
-
 import { Modal } from "@/components/Modal/modal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -76,25 +74,6 @@ export function QuickBrandModal({
             className="h-5 w-5 accent-[var(--color-primary)]"
           />
         </label>
-
-        <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-          <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-            Vista previa
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
-              <TagIcon size={22} weight="fill" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-[var(--color-text)]">
-                {name.trim() || "Nombre de la marca"}
-              </p>
-              <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                {active ? "Activa" : "Inactiva"}
-              </p>
-            </div>
-          </div>
-        </div>
 
         {error ? (
           <p className="text-sm font-circular-regular text-[#d9480f]">{error}</p>

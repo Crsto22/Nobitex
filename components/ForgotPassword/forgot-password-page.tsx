@@ -9,6 +9,7 @@ import {
   EnvelopeSimpleIcon,
   EyeIcon,
   EyeSlashIcon,
+  HouseIcon,
   KeyIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -46,13 +47,11 @@ export function ForgotPasswordPage() {
   const tokenFromUrl = searchParams.get("token") ?? "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmarPassword, setConfirmarPassword] = useState("");
   const [visiblePasswords, setVisiblePasswords] = useState({
     password: false,
-    confirmarPassword: false,
   });
   const [focusedPasswordField, setFocusedPasswordField] = useState<
-    "password" | "confirmarPassword" | null
+    "password" | null
   >(null);
   const [step, setStep] = useState<ForgotPasswordStep>(
     tokenFromUrl ? "checking" : "request",
@@ -160,22 +159,13 @@ export function ForgotPasswordPage() {
       return;
     }
 
-    if (password !== confirmarPassword) {
-      showToast({
-        title: "Contrasenas distintas",
-        description: "Las contrasenas no coinciden.",
-        variant: "warning",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       await authApi.resetPassword({
         token: tokenFromUrl,
         password,
-        confirmarPassword,
+        confirmarPassword: password,
       });
       setStep("success");
       showToast({
@@ -218,33 +208,56 @@ export function ForgotPasswordPage() {
 
   return (
     <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb]">
-      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-white lg:grid-cols-[minmax(0,1fr)_minmax(520px,620px)]">
-        <div className="relative z-10 hidden min-h-dvh items-center justify-center overflow-hidden bg-[#f3f5fb] px-8 py-10 lg:flex xl:px-12">
-          <Image
-            src="/Logo/nuvex_logo.svg"
-            alt="Nuvex"
-            width={330}
-            height={110}
-            className="h-auto w-[330px] max-w-[330px]"
-            priority
-          />
-        </div>
-
-        <div className="relative z-10 flex min-h-dvh flex-col overflow-hidden px-5 py-6 sm:px-8 lg:px-14 lg:py-7 xl:px-20">
-          <div className="mb-4 flex w-full justify-start lg:hidden">
+      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
+        <div className="login-dots-bg relative z-10 hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 lg:flex xl:px-12">
+          <div className="flex w-full shrink-0 items-center justify-start">
             <Image
-              src="/Logo/logopng.webp"
+              src="/Logo/nuvex_logo.svg"
               alt="Nuvex"
-              width={96}
-              height={22}
-              className="h-auto w-24"
-              style={{ width: "auto", height: "auto" }}
+              width={160}
+              height={54}
+              className="h-auto w-[160px]"
               priority
             />
           </div>
-          <div className="register-form-scroll m-auto flex max-h-[calc(100dvh-6rem)] w-full max-w-[560px] flex-col overflow-y-auto pr-2 lg:max-h-[calc(100dvh-3rem)]">
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <Image
+              src="/img/login.webp"
+              alt="Login"
+              width={520}
+              height={520}
+              className="h-auto w-full max-w-[420px] object-contain"
+              priority
+            />
+          </div>
+        </div>
+
+        <div className="relative z-10 flex min-h-dvh flex-col overflow-hidden px-5 py-6 sm:px-8 lg:px-14 lg:py-7 xl:px-20">
+          <div className="mb-4 flex w-full items-center justify-between">
+            <div className="lg:hidden">
+              <Image
+                src="/Logo/logopng.webp"
+                alt="Nuvex"
+                width={96}
+                height={22}
+                className="h-auto w-24"
+                style={{ width: "auto", height: "auto" }}
+                priority
+              />
+            </div>
+            <Link
+              href="https://nuvex.pe"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Ir a nuvex.pe"
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <HouseIcon size={20} weight="bold" />
+            </Link>
+          </div>
+          <div className="register-form-scroll m-auto flex max-h-[calc(100dvh-6rem)] w-full max-w-[400px] flex-col overflow-y-auto pr-2 lg:max-h-[calc(100dvh-7rem)]">
             <div className="mb-5">
-              <h1 className="mt-4 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
+              <h1 className="mt-1 text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl">
                 {getTitle(step)}
               </h1>
               <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
@@ -275,7 +288,7 @@ export function ForgotPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !turnstileToken}
-                  className="font-heading h-12 w-full rounded-[16px] bg-[var(--color-secondary)] text-sm font-black text-white shadow-[0_14px_28px_rgba(253,116,26,0.28)] hover:bg-[#ef6a12]"
+                  className="h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] xl:h-12"
                 >
                   {isSubmitting ? "Enviando correo..." : "Enviar enlace"}
                 </Button>
@@ -295,9 +308,9 @@ export function ForgotPasswordPage() {
             )}
 
             {step === "checking" && (
-              <div className="rounded-2xl bg-[#f1f4f9] px-5 py-6 text-center ring-1 ring-[#edf1f6]">
-                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#dbe3ef] border-t-[var(--color-secondary)]" />
-<h2 className="mt-4 text-lg font-black text-[var(--color-primary)] text-fixed-lg">
+              <div className="rounded-2xl bg-white px-5 py-6 text-center ring-1 ring-[var(--color-sidebar-action-bg)]">
+                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-[var(--color-primary)]" />
+                <h2 className="mt-4 text-lg font-semibold text-[var(--color-primary)] text-fixed-lg">
                   Verificando enlace
                 </h2>
                 <p className="mt-2 text-sm font-circular-regular leading-6 text-[#525b75]">
@@ -330,39 +343,12 @@ export function ForgotPasswordPage() {
                   onBlur={() => setFocusedPasswordField(null)}
                   onFocus={() => setFocusedPasswordField("password")}
                 />
-                <FormInput
-                  id="confirm-password"
-                  label="Confirmar contrasena"
-                  value={confirmarPassword}
-                  onValueChange={setConfirmarPassword}
-                  type={
-                    visiblePasswords.confirmarPassword ? "text" : "password"
-                  }
-                  placeholder="Confirma tu nueva contrasena"
-                  autoComplete="new-password"
-                  endAdornment={
-                    <PasswordAdornment
-                      isVisible={visiblePasswords.confirmarPassword}
-                      showToggle={
-                        focusedPasswordField === "confirmarPassword" ||
-                        confirmarPassword.length > 0
-                      }
-                      onClick={() =>
-                        togglePasswordVisibility("confirmarPassword")
-                      }
-                    />
-                  }
-                  disabled={isSubmitting}
-                  onBlur={() => setFocusedPasswordField(null)}
-                  onFocus={() => setFocusedPasswordField("confirmarPassword")}
-                />
-
                 <PasswordRules password={password} />
 
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="font-heading h-12 w-full rounded-[16px] bg-[var(--color-secondary)] text-sm font-black text-white shadow-[0_14px_28px_rgba(253,116,26,0.28)] hover:bg-[#ef6a12]"
+                  className="h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] xl:h-12"
                 >
                   {isSubmitting ? "Actualizando..." : "Cambiar contrasena"}
                 </Button>
@@ -476,7 +462,7 @@ function FormInput({
       >
         {label}
       </label>
-      <div className="flex overflow-hidden rounded-[16px] bg-[var(--color-input-bg)] transition-colors hover:bg-[var(--color-button-hover)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+      <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
         <input
           id={id}
           name={id}
@@ -489,7 +475,7 @@ function FormInput({
           disabled={disabled}
           onBlur={onBlur}
           onFocus={onFocus}
-          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] disabled:cursor-not-allowed disabled:opacity-70 xl:h-12"
+          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[var(--color-placeholder)] disabled:cursor-not-allowed disabled:opacity-70 xl:h-12"
         />
         {endAdornment ? (
           endAdornment
@@ -505,14 +491,14 @@ function FormInput({
 
 function PasswordRules({ password }: { password: string }) {
   return (
-    <div className="grid gap-2 rounded-[16px] bg-[var(--color-input-bg)] p-3 sm:grid-cols-2">
+    <div className="grid gap-2 rounded-2xl bg-white p-3 ring-1 ring-[var(--color-sidebar-action-bg)] sm:grid-cols-2">
       {passwordRequirements.map((requirement) => {
         const isValid = requirement.test(password);
 
         return (
           <div
             key={requirement.label}
-            className={`flex items-center gap-2 text-xs font-circular-regular${
+            className={`flex items-center gap-2 text-xs font-circular-regular ${
               isValid
                 ? "text-[var(--color-text)]"
                 : "text-[var(--color-muted-foreground)]"
@@ -521,7 +507,7 @@ function PasswordRules({ password }: { password: string }) {
             <span
               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
                 isValid
-                  ? "bg-[#ff7417] text-white"
+                  ? "bg-[var(--color-primary)] text-white"
                   : "bg-[var(--color-card)] ring-1 ring-[var(--color-border)]"
               }`}
             >
@@ -574,7 +560,7 @@ function FooterActions() {
       <Button
         asChild
         variant="outline"
-        className="h-11 w-full rounded-[14px] border-transparent bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)] xl:h-12"
+        className="h-11 w-full rounded-2xl border-transparent bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)] xl:h-12"
       >
         <Link href="/login">Volver al inicio de sesion</Link>
       </Button>
@@ -596,11 +582,11 @@ function StateMessage({
   actionHref: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#f1f4f9] px-5 py-6 text-center ring-1 ring-[#edf1f6]">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center text-[var(--color-secondary)]">
+    <div className="rounded-2xl bg-white px-5 py-6 text-center ring-1 ring-[var(--color-sidebar-action-bg)]">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center text-[var(--color-primary)]">
         {icon}
       </div>
-      <h2 className="mt-4 text-lg font-black text-[var(--color-primary)] text-fixed-lg">
+      <h2 className="mt-4 text-lg font-semibold text-[var(--color-primary)] text-fixed-lg">
         {title}
       </h2>
       <p className="mt-2 text-sm font-circular-regular leading-6 text-[#525b75]">
@@ -608,7 +594,7 @@ function StateMessage({
       </p>
       <Button
         asChild
-        className="mt-5 h-11 w-full rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"
+        className="mt-5 h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754]"
       >
         <Link href={actionHref}>{actionLabel}</Link>
       </Button>

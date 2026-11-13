@@ -576,34 +576,6 @@ export default function PaymentMethodsPage() {
             label="Estado"
           />
 
-          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-              Vista previa
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              {(() => {
-                const config = getPaymentMethodConfig(modal.form.nombre);
-                return config ? (
-                  <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", config.bgColor)}>
-                    <Image src={config.src} width={48} height={48} alt={config.label} className="h-8 w-8 object-contain" />
-                  </div>
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                    <WalletIcon size={22} weight="fill" />
-                  </div>
-                );
-              })()}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {modal.form.nombre || "Nombre del metodo"}
-                </p>
-                <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  Metodo de pago
-                </p>
-              </div>
-            </div>
-          </div>
-
           {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">{modal.error}</p>
           )}

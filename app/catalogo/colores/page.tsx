@@ -599,30 +599,6 @@ export default function CatalogoColoresPage() {
             />
           </label>
 
-          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-              Vista previa
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div
-                className="h-12 w-12 rounded-full ring-1 ring-black/10"
-                style={{
-                  backgroundColor: isValidHex(modal.form.hex)
-                    ? modal.form.hex
-                    : "#111827",
-                }}
-              />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {modal.form.nombre.trim() || "Nombre del color"}
-                </p>
-                <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)] font-circular-regular">
-                  {normalizeHex(modal.form.hex)}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
               {modal.error}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
@@ -31,6 +31,7 @@ export function PlanLimitAlert() {
   const router = useRouter();
   const pathname = usePathname();
   const actionRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [detail, setDetail] = useState<PlanLimitReachedDetail | null>(null);
 
   useEffect(() => {
@@ -44,13 +45,20 @@ export function PlanLimitAlert() {
 
   useEffect(() => {
     if (!detail) return;
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
     actionRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDetail(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [detail]);
+
+  // El <dialog> se monta solo cuando hay un detalle: al adjuntarse hay que
+  // abrirlo con showModal() para que entre en la top layer del navegador y
+  // quede por encima de cualquier módulo (incluidos los modales nativos).
+  const attachDialog = useCallback((node: HTMLDialogElement | null) => {
+    dialogRef.current = node;
+    if (node?.isConnected && !node.open) {
+      node.showModal();
+    }
+  }, []);
 
   if (!detail) return null;
 
@@ -68,84 +76,91 @@ export function PlanLimitAlert() {
       : "/configuracion/plan";
 
   return createPortal(
-    <div className="fixed inset-0 isolate z-[2147483647] flex items-end justify-center bg-black/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
-      <section
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="plan-limit-title"
-        aria-describedby="plan-limit-description"
-        className="relative z-[1] w-full max-w-md rounded-t-[18px] bg-[var(--color-card)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.3)] sm:rounded-[18px] sm:p-6"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#fff7ed] text-[#f59e0b]">
-            <WarningCircleIcon size={25} weight="fill" />
-          </span>
-          <button
-            type="button"
-            onClick={() => setDetail(null)}
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
-            aria-label="Cerrar alerta"
-            title="Cerrar"
-          >
-            <XIcon size={17} weight="bold" />
-          </button>
-        </div>
-
-        <h2
-          id="plan-limit-title"
-          className="mt-5 text-xl font-circular-bold text-[var(--color-text)]"
-        >
-          Límite del plan alcanzado
-        </h2>
-        <p
-          id="plan-limit-description"
-          className="mt-2 text-sm leading-6 text-[var(--color-muted-foreground)]"
-        >
-          {resource
-            ? `Alcanzaste el límite de ${resource} incluido en tu plan.`
-            : detail.message}
-        </p>
-
-        {hasUsage ? (
-          <div className="mt-5 rounded-[12px] bg-[var(--color-input-bg)] p-4">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-[var(--color-muted-foreground)]">
-                Uso actual
-              </span>
-              <strong className="font-circular-bold text-[var(--color-text)]">
-                {formatValue(detail.used!, detail.resource)} de{" "}
-                {formatValue(detail.limit!, detail.resource)}
-              </strong>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-card)]">
-              <div className="h-full w-full rounded-full bg-[#f59e0b]" />
-            </div>
+    <dialog
+      ref={attachDialog}
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="plan-limit-title"
+      aria-describedby="plan-limit-description"
+      onCancel={(event) => {
+        event.preventDefault();
+        setDetail(null);
+      }}
+      className="fixed inset-0 z-[2147483647] m-0 h-full w-full max-h-none max-w-none overflow-visible bg-transparent p-0 backdrop:bg-black/45 backdrop:backdrop-blur-[2px] backdrop:animate-in backdrop:fade-in backdrop:duration-200"
+    >
+      <div className="flex h-full w-full items-end justify-center p-0 sm:items-center sm:p-4">
+        <section className="relative z-[1] w-full max-w-md rounded-t-[18px] bg-[var(--color-card)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.3)] animate-in fade-in zoom-in-95 duration-200 sm:rounded-[18px] sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#fff7ed] text-[#f59e0b]">
+              <WarningCircleIcon size={25} weight="fill" />
+            </span>
+            <button
+              type="button"
+              onClick={() => setDetail(null)}
+              className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
+              aria-label="Cerrar alerta"
+              title="Cerrar"
+            >
+              <XIcon size={17} weight="bold" />
+            </button>
           </div>
-        ) : null}
 
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={() => setDetail(null)}
-            className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)]"
+          <h2
+            id="plan-limit-title"
+            className="mt-5 text-xl font-circular-bold text-[var(--color-text)]"
           >
-            Ahora no
-          </button>
-          <button
-            ref={actionRef}
-            type="button"
-            onClick={() => {
-              setDetail(null);
-              router.push(planRoute);
-            }}
-            className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white"
+            Límite del plan alcanzado
+          </h2>
+          <p
+            id="plan-limit-description"
+            className="mt-2 text-sm leading-6 text-[var(--color-muted-foreground)]"
           >
-            Actualizar plan
-            <ArrowRightIcon size={16} weight="bold" />
-          </button>
-        </div>
-      </section>
-    </div>,
+            {resource
+              ? `Alcanzaste el límite de ${resource} incluido en tu plan.`
+              : detail.message}
+          </p>
+
+          {hasUsage ? (
+            <div className="mt-5 rounded-[12px] bg-[var(--color-input-bg)] p-4">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-[var(--color-muted-foreground)]">
+                  Uso actual
+                </span>
+                <strong className="font-circular-bold text-[var(--color-text)]">
+                  {formatValue(detail.used!, detail.resource)} de{" "}
+                  {formatValue(detail.limit!, detail.resource)}
+                </strong>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-card)]">
+                <div className="h-full w-full rounded-full bg-[#f59e0b]" />
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setDetail(null)}
+              className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)]"
+            >
+              Ahora no
+            </button>
+            <button
+              ref={actionRef}
+              type="button"
+              onClick={() => {
+                setDetail(null);
+                router.push(planRoute);
+              }}
+              className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white"
+            >
+              Actualizar plan
+              <ArrowRightIcon size={16} weight="bold" />
+            </button>
+          </div>
+        </section>
+      </div>
+    </dialog>,
     document.body,
   );
 }

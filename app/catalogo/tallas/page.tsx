@@ -553,25 +553,6 @@ export default function CatalogoTallasPage() {
             />
           </label>
 
-          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-              Vista previa
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-black text-white font-circular-regular">
-                {modal.form.nombre.trim() || "M"}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  Talla {modal.form.nombre.trim() || "Nombre de la talla"}
-                </p>
-                <p className="text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {modal.form.activo ? "Activa" : "Inactiva"}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
               {modal.error}

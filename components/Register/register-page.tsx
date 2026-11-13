@@ -7,12 +7,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CheckCircleIcon,
-  DotsThreeCircleIcon,
   EnvelopeSimpleIcon,
   EyeIcon,
   EyeSlashIcon,
   FacebookLogoIcon,
   GoogleLogoIcon,
+  HouseIcon,
   IdentificationCardIcon,
   InstagramLogoIcon,
   KeyIcon,
@@ -98,12 +98,6 @@ const discoveryOptions = [
     label: "Recomendación",
     icon: ShareNetworkIcon,
     color: "#101d69",
-  },
-  {
-    value: "otro",
-    label: "Otro",
-    icon: DotsThreeCircleIcon,
-    color: "#64748b",
   },
 ] as const;
 
@@ -502,28 +496,28 @@ export function RegisterPage() {
 
   return (
     <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb]">
-      <section
-        className={`login-form-motion relative grid min-h-dvh overflow-hidden bg-white transition-[grid-template-columns] duration-500 ease-out ${
-          isCompanyStep || isActivating
-            ? "lg:grid-cols-[0_minmax(0,1fr)]"
-            : "lg:grid-cols-[minmax(0,1fr)_minmax(620px,720px)]"
-        }`}
-      >
-        <div
-          className={`relative z-10 hidden min-h-dvh items-center justify-center overflow-hidden bg-[#f3f5fb] px-8 py-10 transition-colors duration-500 ease-out lg:flex xl:px-12 ${
-            isCompanyStep || isActivating
-              ? "pointer-events-none -translate-x-full opacity-0"
-              : "translate-x-0 opacity-100"
-          }`}
-        >
-          <Image
-            src="/Logo/nuvex_logo.svg"
-            alt="Nuvex"
-            width={330}
-            height={110}
-            className="h-auto w-[330px] max-w-[330px]"
-            priority
-          />
+      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
+        <div className="login-dots-bg relative z-10 hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 lg:flex xl:px-12">
+          <div className="flex w-full shrink-0 items-center justify-start">
+            <Image
+              src="/Logo/nuvex_logo.svg"
+              alt="Nuvex"
+              width={160}
+              height={54}
+              className="h-auto w-[160px]"
+              priority
+            />
+          </div>
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <Image
+              src="/img/login.webp"
+              alt="Login"
+              width={520}
+              height={520}
+              className="h-auto w-full max-w-[420px] object-contain"
+              priority
+            />
+          </div>
         </div>
 
         <div
@@ -535,19 +529,30 @@ export function RegisterPage() {
                 : "lg:px-14 xl:px-20"
           }`}
         >
-          <div className="mb-4 flex w-full justify-start lg:hidden">
-            <Image
-              src="/Logo/logopng.webp"
-              alt="Nuvex"
-              width={96}
-              height={22}
-              className="h-auto w-24"
-              style={{ width: "auto", height: "auto" }}
-              priority
-            />
+          <div className="mb-4 flex w-full items-center justify-between">
+            <div className="lg:hidden">
+              <Image
+                src="/Logo/logopng.webp"
+                alt="Nuvex"
+                width={96}
+                height={22}
+                className="h-auto w-24"
+                style={{ width: "auto", height: "auto" }}
+                priority
+              />
+            </div>
+            <Link
+              href="https://nuvex.pe"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Ir a nuvex.pe"
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <HouseIcon size={20} weight="bold" />
+            </Link>
           </div>
           <div
-            className={`register-form-scroll flex max-h-[calc(100dvh-6rem)] w-full flex-col overflow-y-auto pr-2 transition-[max-width] duration-500 ease-out lg:max-h-[calc(100dvh-3rem)] ${
+            className={`register-form-scroll flex max-h-[calc(100dvh-6rem)] w-full flex-col overflow-y-auto pr-2 transition-[max-width] duration-500 ease-out lg:max-h-[calc(100dvh-7rem)] ${
               isActivating
                 ? "m-auto max-w-[560px]"
                 : isCompanyStep
@@ -568,14 +573,9 @@ export function RegisterPage() {
                   onSubmit={handleSubmit}
                 >
                   <div>
-                    <h1 className="mt-3 text-3xl font-black text-[var(--color-primary)] sm:text-4xl text-fixed-3xl">
+                    <h1 className="mt-1 text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl">
                       Prueba Nuvex gratis 14 días
                     </h1>
-                    <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
-                      Controla ventas, stock y facturación electrónica desde un
-                      solo lugar. Crea tu cuenta para comenzar.
-                    </p>
-                    <StepProgress currentStep={currentStep} steps={steps} />
                   </div>
 
                   <div
@@ -734,13 +734,10 @@ export function RegisterPage() {
                     )}
 
                     {currentStep === 1 && (
-                      <div className="rounded-2xl bg-[#f1f4f9] px-5 py-6 ring-1 ring-[#edf1f6]">
+                      <div className="text-center">
                         <div className="mx-auto flex h-14 w-14 items-center justify-center text-[var(--color-secondary)]">
                           <EnvelopeSimpleIcon size={38} weight="fill" />
                         </div>
-                        <h2 className="mt-4 text-center text-2xl font-black text-[var(--color-primary)] text-fixed-2xl">
-                          Verifica tu email
-                        </h2>
                         <p className="mx-auto mt-2 max-w-[360px] text-center text-sm font-circular-regular leading-6 text-[#525b75]">
                           Ingresa el codigo de 6 digitos que enviamos a tu
                           correo
@@ -762,7 +759,7 @@ export function RegisterPage() {
                           placeholder="000000"
                           aria-label="000000"
                           required
-                          className="font-heading mt-5 h-12 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-center text-lg font-black tracking-[0.35em] text-[var(--color-primary)] outline-none transition placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                          className="font-heading mx-auto mt-5 block h-12 w-full max-w-[280px] rounded-2xl bg-white px-4 text-center text-lg font-black tracking-[0.35em] text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none transition placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                         />
                         <p className="mt-3 text-center text-xs font-circular-regular text-[#7b849b]">
                           Enviado a {accountData.email}
@@ -785,7 +782,7 @@ export function RegisterPage() {
                         variant="outline"
                         disabled={isSubmitting}
                         onClick={() => setCurrentStep((step) => step - 1)}
-                        className="h-11 flex-1 rounded-[14px] border-transparent bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                        className="h-11 flex-1 rounded-2xl border-transparent bg-[var(--color-input-bg)] text-sm font-circular-regular text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
                       >
                         Atras
                       </Button>
@@ -799,7 +796,7 @@ export function RegisterPage() {
                             || (currentStep === 0 && !acceptedLegalTerms)
                         }
                         onClick={handleNext}
-                        className="h-11 flex-1 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"
+                        className="h-11 flex-1 rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754]"
                       >
                         {getActionLabel(currentStep, isSubmitting)}
                       </Button>
@@ -807,18 +804,18 @@ export function RegisterPage() {
                       <Button
                         type="submit"
                         disabled={isSubmitting || !companyData.catalogProfile}
-                        className="h-11 flex-1 rounded-[14px] bg-[#ff7417] text-sm font-black text-white shadow-[0_8px_18px_rgba(255,116,23,0.3)] hover:bg-[#f2670a]"
+                        className="h-11 flex-1 rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754]"
                       >
                         {isSubmitting ? "Creando empresa..." : "Crear cuenta"}
                       </Button>
                     )}
                   </div>
 
-                  <div className="pt-1 text-center text-xs font-circular-regula text-[#7b849b]">
+                  <div className="pt-1 text-center text-xs font-circular-regular text-[#7b849b]">
                     {isComplete ? "Volver a " : "Ya tienes una cuenta, "}
                     <Link
                       href="/login"
-                      className="text-[var(--color-secondary)] underline-offset-4 hover:underline"
+                      className="font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
                     >
                       Iniciar sesion
                     </Link>
@@ -976,69 +973,9 @@ function getActivationCopy(productMode: ProductMode) {
   };
 }
 
-function StepProgress({
-  currentStep,
-  steps,
-}: {
-  currentStep: number;
-  steps: string[];
-}) {
-  const progress = (currentStep / (steps.length - 1)) * 100;
-
-  return (
-    <div className="mt-6 xl:mt-7">
-      <div className="relative px-2 pt-5">
-        <div className="absolute left-6 right-6 top-8 h-2 rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)]" />
-        <div
-          className="register-progress-fill absolute left-6 top-8 h-2 rounded-full bg-[var(--color-primary)] transition-[width] duration-500 ease-out"
-          style={{ width: `calc((100% - 3rem) * ${progress / 100})` }}
-        />
-
-        <div className="relative z-10 flex items-start justify-between">
-          {steps.map((step, index) => {
-            const isActive = currentStep === index;
-            const isDone = currentStep > index;
-            const isReached = isActive || isDone;
-
-            return (
-              <div
-                key={step}
-                className="flex w-20 flex-col items-center text-center"
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-4 border-white text-xs font-black shadow-[0_4px_12px_rgba(16,29,105,0.14)] transition-colors duration-300 ${
-                    isReached
-                      ? "bg-[var(--color-primary)] text-white"
-                      : "bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
-                  } ${isActive ? "scale-110 ring-4 ring-[var(--color-primary)]/10" : ""}`}
-                >
-                  {isDone ? (
-                    <CheckCircleIcon size={18} weight="fill" />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                <span
-                  className={`mt-2 text-[11px] font-circular-bold transition-colors ${
-                    isReached
-                      ? "text-[var(--color-primary)]"
-                      : "text-[var(--color-muted-foreground)]"
-                  }`}
-                >
-                  {step}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PasswordRules({ password }: { password: string }) {
   return (
-    <div className="grid gap-2 rounded-[16px] bg-[var(--color-input-bg)] p-3 sm:grid-cols-2">
+    <div className="grid gap-2 rounded-2xl bg-white p-3 ring-1 ring-[var(--color-sidebar-action-bg)] sm:grid-cols-2">
       {passwordRequirements.map((requirement) => {
         const isValid = requirement.test(password);
 
@@ -1077,6 +1014,7 @@ type CompanyStepProps = {
 };
 
 function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
+  const showCompanyContactFields = false;
   const ropaSelected =
     companyData.catalogProfile === "ropa" ||
     companyData.catalogProfile === "ropa_calzado";
@@ -1188,7 +1126,11 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div
+        className={
+          showCompanyContactFields ? "grid gap-4 sm:grid-cols-2" : ""
+        }
+      >
         <RegisterInput
           id="business-phone"
           label="Telefono empresa"
@@ -1204,17 +1146,19 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
           inputMode="tel"
           icon={<UserIcon size={24} weight="fill" />}
         />
-        <RegisterInput
-          id="business-email"
-          label="Correo empresa"
-          name="emailEmpresa"
-          value={companyData.emailEmpresa}
-          onValueChange={(value) => updateCompanyValue("emailEmpresa", value)}
-          type="email"
-          placeholder="empresa@correo.com"
-          required={false}
-          icon={<EnvelopeSimpleIcon size={24} weight="fill" />}
-        />
+        {showCompanyContactFields ? (
+          <RegisterInput
+            id="business-email"
+            label="Correo empresa"
+            name="emailEmpresa"
+            value={companyData.emailEmpresa}
+            onValueChange={(value) => updateCompanyValue("emailEmpresa", value)}
+            type="email"
+            placeholder="empresa@correo.com"
+            required={false}
+            icon={<EnvelopeSimpleIcon size={24} weight="fill" />}
+          />
+        ) : null}
       </div>
 
       <label
@@ -1294,22 +1238,24 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
         />
       )}
 
-      <RegisterInput
-        id="business-address"
-        label="Direccion"
-        name="direccion"
-        value={companyData.direccion}
-        onValueChange={(value) => updateCompanyValue("direccion", value)}
-        placeholder="Lima, Peru"
-        required={false}
-        icon={<IdentificationCardIcon size={24} weight="fill" />}
-      />
+      {showCompanyContactFields ? (
+        <RegisterInput
+          id="business-address"
+          label="Direccion"
+          name="direccion"
+          value={companyData.direccion}
+          onValueChange={(value) => updateCompanyValue("direccion", value)}
+          placeholder="Lima, Peru"
+          required={false}
+          icon={<IdentificationCardIcon size={24} weight="fill" />}
+        />
+      ) : null}
 
       <fieldset>
         <legend className="text-sm font-circular-bold text-[var(--color-text)]">
           Como nos conociste
         </legend>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {discoveryOptions.map((option) => {
             const Icon = option.icon;
             const selected = companyData.comoConocio === option.value;
@@ -1322,20 +1268,23 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
                   updateCompanyValue("comoConocio", option.value)
                 }
                 aria-pressed={selected}
-                className={`flex items-center gap-2 rounded-[12px] border px-3 py-2.5 text-left transition-colors ${
+                className={`group relative flex min-h-[82px] flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-all ${
                   selected
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10"
-                    : "border-[var(--color-border)] bg-[var(--color-input-bg)] hover:border-[var(--color-primary)]/40"
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5 shadow-sm"
+                    : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-input-bg)]"
                 }`}
               >
-                <Icon
-                  size={22}
-                  weight="fill"
-                  className="shrink-0"
-                  style={{ color: option.color }}
-                />
                 <span
-                  className={`min-w-0 truncate text-xs font-circular-bold ${
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: `${option.color}18`,
+                    color: option.color,
+                  }}
+                >
+                  <Icon size={20} weight="fill" />
+                </span>
+                <span
+                  className={`text-[11px] font-circular-bold leading-tight ${
                     selected
                       ? "text-[var(--color-primary)]"
                       : "text-[var(--color-text)]"
@@ -1343,6 +1292,13 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
                 >
                   {option.label}
                 </span>
+                {selected ? (
+                  <CheckCircleIcon
+                    size={14}
+                    weight="fill"
+                    className="absolute right-1.5 top-1.5 text-[var(--color-primary)]"
+                  />
+                ) : null}
               </button>
             );
           })}
@@ -1399,7 +1355,7 @@ function RegisterInput({
       >
         {label}
       </label>
-      <div className="flex overflow-hidden rounded-[16px] bg-[var(--color-input-bg)] transition-colors hover:bg-[var(--color-button-hover)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+      <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
         <input
           id={id}
           name={name}
@@ -1415,7 +1371,7 @@ function RegisterInput({
           pattern={pattern}
           onBlur={onBlur}
           onFocus={onFocus}
-          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] xl:h-12"
+          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[var(--color-placeholder)] xl:h-12"
         />
         {endAdornment
           ? endAdornment

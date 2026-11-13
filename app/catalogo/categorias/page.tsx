@@ -595,25 +595,6 @@ export default function CatalogoCategoriasPage() {
             />
           </label>
 
-          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-3">
-            <p className="text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-              Vista previa
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
-                <FolderSimpleIcon size={22} weight="fill" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[var(--color-text)]">
-                  {modal.form.nombre.trim() || "Nombre de la categoria"}
-                </p>
-                <p className="truncate text-xs font-circular-bold text-[var(--color-muted-foreground)]">
-                  {modal.form.descripcion.trim() || "Sin descripcion"}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {modal.error && (
             <p className="text-sm font-circular-regular text-[#d9480f]">
               {modal.error}
