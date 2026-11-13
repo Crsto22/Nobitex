@@ -297,7 +297,11 @@ export function Header({
 
         <button
           type="button"
-          onClick={() => router.push("/configuracion/mi-cuenta")}
+          onClick={() =>
+            router.push(
+              isSuperAdmin ? "/superadmin/mi-cuenta" : "/configuracion/mi-cuenta",
+            )
+          }
           className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
           aria-label="Configuracion"
         >
@@ -440,7 +444,7 @@ export function Header({
                     ) : null}
                   </div>
                   <span className="mt-2 inline-flex items-center rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-circular-bold text-[var(--color-primary)]">
-                    {planName}
+                    {isSuperAdmin ? "Administrador del sistema" : planName}
                   </span>
                 </div>
                 <div className="my-1 h-px bg-[var(--color-border)]" />
@@ -448,7 +452,11 @@ export function Header({
                   type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false);
-                    router.push("/configuracion/mi-cuenta");
+                    router.push(
+                      isSuperAdmin
+                        ? "/superadmin/mi-cuenta"
+                        : "/configuracion/mi-cuenta",
+                    );
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
                 >

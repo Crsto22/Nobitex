@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   EyeIcon,
   EyeSlashIcon,
+  HouseIcon,
   KeyIcon,
   UserIcon,
 } from "@phosphor-icons/react/ssr";
@@ -23,6 +24,7 @@ import {
   ONBOARDING_USER_STORAGE_KEY,
 } from "@/lib/auth/session";
 import { getProductModeFromModuleKeys } from "@/lib/navigation/product-mode";
+import { cn } from "@/lib/utils";
 
 const supportWhatsAppPhone = "51923328058";
 
@@ -48,7 +50,10 @@ export function LoginPage() {
   }, [showToast]);
 
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [emailValue, setEmailValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
+  const isFormComplete =
+    emailValue.trim().length > 0 && passwordValue.trim().length > 0;
   const shouldShowPasswordToggle =
     isPasswordFocused || passwordValue.length > 0;
   const whatsappMessage = encodeURIComponent("Hola, necesito ayuda con Nuvex.");
@@ -150,46 +155,52 @@ export function LoginPage() {
 
   return (
     <main className="h-dvh overflow-hidden bg-[#f3f5fb]">
-      <div className="grid h-full lg:grid-cols-[1fr_minmax(460px,620px)]">
-        <section className="order-2 flex h-full flex-col overflow-y-auto bg-white px-5 py-6 shadow-[90px_0_40px_rgba(16,29,105,0.05)] lg:px-8 lg:py-8">
-          <div className="mb-4 flex w-full justify-start lg:hidden">
-            <Image
-              src="/Logo/logopng.webp"
-              alt="Nuvex"
-              width={96}
-              height={22}
-              className="h-auto w-24"
-              style={{ width: "auto", height: "auto" }}
-              priority
-            />
+      <div className="grid h-full lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
+        <section className="order-2 flex h-full flex-col overflow-y-auto bg-[var(--color-sidebar-bg)] px-5 py-6 shadow-[90px_0_40px_rgba(16,29,105,0.05)] lg:px-8 lg:py-8">
+          <div className="mb-4 flex w-full items-center justify-between">
+            <div className="lg:hidden">
+              <Image
+                src="/Logo/logopng.webp"
+                alt="Nuvex"
+                width={96}
+                height={22}
+                className="h-auto w-24"
+                style={{ width: "auto", height: "auto" }}
+                priority
+              />
+            </div>
+            <Link
+              href="https://nuvex.pe"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Ir a nuvex.pe"
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              <HouseIcon size={20} weight="bold" />
+            </Link>
           </div>
-          <div className="m-auto flex w-full max-w-100 flex-col justify-center gap-5 lg:max-h-[100dvh] xl:gap-6">
-            <div className="mb-2">
-              <h1 className="text-center text-3xl font-black text-[var(--color-primary)] text-fixed-3xl">
+          <div className="m-auto flex w-full max-w-[480px] flex-col justify-center gap-5 lg:max-h-[100dvh] xl:gap-6">
+            <div className="mx-auto mb-2 w-full max-w-[400px]">
+              <h1 className="text-left text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl">
                 Ingresa a tu negocio
               </h1>
-              <p className="mt-2 text-center text-sm font-circular-regular text-[#525b75]">
-                Gestiona ventas, productos y stock.
-              </p>
             </div>
 
-            <form className="space-y-4 xl:space-y-5" onSubmit={handleSubmit}>
+            <form
+              className="mx-auto w-full max-w-[400px] space-y-4 xl:space-y-5"
+              onSubmit={handleSubmit}
+            >
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
-                >
-                  Correo
-                </label>
-                <div className="flex overflow-hidden rounded-xl bg-[#f1f4f9] ring-1 ring-[#edf1f6] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30">
+                <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30">
                   <input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="alex@email.com"
+                    placeholder="Dirección de correo electrónico"
                     autoComplete="email"
                     required
                     disabled={isLoading}
+                    onChange={(event) => setEmailValue(event.target.value)}
                     className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[#9ca5ba] xl:h-12"
                   />
                   <div className="m-1 flex h-9 w-9 shrink-0 items-center justify-center text-[var(--color-secondary)] xl:h-10 xl:w-10">
@@ -199,18 +210,12 @@ export function LoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
-                >
-                  Contrasena
-                </label>
-                <div className="flex overflow-hidden rounded-xl bg-[#f1f4f9] ring-1 ring-[#edf1f6] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30">
+                <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30">
                   <input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Ingresa tu contrasena"
+                    placeholder="Contraseña"
                     autoComplete="current-password"
                     required
                     disabled={isLoading}
@@ -245,10 +250,16 @@ export function LoginPage() {
                     </div>
                   )}
                 </div>
-                <div className="mt-2 text-right">
+                <div className="mt-8 flex items-center justify-between gap-3">
+                  <Link
+                    href="/register"
+                    className="text-xs font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
+                  >
+                    Registrate
+                  </Link>
                   <Link
                     href="/forgot-password"
-                    className="text-xs font-circular-regular text-[var(--color-primary)] underline-offset-4 hover:underline"
+                    className="text-xs font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
                   >
                     Olvidaste tu contraseña?
                   </Link>
@@ -266,7 +277,12 @@ export function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading || (requiresTurnstile && !turnstileToken)}
-                className="h-11 w-full rounded-xl bg-[var(--color-secondary)] text-sm font-circular-regular text-white shadow-[0_14px_28px_rgba(253,116,26,0.28)] hover:bg-[#ef6a12] xl:h-12"
+                className={cn(
+                  "h-11 w-full rounded-2xl text-sm font-circular-regular text-white xl:h-12",
+                  isFormComplete
+                    ? "bg-[var(--color-primary)] hover:bg-[#0c1754]"
+                    : "bg-[#b8bdd6]",
+                )}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
@@ -278,33 +294,28 @@ export function LoginPage() {
                 )}
               </Button>
 
-              <div className="flex items-center gap-4 py-2 xl:py-3">
-                <div className="h-px flex-1 bg-[#e5e9f2]" />
-                <span className="text-xs font-circular-regular uppercase tracking-[0.18em] text-[#a6afc3]">
-                  o
-                </span>
-                <div className="h-px flex-1 bg-[#e5e9f2]" />
-              </div>
-
-              <Button
-                asChild
-                variant="outline"
-                className="h-11 w-full rounded-xl border-[var(--color-secondary)] bg-white text-sm font-circular-regular text-[var(--color-secondary)] hover:bg-[#fff4ec] hover:text-[var(--color-secondary)] xl:h-12"
-              >
-                <Link href="/register">Registrate ahora</Link>
-              </Button>
             </form>
           </div>
         </section>
 
-        <section className="order-1 hidden h-full items-center justify-center bg-[#f3f5fb] px-8 py-10 lg:flex xl:px-12">
-          <div className="flex max-w-[520px] flex-col items-center text-center">
+        <section className="login-dots-bg order-1 hidden h-full flex-col bg-[#f6f2f1] px-8 py-10 lg:flex xl:px-12">
+          <div className="flex w-full shrink-0 items-center justify-start">
             <Image
               src="/Logo/nuvex_logo.svg"
               alt="Nuvex"
-              width={330}
-              height={110}
-              className="h-auto w-[330px] max-w-[330px]"
+              width={160}
+              height={54}
+              className="h-auto w-[160px]"
+              priority
+            />
+          </div>
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <Image
+              src="/img/login.webp"
+              alt="Login"
+              width={520}
+              height={520}
+              className="h-auto w-full max-w-[420px] object-contain"
               priority
             />
           </div>
