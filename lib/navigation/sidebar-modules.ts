@@ -37,6 +37,7 @@ export type SidebarModule = {
   route: string;
   assignable?: boolean;
   ownerOnly?: boolean;
+  badge?: string;
 };
 
 export type SidebarChild = SidebarModule & {
@@ -52,6 +53,7 @@ export type SidebarSection = {
   route?: string;
   assignable?: boolean;
   ownerOnly?: boolean;
+  badge?: string;
   children: SidebarChild[];
 };
 
@@ -88,6 +90,7 @@ export const sidebarSections: SidebarSection[] = [
         label: "Entregas y envíos",
         icon: TruckIcon,
         route: "/entregas-pendientes",
+        badge: "new",
       },
       {
         key: "clientes",
@@ -329,6 +332,7 @@ export const sidebarSections: SidebarSection[] = [
         label: "Link Envíos",
         icon: LinkIcon,
         route: "/configuracion/envios",
+        badge: "new",
       },
       {
         key: "metodos-pago",

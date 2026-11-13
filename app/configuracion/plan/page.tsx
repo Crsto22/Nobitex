@@ -220,7 +220,7 @@ export default function PlanPage() {
 
   return (
     <DashboardShell headerTitle="Plan y facturación">
-      <div className="plan-page-sora content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-5 sm:p-4 lg:px-6 lg:py-5">
+      <div className="plan-page-onest content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-4 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-5 sm:p-4 lg:px-6 lg:py-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-circular-bold text-[var(--color-text)]">

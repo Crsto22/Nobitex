@@ -10,6 +10,7 @@ import {
   MoonIcon,
   SidebarIcon,
   SunIcon,
+  UserCircleIcon,
   WarningCircleIcon,
   XCircleIcon,
 } from "@phosphor-icons/react/ssr";
@@ -23,7 +24,6 @@ import {
 import { useRouter } from "next/navigation";
 
 import { getUserDisplayName, type SessionUser } from "@/lib/auth/session";
-import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import { cn } from "@/lib/utils";
 import {
   notificationsApi,
@@ -48,6 +48,20 @@ const notificationsRefreshCooldownMs = positiveNumber(
   process.env.NEXT_PUBLIC_NOTIFICATIONS_REFRESH_COOLDOWN_MS,
   60_000,
 );
+
+const planNames: Record<string, string> = {
+  prueba: "Plan Prueba",
+  basico: "Plan Basico",
+  impulsa: "Plan Impulsa",
+  emprendedor: "Plan Emprendedor",
+  crecimiento: "Plan Crecimiento",
+  empresarial: "Plan Empresarial",
+  pos_basico: "POS Basico",
+  asistencias_basico: "Asistencias Basico",
+  asistencias_pro: "Asistencias Pro",
+  completo_emprende: "Completo Emprende",
+  completo_empresa: "Completo Empresa",
+};
 
 type NotificationLoadOptions = RequestInit & { force?: boolean };
 
@@ -207,7 +221,6 @@ export function Header({
   };
 
   const userName = getUserDisplayName(user ?? null);
-  const companyName = user?.empresaNombreComercial;
   const isSuperAdmin = user?.roles.includes("SUPERADMIN") ?? false;
   const isTrial = !planCode || planCode === "prueba";
   const planRoute = isAttendanceContext
@@ -220,6 +233,9 @@ export function Header({
     : isTrial
       ? "Mejorar plan"
       : "Uso y plan";
+  const planName = planCode
+    ? (planNames[planCode] ?? planCode)
+    : "Plan gratuito";
 
   return (
     <header
@@ -390,34 +406,60 @@ export function Header({
             <button
               type="button"
               onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
-              className="flex min-w-0 items-center gap-2 "
+              className="flex min-w-0 items-center gap-2 rounded-full bg-[var(--color-card)] px-3 py-1.5 transition-colors hover:bg-[var(--color-button-hover)]"
               aria-label="Menu de usuario"
               aria-expanded={isUserMenuOpen}
             >
-              <UserAvatar
-                seed={user?.id ?? userName}
-                name={userName}
-                size={28}
-                className="size-7 ring-1 ring-[var(--color-border)]"
-              />
-              <span className="hidden min-w-0 flex-col items-start leading-tight sm:flex">
-                <span className="max-w-36 truncate text-sm font-circular-regular text-[var(--color-text)] whitespace-nowrap">
-                  {userName}
-                </span>
-                {companyName && (
-                  <span className="max-w-36 truncate text-[11px]  text-[var(--color-text)]/55 whitespace-nowrap">
-                    {companyName}
-                  </span>
+              <span className="hidden max-w-36 truncate text-sm font-circular-regular text-[var(--color-text)] whitespace-nowrap sm:block">
+                {userName}
+              </span>
+              <span
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-[11px] font-circular-bold uppercase text-white",
+                  !isTrial &&
+                    "ring-2 ring-[var(--color-secondary)] ring-offset-2 ring-offset-[var(--color-card)]",
                 )}
+              >
+                {userName.trim().charAt(0).toUpperCase()}
               </span>
             </button>
 
             {isUserMenuOpen ? (
-              <div className="absolute right-0 top-full z-50 mt-2 w-[180px] rounded-xl bg-[var(--color-input-bg)] p-1 shadow-lg ring-1 ring-[var(--color-border)]">
+              <div className="absolute right-0 top-full z-50 mt-2 w-[236px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
+                      {userName}
+                    </p>
+                    {!isTrial ? (
+                      <CrownIcon
+                        size={14}
+                        weight="fill"
+                        className="shrink-0 text-[#eab308]"
+                      />
+                    ) : null}
+                  </div>
+                  <span className="mt-2 inline-flex items-center rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-circular-bold text-[var(--color-primary)]">
+                    {planName}
+                  </span>
+                </div>
+                <div className="my-1 h-px bg-[var(--color-border)]" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    router.push("/configuracion/mi-cuenta");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                >
+                  <UserCircleIcon size={16} />
+                  <span>Mi perfil</span>
+                </button>
+                <div className="my-1 h-px bg-[var(--color-border)]" />
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-circular-regular text-[#ef4444] transition-colors hover:bg-[#ef4444]/10"
                 >
                   <SignOutIcon size={16} />
                   <span>Cerrar sesion</span>

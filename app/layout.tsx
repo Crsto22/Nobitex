@@ -36,17 +36,7 @@ const sidebarStateScript = `
   (function () {
     try {
       var collapsed = localStorage.getItem("sidebar-collapsed") === "true";
-      var expandedSections = localStorage.getItem("sidebar-expanded-sections");
       document.documentElement.dataset.sidebarCollapsed = String(collapsed);
-
-      if (expandedSections) {
-        var parsed = JSON.parse(expandedSections);
-        if (Array.isArray(parsed)) {
-          document.documentElement.dataset.sidebarExpandedSections = parsed
-            .filter(function (value) { return typeof value === "string"; })
-            .join(" ");
-        }
-      }
     } catch (error) {}
   })();
 `;

@@ -143,7 +143,7 @@ export default function AsistenciasDashboardPage() {
   }, [loadDashboard]);
 
   return (
-    <DashboardShell>
+    <DashboardShell headerTitle="Dashboard">
       <div className="flex flex-1 flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:px-10 md:py-10">
         <FilterBar
           selectedDateFilter={selectedFilter}

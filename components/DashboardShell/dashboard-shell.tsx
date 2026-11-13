@@ -308,13 +308,13 @@ export function DashboardShell({
         aria-hidden="true"
         className={cn(
           "hidden h-dvh shrink-0 transition-[width] duration-200 md:block",
-          isSidebarCollapsed ? "w-[76px]" : "w-[268px]",
+          isSidebarCollapsed ? "w-[76px]" : "w-[244px]",
         )}
       />
       <Sidebar
         collapsed={isMobile ? false : isSidebarCollapsed}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 border-r border-[var(--color-border)] shadow-xl transition-transform md:translate-x-0 md:shadow-none",
+          "fixed inset-y-0 left-0 z-50 shadow-xl transition-transform md:translate-x-0 md:shadow-none",
           isMobileSidebarOpen
             ? "max-md:translate-x-0"
             : "max-md:-translate-x-full",
@@ -324,7 +324,7 @@ export function DashboardShell({
         onNavigate={() => setIsMobileSidebarOpen(false)}
       />
 
-      <section className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--color-background)] transition-colors duration-200">
+      <section className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--color-sidebar-bg)] transition-colors duration-200">
         <Header
           title={
             headerParent ? (
@@ -368,7 +368,7 @@ export function DashboardShell({
             para reactivarla.
           </div>
         ) : null}
-        <div className="content-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="content-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl bg-[var(--color-background)]">
           {children}
         </div>
       </section>

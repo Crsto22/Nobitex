@@ -5,11 +5,12 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useSyncExternalStore,
+  type Ref,
 } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { MinusCircleIcon, PlusCircleIcon } from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -23,21 +24,8 @@ import {
   type SidebarSection,
 } from "@/lib/navigation/sidebar-modules";
 
-const SIDEBAR_EXPANDED_SECTIONS_STORAGE_KEY = "sidebar-expanded-sections:v1";
-const SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT =
-  "sidebar-expanded-sections-change";
 const SIDEBAR_SCROLL_STORAGE_KEY = "sidebar-scroll-position:v1";
 const SIDEBAR_WORKSPACE_STORAGE_KEY = "sidebar-workspace:v1";
-const allSidebarSections = [
-  ...sidebarSections,
-  ...attendanceSidebarSections,
-  ...superAdminSidebarSections,
-];
-const defaultExpandedSections = allSidebarSections.map(
-  (section) => section.label,
-);
-const defaultExpandedSectionsSnapshot = JSON.stringify(defaultExpandedSections);
-const sectionLabels = new Set(defaultExpandedSections);
 
 type SidebarProps = {
   className?: string;
@@ -46,46 +34,6 @@ type SidebarProps = {
   companyLogoUrl?: string | null;
   onNavigate?: () => void;
 };
-
-function getSectionRoute(section: SidebarSection) {
-  if (section.route) {
-    return section.route;
-  }
-
-  return section.children.find((child) => child.route)?.route;
-}
-
-function parseExpandedSectionsSnapshot(snapshot: string | null) {
-  try {
-    const parsed = snapshot ? JSON.parse(snapshot) : defaultExpandedSections;
-    if (!Array.isArray(parsed)) {
-      return defaultExpandedSections;
-    }
-
-    return parsed.filter(
-      (value): value is string =>
-        typeof value === "string" && sectionLabels.has(value),
-    );
-  } catch {
-    return defaultExpandedSections;
-  }
-}
-
-function syncExpandedSectionsAttribute(expandedSections: string[]) {
-  document.documentElement.dataset.sidebarExpandedSections =
-    expandedSections.join(" ");
-}
-
-function getExpandedSectionsSnapshot() {
-  return (
-    localStorage.getItem(SIDEBAR_EXPANDED_SECTIONS_STORAGE_KEY) ??
-    defaultExpandedSectionsSnapshot
-  );
-}
-
-function getServerExpandedSectionsSnapshot() {
-  return defaultExpandedSectionsSnapshot;
-}
 
 function getPathWorkspace(pathname: string): SidebarWorkspace {
   return pathname.startsWith("/asistencias") ? "asistencias" : "ventas";
@@ -112,24 +60,91 @@ function workspaceHasAllowedModules(
   });
 }
 
-function subscribeToExpandedSections(onStoreChange: () => void) {
-  const handleChange = () => {
-    syncExpandedSectionsAttribute(
-      parseExpandedSectionsSnapshot(getExpandedSectionsSnapshot()),
-    );
-    onStoreChange();
+function SidebarNavButton({
+  icon: Icon,
+  label,
+  badge,
+  isActive,
+  collapsed = false,
+  onClick,
+  trailingIcon,
+  buttonRef,
+}: {
+  icon: Icon;
+  label: string;
+  badge?: string;
+  isActive: boolean;
+  collapsed?: boolean;
+  onClick: () => void;
+  trailingIcon?: {
+    icon: Icon;
+    label: string;
+    onClick: () => void;
   };
+  buttonRef?: Ref<HTMLButtonElement>;
+}) {
+  const TrailingIcon = trailingIcon?.icon;
 
-  window.addEventListener("storage", handleChange);
-  window.addEventListener(SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT, handleChange);
-
-  return () => {
-    window.removeEventListener("storage", handleChange);
-    window.removeEventListener(
-      SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT,
-      handleChange,
-    );
-  };
+  return (
+    <div
+      className={cn(
+        "flex items-center rounded-[10px] transition-colors",
+        collapsed ? "" : "w-full gap-1",
+        isActive
+          ? "bg-[var(--color-sidebar-active-bg)]"
+          : "hover:bg-[var(--color-sidebar-hover)]",
+      )}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={onClick}
+        title={collapsed ? label : undefined}
+        aria-label={label}
+        aria-current={isActive ? "page" : undefined}
+        className={cn(
+          "flex items-center text-[var(--color-sidebar-option-text)]",
+          collapsed
+            ? "h-10 w-10 justify-center"
+            : "min-w-0 flex-1 gap-2 px-3 py-2 text-left",
+        )}
+      >
+        <Icon
+          size={collapsed ? 20 : 18}
+          weight={isActive ? "fill" : "regular"}
+          className="shrink-0"
+        />
+        {!collapsed ? (
+          <>
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-sm leading-none",
+                isActive && "font-circular-bold",
+              )}
+            >
+              {label}
+            </span>
+            {badge ? (
+              <span className="ml-auto shrink-0 rounded-full bg-[var(--color-primary)] px-1.5 py-1 text-[9px] font-circular-bold lowercase leading-none text-white dark:bg-[#3b5bdb]">
+                {badge}
+              </span>
+            ) : null}
+          </>
+        ) : null}
+      </button>
+      {!collapsed && trailingIcon && TrailingIcon ? (
+        <button
+          type="button"
+          onClick={trailingIcon.onClick}
+          title={trailingIcon.label}
+          aria-label={trailingIcon.label}
+          className="mr-1.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[var(--color-sidebar-action-bg)] text-[var(--color-sidebar-option-text)] transition-opacity hover:opacity-80"
+        >
+          <TrailingIcon size={10} weight="bold" />
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 export function Sidebar({
@@ -143,7 +158,6 @@ export function Sidebar({
   const pathname = usePathname();
   const activeItemRef = useRef<HTMLButtonElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
-  const syncedPathnameRef = useRef<string | null>(null);
   const { user, currentPlan } = useAuth();
   const pathWorkspace = getPathWorkspace(pathname);
   const allowedModuleKeys = useMemo(
@@ -217,28 +231,6 @@ export function Sidebar({
     isOwner,
     isSuperAdmin,
   ]);
-  const expandedSectionsSnapshot = useSyncExternalStore(
-    subscribeToExpandedSections,
-    getExpandedSectionsSnapshot,
-    getServerExpandedSectionsSnapshot,
-  );
-  const expandedSections = useMemo(
-    () => parseExpandedSectionsSnapshot(expandedSectionsSnapshot),
-    [expandedSectionsSnapshot],
-  );
-
-  const toggleSection = (sectionLabel: string) => {
-    const newSections = expandedSections.includes(sectionLabel)
-      ? expandedSections.filter((s) => s !== sectionLabel)
-      : [...expandedSections, sectionLabel];
-
-    localStorage.setItem(
-      SIDEBAR_EXPANDED_SECTIONS_STORAGE_KEY,
-      JSON.stringify(newSections),
-    );
-    syncExpandedSectionsAttribute(newSections);
-    window.dispatchEvent(new Event(SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT));
-  };
 
   const navigateTo = (route?: string) => {
     if (!route) {
@@ -258,13 +250,6 @@ export function Sidebar({
     const route = workspaceOptions.find((option) => option.key === nextWorkspace)
       ?.route;
     navigateTo(route);
-  };
-
-  const navigateToSection = (section: SidebarSection) => {
-    if (!section.direct && !expandedSections.includes(section.label)) {
-      toggleSection(section.label);
-    }
-    navigateTo(getSectionRoute(section));
   };
 
   const isRouteActive = useCallback(
@@ -308,6 +293,34 @@ export function Sidebar({
     [activeChildRoute],
   );
 
+  const getTrailingIcon = (item: SidebarChild) => {
+    if (item.key === "productos") {
+      return {
+        icon: PlusIcon,
+        label: "Crear producto",
+        onClick: () => navigateTo("/catalogo/productos/crear"),
+      };
+    }
+
+    if (item.key === "nota-credito") {
+      return {
+        icon: PlusIcon,
+        label: "Crear nota de credito",
+        onClick: () => navigateTo("/facturacion/nota-credito/nuevo"),
+      };
+    }
+
+    if (item.key === "nota-debito") {
+      return {
+        icon: PlusIcon,
+        label: "Crear nota de debito",
+        onClick: () => navigateTo("/facturacion/nota-debito/nuevo"),
+      };
+    }
+
+    return undefined;
+  };
+
   useEffect(() => {
     if (isSuperAdmin) {
       return;
@@ -315,30 +328,6 @@ export function Sidebar({
 
     localStorage.setItem(SIDEBAR_WORKSPACE_STORAGE_KEY, workspace);
   }, [isSuperAdmin, workspace]);
-
-  useEffect(() => {
-    if (syncedPathnameRef.current === pathname) {
-      return;
-    }
-
-    syncedPathnameRef.current = pathname;
-
-    const activeSection = visibleSections.find(
-      (section) => !section.direct && isSectionActive(section),
-    );
-
-    if (!activeSection || expandedSections.includes(activeSection.label)) {
-      return;
-    }
-
-    const newSections = [...expandedSections, activeSection.label];
-    localStorage.setItem(
-      SIDEBAR_EXPANDED_SECTIONS_STORAGE_KEY,
-      JSON.stringify(newSections),
-    );
-    syncExpandedSectionsAttribute(newSections);
-    window.dispatchEvent(new Event(SIDEBAR_EXPANDED_SECTIONS_CHANGE_EVENT));
-  }, [expandedSections, isSectionActive, pathname, visibleSections]);
 
   useEffect(() => {
     const savedPosition = sessionStorage.getItem(
@@ -358,43 +347,50 @@ export function Sidebar({
     }, 220);
 
     return () => window.clearTimeout(timer);
-  }, [pathname, collapsed, expandedSectionsSnapshot]);
+  }, [pathname, collapsed]);
 
   return (
     <aside
       className={cn(
-        "sidebar-shell font-circular-light flex h-dvh max-h-dvh shrink-0 flex-col items-center overflow-hidden bg-[var(--color-sidebar-bg)] py-4 text-[var(--color-sidebar-text)] transition-[width,padding,color,background-color] duration-200",
+        "sidebar-shell font-circular-regular flex h-dvh max-h-dvh shrink-0 flex-col items-center overflow-hidden bg-[var(--color-sidebar-bg)] py-3 text-[var(--color-sidebar-text)] transition-[width,padding,color,background-color] duration-200",
         collapsed
-          ? "w-[72px] px-2 md:w-[76px] md:px-2"
-          : "w-[244px] px-4 md:w-[268px] md:px-5 md:pt-4 md:pb-5",
+          ? "w-[72px] px-1.5 md:w-[76px] md:px-1.5"
+          : "w-[224px] px-2 md:w-[244px] md:px-3 md:pt-3 md:pb-4",
         className,
       )}
     >
-      <div className="flex w-full shrink-0 flex-col items-center px-1">
-        {!isSuperAdmin && companyLogoUrl ? (
-          <Image
-            src={companyLogoUrl}
-            alt={companyName || "Logo empresa"}
-            width={38}
-            height={38}
-            unoptimized
-            className="h-[38px] w-[38px] rounded-lg object-contain"
-          />
-        ) : (
-          <Image
-            src="/Logo/Nuvex.png"
-            width={38}
-            height={38}
-            className="h-auto w-[38px]"
-            priority
-            alt="Nuvex"
-          />
-        )}
-        {!collapsed ? (
-          <p className="sidebar-brand-name font-circular-bold mt-2 text-center text-sm leading-none dark:text-[#f6f8ff] text-[#0f2239]">
-            {isSuperAdmin ? "Nuvex Admin" : companyName || "Mi Empresa"}
-          </p>
-        ) : null}
+      <div className="flex w-full shrink-0 flex-col items-center">
+        <div
+          className={cn(
+            "flex w-full items-center",
+            collapsed ? "justify-center" : "gap-3",
+          )}
+        >
+          {!isSuperAdmin && companyLogoUrl ? (
+            <Image
+              src={companyLogoUrl}
+              alt={companyName || "Logo empresa"}
+              width={38}
+              height={38}
+              unoptimized
+              className="h-[38px] w-[38px] shrink-0 rounded-lg object-contain"
+            />
+          ) : (
+            <Image
+              src="/Logo/Nuvex.png"
+              width={38}
+              height={38}
+              className="h-auto w-[38px] shrink-0"
+              priority
+              alt="Nuvex"
+            />
+          )}
+          {!collapsed ? (
+            <p className="sidebar-brand-name font-circular-bold line-clamp-2 min-w-0 flex-1 text-left text-sm leading-tight dark:text-[#f6f8ff] text-[#0f2239]">
+              {isSuperAdmin ? "Nuvex Admin" : companyName || "Mi Empresa"}
+            </p>
+          ) : null}
+        </div>
         {!isSuperAdmin && canSwitchWorkspace ? (
           <div
             className={cn(
@@ -450,170 +446,97 @@ export function Sidebar({
         className="sidebar-scrollbar flex min-h-0 w-full flex-1 flex-col justify-start overflow-y-auto overscroll-contain py-4"
       >
         {collapsed ? (
-          <ul className="sidebar-collapsed-nav flex w-full shrink-0 flex-col items-center gap-2">
-            {visibleSections.map((section) => {
-              const Icon = section.icon;
-              const isActive = isSectionActive(section);
+          <ul className="sidebar-collapsed-nav flex w-full shrink-0 flex-col items-center gap-1">
+            {visibleSections.map((section, index) => {
+              const items = section.direct
+                ? [
+                    {
+                      key: section.key,
+                      label: section.label,
+                      icon: section.icon,
+                      route: section.route,
+                      isActive: isSectionActive(section),
+                    },
+                  ]
+                : section.children.map((child) => ({
+                    key: child.key,
+                    label: child.label,
+                    icon: child.icon,
+                    route: child.route,
+                    isActive: isChildActive(child),
+                  }));
 
               return (
-                <li key={section.label} className="shrink-0">
-                  <button
-                    ref={isActive ? activeItemRef : undefined}
-                    type="button"
-                    onClick={() => navigateToSection(section)}
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-[10px] transition-colors",
-                      isActive
-                        ? "bg-[var(--color-primary)] text-white shadow-sm dark:bg-[var(--color-secondary)] dark:text-white"
-                        : "text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]",
-                    )}
-                    aria-label={section.label}
-                  >
-                    <Icon size={20} weight={isActive ? "fill" : "regular"} />
-                  </button>
+                <li
+                  key={section.key}
+                  className="flex w-full flex-col items-center gap-1"
+                >
+                  {items.map((item) => (
+                    <SidebarNavButton
+                      key={item.key}
+                      collapsed
+                      icon={item.icon}
+                      label={item.label}
+                      isActive={item.isActive}
+                      onClick={() => navigateTo(item.route)}
+                      buttonRef={item.isActive ? activeItemRef : undefined}
+                    />
+                  ))}
+                  {index < visibleSections.length - 1 ? (
+                    <span className="my-1 h-px w-6 rounded-full bg-[var(--color-border)]" />
+                  ) : null}
                 </li>
               );
             })}
           </ul>
         ) : (
-          <ul className="sidebar-expanded-nav flex w-full shrink-0 flex-col gap-2 pr-2">
+          <ul className="sidebar-expanded-nav flex w-full shrink-0 flex-col gap-4 pr-1">
             {visibleSections.map((section) => {
-              const SectionIcon = section.icon;
-              const isExpanded = expandedSections.includes(section.label);
-              const isHeaderActive = isSectionActive(section);
-              const isDirectActive = Boolean(section.direct && isHeaderActive);
-              const SectionToggleIcon = isExpanded
-                ? MinusCircleIcon
-                : PlusCircleIcon;
+              if (section.direct) {
+                const isActive = isSectionActive(section);
+
+                return (
+                  <li key={section.key} className="shrink-0 md:w-full">
+                    <SidebarNavButton
+                      icon={section.icon}
+                      label={section.label}
+                      badge={section.badge}
+                      isActive={isActive}
+                      onClick={() => navigateTo(section.route)}
+                      buttonRef={isActive ? activeItemRef : undefined}
+                    />
+                  </li>
+                );
+              }
 
               return (
                 <li
-                  key={section.label}
+                  key={section.key}
                   className="sidebar-section shrink-0 md:w-full"
                   data-sidebar-section={section.label}
                 >
-                  <div className="flex flex-col gap-1">
-                    <div
-                      className={cn(
-                        "sidebar-section-row flex w-full items-center gap-1 rounded-[10px] transition-colors",
-                        isDirectActive
-                          ? "bg-[var(--color-primary)] text-white shadow-sm dark:bg-[var(--color-secondary)] dark:text-white"
-                          : isHeaderActive
-                            ? "text-[var(--color-sidebar-active)] dark:text-[var(--color-secondary)]"
-                            : "text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]",
-                      )}
-                    >
-                      <button
-                        ref={isDirectActive ? activeItemRef : undefined}
-                        type="button"
-                        onClick={() => navigateToSection(section)}
-                        className="sidebar-section-button flex min-w-0 flex-1 items-center gap-2 rounded-[10px] px-3 py-2 text-left"
-                        aria-expanded={section.direct ? undefined : isExpanded}
-                      >
-                        <SectionIcon
-                          size={18}
-                          weight={isHeaderActive ? "fill" : "regular"}
-                          className={cn(
-                            "shrink-0",
-                            isDirectActive
-                              ? "text-white"
-                              : isHeaderActive
-                                ? "text-[var(--color-sidebar-active)] dark:text-[var(--color-secondary)]"
-                                : "text-[var(--color-sidebar-text)]",
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            "sidebar-section-label min-w-0 flex-1 truncate text-sm leading-none",
-                            isDirectActive
-                              ? "font-circular-bold text-white"
-                              : isHeaderActive
-                                ? "font-circular-bold text-[var(--color-sidebar-active)] dark:text-[var(--color-secondary)]"
-                                : "text-[var(--color-sidebar-text)]",
-                          )}
-                        >
-                          {section.label}
-                        </span>
-                      </button>
-                      {!section.direct ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleSection(section.label)}
-                          className={cn(
-                            "sidebar-section-toggle mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] transition-colors",
-                            isHeaderActive
-                              ? "text-[var(--color-sidebar-active)] hover:bg-[var(--color-sidebar-hover)] dark:text-[var(--color-secondary)]"
-                              : "text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]",
-                          )}
-                          aria-label={
-                            isExpanded
-                              ? `Contraer ${section.label}`
-                              : `Expandir ${section.label}`
-                          }
-                          aria-expanded={isExpanded}
-                        >
-                          <SectionToggleIcon size={17} />
-                        </button>
-                      ) : null}
-                    </div>
+                  <p className="px-3 pb-1.5 text-[12px] lowercase first-letter:uppercase leading-none text-[var(--color-sidebar-text)]">
+                    {section.label}
+                  </p>
+                  <ul className="flex flex-col gap-1">
+                    {section.children.map((item) => {
+                      const isActive = isChildActive(item);
 
-                    {!section.direct ? (
-                      <div
-                        className={cn(
-                          "overflow-hidden transition-[max-height,opacity,transform] duration-200 ease-out",
-                          isExpanded
-                            ? "opacity-100 translate-y-0"
-                            : "opacity-0 -translate-y-1",
-                        )}
-                        style={{
-                          maxHeight: isExpanded
-                            ? `${section.children.length * 36}px`
-                            : "0px",
-                        }}
-                      >
-                        <div className="sidebar-section-children relative ml-5 flex flex-col gap-1 pl-2 before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-[var(--color-border)] before:content-['']">
-                          {section.children.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = isChildActive(item);
-
-                            return (
-                              <button
-                                ref={isActive ? activeItemRef : undefined}
-                                key={item.label}
-                                type="button"
-                                onClick={() => navigateTo(item.route)}
-                                className={cn(
-                                  "flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-left text-sm transition-colors",
-                                  isActive
-                                    ? "bg-[var(--color-primary)] text-white shadow-sm dark:bg-[var(--color-secondary)] dark:text-white"
-                                    : "text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]",
-                                )}
-                              >
-                                <Icon
-                                  size={16}
-                                  weight={isActive ? "fill" : "regular"}
-                                  className={cn(
-                                    "shrink-0",
-                                    isActive
-                                      ? "text-white"
-                                      : "text-[var(--color-sidebar-text)]",
-                                  )}
-                                />
-                                <span
-                                  className={cn(
-                                    "min-w-0 truncate",
-                                    isActive ? "font-circular-bold" : "",
-                                  )}
-                                >
-                                  {item.label}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
+                      return (
+                        <li key={item.key}>
+                          <SidebarNavButton
+                            icon={item.icon}
+                            label={item.label}
+                            badge={item.badge}
+                            isActive={isActive}
+                            onClick={() => navigateTo(item.route)}
+                            trailingIcon={getTrailingIcon(item)}
+                            buttonRef={isActive ? activeItemRef : undefined}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </li>
               );
             })}

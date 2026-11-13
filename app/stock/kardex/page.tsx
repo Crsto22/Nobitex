@@ -417,7 +417,7 @@ function VariantCard({ variant }: { variant: StockKardexVariant }) {
         <div className="mt-auto flex items-end justify-end pt-2">
           <span
             className={cn(
-              "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
+              "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
               stock >= 3
                 ? "bg-[var(--color-sidebar-active)]"
                 : "bg-[#ef4444]",

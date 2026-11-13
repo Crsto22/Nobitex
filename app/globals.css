@@ -6,49 +6,57 @@
 @custom-variant dark (&:is(.dark *));
 
 @font-face {
-  font-family: "Sora";
-  src: url("/font/Sora-Light.ttf") format("truetype");
+  font-family: "Onest";
+  src: url("/font/Onest-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("/font/Lato-Light.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Sora";
-  src: url("/font/Sora-Regular.ttf") format("truetype");
+  font-family: "Lato";
+  src: url("/font/Lato-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Sora";
-  src: url("/font/Sora-Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Sora";
-  src: url("/font/Sora-SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Sora";
-  src: url("/font/Sora-Bold.ttf") format("truetype");
+  font-family: "Lato";
+  src: url("/font/Lato-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Sora";
-  src: url("/font/Sora-ExtraBold.ttf") format("truetype");
-  font-weight: 800 900;
+  font-family: "Lato";
+  src: url("/font/Lato-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/font/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lora";
+  src: url("/font/Lora-Variable.woff2") format("woff2");
+  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
@@ -58,19 +66,28 @@
   --color-secondary: #fd741a;
   --color-background: #ffffff;
   --color-text: #1f1f23;
-  --color-sidebar-bg: #f4f4f4;
+  --color-sidebar-bg: #fbfaf9;
   --color-sidebar-text: #1f1f23;
+  --color-sidebar-option-text: #3f3f46;
   --color-sidebar-hover: #ececeb;
+  --color-sidebar-active-bg: #f0ede8;
+  --color-sidebar-action-bg: #e7e2db;
   --color-sidebar-active: #11253a;
-  --color-header-bg: #ffffff;
+  --color-header-bg: var(--color-sidebar-bg);
   --color-card: #ffffff;
   --color-input-bg: #f6f6f7;
   --color-input-text: #404047;
   --color-placeholder: #b2b2b9;
   --color-button-hover: #f4f4f4;
-  --font-sora: "Sora", system-ui, -apple-system, sans-serif;
-  --font-primary: var(--font-sora);
-  --font-heading-primary: var(--font-sora);
+  --font-onest: "Onest", system-ui, -apple-system, sans-serif;
+  --font-lato: "Lato", system-ui, -apple-system, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+  --font-lora: "Lora", Georgia, serif;
+  --font-primary: var(--font-onest);
+  --font-heading-primary: var(--font-onest);
+  --font-description: var(--font-lato);
+  --font-code: var(--font-geist-mono);
   --background: #ffffff;
   --foreground: #101d69;
   --card: #ffffff;
@@ -136,33 +153,45 @@ h6,
 }
 
 .font-circular-light {
-  font-family: var(--font-sora) !important;
+  font-family: var(--font-onest) !important;
   font-weight: 300 !important;
 }
 
 .font-circular-regular {
-  font-family: var(--font-sora) !important;
+  font-family: var(--font-onest) !important;
   font-weight: 400 !important;
 }
 
 .font-circular-bold {
-  font-family: var(--font-sora) !important;
+  font-family: var(--font-onest) !important;
   font-weight: 700 !important;
 }
 
 .font-circular-black {
-  font-family: var(--font-sora) !important;
+  font-family: var(--font-onest) !important;
   font-weight: 800 !important;
 }
 
-.font-sora-extrabold {
-  font-family: var(--font-sora) !important;
+.font-onest-extrabold {
+  font-family: var(--font-onest) !important;
   font-weight: 900 !important;
 }
 
-.plan-page-sora,
-.plan-page-sora * {
-  font-family: var(--font-sora) !important;
+.plan-page-onest,
+.plan-page-onest * {
+  font-family: var(--font-onest) !important;
+}
+
+.font-description {
+  font-family: var(--font-description);
+}
+
+.font-code {
+  font-family: var(--font-code);
+}
+
+.font-lora {
+  font-family: var(--font-lora);
 }
 
 @keyframes nuvex-loader-slide {
@@ -367,91 +396,10 @@ html[data-sidebar-collapsed="true"] .sidebar-shell {
   padding-left: 0.5rem !important;
 }
 
-html[data-sidebar-collapsed="true"] .sidebar-brand-name,
-html[data-sidebar-collapsed="true"] .sidebar-section-label,
-html[data-sidebar-collapsed="true"] .sidebar-section-toggle,
-html[data-sidebar-collapsed="true"] .sidebar-section-children {
-  display: none !important;
-}
-
-html[data-sidebar-collapsed="true"] .sidebar-expanded-nav {
-  align-items: center !important;
-  gap: 0.5rem !important;
-  padding-right: 0 !important;
-}
-
-html[data-sidebar-collapsed="true"] .sidebar-section {
-  width: auto !important;
-}
-
-html[data-sidebar-collapsed="true"] .sidebar-section-row,
-html[data-sidebar-collapsed="true"] .sidebar-section-button {
-  width: 2.5rem !important;
-  height: 2.5rem !important;
-}
-
-html[data-sidebar-collapsed="true"] .sidebar-section-row {
-  justify-content: center !important;
-}
-
-html[data-sidebar-collapsed="true"] .sidebar-section-button {
-  flex: none !important;
-  justify-content: center !important;
-  padding: 0 !important;
-}
-
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Operaciones"]
-  )
-  .sidebar-section[data-sidebar-section="Operaciones"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Historial"]
-  )
-  .sidebar-section[data-sidebar-section="Historial"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Facturacion"]
-  )
-  .sidebar-section[data-sidebar-section="Facturacion"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="GRE"]
-  )
-  .sidebar-section[data-sidebar-section="GRE"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Catalogo"]
-  )
-  .sidebar-section[data-sidebar-section="Catalogo"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Stock"]
-  )
-  .sidebar-section[data-sidebar-section="Stock"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Reportes"]
-  )
-  .sidebar-section[data-sidebar-section="Reportes"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Administracion"]
-  )
-  .sidebar-section[data-sidebar-section="Administracion"]
-  .sidebar-section-children,
-html[data-sidebar-expanded-sections]:not(
-    [data-sidebar-expanded-sections~="Configuracion"]
-  )
-  .sidebar-section[data-sidebar-section="Configuracion"]
-  .sidebar-section-children {
-  display: none !important;
-}
-
 @theme inline {
-  --font-heading: var(--font-sora);
-  --font-sans: var(--font-sora);
-  --font-mono: var(--font-sora);
+  --font-heading: var(--font-onest);
+  --font-sans: var(--font-onest);
+  --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -499,9 +447,12 @@ html[data-sidebar-expanded-sections]:not(
   --color-text: #f6f8ff;
   --color-sidebar-bg: #11253a;
   --color-sidebar-text: #f6f8ff;
+  --color-sidebar-option-text: #f6f8ff;
   --color-sidebar-hover: #1b2a82;
+  --color-sidebar-active-bg: #1b2a82;
+  --color-sidebar-action-bg: #17246f;
   --color-sidebar-active: #11253a;
-  --color-header-bg: #0a0a0a;
+  --color-header-bg: var(--color-sidebar-bg);
   --color-card: #11253a;
   --color-input-bg: #11253a;
   --color-input-text: #c8d0ff;

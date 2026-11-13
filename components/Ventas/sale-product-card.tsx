@@ -149,7 +149,7 @@ export function SaleProductCard({
         </span>
         <span
           className={cn(
-            "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px]",
+            "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px]",
             stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
           )}
         >
@@ -194,7 +194,7 @@ export function SaleProductCard({
         {priceOverflows ? (
           <span
             className={cn(
-              "font-sora-extrabold absolute right-0 top-0 z-10 flex h-6 items-center gap-1 rounded-full px-2 text-xs text-white shadow-sm",
+              "font-onest-extrabold absolute right-0 top-0 z-10 flex h-6 items-center gap-1 rounded-full px-2 text-xs text-white shadow-sm",
               stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
             )}
           >
@@ -302,7 +302,7 @@ export function SaleProductCard({
         {priceOverflows ? null : (
           <span
             className={cn(
-              "font-sora-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
+              "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
               stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
             )}
           >
