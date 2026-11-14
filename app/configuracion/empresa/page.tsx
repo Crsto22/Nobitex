@@ -6,18 +6,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  BuildingIcon,
   CameraIcon,
   CaretDownIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
   CrownIcon,
-  EnvelopeSimpleIcon,
   FileTextIcon,
   IdentificationCardIcon,
   KeyIcon,
   MapPinIcon,
-  PhoneIcon,
   ShieldCheckIcon,
   TagIcon,
   TrashIcon,
@@ -25,6 +22,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { ProfileSkeleton } from "@/components/ProfileSkeleton/profile-skeleton";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   companyApi,
@@ -529,28 +527,18 @@ export function EmpresaPageContent({
     return false;
   })();
 
+  const companyName =
+    form.nombreComercial.trim() || company?.nombreComercial || "Mi empresa";
+  const companySubtitle = form.ruc.trim()
+    ? `RUC ${form.ruc.trim()}`
+    : form.razonSocial.trim() || "Datos de la empresa";
+  const companyInitial = companyName.trim().charAt(0).toUpperCase() || "E";
+
   if (isLoading) {
     return (
       <DashboardShell headerTitle="Empresa">
         <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 sm:gap-4 sm:p-4 lg:px-6">
-          <div className="h-11 w-full max-w-md animate-pulse rounded-[16px] bg-[var(--color-input-bg)]" />
-          <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-            <div className="animate-pulse p-6">
-              <div className="mb-4 h-4 w-32 rounded bg-[var(--color-input-bg)]" />
-              <div className="mx-auto h-40 w-40 rounded-2xl bg-[var(--color-input-bg)]" />
-            </div>
-            <div className="animate-pulse p-6">
-              <div className="mb-4 h-4 w-40 rounded bg-[var(--color-input-bg)]" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-11 rounded-[16px] bg-[var(--color-input-bg)]"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+          <ProfileSkeleton fields={6} showTabs={!attendanceMode} />
         </div>
       </DashboardShell>
     );
@@ -559,100 +547,106 @@ export function EmpresaPageContent({
   return (
     <DashboardShell headerTitle="Empresa">
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        {!attendanceMode ? (
-          <div className="flex flex-wrap gap-2 rounded-[16px] bg-[var(--color-input-bg)] p-1">
-            <TabButton
-              active={activeTab === "empresa"}
-              label="Datos de empresa"
-              icon={<BuildingIcon size={16} weight="bold" />}
-              onClick={() => setActiveTab("empresa")}
+        <section className="flex flex-col">
+          <div className="relative h-24 overflow-hidden rounded-2xl bg-[var(--color-sidebar-bg)] dark:bg-[#0d0d0d] sm:h-32">
+            <div className="cover-dots absolute inset-0" aria-hidden="true" />
+            <div
+              className="absolute -right-10 -top-16 h-44 w-44 rounded-full bg-[var(--color-primary)]/15 blur-2xl dark:bg-[var(--color-primary)]/20"
+              aria-hidden="true"
             />
-            <TabButton
-              active={activeTab === "sunat"}
-              label="Conexion SUNAT"
-              icon={<ShieldCheckIcon size={16} weight="bold" />}
-              onClick={() => setActiveTab("sunat")}
+            <div
+              className="absolute -bottom-20 left-1/4 h-40 w-40 rounded-full bg-[var(--color-secondary)]/10 blur-2xl"
+              aria-hidden="true"
             />
           </div>
-        ) : null}
 
-        {attendanceMode || activeTab === "empresa" ? (
-          <form
-            className="grid gap-4 lg:grid-cols-[320px_1fr]"
-            onSubmit={handleSubmit}
-          >
-            <div className="p-6">
-              <h3 className="mb-4 text-sm font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                Logo de la empresa
-              </h3>
-              <div
-                onClick={handleLogoClick}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleLogoClick();
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label="Seleccionar logo de la empresa"
-                className="group relative mx-auto flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-input-bg)] transition-colors hover:bg-[var(--color-button-hover)]"
-              >
-                {logoPreview ? (
-                  <Image
-                    src={logoPreview}
-                    alt="Logo empresa"
-                    fill
-                    sizes="160px"
-                    unoptimized
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-2 text-[var(--color-muted-foreground)]">
-                    <CameraIcon size={32} weight="bold" />
-                    <span className="text-xs font-circular-bold">
-                      Subir logo
+          <div className="flex flex-col gap-4 px-10 pb-1 sm:flex-row sm:items-end sm:justify-between sm:px-14">
+            <div className="flex min-w-0 items-end gap-4">
+              <div className="relative z-10 -mt-8 shrink-0 rounded-full bg-[var(--color-background)] p-1 sm:-mt-10">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleLogoClick}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleLogoClick();
+                    }
+                  }}
+                  aria-label="Cambiar logo de la empresa"
+                  title="Cambiar logo de la empresa"
+                  className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white sm:h-24 sm:w-24"
+                >
+                  {logoPreview ? (
+                    <Image
+                      src={logoPreview}
+                      alt={companyName}
+                      fill
+                      sizes="96px"
+                      unoptimized
+                      className="object-contain p-1.5"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-[var(--color-primary)] text-2xl font-circular-bold uppercase leading-none text-white sm:text-3xl">
+                      {companyInitial}
                     </span>
-                  </div>
-                )}
-                {logoPreview && (
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                    <CameraIcon size={20} weight="bold" className="text-white" />
+                  </span>
+                </div>
+                {logoPreview ? (
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
                       removeLogo();
                     }}
-                    className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#ef4444] text-xs font-circular-bold leading-none text-white opacity-0 shadow-md transition-opacity hover:bg-[#dc2626] group-hover:opacity-100"
+                    className="absolute -right-1 -top-1 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-[#ef4444] text-[10px] font-circular-bold leading-none text-white shadow-md transition-colors hover:bg-[#dc2626]"
                     aria-label="Quitar logo"
                   >
                     X
                   </button>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                  <CameraIcon size={24} weight="bold" className="text-white" />
-                </div>
+                ) : null}
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleLogoChange}
-                className="hidden"
-              />
-              <p className="mt-4 text-center text-xs font-medium text-[var(--color-muted-foreground)]">
-                Haz clic para subir o cambiar el logo
-              </p>
-              {logoFile && (
-                <p className="mt-2 text-center text-xs font-circular-bold text-[var(--color-primary)]">
-                  {logoFile.name}
+              <div className="min-w-0 pb-1">
+                <p className="truncate text-lg font-circular-bold text-[var(--color-text)]">
+                  {companyName}
                 </p>
-              )}
+                <p className="truncate text-sm text-[var(--color-muted-foreground)]">
+                  {companySubtitle}
+                </p>
+              </div>
             </div>
+          </div>
+
+          {!attendanceMode ? (
+            <div className="mt-3 flex items-center gap-6 px-10 sm:px-14">
+              <TabButton
+                active={activeTab === "empresa"}
+                label="Datos de empresa"
+                onClick={() => setActiveTab("empresa")}
+              />
+              <TabButton
+                active={activeTab === "sunat"}
+                label="Conexion SUNAT"
+                onClick={() => setActiveTab("sunat")}
+              />
+            </div>
+          ) : null}
+        </section>
+
+        {attendanceMode || activeTab === "empresa" ? (
+          <form className="grid gap-4" onSubmit={handleSubmit}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoChange}
+              className="hidden"
+            />
 
             <div className="p-6">
-              <h3 className="mb-4 text-sm font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                Datos de la empresa
-              </h3>
               <div className="space-y-4">
                 {company?.dni && !company.ruc ? (
                   <div className="flex flex-wrap items-end gap-3 rounded-[16px] bg-[var(--color-input-bg)] p-4">
@@ -663,9 +657,6 @@ export function EmpresaPageContent({
                         value={company.dni}
                         placeholder=""
                         maxLength={8}
-                        icon={
-                          <IdentificationCardIcon size={16} weight="bold" />
-                        }
                         disabled
                         onChange={() => {}}
                       />
@@ -696,7 +687,6 @@ export function EmpresaPageContent({
                     value={form.nombreComercial}
                     placeholder="Nombre de tu marca o negocio"
                     maxLength={150}
-                    icon={<TagIcon size={16} weight="bold" />}
                     disabled={isSubmitting}
                     onChange={(value) =>
                       setForm((current) => ({
@@ -713,7 +703,6 @@ export function EmpresaPageContent({
                       value={form.razonSocial}
                       placeholder="Razon social registrada en SUNAT"
                       maxLength={200}
-                      icon={<BuildingIcon size={16} weight="bold" />}
                       disabled={isSubmitting}
                       onChange={(value) =>
                         setForm((current) => ({
@@ -733,7 +722,6 @@ export function EmpresaPageContent({
                       value={form.ruc}
                       placeholder="20123456789"
                       maxLength={11}
-                      icon={<IdentificationCardIcon size={16} weight="bold" />}
                       disabled={isSubmitting}
                       onChange={(value) =>
                         setForm((current) => ({
@@ -751,7 +739,6 @@ export function EmpresaPageContent({
                     placeholder="contacto@miempresa.com"
                     maxLength={150}
                     type="email"
-                    icon={<EnvelopeSimpleIcon size={16} weight="bold" />}
                     disabled={isSubmitting}
                     onChange={(value) =>
                       setForm((current) => ({ ...current, email: value }))
@@ -766,7 +753,6 @@ export function EmpresaPageContent({
                     value={form.telefono}
                     placeholder="987654321"
                     maxLength={30}
-                    icon={<PhoneIcon size={16} weight="bold" />}
                     disabled={isSubmitting}
                     onChange={(value) =>
                       setForm((current) => ({ ...current, telefono: value }))
@@ -792,7 +778,6 @@ export function EmpresaPageContent({
                   value={form.direccion}
                   placeholder="Av. Principal 123, Oficina 401"
                   maxLength={255}
-                  icon={<MapPinIcon size={16} weight="bold" />}
                   disabled={isSubmitting}
                   onChange={(value) =>
                     setForm((current) => ({ ...current, direccion: value }))
@@ -1034,9 +1019,6 @@ export function EmpresaPageContent({
                   <h3 className="text-sm font-circular-bold uppercase tracking-wider text-[var(--color-muted-foreground)]">
                     Certificado digital
                   </h3>
-                  <p className="mt-1 text-xs font-circular-regular text-[var(--color-muted-foreground)]">
-                    Archivo privado en R2. No se publica por URL.
-                  </p>
                 </div>
 
                 <div className="rounded-[16px] bg-[var(--color-input-bg)] p-4">
@@ -1175,12 +1157,10 @@ function preventSubmit(event: FormEvent<HTMLFormElement>) {
 function TabButton({
   active,
   label,
-  icon,
   onClick,
 }: {
   active: boolean;
   label: string;
-  icon: React.ReactNode;
   onClick: () => void;
 }) {
   return (
@@ -1188,13 +1168,12 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex h-10 items-center gap-2 rounded-[12px] px-4 text-sm font-circular-bold transition-colors",
+        "-mb-px flex items-center gap-2 border-b-2 px-1 pb-2 text-sm font-circular-bold transition-colors",
         active
-          ? "bg-[var(--color-card)] text-[var(--color-primary)] shadow-sm"
-          : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]",
+          ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+          : "border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
       )}
     >
-      {icon}
       {label}
     </button>
   );
@@ -1273,7 +1252,7 @@ function InputField({
   value: string;
   placeholder: string;
   maxLength: number;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   disabled: boolean;
   onChange: (value: string) => void;
   type?: string;
@@ -1290,9 +1269,11 @@ function InputField({
         {label}
       </label>
       <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]">
-          {icon}
-        </span>
+        {icon ? (
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]">
+            {icon}
+          </span>
+        ) : null}
         <input
           id={id}
           type={type}
@@ -1304,7 +1285,7 @@ function InputField({
           step={step}
           min={min}
           max={max}
-          className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-70"
+          className={`h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:opacity-70 ${icon ? "pl-11" : "pl-4"}`}
         />
       </div>
     </div>

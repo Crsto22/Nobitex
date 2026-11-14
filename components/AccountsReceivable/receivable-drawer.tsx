@@ -10,12 +10,12 @@ import {
   CreditCardIcon,
   SpinnerGapIcon,
   TrashIcon,
-  UserIcon,
   WarningCircleIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { Modal } from "@/components/Modal/modal";
+import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -338,9 +338,16 @@ export function ReceivableDrawer({
               <section className="rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-primary)] text-white">
-                      <UserIcon size={22} weight="fill" />
-                    </span>
+                    <UserAvatar
+                      seed={account.cliente.id ?? "generic"}
+                      name={
+                        account.cliente.razonSocial ||
+                        account.cliente.nombre ||
+                        "Cliente"
+                      }
+                      size={44}
+                      className="size-11"
+                    />
                     <div>
                       <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
                         Cliente

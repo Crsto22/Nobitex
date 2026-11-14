@@ -1,19 +1,27 @@
-import Image from "next/image";
 import { UserIcon } from "@phosphor-icons/react/ssr";
 
-const avatars = Array.from(
-  { length: 18 },
-  (_, index) => `/avatar/avatar%20(${index + 1}).png`,
-);
+const avatarColors = [
+  "#101d69",
+  "#1d4ed8",
+  "#0ea5e9",
+  "#0d9488",
+  "#16a34a",
+  "#ca8a04",
+  "#fd741a",
+  "#dc2626",
+  "#7c3aed",
+  "#db2777",
+];
 
-export function getUserAvatar(seed: string | number) {
-  const index =
-    Array.from(String(seed)).reduce(
-      (total, character) => total + character.charCodeAt(0),
-      0,
-    ) % avatars.length;
+function hashSeed(seed: string | number) {
+  return Array.from(String(seed)).reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
+}
 
-  return avatars[index];
+export function getUserAvatarColor(seed: string | number) {
+  return avatarColors[hashSeed(seed) % avatarColors.length];
 }
 
 export function UserAvatar({
@@ -27,14 +35,24 @@ export function UserAvatar({
   size?: number;
   className?: string;
 }) {
+  const trimmedName = name.trim();
+  const initial = trimmedName.charAt(0).toUpperCase();
+
   return (
-    <Image
-      src={getUserAvatar(seed)}
-      alt={`Avatar de ${name}`}
-      width={size}
-      height={size}
-      className={`shrink-0 rounded-full object-cover ${className}`}
-    />
+    <span
+      role="img"
+      aria-label={`Avatar de ${trimmedName || "Usuario"}`}
+      title={trimmedName || undefined}
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: getUserAvatarColor(seed),
+        fontSize: Math.round(size * 0.42),
+      }}
+      className={`grid shrink-0 place-items-center rounded-full font-circular-bold uppercase leading-none text-white ${className}`}
+    >
+      {initial || "?"}
+    </span>
   );
 }
 

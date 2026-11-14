@@ -7,7 +7,6 @@ import { useRouter, useParams } from "next/navigation";
 import {
   CaretDownIcon,
   CaretRightIcon,
-  UserIcon,
   CalendarIcon,
   ClockIcon,
   DownloadSimpleIcon,
@@ -28,6 +27,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import {
   salesApi,
   type VentaResponse,
@@ -855,9 +855,12 @@ export default function VentaDetallePage() {
         {/* Cliente */}
         <div className="rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary)]">
-              <UserIcon size={22} weight="fill" className="text-white" />
-            </div>
+            <UserAvatar
+              seed={venta.cliente?.id ?? "generic"}
+              name={clientName}
+              size={44}
+              className="size-11"
+            />
             <div>
               <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
                 Cliente

@@ -667,6 +667,31 @@ html[data-sidebar-collapsed="true"] .sidebar-shell {
   animation: login-dots-drift 30s linear infinite;
 }
 
+/* Puntitos decorativos para portadas de perfil */
+.cover-dots {
+  background-image: radial-gradient(
+    circle,
+    rgba(16, 29, 105, 0.16) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+  -webkit-mask-image: linear-gradient(
+    115deg,
+    #000 0%,
+    #000 45%,
+    transparent 90%
+  );
+  mask-image: linear-gradient(115deg, #000 0%, #000 45%, transparent 90%);
+}
+
+.dark .cover-dots {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.32) 1px,
+    transparent 1px
+  );
+}
+
 .dark .login-dots-bg {
   background-image: radial-gradient(
     circle,

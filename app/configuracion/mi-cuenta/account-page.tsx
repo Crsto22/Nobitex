@@ -5,10 +5,10 @@ import {
   CheckCircleIcon,
   FloppyDiskIcon,
   KeyIcon,
-  UserCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { ProfileSkeleton } from "@/components/ProfileSkeleton/profile-skeleton";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { Button } from "@/components/ui/button";
 import { accountApi, type AccountProfile } from "@/lib/api/account";
@@ -67,6 +67,7 @@ export function AccountPage({
       ),
     [passwordForm.password],
   );
+  const profileInitial = (profile?.nombre?.trim().charAt(0) ?? "M").toUpperCase();
 
   useEffect(() => {
     let isMounted = true;
@@ -195,16 +196,40 @@ export function AccountPage({
     }
   };
 
+  if (isLoading) {
+    return (
+      <DashboardShell headerTitle={headerTitle}>
+        <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
+          <ProfileSkeleton fields={4} showTabs={mode === "combined"} />
+        </div>
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell headerTitle={headerTitle}>
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <section className="rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
-                <UserCircleIcon size={32} weight="fill" />
+        <section className="flex flex-col">
+          <div className="relative h-24 overflow-hidden rounded-2xl bg-[var(--color-sidebar-bg)] dark:bg-[#0d0d0d] sm:h-32">
+            <div className="cover-dots absolute inset-0" aria-hidden="true" />
+            <div
+              className="absolute -right-10 -top-16 h-44 w-44 rounded-full bg-[var(--color-primary)]/15 blur-2xl dark:bg-[var(--color-primary)]/20"
+              aria-hidden="true"
+            />
+            <div
+              className="absolute -bottom-20 left-1/4 h-40 w-40 rounded-full bg-[var(--color-secondary)]/10 blur-2xl"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div className="flex flex-col gap-4 px-10 pb-1 sm:flex-row sm:items-end sm:justify-between sm:px-14">
+            <div className="flex min-w-0 items-end gap-4">
+              <div className="relative z-10 -mt-8 shrink-0 rounded-full bg-[var(--color-background)] p-1 sm:-mt-10">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary)] text-2xl font-circular-bold uppercase leading-none text-white sm:h-20 sm:w-20 sm:text-3xl">
+                  {profileInitial}
+                </div>
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 pb-1">
                 <p className="truncate text-lg font-circular-bold text-[var(--color-text)]">
                   {profile
                     ? [profile.nombre, profile.apellido]
@@ -217,38 +242,36 @@ export function AccountPage({
                 </p>
               </div>
             </div>
-
-            {mode === "combined" ? (
-              <div className="grid grid-cols-2 gap-2 rounded-[12px] bg-[var(--color-input-bg)] p-1">
-                <TabButton
-                  active={activeTab === "datos"}
-                  onClick={() => {
-                    setActiveTab("datos");
-                    setError("");
-                  }}
-                >
-                  Datos
-                </TabButton>
-                <TabButton
-                  active={activeTab === "password"}
-                  onClick={() => {
-                    setActiveTab("password");
-                    setError("");
-                  }}
-                >
-                  Contrasena
-                </TabButton>
-              </div>
-            ) : null}
           </div>
+
+          {mode === "combined" ? (
+            <div className="mt-3 flex items-center gap-6 px-10 sm:px-14">
+              <TabButton
+                active={activeTab === "datos"}
+                onClick={() => {
+                  setActiveTab("datos");
+                  setError("");
+                }}
+              >
+                Datos
+              </TabButton>
+              <TabButton
+                active={activeTab === "password"}
+                onClick={() => {
+                  setActiveTab("password");
+                  setError("");
+                }}
+              >
+                Contrasena
+              </TabButton>
+            </div>
+          ) : null}
         </section>
 
-        {isLoading ? (
-          <div className="h-72 animate-pulse rounded-[14px] bg-[var(--color-card)] shadow-sm" />
-        ) : activeTab === "datos" ? (
+        {activeTab === "datos" ? (
           <form
             onSubmit={updateProfile}
-            className="space-y-4 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm"
+            className="space-y-4 rounded-[14px] p-4"
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <InputField
@@ -293,19 +316,21 @@ export function AccountPage({
 
             <FormError message={error} />
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-11 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
-            >
-              <FloppyDiskIcon size={16} weight="bold" />
-              {isSubmitting ? "Guardando..." : "Guardar cambios"}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-11 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
+              >
+                <FloppyDiskIcon size={16} weight="bold" />
+                {isSubmitting ? "Guardando..." : "Guardar cambios"}
+              </Button>
+            </div>
           </form>
         ) : (
           <form
             onSubmit={changePassword}
-            className="space-y-4 rounded-[14px] bg-[var(--color-card)] p-4 shadow-sm"
+            className="space-y-4 rounded-[14px] p-4"
           >
             <div className="grid gap-4 sm:grid-cols-3">
               <InputField
@@ -352,14 +377,16 @@ export function AccountPage({
             <PasswordRules password={passwordForm.password} />
             <FormError message={error} />
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-11 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
-            >
-              <KeyIcon size={16} weight="bold" />
-              {isSubmitting ? "Actualizando..." : "Cambiar contrasena"}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-11 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
+              >
+                <KeyIcon size={16} weight="bold" />
+                {isSubmitting ? "Actualizando..." : "Cambiar contrasena"}
+              </Button>
+            </div>
           </form>
         )}
       </div>
@@ -381,10 +408,10 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-9 rounded-[10px] px-4 text-sm font-circular-bold transition-colors",
+        "-mb-px border-b-2 px-1 pb-2 text-sm font-circular-bold transition-colors",
         active
-          ? "bg-[var(--color-primary)] text-white"
-          : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+          ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+          : "border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
       )}
     >
       {children}
@@ -409,7 +436,7 @@ function InputField({
 }) {
   return (
     <label htmlFor={id} className="block">
-      <span className="mb-2 block text-sm font-circular-regular text-[#4e5671]">
+      <span className="mb-2 block text-sm font-circular-regular text-[#4e5671] dark:text-white/70">
         {label}
       </span>
       <input
@@ -418,7 +445,7 @@ function InputField({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-70"
+        className="h-11 w-full rounded-[16px] bg-[var(--color-input-bg)] px-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-[#1c1c1c]"
       />
     </label>
   );

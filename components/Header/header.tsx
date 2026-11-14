@@ -22,6 +22,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";
+import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import { getUserDisplayName, type SessionUser } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import {
@@ -393,15 +394,16 @@ export function Header({
               <span className="hidden max-w-36 truncate text-sm font-circular-regular text-[var(--color-text)] whitespace-nowrap sm:block">
                 {userName}
               </span>
-              <span
+              <UserAvatar
+                seed={user?.email ?? userName}
+                name={userName}
+                size={28}
                 className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-[11px] font-circular-bold uppercase text-white",
+                  "size-7 text-[11px]",
                   !isTrial &&
-                    "ring-2 ring-[var(--color-secondary)] ring-offset-2 ring-offset-[var(--color-card)]",
+                    "ring-2 ring-[#f5b301] ring-offset-2 ring-offset-[var(--color-card)]",
                 )}
-              >
-                {userName.trim().charAt(0).toUpperCase()}
-              </span>
+              />
             </button>
 
             {isUserMenuOpen ? (
