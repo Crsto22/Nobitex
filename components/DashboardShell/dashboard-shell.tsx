@@ -368,7 +368,7 @@ export function DashboardShell({
             para reactivarla.
           </div>
         ) : null}
-        <div className="content-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl bg-[var(--color-background)]">
+        <div className="content-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-[28px] bg-[var(--color-background)]">
           {children}
         </div>
       </section>
