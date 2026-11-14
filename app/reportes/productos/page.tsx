@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { FileCsvIcon, SpinnerGapIcon } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { FilterBar } from "@/components/DashboardShell/filter-bar";
@@ -9,6 +10,7 @@ import {
   RankingByAmountChart,
   RankingByCountChart,
 } from "@/components/Reports/product-report-panels";
+import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { branchesApi, type Branch } from "@/lib/api/branches";
 import { useAuth } from "@/lib/auth/auth-provider";
 import {
@@ -16,15 +18,18 @@ import {
   type ProductReportResponse,
   type ReportDateFilter,
 } from "@/lib/api/reports";
+import { downloadBlob } from "@/lib/utils/download";
 
 export default function ProductReportPage() {
   const { user } = useAuth();
+  const { showToast } = useSystemToast();
   const [selectedFilter, setSelectedFilter] =
     useState<ReportDateFilter>("today");
   const [selectedBranch, setSelectedBranch] = useState("");
   const [branches, setBranches] = useState<Branch[]>([]);
   const [report, setReport] = useState<ProductReportResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,6 +85,33 @@ export default function ProductReportPage() {
     return () => controller.abort();
   }, [loadReport]);
 
+  const handleExport = useCallback(async () => {
+    if (!selectedBranch) return;
+
+    setIsExporting(true);
+
+    try {
+      const blob = await reportsApi.exportProductsCsv({
+        sucursalId: selectedBranch === "all" ? undefined : selectedBranch,
+        dateFilter: selectedFilter,
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+
+      downloadBlob(blob, `reporte-productos-${selectedFilter}-${stamp}.csv`);
+    } catch (exportError) {
+      showToast({
+        title: "No se pudo exportar",
+        description:
+          exportError instanceof Error
+            ? exportError.message
+            : "Intentalo nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [selectedBranch, selectedFilter, showToast]);
+
   return (
     <DashboardShell headerTitle="Reporte de productos">
       <div className="flex min-w-0 flex-1 flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:px-8 lg:px-10 lg:py-8">
@@ -95,6 +127,25 @@ export default function ProductReportPage() {
           isRefreshing={isLoading}
           allowAllBranches={!user?.sucursalId}
           ownOperations={user?.visibilidadOperaciones === "propias"}
+          actions={
+            <button
+              type="button"
+              onClick={() => void handleExport()}
+              disabled={isExporting || !selectedBranch}
+              aria-label="Exportar CSV"
+              title="Exportar CSV"
+              className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#107c41] px-3 text-sm font-circular-bold text-white transition-colors hover:bg-[#0b5e31] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
+            >
+              {isExporting ? (
+                <SpinnerGapIcon size={16} weight="bold" className="animate-spin" />
+              ) : (
+                <FileCsvIcon size={16} weight="bold" />
+              )}
+              <span className="hidden sm:inline">
+                {isExporting ? "Exportando..." : "Exportar CSV"}
+              </span>
+            </button>
+          }
         />
 
         {error ? <ReportError message={error} /> : null}

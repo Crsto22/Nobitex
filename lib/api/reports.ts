@@ -1,4 +1,4 @@
-import { authFetch } from "@/lib/api/auth-fetch";
+import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
 
 export type ReportDateFilter = "today" | "7days" | "14days" | "30days";
 
@@ -155,5 +155,21 @@ export const reportsApi = {
       `/reports/users${buildQuery(query)}`,
       options,
     );
+  },
+
+  exportSalesExcel(query: ReportQuery = {}, options: RequestInit = {}) {
+    return authBlobFetch(`/reports/sales/excel${buildQuery(query)}`, options);
+  },
+
+  exportProductsCsv(query: ReportQuery = {}, options: RequestInit = {}) {
+    return authBlobFetch(`/reports/products/csv${buildQuery(query)}`, options);
+  },
+
+  exportClientsCsv(query: ReportQuery = {}, options: RequestInit = {}) {
+    return authBlobFetch(`/reports/clients/csv${buildQuery(query)}`, options);
+  },
+
+  exportUsersCsv(query: ReportQuery = {}, options: RequestInit = {}) {
+    return authBlobFetch(`/reports/users/csv${buildQuery(query)}`, options);
   },
 };

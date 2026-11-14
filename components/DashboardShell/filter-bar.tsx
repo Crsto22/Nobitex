@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowClockwiseIcon,
   BuildingsIcon,
@@ -25,6 +25,7 @@ type FilterBarProps = {
   ownOperations?: boolean;
   hideAmounts?: boolean;
   onToggleAmounts?: () => void;
+  actions?: ReactNode;
 };
 
 export function FilterBar({
@@ -39,6 +40,7 @@ export function FilterBar({
   ownOperations = false,
   hideAmounts = false,
   onToggleAmounts,
+  actions,
 }: FilterBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const branchOptions = [
@@ -58,6 +60,7 @@ export function FilterBar({
             Mis operaciones
           </span>
         ) : null}
+        {actions}
         <div className="relative flex-1 sm:flex-none">
           <button
             type="button"
