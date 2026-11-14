@@ -31,7 +31,7 @@ export function DateFilter({ selected, onChange }: DateFilterProps) {
             "rounded-xl px-5 py-2.5 text-sm font-circular-bold transition-colors duration-200 shrink-0",
             "font-circular-regular",
             selected === option.value
-              ? "bg-[var(--color-sidebar-active)] text-white shadow-md dark:bg-[var(--color-secondary)]"
+              ? "bg-[var(--color-sidebar-active)] text-white shadow-md"
               : "bg-[var(--color-sidebar-bg)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)]",
           )}
         >

@@ -21,6 +21,7 @@ import {
 
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";
 import { UbigeoSelect } from "@/components/ui/ubigeo-select";
 import { branchesApi, type BranchType } from "@/lib/api/branches";
 import { brandsApi } from "@/lib/api/brands";
@@ -239,9 +240,9 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-dvh bg-[var(--color-sidebar-bg)]">
+    <main className="min-h-dvh bg-[var(--color-sidebar-bg)] dark:bg-[#0a0a0a]">
       <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(380px,480px)]">
-        <section className="flex min-h-dvh flex-col bg-[var(--color-sidebar-bg)] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <section className="flex min-h-dvh flex-col bg-[var(--color-sidebar-bg)] px-4 py-6 dark:bg-[#0a0a0a] sm:px-6 lg:px-8 lg:py-8">
           <div className="mb-6 flex w-full items-center justify-between gap-4">
             <div className="lg:hidden">
               <Image
@@ -249,7 +250,7 @@ export default function OnboardingPage() {
                 alt="Nuvex"
                 width={96}
                 height={22}
-                className="h-auto w-24"
+                className="h-auto w-24 dark:brightness-0 dark:invert"
                 style={{ width: "auto", height: "auto" }}
                 priority
               />
@@ -268,21 +269,24 @@ export default function OnboardingPage() {
                 />
               ))}
             </div>
-            <Link
-              href="https://nuvex.pe"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Ir a nuvex.pe"
-              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <HouseIcon size={20} weight="bold" />
-            </Link>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <ThemeToggle className="text-[var(--color-primary)] hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10" />
+              <Link
+                href="https://nuvex.pe"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Ir a nuvex.pe"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10"
+              >
+                <HouseIcon size={20} weight="bold" />
+              </Link>
+            </div>
           </div>
 
           <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
             <section className="mb-1 rounded-2xl p-5 sm:p-6">
               <div>
-                <p className="text-xs font-circular-regular text-[var(--color-primary)]">
+                <p className="text-xs font-circular-regular text-[var(--color-primary)] dark:text-[#d7dae3]">
                   Paso {currentStep} de {stageFlow.length}
                 </p>
                 <h1 className="mt-1 text-2xl font-medium text-[var(--color-text)] text-fixed-xl">
@@ -345,7 +349,7 @@ export default function OnboardingPage() {
               </div>
             </div>
             {branchError ? (
-              <p className="mt-4 text-sm text-[#dc2626]">{branchError}</p>
+              <p className="mt-4 text-sm text-[#dc2626] dark:text-[#f87171]">{branchError}</p>
             ) : null}
             <div className="mt-6 flex justify-end">
               <PrimaryButton disabled={isSavingBranch}>
@@ -406,7 +410,7 @@ export default function OnboardingPage() {
 
         {activeStage === "product" ? (
           <section className="onboarding-step rounded-2xl p-6 text-center sm:p-10">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#e8f1ff] text-[#2563eb]">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#e8f1ff] text-[#2563eb] dark:bg-white/10 dark:text-[#7c9cff]">
               <PackageIcon size={28} weight="fill" />
             </div>
             <h2 className="mt-4 text-xl font-circular-bold text-[var(--color-text)]">
@@ -434,14 +438,14 @@ export default function OnboardingPage() {
           </div>
         </section>
 
-        <aside className="login-dots-bg relative hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 lg:sticky lg:top-0 lg:flex xl:px-10">
+        <aside className="login-dots-bg relative hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 dark:bg-[#2a2a2a] lg:sticky lg:top-0 lg:flex xl:px-10">
           <div className="flex w-full shrink-0 items-center justify-start">
             <Image
               src="/Logo/nuvex_logo.svg"
               alt="Nuvex"
               width={160}
               height={54}
-              className="h-auto w-[160px]"
+              className="h-auto w-[160px] dark:brightness-0 dark:invert"
               priority
             />
           </div>
@@ -535,7 +539,7 @@ function Field({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={`h-11 w-full rounded-2xl border-0 bg-white pr-4 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 ${icon ? "pl-10" : "pl-4"}`}
+          className={`h-11 w-full rounded-2xl border-0 bg-white pr-4 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-[#1c1c1c] dark:text-white dark:ring-[#2c2c2c] dark:placeholder:text-[#8f8f8f] ${icon ? "pl-10" : "pl-4"}`}
         />
       </span>
     </label>
@@ -578,7 +582,7 @@ function CatalogCard({
             }
           }}
           placeholder={`Nombre de ${title.toLowerCase()}`}
-          className="h-10 min-w-0 flex-1 rounded-2xl border-0 bg-white px-3 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+          className="h-10 min-w-0 flex-1 rounded-2xl border-0 bg-white px-3 text-sm text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-[#1c1c1c] dark:text-white dark:ring-[#2c2c2c] dark:placeholder:text-[#8f8f8f]"
         />
         {extra}
         <button
@@ -595,7 +599,7 @@ function CatalogCard({
           {created.map((item) => (
             <span
               key={item}
-              className="inline-flex items-center gap-1 rounded-full bg-[#ddf8ee] px-2.5 py-1 text-xs font-circular-bold text-[#087f5b]"
+              className="inline-flex items-center gap-1 rounded-full bg-[#ddf8ee] px-2.5 py-1 text-xs font-circular-bold text-[#087f5b] dark:bg-[#0d2f26] dark:text-[#4ade80]"
             >
               <CheckCircleIcon size={13} weight="fill" /> {item}
             </span>
@@ -613,7 +617,7 @@ function PrimaryButton({
   return (
     <button
       {...props}
-      className="h-11 rounded-2xl bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+      className="h-11 rounded-2xl bg-[var(--color-primary)] px-6 text-sm font-circular-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 dark:disabled:bg-[#242424] dark:disabled:text-white/45 dark:disabled:opacity-100"
     >
       {children}
     </button>
@@ -634,10 +638,10 @@ function CenteredState({
   onAction: () => void;
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[var(--color-sidebar-bg)] p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-7 text-center ring-1 ring-[var(--color-sidebar-action-bg)]">
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--color-sidebar-bg)] p-4 dark:bg-[#0a0a0a]">
+      <div className="w-full max-w-md rounded-2xl bg-white p-7 text-center ring-1 ring-[var(--color-sidebar-action-bg)] dark:bg-[#1c1c1c] dark:ring-[#2c2c2c]">
         {icon ? (
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#fff4e6] text-[#f59f00]">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#fff4e6] text-[#f59f00] dark:bg-[#2a2113] dark:text-[#fbbf24]">
             {icon}
           </div>
         ) : null}

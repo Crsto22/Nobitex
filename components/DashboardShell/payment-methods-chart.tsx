@@ -1,7 +1,6 @@
 import type { TooltipContentProps } from "recharts";
 
 import {
-  Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -37,6 +36,7 @@ export function PaymentMethodsChart({
     name: item.name,
     value: item.percentage,
     color: item.color,
+    fill: item.color,
   }));
 
   return (
@@ -58,11 +58,7 @@ export function PaymentMethodsChart({
                   paddingAngle={4}
                   dataKey="value"
                   stroke="none"
-                >
-                  {chartData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
+                />
                 <Tooltip content={CustomTooltip} />
               </PieChart>
             </ResponsiveContainer>

@@ -667,6 +667,14 @@ html[data-sidebar-collapsed="true"] .sidebar-shell {
   animation: login-dots-drift 30s linear infinite;
 }
 
+.dark .login-dots-bg {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.18) 1px,
+    transparent 1px
+  );
+}
+
 @keyframes login-dots-drift {
   from {
     background-position: 0 0;

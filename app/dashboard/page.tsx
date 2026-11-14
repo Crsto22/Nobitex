@@ -145,7 +145,7 @@ export default function DashboardPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <section className="flex min-h-28 flex-col justify-between gap-4 rounded-2xl bg-[var(--color-sidebar-bg)] p-5 shadow-sm sm:flex-row sm:items-center">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#eff6ff] text-[#3b82f6]">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#eff6ff] text-[#3b82f6] dark:bg-[#1a2540] dark:text-[#7c9cff]">
                 <TagIcon size={21} weight="fill" />
               </span>
               <div className="min-w-0">

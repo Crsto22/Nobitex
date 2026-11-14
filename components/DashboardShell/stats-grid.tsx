@@ -162,6 +162,7 @@ export function CompactStatsCard({
             r={radius1}
             fill="none"
             stroke="#e5e7eb"
+            className="dark:stroke-[#2f2f2f]"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference1}
@@ -186,6 +187,7 @@ export function CompactStatsCard({
             r={radius2}
             fill="none"
             stroke="#e5e7eb"
+            className="dark:stroke-[#2f2f2f]"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference2}
@@ -210,6 +212,7 @@ export function CompactStatsCard({
             r={radius3}
             fill="none"
             stroke="#e5e7eb"
+            className="dark:stroke-[#2f2f2f]"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference3}
@@ -227,7 +230,7 @@ export function CompactStatsCard({
         </div>
       </div>
       <div className="flex w-full gap-4">
-        <div className="flex flex-1 items-center gap-2 rounded-xl bg-[var(--color-background)] p-3">
+        <div className="flex flex-1 items-center gap-2 rounded-xl bg-[var(--color-card)] p-3">
           <div className="h-3 w-3 rounded-full bg-[#10b981]" />
           <div className="min-w-0">
             <p className="truncate text-xs text-[var(--color-muted-foreground)]">
@@ -238,7 +241,7 @@ export function CompactStatsCard({
             </p>
           </div>
         </div>
-        <div className="flex flex-1 items-center gap-2 rounded-xl bg-[var(--color-background)] p-3">
+        <div className="flex flex-1 items-center gap-2 rounded-xl bg-[var(--color-card)] p-3">
           <div className="h-3 w-3 rounded-full bg-[#ef4444]" />
           <div className="min-w-0">
             <p className="truncate text-xs text-[var(--color-muted-foreground)]">
@@ -292,8 +295,8 @@ function buildStatsData(
         ? undefined
         : parseMoney(summary.salesFilterTotal),
       icon: <BankIcon size={18} weight="bold" />,
-      iconBg: "bg-[#eff6ff]",
-      iconColor: "text-[#3b82f6]",
+      iconBg: "bg-[#eff6ff] dark:bg-[#1a2540]",
+      iconColor: "text-[#3b82f6] dark:text-[#7c9cff]",
       active: true,
       badge: `${summary.emittedCount} ventas`,
     },
@@ -318,22 +321,22 @@ function buildStatsData(
         ? undefined
         : parseMoney(summary.averageTicket),
       icon: <FileTextIcon size={18} weight="bold" />,
-      iconBg: "bg-[#ecfdf5]",
-      iconColor: "text-[#10b981]",
+      iconBg: "bg-[#ecfdf5] dark:bg-[#0f2f26]",
+      iconColor: "text-[#10b981] dark:text-[#34d399]",
     },
     {
       label: "Unidades vendidas",
       value: String(summary.unitsSold),
       icon: <PackageIcon size={18} weight="bold" />,
-      iconBg: "bg-[#eff6ff]",
-      iconColor: "text-[#3b82f6]",
+      iconBg: "bg-[#eff6ff] dark:bg-[#1a2540]",
+      iconColor: "text-[#3b82f6] dark:text-[#7c9cff]",
     },
     {
       label: "Variantes vendidas",
       value: String(summary.variantsSold),
       icon: <EyeIcon size={18} weight="bold" />,
-      iconBg: "bg-[#ecfdf5]",
-      iconColor: "text-[#10b981]",
+      iconBg: "bg-[#ecfdf5] dark:bg-[#0f2f26]",
+      iconColor: "text-[#10b981] dark:text-[#34d399]",
     },
     {
       label: "Monto anulado",
@@ -344,8 +347,8 @@ function buildStatsData(
         ? undefined
         : parseMoney(summary.annulledAmount),
       icon: <TrashIcon size={18} weight="bold" />,
-      iconBg: "bg-[#fff7ed]",
-      iconColor: "text-[#f97316]",
+      iconBg: "bg-[#fff7ed] dark:bg-[#33210f]",
+      iconColor: "text-[#f97316] dark:text-[#fb923c]",
     },
   ];
 }

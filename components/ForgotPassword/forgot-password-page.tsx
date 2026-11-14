@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";
 import { TurnstileWidget } from "@/components/Turnstile/turnstile-widget";
 import { Button } from "@/components/ui/button";
 import { authApi } from "@/lib/api/auth";
@@ -207,16 +208,16 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb]">
-      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
-        <div className="login-dots-bg relative z-10 hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 lg:flex xl:px-12">
+    <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb] dark:bg-[#0a0a0a]">
+      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] dark:bg-[#0a0a0a] lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
+        <div className="login-dots-bg relative z-10 hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 dark:bg-[#2a2a2a] lg:flex xl:px-12">
           <div className="flex w-full shrink-0 items-center justify-start">
             <Image
               src="/Logo/nuvex_logo.svg"
               alt="Nuvex"
               width={160}
               height={54}
-              className="h-auto w-[160px]"
+              className="h-auto w-[160px] dark:brightness-0 dark:invert"
               priority
             />
           </div>
@@ -240,27 +241,30 @@ export function ForgotPasswordPage() {
                 alt="Nuvex"
                 width={96}
                 height={22}
-                className="h-auto w-24"
+                className="h-auto w-24 dark:brightness-0 dark:invert"
                 style={{ width: "auto", height: "auto" }}
                 priority
               />
             </div>
-            <Link
-              href="https://nuvex.pe"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Ir a nuvex.pe"
-              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <HouseIcon size={20} weight="bold" />
-            </Link>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <ThemeToggle className="text-[var(--color-primary)] hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10" />
+              <Link
+                href="https://nuvex.pe"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Ir a nuvex.pe"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10"
+              >
+                <HouseIcon size={20} weight="bold" />
+              </Link>
+            </div>
           </div>
           <div className="register-form-scroll m-auto flex max-h-[calc(100dvh-6rem)] w-full max-w-[400px] flex-col overflow-y-auto pr-2 lg:max-h-[calc(100dvh-7rem)]">
             <div className="mb-5">
-              <h1 className="mt-1 text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl">
+              <h1 className="mt-1 text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl dark:text-[#d7dae3]">
                 {getTitle(step)}
               </h1>
-              <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75]">
+              <p className="mt-2 max-w-[480px] text-sm font-circular-regular leading-6 text-[#525b75] dark:text-white/60">
                 {getDescription(step)}
               </p>
             </div>
@@ -288,7 +292,7 @@ export function ForgotPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !turnstileToken}
-                  className="h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] xl:h-12"
+                  className="h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] dark:disabled:bg-[#242424] dark:disabled:text-white/45 dark:disabled:opacity-100 xl:h-12"
                 >
                   {isSubmitting ? "Enviando correo..." : "Enviar enlace"}
                 </Button>
@@ -308,12 +312,12 @@ export function ForgotPasswordPage() {
             )}
 
             {step === "checking" && (
-              <div className="rounded-2xl bg-white px-5 py-6 text-center ring-1 ring-[var(--color-sidebar-action-bg)]">
+              <div className="rounded-2xl bg-white px-5 py-6 text-center ring-1 ring-[var(--color-sidebar-action-bg)] dark:bg-[#1c1c1c] dark:ring-[#2c2c2c]">
                 <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-[var(--color-primary)]" />
-                <h2 className="mt-4 text-lg font-semibold text-[var(--color-primary)] text-fixed-lg">
+                <h2 className="mt-4 text-lg font-semibold text-[var(--color-primary)] text-fixed-lg dark:text-white/90">
                   Verificando enlace
                 </h2>
-                <p className="mt-2 text-sm font-circular-regular leading-6 text-[#525b75]">
+                <p className="mt-2 text-sm font-circular-regular leading-6 text-[#525b75] dark:text-white/60">
                   Estamos validando si el enlace sigue disponible.
                 </p>
               </div>
@@ -348,7 +352,7 @@ export function ForgotPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] xl:h-12"
+                  className="h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] dark:disabled:bg-[#242424] dark:disabled:text-white/45 dark:disabled:opacity-100 xl:h-12"
                 >
                   {isSubmitting ? "Actualizando..." : "Cambiar contrasena"}
                 </Button>
@@ -458,11 +462,11 @@ function FormInput({
     <div>
       <label
         htmlFor={id}
-        className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
+        className="mb-2 block text-sm font-circular-regular text-[#4e5671] dark:text-white/70"
       >
         {label}
       </label>
-      <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+      <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20 dark:bg-[#1c1c1c] dark:ring-[#2c2c2c]">
         <input
           id={id}
           name={id}
@@ -475,7 +479,7 @@ function FormInput({
           disabled={disabled}
           onBlur={onBlur}
           onFocus={onFocus}
-          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[var(--color-placeholder)] disabled:cursor-not-allowed disabled:opacity-70 xl:h-12"
+          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[var(--color-placeholder)] disabled:cursor-not-allowed disabled:opacity-70 dark:text-white dark:placeholder:text-[#8f8f8f] xl:h-12"
         />
         {endAdornment ? (
           endAdornment
@@ -491,7 +495,7 @@ function FormInput({
 
 function PasswordRules({ password }: { password: string }) {
   return (
-    <div className="grid gap-2 rounded-2xl bg-white p-3 ring-1 ring-[var(--color-sidebar-action-bg)] sm:grid-cols-2">
+    <div className="grid gap-2 rounded-2xl bg-white p-3 ring-1 ring-[var(--color-sidebar-action-bg)] dark:bg-[#1c1c1c] dark:ring-[#2c2c2c] sm:grid-cols-2">
       {passwordRequirements.map((requirement) => {
         const isValid = requirement.test(password);
 
@@ -582,19 +586,19 @@ function StateMessage({
   actionHref: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white px-5 py-6 text-center ring-1 ring-[var(--color-sidebar-action-bg)]">
+    <div className="rounded-2xl bg-white px-5 py-6 text-center ring-1 ring-[var(--color-sidebar-action-bg)] dark:bg-[#1c1c1c] dark:ring-[#2c2c2c]">
       <div className="mx-auto flex h-14 w-14 items-center justify-center text-[var(--color-primary)]">
         {icon}
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-[var(--color-primary)] text-fixed-lg">
+      <h2 className="mt-4 text-lg font-semibold text-[var(--color-primary)] text-fixed-lg dark:text-white/90">
         {title}
       </h2>
-      <p className="mt-2 text-sm font-circular-regular leading-6 text-[#525b75]">
+      <p className="mt-2 text-sm font-circular-regular leading-6 text-[#525b75] dark:text-white/60">
         {description}
       </p>
       <Button
         asChild
-        className="mt-5 h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754]"
+        className="mt-5 h-11 w-full rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] dark:disabled:bg-[#242424] dark:disabled:text-white/45 dark:disabled:opacity-100"
       >
         <Link href={actionHref}>{actionLabel}</Link>
       </Button>

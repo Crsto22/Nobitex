@@ -98,7 +98,7 @@ export function FilterBar({
           disabled={isRefreshing}
           className={cn(
             "font-circular-regular flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-circular-bold text-white shadow-md transition-colors duration-200 whitespace-nowrap sm:flex-none",
-            "bg-[var(--color-sidebar-active)] dark:bg-[var(--color-secondary)]",
+            "bg-[var(--color-sidebar-active)]",
             isRefreshing && "cursor-not-allowed opacity-70",
           )}
         >

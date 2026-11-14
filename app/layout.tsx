@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { AppProviders } from "@/components/app-providers";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
+import { THEME_STORAGE_KEY } from "@/lib/theme/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -41,6 +42,19 @@ const sidebarStateScript = `
   })();
 `;
 
+const themeScript = `
+  (function () {
+    try {
+      var theme = localStorage.getItem("${THEME_STORAGE_KEY}");
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else if (theme === "light") {
+        document.documentElement.classList.remove("dark");
+      }
+    } catch (error) {}
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -50,6 +64,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: sidebarStateScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {umamiWebsiteId && (
           <Script
             src={umamiScriptUrl}

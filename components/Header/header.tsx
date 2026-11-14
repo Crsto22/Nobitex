@@ -7,9 +7,7 @@ import {
   InfoIcon,
   SignOutIcon,
   GearSixIcon,
-  MoonIcon,
   SidebarIcon,
-  SunIcon,
   UserCircleIcon,
   WarningCircleIcon,
   XCircleIcon,
@@ -23,6 +21,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";
 import { getUserDisplayName, type SessionUser } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import {
@@ -77,7 +76,6 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationsResponse>({
@@ -128,14 +126,6 @@ export function Header({
   }, [user]);
 
   useEffect(() => {
-    const animationFrame = requestAnimationFrame(() => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    });
-
-    return () => cancelAnimationFrame(animationFrame);
-  }, []);
-
-  useEffect(() => {
     if (!isUserMenuOpen && !isNotificationsOpen) return;
 
     const handlePointerDown = (event: PointerEvent) => {
@@ -159,16 +149,6 @@ export function Header({
       controller.abort();
     };
   }, [loadNotifications, user]);
-
-  const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    if (newIsDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   const handleLogout = () => {
     setIsUserMenuOpen(false);
@@ -286,14 +266,10 @@ export function Header({
             </span>
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
-          aria-label="Tema"
-        >
-          {isDark ? <SunIcon size={18} /> : <MoonIcon size={18} />}
-        </button>
+        <ThemeToggle
+          iconSize={18}
+          className="text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+        />
 
         <button
           type="button"

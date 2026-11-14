@@ -13,6 +13,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";
 import { TurnstileWidget } from "@/components/Turnstile/turnstile-widget";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
@@ -154,9 +155,9 @@ export function LoginPage() {
   };
 
   return (
-    <main className="h-dvh overflow-hidden bg-[#f3f5fb]">
+    <main className="h-dvh overflow-hidden bg-[#f3f5fb] dark:bg-[#0a0a0a]">
       <div className="grid h-full lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
-        <section className="order-2 flex h-full flex-col overflow-y-auto bg-[var(--color-sidebar-bg)] px-5 py-6 shadow-[90px_0_40px_rgba(16,29,105,0.05)] lg:px-8 lg:py-8">
+        <section className="order-2 flex h-full flex-col overflow-y-auto bg-[var(--color-sidebar-bg)] px-5 py-6 shadow-[90px_0_40px_rgba(16,29,105,0.05)] dark:bg-[#0a0a0a] lg:px-8 lg:py-8">
           <div className="mb-4 flex w-full items-center justify-between">
             <div className="lg:hidden">
               <Image
@@ -164,24 +165,27 @@ export function LoginPage() {
                 alt="Nuvex"
                 width={96}
                 height={22}
-                className="h-auto w-24"
+                className="h-auto w-24 dark:brightness-0 dark:invert"
                 style={{ width: "auto", height: "auto" }}
                 priority
               />
             </div>
-            <Link
-              href="https://nuvex.pe"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Ir a nuvex.pe"
-              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <HouseIcon size={20} weight="bold" />
-            </Link>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <ThemeToggle className="text-[var(--color-primary)] hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10" />
+              <Link
+                href="https://nuvex.pe"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Ir a nuvex.pe"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10"
+              >
+                <HouseIcon size={20} weight="bold" />
+              </Link>
+            </div>
           </div>
           <div className="m-auto flex w-full max-w-[480px] flex-col justify-center gap-5 lg:max-h-[100dvh] xl:gap-6">
             <div className="mx-auto mb-2 w-full max-w-[400px]">
-              <h1 className="text-left text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl">
+              <h1 className="text-left text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl dark:text-[#d7dae3]">
                 Ingresa a tu negocio
               </h1>
             </div>
@@ -191,7 +195,7 @@ export function LoginPage() {
               onSubmit={handleSubmit}
             >
               <div>
-                <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30">
+                <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30 dark:bg-[#1c1c1c] dark:ring-[#2c2c2c] dark:focus-within:ring-[var(--color-primary)]/50">
                   <input
                     id="email"
                     name="email"
@@ -201,7 +205,7 @@ export function LoginPage() {
                     required
                     disabled={isLoading}
                     onChange={(event) => setEmailValue(event.target.value)}
-                    className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[#9ca5ba] xl:h-12"
+                    className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[#9ca5ba] dark:text-white dark:placeholder:text-[#8f8f8f] xl:h-12"
                   />
                   <div className="m-1 flex h-9 w-9 shrink-0 items-center justify-center text-[var(--color-secondary)] xl:h-10 xl:w-10">
                     <UserIcon size={24} weight="fill" />
@@ -210,7 +214,7 @@ export function LoginPage() {
               </div>
 
               <div>
-                <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30">
+                <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-secondary)]/30 dark:bg-[#1c1c1c] dark:ring-[#2c2c2c] dark:focus-within:ring-[var(--color-primary)]/50">
                   <input
                     id="password"
                     name="password"
@@ -222,7 +226,7 @@ export function LoginPage() {
                     onBlur={() => setIsPasswordFocused(false)}
                     onChange={(event) => setPasswordValue(event.target.value)}
                     onFocus={() => setIsPasswordFocused(true)}
-                    className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[#9ca5ba] xl:h-12"
+                    className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[#9ca5ba] dark:text-white dark:placeholder:text-[#8f8f8f] xl:h-12"
                   />
                   {shouldShowPasswordToggle ? (
                     <button
@@ -253,13 +257,13 @@ export function LoginPage() {
                 <div className="mt-8 flex items-center justify-between gap-3">
                   <Link
                     href="/register"
-                    className="text-xs font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
+                    className="text-xs font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline dark:text-white/60 dark:hover:text-white"
                   >
                     Registrate
                   </Link>
                   <Link
                     href="/forgot-password"
-                    className="text-xs font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
+                    className="text-xs font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline dark:text-white/60 dark:hover:text-white"
                   >
                     Olvidaste tu contraseña?
                   </Link>
@@ -281,7 +285,7 @@ export function LoginPage() {
                   "h-11 w-full rounded-2xl text-sm font-circular-regular text-white xl:h-12",
                   isFormComplete
                     ? "bg-[var(--color-primary)] hover:bg-[#0c1754]"
-                    : "bg-[#b8bdd6]",
+                    : "bg-[#b8bdd6] dark:bg-[#242424] dark:text-white/45",
                 )}
               >
                 {isLoading ? (
@@ -298,14 +302,14 @@ export function LoginPage() {
           </div>
         </section>
 
-        <section className="login-dots-bg order-1 hidden h-full flex-col bg-[#f6f2f1] px-8 py-10 lg:flex xl:px-12">
+        <section className="login-dots-bg order-1 hidden h-full flex-col bg-[#f6f2f1] px-8 py-10 dark:bg-[#2a2a2a] lg:flex xl:px-12">
           <div className="flex w-full shrink-0 items-center justify-start">
             <Image
               src="/Logo/nuvex_logo.svg"
               alt="Nuvex"
               width={160}
               height={54}
-              className="h-auto w-[160px]"
+              className="h-auto w-[160px] dark:brightness-0 dark:invert"
               priority
             />
           </div>
@@ -326,7 +330,7 @@ export function LoginPage() {
           <button
             type="button"
             onClick={hideMascot}
-            className="absolute -right-1 -top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white text-base font-circular-bold leading-none text-[var(--color-primary)] shadow-[0_10px_24px_rgba(16,29,105,0.18)] ring-1 ring-[#e5e9f2] transition hover:bg-[#fff4ec] hover:text-[var(--color-secondary)]"
+            className="absolute -right-1 -top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white text-base font-circular-bold leading-none text-[var(--color-primary)] shadow-[0_10px_24px_rgba(16,29,105,0.18)] ring-1 ring-[#e5e9f2] transition hover:bg-[#fff4ec] hover:text-[var(--color-secondary)] dark:bg-[#1c1c1c] dark:text-white dark:ring-[#2c2c2c] dark:hover:bg-[#242424]"
             aria-label="Ocultar ayuda"
           >
             ×
@@ -338,7 +342,7 @@ export function LoginPage() {
             className="group flex items-end gap-2"
             aria-label="Necesitas ayuda por WhatsApp"
           >
-            <span className="mb-10 rounded-2xl bg-white px-4 py-2 text-sm font-circular-bold text-[var(--color-primary)] shadow-[0_16px_40px_rgba(16,29,105,0.18)] ring-1 ring-[#e5e9f2] transition group-hover:-translate-y-1 group-hover:text-[var(--color-secondary)]">
+            <span className="mb-10 rounded-2xl bg-white px-4 py-2 text-sm font-circular-bold text-[var(--color-primary)] shadow-[0_16px_40px_rgba(16,29,105,0.18)] ring-1 ring-[#e5e9f2] transition group-hover:-translate-y-1 group-hover:text-[var(--color-secondary)] dark:bg-[#1c1c1c] dark:text-white dark:ring-[#2c2c2c] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
               Necesitas ayuda?
             </span>
             <span

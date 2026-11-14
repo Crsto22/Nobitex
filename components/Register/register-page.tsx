@@ -24,6 +24,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";
 import { TurnstileWidget } from "@/components/Turnstile/turnstile-widget";
 import { trackMetaEvent } from "@/components/analytics/meta-pixel";
 import { Button } from "@/components/ui/button";
@@ -495,16 +496,16 @@ export function RegisterPage() {
   };
 
   return (
-    <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb]">
-      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
-        <div className="login-dots-bg relative z-10 hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 lg:flex xl:px-12">
+    <main className="min-h-dvh overflow-y-auto bg-[#f3f5fb] dark:bg-[#0a0a0a]">
+      <section className="login-form-motion relative grid min-h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] dark:bg-[#0a0a0a] lg:grid-cols-[minmax(0,1fr)_minmax(580px,820px)]">
+        <div className="login-dots-bg relative z-10 hidden min-h-dvh flex-col overflow-hidden bg-[#f6f2f1] px-8 py-10 dark:bg-[#2a2a2a] lg:flex xl:px-12">
           <div className="flex w-full shrink-0 items-center justify-start">
             <Image
               src="/Logo/nuvex_logo.svg"
               alt="Nuvex"
               width={160}
               height={54}
-              className="h-auto w-[160px]"
+              className="h-auto w-[160px] dark:brightness-0 dark:invert"
               priority
             />
           </div>
@@ -536,20 +537,23 @@ export function RegisterPage() {
                 alt="Nuvex"
                 width={96}
                 height={22}
-                className="h-auto w-24"
+                className="h-auto w-24 dark:brightness-0 dark:invert"
                 style={{ width: "auto", height: "auto" }}
                 priority
               />
             </div>
-            <Link
-              href="https://nuvex.pe"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Ir a nuvex.pe"
-              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
-            >
-              <HouseIcon size={20} weight="bold" />
-            </Link>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <ThemeToggle className="text-[var(--color-primary)] hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10" />
+              <Link
+                href="https://nuvex.pe"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Ir a nuvex.pe"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] dark:text-white dark:hover:bg-white/10"
+              >
+                <HouseIcon size={20} weight="bold" />
+              </Link>
+            </div>
           </div>
           <div
             className={`register-form-scroll flex max-h-[calc(100dvh-6rem)] w-full flex-col overflow-y-auto pr-2 transition-[max-width] duration-500 ease-out lg:max-h-[calc(100dvh-7rem)] ${
@@ -573,7 +577,7 @@ export function RegisterPage() {
                   onSubmit={handleSubmit}
                 >
                   <div>
-                    <h1 className="mt-1 text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl">
+                    <h1 className="mt-1 text-2xl font-semibold text-[var(--color-primary)] text-fixed-2xl dark:text-[#d7dae3]">
                       Prueba Nuvex gratis 14 días
                     </h1>
                   </div>
@@ -699,7 +703,7 @@ export function RegisterPage() {
                           resetKey={turnstileResetKey}
                         />
 
-                        <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1 text-sm leading-5 text-[#525b75]">
+                        <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1 text-sm leading-5 text-[#525b75] dark:text-white/70">
                           <input
                             type="checkbox"
                             checked={acceptedLegalTerms}
@@ -738,7 +742,7 @@ export function RegisterPage() {
                         <div className="mx-auto flex h-14 w-14 items-center justify-center text-[var(--color-secondary)]">
                           <EnvelopeSimpleIcon size={38} weight="fill" />
                         </div>
-                        <p className="mx-auto mt-2 max-w-[360px] text-center text-sm font-circular-regular leading-6 text-[#525b75]">
+                        <p className="mx-auto mt-2 max-w-[360px] text-center text-sm font-circular-regular leading-6 text-[#525b75] dark:text-white/60">
                           Ingresa el codigo de 6 digitos que enviamos a tu
                           correo
                         </p>
@@ -759,9 +763,9 @@ export function RegisterPage() {
                           placeholder="000000"
                           aria-label="000000"
                           required
-                          className="font-heading mx-auto mt-5 block h-12 w-full max-w-[280px] rounded-2xl bg-white px-4 text-center text-lg font-black tracking-[0.35em] text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none transition placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                          className="font-heading mx-auto mt-5 block h-12 w-full max-w-[280px] rounded-2xl bg-white px-4 text-center text-lg font-black tracking-[0.35em] text-[var(--color-primary)] ring-1 ring-[var(--color-sidebar-action-bg)] outline-none transition placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-[#1c1c1c] dark:text-white dark:ring-[#2c2c2c] dark:placeholder:text-[#8f8f8f]"
                         />
-                        <p className="mt-3 text-center text-xs font-circular-regular text-[#7b849b]">
+                        <p className="mt-3 text-center text-xs font-circular-regular text-[#7b849b] dark:text-white/50">
                           Enviado a {accountData.email}
                         </p>
                       </div>
@@ -796,7 +800,7 @@ export function RegisterPage() {
                             || (currentStep === 0 && !acceptedLegalTerms)
                         }
                         onClick={handleNext}
-                        className="h-11 flex-1 rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754]"
+                        className="h-11 flex-1 rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] dark:disabled:bg-[#242424] dark:disabled:text-white/45 dark:disabled:opacity-100"
                       >
                         {getActionLabel(currentStep, isSubmitting)}
                       </Button>
@@ -804,18 +808,18 @@ export function RegisterPage() {
                       <Button
                         type="submit"
                         disabled={isSubmitting || !companyData.catalogProfile}
-                        className="h-11 flex-1 rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754]"
+                        className="h-11 flex-1 rounded-2xl bg-[var(--color-primary)] text-sm font-circular-regular text-white hover:bg-[#0c1754] dark:disabled:bg-[#242424] dark:disabled:text-white/45 dark:disabled:opacity-100"
                       >
                         {isSubmitting ? "Creando empresa..." : "Crear cuenta"}
                       </Button>
                     )}
                   </div>
 
-                  <div className="pt-1 text-center text-xs font-circular-regular text-[#7b849b]">
+                  <div className="pt-1 text-center text-xs font-circular-regular text-[#7b849b] dark:text-white/50">
                     {isComplete ? "Volver a " : "Ya tienes una cuenta, "}
                     <Link
                       href="/login"
-                      className="font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
+                      className="font-semibold text-[#7b83b7] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline dark:text-white/80 dark:hover:text-white"
                     >
                       Iniciar sesion
                     </Link>
@@ -858,7 +862,7 @@ function ActivationScreen({
           {isReady ? copy.readyTitle : copy.loadingTitle}
         </h2>
         {!isReady && (
-          <p className="mt-2 text-sm font-circular-regular text-[#525b75]">
+          <p className="mt-2 text-sm font-circular-regular text-[#525b75] dark:text-white/60">
             {copy.description}
           </p>
         )}
@@ -910,7 +914,7 @@ function ActivationScreen({
 
         {isReady && (
           <div className="mt-8">
-            <p className="text-sm font-circular-regular text-[#525b75]">
+            <p className="text-sm font-circular-regular text-[#525b75] dark:text-white/60">
               Todo listo. Estamos entrando a tu sistema.
             </p>
             <p className="mt-3 text-xs font-circular-bold uppercase tracking-[0.18em] text-[var(--color-secondary)]">
@@ -975,7 +979,7 @@ function getActivationCopy(productMode: ProductMode) {
 
 function PasswordRules({ password }: { password: string }) {
   return (
-    <div className="grid gap-2 rounded-2xl bg-white p-3 ring-1 ring-[var(--color-sidebar-action-bg)] sm:grid-cols-2">
+    <div className="grid gap-2 rounded-2xl bg-white p-3 ring-1 ring-[var(--color-sidebar-action-bg)] dark:bg-[#1c1c1c] dark:ring-[#2c2c2c] sm:grid-cols-2">
       {passwordRequirements.map((requirement) => {
         const isValid = requirement.test(password);
 
@@ -1271,7 +1275,7 @@ function CompanyStep({ companyData, updateCompanyValue }: CompanyStepProps) {
                 className={`group relative flex min-h-[82px] flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-all ${
                   selected
                     ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5 shadow-sm"
-                    : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-input-bg)]"
+                    : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-input-bg)] dark:border-[#2c2c2c] dark:bg-[#1c1c1c] dark:hover:bg-[#242424]"
                 }`}
               >
                 <span
@@ -1351,11 +1355,11 @@ function RegisterInput({
     <div>
       <label
         htmlFor={id}
-        className="mb-2 block text-sm font-circular-regular text-[#4e5671]"
+        className="mb-2 block text-sm font-circular-regular text-[#4e5671] dark:text-white/70"
       >
         {label}
       </label>
-      <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+      <div className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--color-sidebar-action-bg)] transition focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20 dark:bg-[#1c1c1c] dark:ring-[#2c2c2c]">
         <input
           id={id}
           name={name}
@@ -1371,7 +1375,7 @@ function RegisterInput({
           pattern={pattern}
           onBlur={onBlur}
           onFocus={onFocus}
-          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[var(--color-placeholder)] xl:h-12"
+          className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-[var(--color-primary)] outline-none placeholder:text-[var(--color-placeholder)] dark:text-white dark:placeholder:text-[#8f8f8f] xl:h-12"
         />
         {endAdornment
           ? endAdornment
