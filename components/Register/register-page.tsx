@@ -505,7 +505,15 @@ export function RegisterPage() {
               alt="Nuvex"
               width={160}
               height={54}
-              className="h-auto w-[160px] dark:brightness-0 dark:invert"
+              className="h-auto w-[160px] dark:hidden"
+              priority
+            />
+            <Image
+              src="/Logo/nuvex_logo_modooscuro.svg"
+              alt="Nuvex"
+              width={160}
+              height={54}
+              className="hidden h-auto w-[160px] dark:block"
               priority
             />
           </div>
@@ -537,8 +545,16 @@ export function RegisterPage() {
                 alt="Nuvex"
                 width={96}
                 height={22}
-                className="h-auto w-24 dark:brightness-0 dark:invert"
+                className="h-auto w-24 dark:hidden"
                 style={{ width: "auto", height: "auto" }}
+                priority
+              />
+              <Image
+                src="/Logo/nuvex_logo_modooscuro.svg"
+                alt="Nuvex"
+                width={96}
+                height={32}
+                className="hidden h-auto w-24 dark:block"
                 priority
               />
             </div>

@@ -9,7 +9,16 @@ export function LoadingScreen() {
           alt="Nuvex"
           width={270}
           height={86}
-          className="max-w-[270px] dark:brightness-0 dark:invert"
+          className="max-w-[270px] dark:hidden"
+          style={{ width: "auto", height: "auto" }}
+          priority
+        />
+        <Image
+          src="/Logo/nuvex_logo_modooscuro.svg"
+          alt="Nuvex"
+          width={270}
+          height={90}
+          className="hidden max-w-[270px] dark:block"
           style={{ width: "auto", height: "auto" }}
           priority
         />
