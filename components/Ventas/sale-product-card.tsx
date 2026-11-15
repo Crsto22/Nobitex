@@ -19,6 +19,8 @@ export function hasAvailableSaleProductStock(
   product: SaleProduct,
   cartQuantities: Record<string, number>,
 ) {
+  if (product.controlaStock === false) return true;
+
   return product.variantes.some(
     (variant) =>
       (variant.stockSucursal ?? variant.stockTotal) -
@@ -41,6 +43,7 @@ export function SaleProductCard({
   cartQuantities,
   onAdd,
 }: SaleProductCardProps) {
+  const controlsStock = product.controlaStock !== false;
   const colors = useMemo(
     () =>
       Array.from(
@@ -63,16 +66,19 @@ export function SaleProductCard({
       ),
     [cartQuantities, product.variantes],
   );
-  const firstColor = colors.find((color) => color.stock > 0) ?? colors[0];
+  const firstColor =
+    colors.find((color) => (controlsStock ? color.stock > 0 : true)) ??
+    colors[0];
   const [colorId, setColorId] = useState(firstColor?.id ?? "");
   const selectedColor =
     colors.find((color) => color.id === colorId) ?? firstColor;
   const firstAvailableVariant =
     selectedColor?.variants.find(
       (variant) =>
+        !controlsStock ||
         (variant.stockSucursal ?? variant.stockTotal) -
           (cartQuantities[variant.varianteId] ?? 0) >
-        0,
+          0,
     ) ?? selectedColor?.variants[0];
   const [selectedByColor, setSelectedByColor] = useState<
     Record<string, string>
@@ -81,9 +87,10 @@ export function SaleProductCard({
     selectedColor?.variants.find(
       (variant) =>
         variant.varianteId === selectedByColor[selectedColor.id] &&
-        (variant.stockSucursal ?? variant.stockTotal) -
-          (cartQuantities[variant.varianteId] ?? 0) >
-          0,
+        (!controlsStock ||
+          (variant.stockSucursal ?? variant.stockTotal) -
+            (cartQuantities[variant.varianteId] ?? 0) >
+            0),
     ) ?? firstAvailableVariant;
   const stock = selectedVariant
     ? Math.max(
@@ -95,6 +102,7 @@ export function SaleProductCard({
   const image = imageUrl(selectedVariant) ?? imageUrl(product.variantes[0]);
   const isNormal = product.tipo === "normal";
   const productStock = colors.reduce((total, color) => total + color.stock, 0);
+  const isSoldOut = controlsStock && productStock <= 0;
 
   const rowRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -119,13 +127,13 @@ export function SaleProductCard({
   if (!hasAvailableSaleProductStock(product, cartQuantities)) return null;
 
   const addSelected = () => {
-    if (selectedVariant && stock > 0) onAdd(selectedVariant);
+    if (selectedVariant && (!controlsStock || stock > 0)) onAdd(selectedVariant);
   };
 
   return (
     <article
       role="button"
-      tabIndex={productStock > 0 ? 0 : -1}
+      tabIndex={isSoldOut ? -1 : 0}
       onClick={addSelected}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;
@@ -136,7 +144,7 @@ export function SaleProductCard({
       }}
       className={cn(
         "group relative flex min-h-[220px] cursor-pointer flex-col rounded-[12px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-colors duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]",
-        productStock <= 0 && "cursor-not-allowed opacity-60",
+        isSoldOut && "cursor-not-allowed opacity-60",
       )}
     >
       <div
@@ -147,18 +155,25 @@ export function SaleProductCard({
         <span className="text-sm font-circular-bold">
           S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
         </span>
-        <span
-          className={cn(
-            "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px]",
-            stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
-          )}
-        >
-          <PackageIcon size={14} weight="bold" />
-          {stock}
-        </span>
+        {controlsStock ? (
+          <span
+            className={cn(
+              "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px]",
+              stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
+            )}
+          >
+            <PackageIcon size={14} weight="bold" />
+            {stock}
+          </span>
+        ) : (
+          <span className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-sidebar-active)] px-2 text-[10px] font-circular-bold text-white">
+            <PackageIcon size={12} weight="bold" />
+            Sin control de stock
+          </span>
+        )}
       </div>
 
-      {productStock <= 0 ? (
+      {isSoldOut ? (
         <span className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 rounded-lg bg-[#ef4444] px-3 py-1 text-xs font-circular-bold text-white">
           Agotado
         </span>
@@ -195,11 +210,15 @@ export function SaleProductCard({
           <span
             className={cn(
               "font-onest-extrabold absolute right-0 top-0 z-10 flex h-6 items-center gap-1 rounded-full px-2 text-xs text-white shadow-sm",
-              stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
+              !controlsStock
+                ? "bg-[var(--color-sidebar-active)] text-[10px]"
+                : stock >= 3
+                  ? "bg-[var(--color-sidebar-active)]"
+                  : "bg-[#ef4444]",
             )}
           >
             <PackageIcon size={12} weight="bold" />
-            {stock}
+            {controlsStock ? stock : "Sin control de stock"}
           </span>
         ) : null}
       </div>
@@ -220,7 +239,7 @@ export function SaleProductCard({
                   selectedColor?.id === item.id
                     ? "scale-110"
                     : "ring-transparent",
-                  item.stock <= 0 && "opacity-40",
+                  item.stock <= 0 && controlsStock && "opacity-40",
                 )}
                 style={
                   {
@@ -231,7 +250,11 @@ export function SaleProductCard({
                         : "transparent",
                   } as React.CSSProperties
                 }
-                title={`${item.color.nombre} · Stock ${item.stock}`}
+                title={
+                  controlsStock
+                    ? `${item.color.nombre} · Stock ${item.stock}`
+                    : `${item.color.nombre} · Sin control de stock`
+                }
                 aria-label={`Seleccionar color ${item.color.nombre}`}
               />
             ))}
@@ -243,6 +266,7 @@ export function SaleProductCard({
                 (variant.stockSucursal ?? variant.stockTotal) -
                   (cartQuantities[variant.varianteId] ?? 0),
               );
+              const isOutOfStock = controlsStock && remaining <= 0;
               const selected =
                 variant.varianteId === selectedVariant?.varianteId;
 
@@ -250,7 +274,7 @@ export function SaleProductCard({
                 <button
                   key={variant.varianteId}
                   type="button"
-                  disabled={remaining <= 0}
+                  disabled={isOutOfStock}
                   onClick={(event) => {
                     event.stopPropagation();
                     setSelectedByColor((current) => ({
@@ -261,10 +285,14 @@ export function SaleProductCard({
                   className={cn(
                     "flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-full bg-[var(--color-input-bg)] px-2 text-xs font-circular-bold text-[var(--color-text)] transition-colors",
                     selected && "bg-[var(--color-primary)] text-white",
-                    remaining <= 0 &&
+                    isOutOfStock &&
                       "cursor-not-allowed bg-[#ef4444]/10 text-[#ef4444] opacity-50",
                   )}
-                  title={`${variant.talla.nombre} · Stock ${remaining}`}
+                  title={
+                    controlsStock
+                      ? `${variant.talla.nombre} · Stock ${remaining}`
+                      : `${variant.talla.nombre} · Sin control de stock`
+                  }
                 >
                   {variant.talla.nombre}
                 </button>
@@ -299,7 +327,7 @@ export function SaleProductCard({
         <span className="truncate text-sm font-circular-bold text-[var(--color-muted-foreground)]">
           S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
         </span>
-        {priceOverflows ? null : (
+        {priceOverflows ? null : controlsStock ? (
           <span
             className={cn(
               "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
@@ -308,6 +336,11 @@ export function SaleProductCard({
           >
             <PackageIcon size={14} weight="bold" />
             {stock}
+          </span>
+        ) : (
+          <span className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-sidebar-active)] px-2 text-[10px] font-circular-bold text-white">
+            <PackageIcon size={12} weight="bold" />
+            Sin control de stock
           </span>
         )}
       </div>

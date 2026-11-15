@@ -144,6 +144,7 @@ function CrearProductoPageContent() {
   });
   const [autoSku, setAutoSku] = useState(true);
   const [autoBarcode, setAutoBarcode] = useState(true);
+  const [controlarStock, setControlarStock] = useState(true);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const [selectedStockBranches, setSelectedStockBranches] = useState<string[]>(
     [],
@@ -443,6 +444,7 @@ function CrearProductoPageContent() {
 
           setIsEditMode(true);
           setProductType(product.tipo);
+          setControlarStock(product.controlaStock);
           const firstVariant = product.variantes[0];
           setFormData({
             name: product.nombre,
@@ -1329,6 +1331,7 @@ function CrearProductoPageContent() {
     productPayload.append("unidadMedidaCodigo", formData.unitCode);
     productPayload.append("tipoAfectacionIgvCodigo", "10");
     productPayload.append("activo", "true");
+    productPayload.append("controlaStock", String(controlarStock));
 
     if (formData.brand) {
       productPayload.append("marcaId", formData.brand);
@@ -1656,6 +1659,47 @@ function CrearProductoPageContent() {
                     searchable
                     required
                   />
+                  <div>
+                    <span className="mb-2 block text-sm font-circular-regular text-[#4e5671]">
+                      Controlar stock
+                    </span>
+                    <div className="flex h-11 items-center justify-between gap-3 rounded-[16px] bg-[var(--color-input-bg)] px-4">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <PackageIcon
+                          size={18}
+                          weight="bold"
+                          className={
+                            controlarStock
+                              ? "shrink-0 text-[var(--color-primary)]"
+                              : "shrink-0 text-[#8b93a7]"
+                          }
+                        />
+                        <span className="truncate text-sm font-circular-regular text-[var(--color-input-text)]">
+                          {controlarStock ? "Activado" : "Desactivado"}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={controlarStock}
+                        aria-label="Controlar stock"
+                        onClick={() =>
+                          setControlarStock((current) => !current)
+                        }
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
+                          controlarStock
+                            ? "bg-[var(--color-primary)]"
+                            : "bg-[#cbd5e1] dark:bg-[#3f3f46]"
+                        }`}
+                      >
+                        <span
+                          className={`ml-1 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_rgba(16,29,105,0.25)] transition-transform duration-200 ${
+                            controlarStock ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

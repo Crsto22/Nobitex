@@ -607,8 +607,9 @@ export default function CotizacionesPage() {
     product: SaleProduct,
     variant: SaleProductVariant,
   ) => {
+    const controlsStock = product.controlaStock !== false;
     const stock = variant.stockSucursal ?? variant.stockTotal;
-    if (stock <= 0) {
+    if (controlsStock && stock <= 0) {
       return;
     }
 
@@ -632,7 +633,10 @@ export default function CotizacionesPage() {
           item.id === variant.varianteId
             ? {
                 ...item,
-                quantity: Math.min(item.quantity + 1, item.stock),
+                quantity: Math.min(
+                  item.quantity + 1,
+                  item.product.controlaStock === false ? Infinity : item.stock,
+                ),
               }
             : item,
         );
@@ -668,7 +672,10 @@ export default function CotizacionesPage() {
         item.id === productId
           ? {
               ...item,
-              quantity: Math.min(item.quantity + 1, item.stock),
+              quantity: Math.min(
+                item.quantity + 1,
+                item.product.controlaStock === false ? Infinity : item.stock,
+              ),
             }
           : item,
       ),
@@ -713,7 +720,7 @@ export default function CotizacionesPage() {
       if (!current || !variant || variantId === itemId) return items;
 
       const stock = variant.stockSucursal ?? variant.stockTotal;
-      if (stock <= 0) return items;
+      if (current.product.controlaStock !== false && stock <= 0) return items;
       const existing = items.find((item) => item.id === variantId);
       if (existing) {
         return items
@@ -724,7 +731,7 @@ export default function CotizacionesPage() {
                   ...item,
                   quantity: Math.min(
                     item.quantity + current.quantity,
-                    item.stock,
+                    item.product.controlaStock === false ? Infinity : item.stock,
                   ),
                 }
               : item,
@@ -749,7 +756,10 @@ export default function CotizacionesPage() {
                 variant.imagen?.urlWebp ??
                 variant.imagen?.urlOriginal ??
                 null,
-              quantity: Math.min(item.quantity, stock),
+              quantity:
+                item.product.controlaStock === false
+                  ? item.quantity
+                  : Math.min(item.quantity, stock),
               stock,
               colorHex: variant.color.hex,
               colorName: variant.color.nombre,
@@ -850,7 +860,10 @@ export default function CotizacionesPage() {
           cartItems.find((item) => item.id === match.variant.varianteId)
             ?.quantity ?? 0;
 
-        if (stock - quantityInCart <= 0) {
+        if (
+          match.product.controlaStock !== false &&
+          stock - quantityInCart <= 0
+        ) {
           toast.showToast({
             title: "Sin stock disponible",
             description: match.product.nombre,
@@ -1617,7 +1630,10 @@ export default function CotizacionesPage() {
                           <button
                             type="button"
                             onClick={() => increaseQuantity(item.id)}
-                            disabled={item.quantity >= item.stock}
+                            disabled={
+                              item.product.controlaStock !== false &&
+                              item.quantity >= item.stock
+                            }
                             className="flex h-full w-8 items-center justify-center hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Sumar ${item.name}`}
                           >

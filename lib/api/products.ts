@@ -18,6 +18,7 @@ export type ProductResponse = {
   nombre: string;
   tipo: "normal" | "variantes";
   descripcion: string | null;
+  controlaStock: boolean;
   activo: boolean;
   stockTotal: number;
   stockSucursal: number | null;

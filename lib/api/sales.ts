@@ -35,6 +35,7 @@ export type SaleProduct = {
   nombre: string;
   tipo: "normal" | "variantes";
   descripcion: string | null;
+  controlaStock: boolean;
   precioMinimo: string;
   precioMaximo: string;
   stockTotal: number;
