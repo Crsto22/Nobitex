@@ -1,12 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  CaretDownIcon,
+  FileCsvIcon,
+  FileXlsIcon,
   MagnifyingGlassIcon,
   PackageIcon,
   PlusIcon,
+  SpinnerGapIcon,
   WifiHighIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -26,11 +30,13 @@ import { categoriesApi, type Category } from "@/lib/api/categories";
 import { colorsApi, type Color } from "@/lib/api/colors";
 import {
   productsApi,
+  type ProductExportFormat,
   type ProductResponse,
   type ProductsResponse,
 } from "@/lib/api/products";
 import { sizesApi, type Size } from "@/lib/api/sizes";
 import { defaultPageSize } from "@/lib/pagination";
+import { downloadBlob } from "@/lib/utils/download";
 
 const filterPageSize = Math.min(defaultPageSize, 12);
 
@@ -69,6 +75,10 @@ export default function CatalogoProductosPage() {
   const [isLoadingSizes, setIsLoadingSizes] = useState(false);
   const [hasLoadedBranches, setHasLoadedBranches] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] =
+    useState<ProductExportFormat | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
   const [deleteProduct, setDeleteProduct] = useState<ProductCatalogItem | null>(
     null,
   );
@@ -346,6 +356,61 @@ export default function CatalogoProductosPage() {
     }
   };
 
+  useEffect(() => {
+    if (!isExportMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsExportMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isExportMenuOpen]);
+
+  const handleExport = async (format: ProductExportFormat) => {
+    setIsExportMenuOpen(false);
+    setExportingFormat(format);
+
+    try {
+      const blob = await productsApi.exportProducts(
+        {
+          search: debouncedSearchTerm,
+          categoriaId:
+            selectedCategory === "todos" ? undefined : selectedCategory,
+          colorId: selectedColor === "todos" ? undefined : selectedColor,
+          tallaId: selectedSize === "todos" ? undefined : selectedSize,
+          sucursalId: selectedBranch || undefined,
+        },
+        format,
+      );
+      const stamp = new Date().toISOString().slice(0, 10);
+
+      downloadBlob(blob, `catalogo-productos-${stamp}.${format}`);
+    } catch (error) {
+      showToast({
+        title: "No se pudo exportar",
+        description:
+          error instanceof Error ? error.message : "Intentalo nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   return (
     <DashboardShell
       headerTitle={
@@ -427,13 +492,73 @@ export default function CatalogoProductosPage() {
               </div>
             </div>
 
-            <Link
-              href="/catalogo/productos/crear"
-              className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
-            >
-              <PlusIcon size={18} weight="bold" />
-              Nuevo Producto
-            </Link>
+            <div className="flex items-center gap-3">
+              <div ref={exportMenuRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsExportMenuOpen((current) => !current)}
+                  disabled={exportingFormat !== null}
+                  aria-haspopup="menu"
+                  aria-expanded={isExportMenuOpen}
+                  className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#107c41] px-4 text-sm font-circular-bold text-white transition-colors hover:bg-[#0b5e31] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {exportingFormat ? (
+                    <SpinnerGapIcon
+                      size={16}
+                      weight="bold"
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <FileXlsIcon size={16} weight="bold" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {exportingFormat ? "Exportando..." : "Exportar"}
+                  </span>
+                  <CaretDownIcon size={12} weight="bold" />
+                </button>
+                {isExportMenuOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full z-30 mt-2 w-52 overflow-hidden rounded-xl bg-[var(--color-card)] p-1 shadow-[0_12px_30px_rgba(16,29,105,0.18)] ring-1 ring-[var(--color-border)]"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => void handleExport("xlsx")}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                    >
+                      <FileXlsIcon
+                        size={18}
+                        weight="bold"
+                        className="text-[#107c41]"
+                      />
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => void handleExport("csv")}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-circular-regular text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                    >
+                      <FileCsvIcon
+                        size={18}
+                        weight="bold"
+                        className="text-[#107c41]"
+                      />
+                      CSV (.csv)
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              <Link
+                href="/catalogo/productos/crear"
+                className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] transition-colors hover:opacity-90"
+              >
+                <PlusIcon size={18} weight="bold" />
+                Nuevo Producto
+              </Link>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">

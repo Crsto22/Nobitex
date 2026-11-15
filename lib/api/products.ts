@@ -1,4 +1,4 @@
-import { authFetch } from "@/lib/api/auth-fetch";
+import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
 
 export type ProductImageResponse = {
   id: string;
@@ -58,6 +58,8 @@ export type ProductResponse = {
 
 export type ProductStatusFilter = "active" | "inactive";
 
+export type ProductExportFormat = "xlsx" | "csv";
+
 export type ProductsQuery = {
   page?: number;
   limit?: number;
@@ -69,6 +71,48 @@ export type ProductsQuery = {
   sucursalId?: string;
   status?: ProductStatusFilter;
 };
+
+function buildProductsQuery(query: ProductsQuery) {
+  const params = new URLSearchParams();
+
+  if (query.page) {
+    params.set("page", String(query.page));
+  }
+
+  if (query.limit) {
+    params.set("limit", String(query.limit));
+  }
+
+  if (query.search?.trim()) {
+    params.set("search", query.search.trim());
+  }
+
+  if (query.categoriaId) {
+    params.set("categoriaId", query.categoriaId);
+  }
+
+  if (query.marcaId) {
+    params.set("marcaId", query.marcaId);
+  }
+
+  if (query.colorId) {
+    params.set("colorId", query.colorId);
+  }
+
+  if (query.tallaId) {
+    params.set("tallaId", query.tallaId);
+  }
+
+  if (query.sucursalId) {
+    params.set("sucursalId", query.sucursalId);
+  }
+
+  if (query.status) {
+    params.set("status", query.status);
+  }
+
+  return params.toString();
+}
 
 export type ProductsResponse = {
   data: ProductResponse[];
@@ -91,49 +135,24 @@ export type DeletedProductResponse = {
 
 export const productsApi = {
   findAll(query: ProductsQuery = {}, options: RequestInit = {}) {
-    const params = new URLSearchParams();
-
-    if (query.page) {
-      params.set("page", String(query.page));
-    }
-
-    if (query.limit) {
-      params.set("limit", String(query.limit));
-    }
-
-    if (query.search?.trim()) {
-      params.set("search", query.search.trim());
-    }
-
-    if (query.categoriaId) {
-      params.set("categoriaId", query.categoriaId);
-    }
-
-    if (query.marcaId) {
-      params.set("marcaId", query.marcaId);
-    }
-
-    if (query.colorId) {
-      params.set("colorId", query.colorId);
-    }
-
-    if (query.tallaId) {
-      params.set("tallaId", query.tallaId);
-    }
-
-    if (query.sucursalId) {
-      params.set("sucursalId", query.sucursalId);
-    }
-
-    if (query.status) {
-      params.set("status", query.status);
-    }
-
-    const queryString = params.toString();
+    const queryString = buildProductsQuery(query);
     return authFetch<ProductsResponse>(
       queryString ? `/products?${queryString}` : "/products",
       options,
     );
+  },
+
+  exportProducts(
+    query: ProductsQuery = {},
+    format: ProductExportFormat = "xlsx",
+    options: RequestInit = {},
+  ) {
+    const queryString = buildProductsQuery(query);
+    const params = queryString
+      ? `${queryString}&format=${format}`
+      : `format=${format}`;
+
+    return authBlobFetch(`/products/export?${params}`, options);
   },
 
   findById(publicId: string) {
