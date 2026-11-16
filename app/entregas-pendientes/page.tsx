@@ -968,6 +968,19 @@ export default function DeliveriesPage() {
                   />
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={refreshDeliveries}
+                aria-label="Actualizar"
+                title="Actualizar"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+              >
+                <ArrowsClockwiseIcon
+                  size={18}
+                  weight="bold"
+                  className={cn(isLoading && "animate-spin")}
+                />
+              </button>
               <div ref={actionsRef} className="relative">
                 <button
                   type="button"
@@ -976,7 +989,7 @@ export default function DeliveriesPage() {
                   aria-expanded={actionsOpen}
                   aria-label="Más acciones"
                   title="Más acciones"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={isLoading}
                 >
                   {isLoadingPrintAll || isExportingShalom ? (
@@ -1016,19 +1029,6 @@ export default function DeliveriesPage() {
                   </div>
                 ) : null}
               </div>
-              <button
-                type="button"
-                onClick={refreshDeliveries}
-                aria-label="Actualizar"
-                title="Actualizar"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-              >
-                <ArrowsClockwiseIcon
-                  size={18}
-                  weight="bold"
-                  className={cn(isLoading && "animate-spin")}
-                />
-              </button>
             </div>
           </div>
         </div>
