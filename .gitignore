@@ -44,3 +44,8 @@ next-env.d.ts
 .agents/
 .cursor/
 .claude/
+
+# dev logs
+.next-dev*.log
+.next-dev-runtime*.log
+/tmp/
