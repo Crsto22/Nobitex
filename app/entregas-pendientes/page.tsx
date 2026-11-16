@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowsClockwiseIcon,
   CalendarIcon,
@@ -40,6 +40,8 @@ import {
 } from "@/components/UserAvatar/user-avatar";
 import {
   salesApi,
+  type DeliveryCounts,
+  type DeliveryPrintable,
   type DeliveryStatusQuery,
   type SaleShippingDetails,
   type SaleShippingLogisticsStatus,
@@ -60,7 +62,17 @@ type DateRangePreset =
   | "next7"
   | "custom";
 
-const pageSize = 10;
+const pageSize = 20;
+const MAX_SELECTED_LABELS = 100;
+
+const emptyDeliveryCounts: DeliveryCounts = {
+  todos: 0,
+  shalom: 0,
+  olva: 0,
+  motorizado: 0,
+  domicilio: 0,
+  recojo: 0,
+};
 const courierTabConfig: Array<{ label: string; value: PageTab }> = [
   { label: "Pendientes", value: "pendiente" },
   { label: "Enviados", value: "enviado" },
@@ -255,13 +267,21 @@ export default function DeliveriesPage() {
     limit: pageSize,
     total: 0,
     totalPages: 1,
+    counts: emptyDeliveryCounts,
   });
+  const [isLoadingPrintAll, setIsLoadingPrintAll] = useState(false);
+  const [printAllSales, setPrintAllSales] = useState<DeliveryPrintable[] | null>(
+    null,
+  );
+  const [printAllTotal, setPrintAllTotal] = useState(0);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const requestIdRef = useRef(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [servicio, setServicio] = useState<ServiceTab>("");
   const [dateFilterType, setDateFilterType] =
     useState<DateFilterType>("envio");
-  const [datePreset, setDatePreset] = useState<DateRangePreset>("today");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -316,6 +336,8 @@ export default function DeliveriesPage() {
       return empty;
     }
 
+    if (!datePreset) return empty;
+
     let desde: string | undefined;
     let hasta: string | undefined;
     if (datePreset === "custom") {
@@ -349,6 +371,7 @@ export default function DeliveriesPage() {
   }, [dateFilterType, datePreset, dateFrom, dateTo]);
 
   const loadDeliveries = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
     try {
       const response = await salesApi.findDeliveries({
@@ -364,19 +387,34 @@ export default function DeliveriesPage() {
         fechaEnvioDesde: dateFilter.fechaEnvioDesde,
         fechaEnvioHasta: dateFilter.fechaEnvioHasta,
       });
+      if (requestId !== requestIdRef.current) return;
       const readySales = response.data.filter(
         (sale) => !sale.envio || sale.envio.estado === "recibido",
       );
-      setSales(readySales);
+      setSales((current) => {
+        if (page === 1) return readySales;
+        const seen = new Set(current.map((sale) => sale.publicId));
+        return [
+          ...current,
+          ...readySales.filter((sale) => !seen.has(sale.publicId)),
+        ];
+      });
       setMeta(
-        response.meta ?? {
-          page,
-          limit: pageSize,
-          total: readySales.length,
-          totalPages: 1,
-        },
+        response.meta
+          ? {
+              ...response.meta,
+              counts: response.meta.counts ?? emptyDeliveryCounts,
+            }
+          : {
+              page,
+              limit: pageSize,
+              total: readySales.length,
+              totalPages: 1,
+              counts: emptyDeliveryCounts,
+            },
       );
     } catch (error: unknown) {
+      if (requestId !== requestIdRef.current) return;
       toast.showToast({
         title: "No se pudieron cargar las entregas",
         description:
@@ -384,7 +422,9 @@ export default function DeliveriesPage() {
         variant: "error",
       });
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [
     activeTab,
@@ -410,6 +450,32 @@ export default function DeliveriesPage() {
     void loadDeliveries();
   }, [loadDeliveries]);
 
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isLoading) return;
+        setPage((current) =>
+          current < meta.totalPages ? current + 1 : current,
+        );
+      },
+      { rootMargin: "240px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isLoading, meta.totalPages]);
+
+  const refreshDeliveries = useCallback(() => {
+    setSelectedShippingSales([]);
+    setSales([]);
+    if (page === 1) {
+      void loadDeliveries();
+    } else {
+      setPage(1);
+    }
+  }, [loadDeliveries, page]);
+
   const updateShippingLocally = useCallback(
     (saleId: string, shipping: SaleShippingDetails) => {
       setSales((current) =>
@@ -425,7 +491,67 @@ export default function DeliveriesPage() {
   );
 
   const visibleTabs =
-    viewMode === "pickup" ? pickupTabConfig : courierTabConfig;
+    viewMode === "pickup"
+      ? pickupTabConfig.map((tab) => ({
+          ...tab,
+          label:
+            tab.value === "pendiente"
+              ? `${tab.label} (${meta.counts.recojo})`
+              : tab.label,
+        }))
+      : courierTabConfig;
+
+  const serviceCount = (value: ServiceTab) => {
+    switch (value) {
+      case "SHALOM":
+        return meta.counts.shalom;
+      case "OLVA":
+        return meta.counts.olva;
+      case "MOTORIZADO":
+        return meta.counts.motorizado;
+      case "DOMICILIO":
+        return meta.counts.domicilio;
+      default:
+        return meta.counts.todos;
+    }
+  };
+
+  const openPrintAll = async () => {
+    if (isLoadingPrintAll) return;
+    setIsLoadingPrintAll(true);
+    try {
+      const response = await salesApi.findDeliveryPrintables({
+        mode: viewMode,
+        estado: "pendiente",
+        search: debouncedSearchTerm || undefined,
+        servicio: viewMode === "courier" ? servicio || undefined : undefined,
+        period: dateFilter.period,
+        dateFrom: dateFilter.dateFrom,
+        dateTo: dateFilter.dateTo,
+        fechaEnvioDesde: dateFilter.fechaEnvioDesde,
+        fechaEnvioHasta: dateFilter.fechaEnvioHasta,
+      });
+      if (!response.data.length) {
+        toast.showToast({
+          title: "No hay pendientes para imprimir",
+          description: "Ajusta los filtros o actualiza la lista.",
+          variant: "info",
+        });
+        return;
+      }
+      setPrintAllSales(response.data);
+      setPrintAllTotal(response.meta.total);
+    } catch (error: unknown) {
+      toast.showToast({
+        title: "No se pudieron preparar las etiquetas",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsLoadingPrintAll(false);
+    }
+  };
 
   const changeViewMode = (mode: ViewMode) => {
     setViewMode(mode);
@@ -438,6 +564,24 @@ export default function DeliveriesPage() {
   };
 
   const toggleShippingSale = (sale: VentaResponse, selected: boolean) => {
+    if (selected) {
+      const alreadySelected = selectedShippingSales.some(
+        (item) => item.publicId === sale.publicId,
+      );
+      if (
+        !alreadySelected &&
+        selectedShippingSales.length >= MAX_SELECTED_LABELS
+      ) {
+        toast.showToast({
+          title: `Máximo ${MAX_SELECTED_LABELS} ventas por impresión`,
+          description:
+            "Imprime este bloque y continúa con el siguiente grupo de pendientes.",
+          variant: "info",
+        });
+        return;
+      }
+    }
+
     setSelectedShippingSales((current) =>
       selected
         ? current.some((item) => item.publicId === sale.publicId)
@@ -475,6 +619,19 @@ export default function DeliveriesPage() {
     );
 
   const toggleSelectAll = () => {
+    if (
+      !allSelectableSelected &&
+      selectedShippingSales.length >= MAX_SELECTED_LABELS
+    ) {
+      toast.showToast({
+        title: `Máximo ${MAX_SELECTED_LABELS} ventas por impresión`,
+        description:
+          "Imprime este bloque y continúa con el siguiente grupo de pendientes.",
+        variant: "info",
+      });
+      return;
+    }
+
     setSelectedShippingSales((current) => {
       if (allSelectableSelected) {
         return current.filter(
@@ -483,10 +640,24 @@ export default function DeliveriesPage() {
         );
       }
       const next = new Map(current.map((item) => [item.publicId, item]));
-      selectableSales.forEach((sale) => next.set(sale.publicId, sale));
+      for (const sale of selectableSales) {
+        if (next.size >= MAX_SELECTED_LABELS) break;
+        next.set(sale.publicId, sale);
+      }
       return Array.from(next.values());
     });
   };
+
+  const showBulkShip = viewMode === "courier" && markableSelected.length > 0;
+  const showBulkDelivery =
+    viewMode === "pickup" && deliverableSelected.length > 0;
+  const showBulkPrint = printableSelected.length > 0;
+  const mobileBulkActionsClassName = cn(
+    "grid gap-2 lg:hidden",
+    (showBulkShip || showBulkDelivery) && showBulkPrint
+      ? "grid-cols-2"
+      : "grid-cols-1",
+  );
 
   return (
     <DashboardShell
@@ -502,7 +673,7 @@ export default function DeliveriesPage() {
             <button
               type="button"
               onClick={() => setBulkShipSales(markableSelected)}
-              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] dark:bg-[#059669] dark:hover:bg-[#047857] lg:inline-flex"
             >
               <TruckIcon size={17} weight="bold" />
               Enviar ({markableSelected.length})
@@ -512,7 +683,7 @@ export default function DeliveriesPage() {
             <button
               type="button"
               onClick={() => setBulkDeliverySales(deliverableSelected)}
-              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] dark:bg-[#059669] dark:hover:bg-[#047857] lg:inline-flex"
             >
               <PackageIcon size={17} weight="bold" />
               Entregar ({deliverableSelected.length})
@@ -541,35 +712,39 @@ export default function DeliveriesPage() {
         </div>
 
         <div className="sticky -top-4 z-30 -mx-3 space-y-3 bg-[var(--color-background)] px-3 py-2 sm:-mx-4 sm:px-4 lg:-mx-6 lg:px-6">
-          {viewMode === "courier" && markableSelected.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setBulkShipSales(markableSelected)}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:hidden"
-            >
-              <TruckIcon size={17} weight="bold" />
-              Enviar ({markableSelected.length})
-            </button>
-          ) : null}
-          {viewMode === "pickup" && deliverableSelected.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setBulkDeliverySales(deliverableSelected)}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:hidden"
-            >
-              <PackageIcon size={17} weight="bold" />
-              Entregar ({deliverableSelected.length})
-            </button>
-          ) : null}
-          {printableSelected.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setLabelSales(printableSelected)}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white lg:hidden"
-            >
-              <PrinterIcon size={17} weight="bold" />
-              Imprimir seleccionados ({printableSelected.length})
-            </button>
+          {showBulkShip || showBulkDelivery || showBulkPrint ? (
+            <div className={mobileBulkActionsClassName}>
+              {showBulkShip ? (
+                <button
+                  type="button"
+                  onClick={() => setBulkShipSales(markableSelected)}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-3 text-xs font-bold text-white hover:bg-[#059669] dark:bg-[#059669] dark:hover:bg-[#047857] lg:hidden"
+                >
+                  <TruckIcon size={17} weight="bold" />
+                  Enviar ({markableSelected.length})
+                </button>
+              ) : null}
+              {showBulkDelivery ? (
+                <button
+                  type="button"
+                  onClick={() => setBulkDeliverySales(deliverableSelected)}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-3 text-xs font-bold text-white hover:bg-[#059669] dark:bg-[#059669] dark:hover:bg-[#047857] lg:hidden"
+                >
+                  <PackageIcon size={17} weight="bold" />
+                  Entregar ({deliverableSelected.length})
+                </button>
+              ) : null}
+              {showBulkPrint ? (
+                <button
+                  type="button"
+                  onClick={() => setLabelSales(printableSelected)}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-3 text-xs font-bold text-white lg:hidden"
+                >
+                  <PrinterIcon size={17} weight="bold" />
+                  Imprimir ({printableSelected.length})
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
           {viewMode === "courier" ? (
@@ -594,8 +769,14 @@ export default function DeliveriesPage() {
                       ? tab.activeClass
                       : "text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
                   )}
+                  aria-label={`${tab.label} (${serviceCount(tab.value)} pendientes)`}
                 >
-                  {tab.label}
+                  <span className="inline-flex items-center gap-1.5">
+                    {tab.label}
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] leading-none dark:bg-white/15">
+                      {serviceCount(tab.value)}
+                    </span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -747,7 +928,22 @@ export default function DeliveriesPage() {
               ) : null}
               <button
                 type="button"
-                onClick={() => void loadDeliveries()}
+                onClick={() => void openPrintAll()}
+                disabled={isLoading || isLoadingPrintAll}
+                aria-label="Imprimir todo"
+                title="Imprimir todo"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-3 text-[11px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+              >
+                {isLoadingPrintAll ? (
+                  <SpinnerGapIcon size={17} className="animate-spin" />
+                ) : (
+                  <PrinterIcon size={17} weight="bold" />
+                )}
+                <span className="whitespace-nowrap">Imprimir todo</span>
+              </button>
+              <button
+                type="button"
+                onClick={refreshDeliveries}
                 aria-label="Actualizar"
                 title="Actualizar"
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
@@ -763,7 +959,7 @@ export default function DeliveriesPage() {
         </div>
 
         <div className="space-y-3 pb-2">
-          {isLoading ? (
+          {isLoading && sales.length === 0 ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
@@ -780,7 +976,7 @@ export default function DeliveriesPage() {
                 canManageLink={canUseShipping}
                 onClientDelivery={() => setFulfillment(sale)}
                 onManageLink={() => setShippingLinkSale(sale)}
-                onMarkShipped={() => void loadDeliveries()}
+                onMarkShipped={refreshDeliveries}
                 selectable={
                   viewMode === "courier"
                     ? sale.envio?.estado === "recibido"
@@ -798,34 +994,34 @@ export default function DeliveriesPage() {
           )}
         </div>
 
+        <div
+          ref={loadMoreRef}
+          className="flex h-12 items-center justify-center text-xs text-[var(--color-muted-foreground)]"
+        >
+          {isLoading && sales.length > 0 ? (
+            <span className="inline-flex items-center gap-2">
+              <SpinnerGapIcon size={16} className="animate-spin" />
+              Cargando más...
+            </span>
+          ) : page < meta.totalPages ? (
+            "Desliza para cargar más"
+          ) : sales.length > 0 ? (
+            "No hay más resultados"
+          ) : null}
+        </div>
+
         <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
           <p className="text-xs text-[var(--color-muted-foreground)]">
             Mostrando {sales.length} de {meta.total}{" "}
             {viewMode === "pickup" ? "entregas" : "envíos"}
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={isLoading || page <= 1}
-              className="h-8 rounded-lg bg-[var(--color-input-bg)] px-3 text-xs text-[var(--color-text)] disabled:opacity-40"
-            >
-              Anterior
-            </button>
-            <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-[var(--color-primary)] px-2 text-xs font-bold text-white">
-              {meta.page}/{meta.totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                setPage((current) => Math.min(meta.totalPages, current + 1))
-              }
-              disabled={isLoading || page >= meta.totalPages}
-              className="h-8 rounded-lg bg-[var(--color-input-bg)] px-3 text-xs text-[var(--color-text)] disabled:opacity-40"
-            >
-              Siguiente
-            </button>
-          </div>
+          <span className="text-xs text-[var(--color-muted-foreground)]">
+            {isLoading
+              ? "Actualizando..."
+              : page >= meta.totalPages
+                ? "Fin de la lista"
+                : `Página ${page} de ${meta.totalPages}`}
+          </span>
         </div>
       </div>
 
@@ -838,7 +1034,7 @@ export default function DeliveriesPage() {
               current.filter((item) => item.publicId !== fulfillment.publicId),
             );
             setFulfillment(null);
-            void loadDeliveries();
+            refreshDeliveries();
           }}
         />
       ) : null}
@@ -850,7 +1046,7 @@ export default function DeliveriesPage() {
           if (shippingLinkSale) {
             updateShippingLocally(shippingLinkSale.publicId, shipping);
           }
-          void loadDeliveries();
+          refreshDeliveries();
         }}
       />
       {labelSales ? (
@@ -874,7 +1070,7 @@ export default function DeliveriesPage() {
           onCompleted={() => {
             setBulkShipSales(null);
             setSelectedShippingSales([]);
-            void loadDeliveries();
+            refreshDeliveries();
           }}
         />
       ) : null}
@@ -885,8 +1081,15 @@ export default function DeliveriesPage() {
           onCompleted={() => {
             setBulkDeliverySales(null);
             setSelectedShippingSales([]);
-            void loadDeliveries();
+            refreshDeliveries();
           }}
+        />
+      ) : null}
+      {printAllSales ? (
+        <PrintAllLabelsModal
+          sales={printAllSales}
+          total={printAllTotal}
+          onClose={() => setPrintAllSales(null)}
         />
       ) : null}
     </DashboardShell>
@@ -1297,8 +1500,12 @@ function DeliveryRow({
                 <CheckCircleIcon size={17} weight="fill" /> Entregado
               </span>
             ) : (
-              <PrimaryButton onClick={onClientDelivery} icon={PackageIcon}>
-                Entregar al cliente
+              <PrimaryButton
+                onClick={onClientDelivery}
+                icon={PackageIcon}
+                tone="success"
+              >
+                Entregar
               </PrimaryButton>
             )
           ) : canManageLink && sale.envio?.estado !== "recibido" ? (
@@ -1310,14 +1517,14 @@ function DeliveryRow({
               type="button"
               onClick={() => void markShipped()}
               disabled={isMarkingShipped}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:bg-[#059669] dark:bg-[#059669] dark:hover:bg-[#047857] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isMarkingShipped ? (
                 <SpinnerGapIcon size={17} className="animate-spin" />
               ) : (
                 <TruckIcon size={17} weight="bold" />
               )}
-              Marcar como enviado
+              Enviar
             </button>
           ) : (
             <span className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-[#3b82f6]/10 px-4 text-xs font-bold text-[#1d4ed8]">
@@ -1354,16 +1561,23 @@ function PrimaryButton({
   children,
   onClick,
   icon: Icon,
+  tone = "primary",
 }: {
   children: React.ReactNode;
   onClick: () => void;
   icon: typeof TruckIcon;
+  tone?: "primary" | "success";
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:opacity-90"
+      className={cn(
+        "inline-flex h-10 items-center justify-center gap-2 rounded-[14px] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)]",
+        tone === "success"
+          ? "bg-[#10b981] hover:bg-[#059669] dark:bg-[#059669] dark:hover:bg-[#047857]"
+          : "bg-[var(--color-primary)] hover:opacity-90",
+      )}
     >
       <Icon size={17} weight="bold" />
       {children}
@@ -1630,6 +1844,158 @@ function ShippingLabelModal({
               {isPrinting ? "Generando..." : "Generar PDF"}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrintAllLabelsModal({
+  sales,
+  total,
+  onClose,
+}: {
+  sales: DeliveryPrintable[];
+  total: number;
+  onClose: () => void;
+}) {
+  const [columns, setColumns] = useState<1 | 2>(2);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const toast = useSystemToast();
+  const remaining = Math.max(0, total - sales.length);
+
+  const print = async () => {
+    if (isPrinting || sales.length === 0) return;
+    const previewWindow = window.open("", "_blank");
+    setIsPrinting(true);
+    try {
+      const blob = await salesApi.printShippingLabelBatch(
+        sales.map((sale) => ({ publicId: sale.publicId, packageCount: 1 })),
+        { columns },
+      );
+      const url = URL.createObjectURL(blob);
+
+      if (previewWindow) {
+        previewWindow.location.href = url;
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "etiquetas-envios.pdf";
+        link.click();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      toast.showToast({
+        title: "Etiquetas generadas",
+        description: `${sales.length} etiqueta${sales.length === 1 ? "" : "s"} lista${sales.length === 1 ? "" : "s"} para imprimir.`,
+        variant: "success",
+      });
+      onClose();
+    } catch (error: unknown) {
+      previewWindow?.close();
+      toast.showToast({
+        title: "No se pudieron generar las etiquetas",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 animate-in fade-in bg-black/45 duration-200" />
+      <div className="relative flex max-h-[90dvh] w-full max-w-lg animate-in flex-col overflow-hidden rounded-[20px] bg-[var(--color-card)] shadow-2xl fade-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between border-b border-[var(--color-border)] px-5 py-4">
+          <h2 className="text-lg font-black text-[var(--color-text)]">
+            Imprimir todo
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPrinting}
+            aria-label="Cerrar"
+            className="flex size-9 items-center justify-center rounded-xl bg-[var(--color-input-bg)] text-[var(--color-muted-foreground)]"
+          >
+            <XIcon size={18} weight="bold" />
+          </button>
+        </div>
+
+        <div className="content-scrollbar space-y-4 overflow-y-auto p-5">
+          <div className="rounded-[16px] bg-[var(--color-input-bg)] p-4">
+            <p className="text-sm font-black text-[var(--color-text)]">
+              {sales.length} etiquetas (1 por venta)
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+              Se incluyen las ventas pendientes con los filtros actuales.
+            </p>
+          </div>
+
+          {remaining > 0 ? (
+            <p className="rounded-[14px] bg-[#f59e0b]/10 p-3 text-xs font-medium text-[#b45309]">
+              Hay {remaining} pendientes más. Se imprimirán los primeros{" "}
+              {sales.length}. Después de despacharlos, vuelve a usar “Imprimir
+              todo” para el siguiente bloque.
+            </p>
+          ) : null}
+
+          <section className="rounded-[16px] p-4">
+            <p className="text-sm font-black text-[var(--color-text)]">
+              Distribución en hoja A4
+            </p>
+            <div className="mt-3 max-w-sm">
+              <div className="grid grid-cols-2 gap-2">
+                {([1, 2] as const).map((option) => {
+                  const active = columns === option;
+                  const Icon = option === 1 ? RowsIcon : ColumnsIcon;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setColumns(option)}
+                      aria-pressed={active}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 rounded-[14px] border-2 px-3 py-3 transition-colors",
+                        active
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted-foreground)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-button-hover)]",
+                      )}
+                    >
+                      <Icon size={26} weight={active ? "fill" : "regular"} />
+                      <span className="text-xs font-bold">
+                        {option === 1 ? "1 columna" : "2 columnas"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 border-t border-[var(--color-border)] p-5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPrinting}
+            className="h-11 rounded-[14px] bg-[var(--color-input-bg)] text-sm font-bold text-[var(--color-text)] disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => void print()}
+            disabled={isPrinting}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPrinting ? (
+              <SpinnerGapIcon size={18} className="animate-spin" />
+            ) : (
+              <PrinterIcon size={18} weight="bold" />
+            )}
+            {isPrinting ? "Generando..." : "Generar PDF"}
+          </button>
         </div>
       </div>
     </div>

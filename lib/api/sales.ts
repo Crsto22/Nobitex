@@ -459,6 +459,29 @@ export type DeliveriesQuery = HistoryPeriodQuery & {
   fechaEnvioHasta?: string;
 };
 
+export type DeliveryCounts = {
+  todos: number;
+  shalom: number;
+  olva: number;
+  motorizado: number;
+  domicilio: number;
+  recojo: number;
+};
+
+export type DeliveryPrintable = {
+  publicId: string;
+  correlativo: string;
+  clienteNombre: string;
+};
+
+export type DeliveryPrintablesResponse = {
+  data: DeliveryPrintable[];
+  meta: {
+    limit: number;
+    total: number;
+  };
+};
+
 export type DeliveriesResponse = {
   data: VentaResponse[];
   meta?: {
@@ -466,6 +489,7 @@ export type DeliveriesResponse = {
     limit: number;
     total: number;
     totalPages: number;
+    counts?: DeliveryCounts;
   };
 };
 
@@ -566,6 +590,54 @@ export type UpdateSeriePayload = {
   sucursalIds?: string[];
 };
 
+function buildDeliveriesParams(
+  query: DeliveriesQuery | DeliveryStatusQuery,
+) {
+  const params = new URLSearchParams();
+  const normalizedQuery =
+    typeof query === "string" ? { estado: query } : query;
+
+  params.set("estado", normalizedQuery.estado ?? "pendiente");
+  if (normalizedQuery.mode) {
+    params.set("mode", normalizedQuery.mode);
+  }
+  if (normalizedQuery.period) {
+    params.set("period", normalizedQuery.period);
+  }
+  if (normalizedQuery.dateFrom) {
+    params.set("dateFrom", normalizedQuery.dateFrom);
+  }
+  if (normalizedQuery.dateTo) {
+    params.set("dateTo", normalizedQuery.dateTo);
+  }
+  if (normalizedQuery.fechaEnvioDesde) {
+    params.set("fechaEnvioDesde", normalizedQuery.fechaEnvioDesde);
+  }
+  if (normalizedQuery.fechaEnvioHasta) {
+    params.set("fechaEnvioHasta", normalizedQuery.fechaEnvioHasta);
+  }
+  if (normalizedQuery.page) {
+    params.set("page", String(normalizedQuery.page));
+  }
+  if (normalizedQuery.limit) {
+    params.set("limit", String(normalizedQuery.limit));
+  }
+  if (normalizedQuery.search?.trim()) {
+    params.set("search", normalizedQuery.search.trim());
+  }
+  if (normalizedQuery.courier) {
+    params.set("courier", normalizedQuery.courier);
+  }
+  if (normalizedQuery.servicio) {
+    params.set("servicio", normalizedQuery.servicio);
+  }
+  if (normalizedQuery.sucursalId && normalizedQuery.sucursalId !== "all") {
+    params.set("sucursalId", normalizedQuery.sucursalId);
+  }
+
+  return params;
+}
+
 export const salesApi = {
   findProducts(query: SaleProductsQuery = {}, options: RequestInit = {}) {
     const params = new URLSearchParams();
@@ -631,57 +703,17 @@ export const salesApi = {
     query: DeliveriesQuery | DeliveryStatusQuery = "pendiente",
     options: RequestInit = {},
   ) {
-    const params = new URLSearchParams();
-    const normalizedQuery =
-      typeof query === "string" ? { estado: query } : query;
-
-    params.set("estado", normalizedQuery.estado ?? "pendiente");
-    if (normalizedQuery.mode) {
-      params.set("mode", normalizedQuery.mode);
-    }
-    if (normalizedQuery.period) {
-      params.set("period", normalizedQuery.period);
-    }
-    if (normalizedQuery.dateFrom) {
-      params.set("dateFrom", normalizedQuery.dateFrom);
-    }
-    if (normalizedQuery.dateTo) {
-      params.set("dateTo", normalizedQuery.dateTo);
-    }
-    if (normalizedQuery.fechaEnvioDesde) {
-      params.set("fechaEnvioDesde", normalizedQuery.fechaEnvioDesde);
-    }
-    if (normalizedQuery.fechaEnvioHasta) {
-      params.set("fechaEnvioHasta", normalizedQuery.fechaEnvioHasta);
-    }
-
-    if (normalizedQuery.page) {
-      params.set("page", String(normalizedQuery.page));
-    }
-
-    if (normalizedQuery.limit) {
-      params.set("limit", String(normalizedQuery.limit));
-    }
-
-    if (normalizedQuery.search?.trim()) {
-      params.set("search", normalizedQuery.search.trim());
-    }
-
-    if (normalizedQuery.courier) {
-      params.set("courier", normalizedQuery.courier);
-    }
-
-    if (normalizedQuery.servicio) {
-      params.set("servicio", normalizedQuery.servicio);
-    }
-
-    if (normalizedQuery.sucursalId && normalizedQuery.sucursalId !== "all") {
-      params.set("sucursalId", normalizedQuery.sucursalId);
-    }
+    const params = buildDeliveriesParams(query);
 
     return authFetch<DeliveriesResponse>(
       `/sales/deliveries?${params.toString()}`,
       options,
+    );
+  },
+
+  findDeliveryPrintables(query: DeliveriesQuery) {
+    return authFetch<DeliveryPrintablesResponse>(
+      `/sales/deliveries/printables?${buildDeliveriesParams(query).toString()}`,
     );
   },
 
