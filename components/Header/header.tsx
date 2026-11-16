@@ -222,7 +222,7 @@ export function Header({
     <header
       className={cn(
         "sticky top-0 z-30 flex h-16 w-full shrink-0 items-center justify-between gap-2 bg-[var(--color-header-bg)] px-3 transition-colors duration-200 sm:px-5 md:gap-4 md:px-7",
-        isNotificationsOpen && "z-[100]",
+        (isNotificationsOpen || isUserMenuOpen) && "z-[100]",
         className,
       )}
     >
@@ -425,7 +425,7 @@ export function Header({
             </button>
 
             {isUserMenuOpen ? (
-              <div className="absolute right-0 top-full z-50 mt-2 w-[236px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute right-0 top-full z-[110] mt-2 w-[236px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-3 py-2">
                   <div className="flex min-w-0 items-center gap-1.5">
                     <p className="truncate text-sm font-circular-bold text-[var(--color-text)]">
