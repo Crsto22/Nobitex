@@ -32,6 +32,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";
@@ -280,6 +281,11 @@ export default function DeliveriesPage() {
   );
   const [printAllTotal, setPrintAllTotal] = useState(0);
   const [isExportingShalom, setIsExportingShalom] = useState(false);
+  const [shalomConfirm, setShalomConfirm] = useState<{
+    total: number;
+    shalom: number;
+    ids: string[];
+  } | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -567,12 +573,11 @@ export default function DeliveriesPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [actionsOpen]);
 
-  const exportShalomMassive = async () => {
+  const exportShalomMassive = async (publicIds?: string[]) => {
     if (isExportingShalom || isLoadingPrintAll) return;
     setActionsOpen(false);
     setIsExportingShalom(true);
     try {
-      const selected = selectedShippingSales.map((sale) => sale.publicId);
       const blob = await salesApi.exportShalomMassive({
         mode: viewMode,
         estado: "pendiente",
@@ -584,7 +589,7 @@ export default function DeliveriesPage() {
         dateTo: dateFilter.dateTo,
         fechaEnvioDesde: dateFilter.fechaEnvioDesde,
         fechaEnvioHasta: dateFilter.fechaEnvioHasta,
-        publicIds: selected.length > 0 ? selected : undefined,
+        publicIds: publicIds && publicIds.length > 0 ? publicIds : undefined,
       });
       const stamp = new Date().toISOString().slice(0, 10);
       const isZip = blob.type.includes("zip");
@@ -605,6 +610,25 @@ export default function DeliveriesPage() {
     } finally {
       setIsExportingShalom(false);
     }
+  };
+
+  const requestShalomExport = () => {
+    setActionsOpen(false);
+    if (shalomExportCount === 0 || isExportingShalom) return;
+
+    const selectedIds = selectedShippingSales.map((sale) => sale.publicId);
+    const shalomIds = selectedShalomSales.map((sale) => sale.publicId);
+
+    if (selectedIds.length > 0 && shalomIds.length < selectedIds.length) {
+      setShalomConfirm({
+        total: selectedIds.length,
+        shalom: shalomIds.length,
+        ids: shalomIds,
+      });
+      return;
+    }
+
+    void exportShalomMassive(shalomIds.length > 0 ? shalomIds : undefined);
   };
 
   const changeViewMode = (mode: ViewMode) => {
@@ -658,6 +682,17 @@ export default function DeliveriesPage() {
     () => selectedShippingSales.filter((sale) => canMarkShipped(sale)),
     [selectedShippingSales],
   );
+  const selectedShalomSales = selectedShippingSales.filter(
+    (sale) => sale.envio?.agencia === "SHALOM",
+  );
+  const canExportShalom =
+    viewMode === "courier" && (servicio === "" || servicio === "SHALOM");
+  const shalomExportCount =
+    selectedShippingSales.length > 0
+      ? selectedShalomSales.length
+      : viewMode === "courier"
+        ? meta.counts.shalom
+        : 0;
   const deliverableSelected = useMemo(
     () => selectedShippingSales.filter((sale) => canDeliverToClient(sale)),
     [selectedShippingSales],
@@ -1015,15 +1050,26 @@ export default function DeliveriesPage() {
                       <PrinterIcon size={17} weight="bold" />
                       Imprimir todo
                     </button>
-                    {viewMode === "courier" ? (
+                    {canExportShalom ? (
                       <button
                         type="button"
                         role="menuitem"
-                        onClick={() => void exportShalomMassive()}
-                        className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                        onClick={requestShalomExport}
+                        disabled={shalomExportCount === 0 || isExportingShalom}
+                        title={
+                          shalomExportCount === 0
+                            ? "No hay envíos Shalom pendientes"
+                            : undefined
+                        }
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm font-circular-bold transition-colors",
+                          shalomExportCount === 0
+                            ? "cursor-not-allowed text-[var(--color-muted-foreground)] opacity-60"
+                            : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                        )}
                       >
                         <DownloadSimpleIcon size={17} weight="bold" />
-                        Exportar Shalom
+                        Exportar Shalom ({shalomExportCount})
                       </button>
                     ) : null}
                   </div>
@@ -1168,6 +1214,29 @@ export default function DeliveriesPage() {
           onClose={() => setPrintAllSales(null)}
         />
       ) : null}
+      <ConfirmDialog
+        isOpen={Boolean(shalomConfirm)}
+        onClose={() => setShalomConfirm(null)}
+        onConfirm={async () => {
+          if (!shalomConfirm) return;
+          await exportShalomMassive(shalomConfirm.ids);
+          setShalomConfirm(null);
+        }}
+        tone="primary"
+        title="Exportar solo envíos Shalom"
+        description={
+          shalomConfirm
+            ? `De ${shalomConfirm.total} seleccionados, ${shalomConfirm.shalom} ${
+                shalomConfirm.shalom === 1 ? "es" : "son"
+              } Shalom. Se ${
+                shalomConfirm.shalom === 1
+                  ? "exportará solo ese"
+                  : "exportarán solo esos"
+              } ${shalomConfirm.shalom}.`
+            : ""
+        }
+        confirmLabel="Exportar"
+      />
     </DashboardShell>
   );
 }

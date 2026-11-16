@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Modal } from "@/components/Modal/modal";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type ConfirmDialogProps = {
   isOpen: boolean;
@@ -14,6 +15,7 @@ type ConfirmDialogProps = {
   description?: string;
   itemName?: string;
   confirmLabel?: string;
+  tone?: "danger" | "primary";
 };
 
 export function ConfirmDialog({
@@ -24,8 +26,10 @@ export function ConfirmDialog({
   description = "Esta accion no se puede deshacer.",
   itemName,
   confirmLabel,
+  tone = "danger",
 }: ConfirmDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isPrimary = tone === "primary";
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
@@ -42,7 +46,14 @@ export function ConfirmDialog({
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-4">
         <div className="flex items-start gap-3 rounded-[16px] bg-[var(--color-input-bg)] p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ef4444]/10 text-[#ef4444]">
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+              isPrimary
+                ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                : "bg-[#ef4444]/10 text-[#ef4444]",
+            )}
+          >
             <WarningIcon size={20} weight="fill" />
           </div>
           <div className="min-w-0">
@@ -71,7 +82,10 @@ export function ConfirmDialog({
             type="button"
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="h-11 flex-1 rounded-[14px] bg-[#ef4444] text-sm font-circular-bold text-white hover:opacity-90"
+            className={cn(
+              "h-11 flex-1 rounded-[14px] text-sm font-circular-bold text-white hover:opacity-90",
+              isPrimary ? "bg-[var(--color-primary)]" : "bg-[#ef4444]",
+            )}
           >
             {isSubmitting
               ? confirmLabel
