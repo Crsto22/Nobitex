@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowsClockwiseIcon,
   CalendarIcon,
+  CaretDownIcon,
   CheckCircleIcon,
   CheckIcon,
   CheckSquareIcon,
@@ -1182,6 +1183,7 @@ function DeliveryRow({
   dateField: DateFilterType;
 }) {
   const [isMarkingShipped, setIsMarkingShipped] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const toast = useSystemToast();
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
@@ -1304,6 +1306,42 @@ function DeliveryRow({
             </p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((current) => !current)}
+          aria-expanded={detailsOpen}
+          aria-controls={`detalle-${sale.publicId}`}
+          className="col-span-2 flex h-10 items-center justify-between gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-3 text-xs font-circular-bold text-[var(--color-text)] lg:hidden"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate">
+              {detailsOpen ? "Ocultar detalle" : "Ver detalle"}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                statusConfig.className,
+              )}
+            >
+              {statusConfig.label}
+            </span>
+          </span>
+          <CaretDownIcon
+            size={16}
+            weight="bold"
+            className={cn(
+              "shrink-0 transition-transform duration-200",
+              detailsOpen && "rotate-180",
+            )}
+          />
+        </button>
+        <div
+          id={`detalle-${sale.publicId}`}
+          className={cn(
+            "col-span-2 grid grid-cols-2 gap-3 lg:contents",
+            detailsOpen ? "" : "hidden",
+          )}
+        >
         <div className="min-w-0">
           <p className="text-[10px] text-[var(--color-muted-foreground)]">
             Datos de la persona
@@ -1342,7 +1380,7 @@ function DeliveryRow({
             value={formatDate(sale.envio?.entregadoAt ?? sale.fechaEntrega)}
           />
         ) : null}
-        <div className="min-w-0">
+        <div className="col-span-2 min-w-0 lg:col-span-1">
           <p className="text-[10px] text-[var(--color-muted-foreground)]">
             Productos
           </p>
@@ -1372,9 +1410,10 @@ function DeliveryRow({
             </p>
           )}
         </div>
+        </div>
         <span
           className={cn(
-            "w-fit rounded-full px-3 py-1.5 text-xs font-bold",
+            "hidden w-fit rounded-full px-3 py-1.5 text-xs font-bold lg:inline-flex",
             statusConfig.className,
           )}
         >
