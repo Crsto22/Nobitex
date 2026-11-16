@@ -463,6 +463,26 @@ export type ShalomMassiveExportQuery = Omit<DeliveriesQuery, "page" | "limit"> &
   publicIds?: string[];
 };
 
+export type ShalomExportMode = "ninguno" | "mercaderia" | "medidas";
+
+export type ShalomPackageType =
+  | "SOBRE"
+  | "PAQUETE XXS"
+  | "PAQUETE XS"
+  | "PAQUETE S"
+  | "PAQUETE M"
+  | "PAQUETE L";
+
+export type ShalomExportSettings = {
+  origen: string | null;
+  modo: ShalomExportMode;
+  mercaderia: ShalomPackageType | null;
+  alto: number | null;
+  ancho: number | null;
+  largo: number | null;
+  peso: number | null;
+};
+
 export type DeliveryCounts = {
   todos: number;
   shalom: number;
@@ -726,6 +746,24 @@ export const salesApi = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(query),
+    });
+  },
+
+  getShalomExportSettings() {
+    return authFetch<ShalomExportSettings>("/sales/shalom-export-settings");
+  },
+
+  getShalomExportOrigins() {
+    return authFetch<{ data: string[] }>(
+      "/sales/shalom-export-settings/origins",
+    );
+  },
+
+  updateShalomExportSettings(payload: ShalomExportSettings) {
+    return authFetch<ShalomExportSettings>("/sales/shalom-export-settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
   },
 

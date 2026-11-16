@@ -13,6 +13,7 @@ import {
   DownloadSimpleIcon,
   DotsThreeVerticalIcon,
   FunnelIcon,
+  GearSixIcon,
   HouseIcon,
   LinkIcon,
   MagnifyingGlassIcon,
@@ -32,6 +33,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { ShalomExportSettingsModal } from "@/components/Entregas/shalom-export-settings-modal";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
@@ -281,6 +283,7 @@ export default function DeliveriesPage() {
   );
   const [printAllTotal, setPrintAllTotal] = useState(0);
   const [isExportingShalom, setIsExportingShalom] = useState(false);
+  const [shalomSettingsOpen, setShalomSettingsOpen] = useState(false);
   const [shalomConfirm, setShalomConfirm] = useState<{
     total: number;
     shalom: number;
@@ -1051,26 +1054,42 @@ export default function DeliveriesPage() {
                       Imprimir todo
                     </button>
                     {canExportShalom ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={requestShalomExport}
-                        disabled={shalomExportCount === 0 || isExportingShalom}
-                        title={
-                          shalomExportCount === 0
-                            ? "No hay envíos Shalom pendientes"
-                            : undefined
-                        }
-                        className={cn(
-                          "flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm font-circular-bold transition-colors",
-                          shalomExportCount === 0
-                            ? "cursor-not-allowed text-[var(--color-muted-foreground)] opacity-60"
-                            : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
-                        )}
-                      >
-                        <DownloadSimpleIcon size={17} weight="bold" />
-                        Exportar Shalom ({shalomExportCount})
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={requestShalomExport}
+                          disabled={shalomExportCount === 0 || isExportingShalom}
+                          title={
+                            shalomExportCount === 0
+                              ? "No hay envíos Shalom pendientes"
+                              : undefined
+                          }
+                          className={cn(
+                            "flex min-w-0 flex-1 items-center gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm font-circular-bold transition-colors",
+                            shalomExportCount === 0
+                              ? "cursor-not-allowed text-[var(--color-muted-foreground)] opacity-60"
+                              : "text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                          )}
+                        >
+                          <DownloadSimpleIcon size={17} weight="bold" />
+                          <span className="truncate">
+                            Exportar Shalom ({shalomExportCount})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionsOpen(false);
+                            setShalomSettingsOpen(true);
+                          }}
+                          aria-label="Ajustes de exportación Shalom"
+                          title="Ajustes de exportación Shalom"
+                          className="flex size-9 shrink-0 items-center justify-center rounded-[10px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+                        >
+                          <GearSixIcon size={18} weight="bold" />
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
@@ -1236,6 +1255,10 @@ export default function DeliveriesPage() {
             : ""
         }
         confirmLabel="Exportar"
+      />
+      <ShalomExportSettingsModal
+        isOpen={shalomSettingsOpen}
+        onClose={() => setShalomSettingsOpen(false)}
       />
     </DashboardShell>
   );
