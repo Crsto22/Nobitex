@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
-  CalendarBlankIcon,
   CheckCircleIcon,
   ClockCountdownIcon,
   MagnifyingGlassIcon,
@@ -13,6 +12,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { Select } from "@/components/ui/select";
 import {
@@ -446,16 +446,7 @@ function ManualEntryModal({
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex h-full min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-      <div className="text-center">
-        <CalendarBlankIcon
-          size={48}
-          weight="light"
-          className="mx-auto text-[var(--color-muted-foreground)]"
-        />
-        <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-          {message}
-        </p>
-      </div>
+      <EmptyIllustration image="emptyBox" title={message} />
     </div>
   );
 }

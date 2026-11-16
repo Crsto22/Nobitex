@@ -18,6 +18,7 @@ import {
   ShoppingCartIcon,
 } from "@phosphor-icons/react/ssr";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { Select } from "@/components/ui/select";
 import { branchesApi, type Branch } from "@/lib/api/branches";
@@ -159,7 +160,15 @@ export default function PurchaseOrdersPage() {
               </div>
             </article>
           ))}
-          {!rows.length && !loading ? <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">Sin ordenes registradas</div> : null}
+          {!rows.length && !loading ? (
+            <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-12">
+              <EmptyIllustration
+                image="orderChecklist"
+                title="Sin ordenes registradas"
+                description="Crea la primera orden de compra para abastecer tus tiendas."
+              />
+            </div>
+          ) : null}
         </section>
 
         {meta.totalPages > 1 ? (

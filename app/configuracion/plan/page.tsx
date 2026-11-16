@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { AffiliateCodeInput } from "@/components/AffiliateCode/affiliate-code-input";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -880,8 +881,8 @@ function ReceiptsTab({
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-14">
-                    <EmptyState
-                      icon={<ReceiptIcon size={42} weight="light" />}
+                    <EmptyIllustration
+                      image="approvedDocument"
                       title="Aún no tienes comprobantes emitidos"
                     />
                   </td>

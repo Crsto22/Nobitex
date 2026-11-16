@@ -7,6 +7,7 @@ import {
   Tooltip,
 } from "@/components/DashboardShell/recharts-components";
 import type { DashboardPaymentMethodItem } from "@/lib/api/dashboard";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 
 const CustomTooltip = ({
   active,
@@ -70,7 +71,11 @@ export function PaymentMethodsChart({
           </>
         ) : (
           <div className="text-sm text-[var(--color-muted-foreground)]">
-            Sin datos para el periodo
+            <EmptyIllustration
+              image="reports"
+              title="Sin datos para el periodo"
+              size="sm"
+            />
           </div>
         )}
       </div>

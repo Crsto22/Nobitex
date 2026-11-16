@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import {
   notificationsApi,
   type AppNotification,
@@ -161,16 +162,10 @@ export default function NotificationsPage() {
             ))
           ) : result.data.length === 0 ? (
             <div className="flex min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-              <div className="text-center">
-                <BellIcon
-                  size={48}
-                  weight="light"
-                  className="mx-auto text-[var(--color-muted-foreground)]"
-                />
-                <p className="mt-3 text-sm font-circular-bold text-[var(--color-text)]">
-                  No tienes notificaciones
-                </p>
-              </div>
+              <EmptyIllustration
+                image="emptyBox"
+                title="No tienes notificaciones"
+              />
             </div>
           ) : (
             result.data.map((notification) => (

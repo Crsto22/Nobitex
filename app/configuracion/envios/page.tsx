@@ -19,6 +19,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -711,15 +712,12 @@ export default function EnviosConfigPage() {
           </div>
         ) : (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] p-8 text-center shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-              <TruckIcon size={28} weight="fill" />
-            </div>
-            <h2 className="mt-4 text-lg font-black text-[var(--color-text)]">
-              No hay métodos de envío para mostrar
-            </h2>
-            <p className="mt-2 max-w-md text-sm font-medium text-[var(--color-muted-foreground)]">
-              Cambia los filtros o actualiza la lista.
-            </p>
+            <EmptyIllustration
+              image="deliveryTruck"
+              title="No hay métodos de envío para mostrar"
+              titleSize="lg"
+              description="Cambia los filtros o actualiza la lista."
+            />
           </div>
         )}
 

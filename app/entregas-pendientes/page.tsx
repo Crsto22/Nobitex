@@ -29,6 +29,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -208,8 +209,28 @@ function isLocalDeliveryMethod(sale: VentaResponse) {
 
 function canPrintLabel(sale: VentaResponse) {
   if (!sale.envio || sale.envio.estado !== "recibido") return false;
+  if (isPickupDelivery(sale)) return true;
   if (isLocalDeliveryMethod(sale)) return true;
   return Boolean(sale.envio.agencia);
+}
+
+function isPickupDelivery(sale: VentaResponse) {
+  return (
+    sale.envio?.metodoEnvio === "RECOJO" ||
+    (!sale.envio && sale.recojoPosterior)
+  );
+}
+
+function hasPendingUnits(sale: VentaResponse) {
+  return sale.detalles.some(
+    (detail) => detail.cantidad - detail.cantidadEntregada > 0,
+  );
+}
+
+function canDeliverToClient(sale: VentaResponse) {
+  if (logisticsStatus(sale) === "ENTREGADO") return false;
+  if (sale.envio && sale.envio.estado !== "recibido") return false;
+  return hasPendingUnits(sale);
 }
 
 function serviceLabel(sale: VentaResponse) {
@@ -256,6 +277,9 @@ export default function DeliveriesPage() {
   const [bulkShipSales, setBulkShipSales] = useState<VentaResponse[] | null>(
     null,
   );
+  const [bulkDeliverySales, setBulkDeliverySales] = useState<
+    VentaResponse[] | null
+  >(null);
   const toast = useSystemToast();
   const { user } = useAuth();
   const canUseShipping =
@@ -408,8 +432,8 @@ export default function DeliveriesPage() {
     setActiveTab("pendiente");
     if (mode === "pickup") {
       setServicio("");
-      setSelectedShippingSales([]);
     }
+    setSelectedShippingSales([]);
     setPage(1);
   };
 
@@ -427,11 +451,21 @@ export default function DeliveriesPage() {
     () =>
       viewMode === "courier"
         ? sales.filter((sale) => sale.envio?.estado === "recibido")
-        : [],
+        : sales.filter(
+            (sale) => canPrintLabel(sale) || canDeliverToClient(sale),
+          ),
     [sales, viewMode],
   );
   const markableSelected = useMemo(
     () => selectedShippingSales.filter((sale) => canMarkShipped(sale)),
+    [selectedShippingSales],
+  );
+  const deliverableSelected = useMemo(
+    () => selectedShippingSales.filter((sale) => canDeliverToClient(sale)),
+    [selectedShippingSales],
+  );
+  const printableSelected = useMemo(
+    () => selectedShippingSales.filter((sale) => canPrintLabel(sale)),
     [selectedShippingSales],
   );
   const allSelectableSelected =
@@ -474,14 +508,24 @@ export default function DeliveriesPage() {
               Enviar ({markableSelected.length})
             </button>
           ) : null}
-          {viewMode === "courier" && selectedShippingSales.length > 0 ? (
+          {viewMode === "pickup" && deliverableSelected.length > 0 ? (
             <button
               type="button"
-              onClick={() => setLabelSales(selectedShippingSales)}
+              onClick={() => setBulkDeliverySales(deliverableSelected)}
+              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:inline-flex"
+            >
+              <PackageIcon size={17} weight="bold" />
+              Entregar ({deliverableSelected.length})
+            </button>
+          ) : null}
+          {printableSelected.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setLabelSales(printableSelected)}
               className="hidden h-10 items-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white lg:inline-flex"
             >
               <PrinterIcon size={17} weight="bold" />
-              Imprimir ({selectedShippingSales.length})
+              Imprimir ({printableSelected.length})
             </button>
           ) : null}
         </div>
@@ -507,14 +551,24 @@ export default function DeliveriesPage() {
               Enviar ({markableSelected.length})
             </button>
           ) : null}
-          {viewMode === "courier" && selectedShippingSales.length > 0 ? (
+          {viewMode === "pickup" && deliverableSelected.length > 0 ? (
             <button
               type="button"
-              onClick={() => setLabelSales(selectedShippingSales)}
+              onClick={() => setBulkDeliverySales(deliverableSelected)}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-xs font-bold text-white hover:bg-[#059669] lg:hidden"
+            >
+              <PackageIcon size={17} weight="bold" />
+              Entregar ({deliverableSelected.length})
+            </button>
+          ) : null}
+          {printableSelected.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setLabelSales(printableSelected)}
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-4 text-xs font-bold text-white lg:hidden"
             >
               <PrinterIcon size={17} weight="bold" />
-              Imprimir seleccionados ({selectedShippingSales.length})
+              Imprimir seleccionados ({printableSelected.length})
             </button>
           ) : null}
 
@@ -573,6 +627,7 @@ export default function DeliveriesPage() {
                 value={activeTab}
                 onChange={(value) => {
                   setActiveTab(value as PageTab);
+                  setSelectedShippingSales([]);
                   setPage(1);
                 }}
                 options={visibleTabs}
@@ -662,7 +717,7 @@ export default function DeliveriesPage() {
                 <FunnelIcon size={16} weight="bold" />
                 Filtros
               </button>
-              {viewMode === "courier" && selectableSales.length > 0 ? (
+              {selectableSales.length > 0 ? (
                 <button
                   type="button"
                   onClick={toggleSelectAll}
@@ -727,7 +782,9 @@ export default function DeliveriesPage() {
                 onManageLink={() => setShippingLinkSale(sale)}
                 onMarkShipped={() => void loadDeliveries()}
                 selectable={
-                  viewMode === "courier" && sale.envio?.estado === "recibido"
+                  viewMode === "courier"
+                    ? sale.envio?.estado === "recibido"
+                    : canPrintLabel(sale) || canDeliverToClient(sale)
                 }
                 selected={selectedShippingSales.some(
                   (item) => item.publicId === sale.publicId,
@@ -777,6 +834,9 @@ export default function DeliveriesPage() {
           sale={fulfillment}
           onClose={() => setFulfillment(null)}
           onCompleted={() => {
+            setSelectedShippingSales((current) =>
+              current.filter((item) => item.publicId !== fulfillment.publicId),
+            );
             setFulfillment(null);
             void loadDeliveries();
           }}
@@ -813,6 +873,17 @@ export default function DeliveriesPage() {
           onClose={() => setBulkShipSales(null)}
           onCompleted={() => {
             setBulkShipSales(null);
+            setSelectedShippingSales([]);
+            void loadDeliveries();
+          }}
+        />
+      ) : null}
+      {bulkDeliverySales ? (
+        <BulkDeliverModal
+          sales={bulkDeliverySales}
+          onClose={() => setBulkDeliverySales(null)}
+          onCompleted={() => {
+            setBulkDeliverySales(null);
             setSelectedShippingSales([]);
             void loadDeliveries();
           }}
@@ -976,7 +1047,7 @@ function DeliveryRow({
                 type="checkbox"
                 checked={selected}
                 onChange={(event) => onSelectedChange(event.target.checked)}
-                aria-label={`Seleccionar ${sale.correlativo} para imprimir etiqueta`}
+                aria-label={`Seleccionar ${sale.correlativo}`}
                 className="peer sr-only"
               />
               <span
@@ -1311,19 +1382,11 @@ function EmptyState({ tab, mode }: { tab: PageTab; mode: ViewMode }) {
   };
   return (
     <div className="flex min-h-72 items-center justify-center rounded-[16px] bg-[var(--color-card)]">
-      <div className="text-center">
-        <PackageIcon
-          size={48}
-          weight="light"
-          className="mx-auto text-[var(--color-muted-foreground)]"
-        />
-        <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-          {labels[tab]}
-        </p>
-        <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-          Cambia los filtros o actualiza la lista.
-        </p>
-      </div>
+      <EmptyIllustration
+        image="deliveryTruck"
+        title={labels[tab]}
+        description="Cambia los filtros o actualiza la lista."
+      />
     </div>
   );
 }
@@ -1388,13 +1451,10 @@ function ShippingLabelModal({
             })),
             { columns },
           )
-        : await salesApi.printShippingLabels(
-            sales[0].publicId,
-            {
-              packageCount: packageCounts[sales[0].publicId],
-              columns,
-            },
-          );
+        : await salesApi.printShippingLabels(sales[0].publicId, {
+            packageCount: packageCounts[sales[0].publicId],
+            columns,
+          });
       const url = URL.createObjectURL(blob);
 
       if (previewWindow) {
@@ -1807,6 +1867,140 @@ function BulkShipModal({
         onConfirm={() => void submit()}
         confirmLabel={`Confirmar ${sales.length} envío${sales.length === 1 ? "" : "s"}`}
         disabled={isSubmitting}
+        loading={isSubmitting}
+      />
+    </ModalFrame>
+  );
+}
+
+function BulkDeliverModal({
+  sales,
+  onClose,
+  onCompleted,
+}: {
+  sales: VentaResponse[];
+  onClose: () => void;
+  onCompleted: () => void;
+}) {
+  const [retiranteDni, setRetiranteDni] = useState("");
+  const [retiranteNombre, setRetiranteNombre] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useSystemToast();
+
+  const pendingSales = useMemo(
+    () =>
+      sales
+        .map((sale) => {
+          const details = sale.detalles
+            .map((detail) => ({
+              ventaDetalleId: detail.id,
+              cantidad: Math.max(
+                0,
+                detail.cantidad - detail.cantidadEntregada,
+              ),
+            }))
+            .filter((item) => item.cantidad > 0);
+          return {
+            sale,
+            details,
+            units: details.reduce((total, item) => total + item.cantidad, 0),
+          };
+        })
+        .filter((item) => item.details.length > 0),
+    [sales],
+  );
+
+  const submit = async () => {
+    if (isSubmitting || pendingSales.length === 0) return;
+    setIsSubmitting(true);
+    const payload = {
+      retiranteDni: retiranteDni.trim() || undefined,
+      retiranteNombre: retiranteNombre.trim() || undefined,
+      notas: notes.trim() || undefined,
+    };
+    const results = await Promise.allSettled(
+      pendingSales.map(({ sale, details }) =>
+        salesApi.deliver(sale.publicId, { ...payload, detalles: details }),
+      ),
+    );
+    setIsSubmitting(false);
+    const failed = results.filter(
+      (result) => result.status === "rejected",
+    ).length;
+    const succeeded = pendingSales.length - failed;
+    if (failed > 0) {
+      toast.showToast({
+        title:
+          succeeded > 0
+            ? `${succeeded} entrega${succeeded === 1 ? "" : "s"} registrada${succeeded === 1 ? "" : "s"}`
+            : "No se pudieron registrar las entregas",
+        description: `${failed} entrega${failed === 1 ? "" : "s"} no se pudo registrar. Revisa los pendientes.`,
+        variant: "error",
+      });
+    } else {
+      toast.showToast({
+        title: "Entregas al cliente registradas",
+        description: `${succeeded} venta${succeeded === 1 ? "" : "s"} entregada${succeeded === 1 ? "" : "s"} al cliente.`,
+        variant: "success",
+      });
+    }
+    onCompleted();
+  };
+
+  return (
+    <ModalFrame
+      title="Entregar al cliente"
+      description={`Se entregarán ${pendingSales.length} venta${pendingSales.length === 1 ? "" : "s"} con todas las cantidades pendientes.`}
+      onClose={onClose}
+      disabled={isSubmitting}
+    >
+      <div className="rounded-[14px] bg-[#10b981]/10 p-4 text-sm text-[#047857]">
+        Confirma que el cliente o su autorizado retira todos los productos
+        pendientes de las ventas seleccionadas.
+      </div>
+      <div className="content-scrollbar max-h-56 space-y-2 overflow-y-auto">
+        {pendingSales.map(({ sale, units }) => (
+          <div
+            key={sale.publicId}
+            className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--color-input-bg)] px-4 py-2.5"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-[var(--color-text)]">
+                {sale.correlativo}
+              </p>
+              <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+                {customerName(sale)}
+              </p>
+            </div>
+            <span className="shrink-0 text-xs font-bold text-[var(--color-muted-foreground)]">
+              {units} und.
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <TextInput
+          value={retiranteDni}
+          onChange={setRetiranteDni}
+          placeholder="DNI de quien retira (opcional)"
+        />
+        <TextInput
+          value={retiranteNombre}
+          onChange={setRetiranteNombre}
+          placeholder="Nombre de quien retira (opcional)"
+        />
+      </div>
+      <TextArea
+        value={notes}
+        onChange={setNotes}
+        placeholder="Observaciones (opcional)"
+      />
+      <ModalActions
+        onCancel={onClose}
+        onConfirm={() => void submit()}
+        confirmLabel={`Entregar ${pendingSales.length} venta${pendingSales.length === 1 ? "" : "s"}`}
+        disabled={pendingSales.length === 0 || isSubmitting}
         loading={isSubmitting}
       />
     </ModalFrame>

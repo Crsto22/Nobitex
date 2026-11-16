@@ -11,6 +11,7 @@ import {
   TruckIcon,
 } from "@phosphor-icons/react/ssr";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { stockApi, type StockTransfer } from "@/lib/api/stock";
@@ -92,7 +93,15 @@ export default function StockTransfersPage() {
               <button onClick={() => router.push(`/stock/traspasos/${row.publicId}`)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-input-bg)] text-[var(--color-primary)]" aria-label="Ver traspaso"><EyeIcon size={17} /></button>
             </article>
           ))}
-          {!rows.length && !loading ? <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">Sin traspasos registrados</div> : null}
+          {!rows.length && !loading ? (
+            <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-12">
+              <EmptyIllustration
+                image="loadedCart"
+                title="Sin traspasos registrados"
+                description="Crea el primer traspaso para mover stock entre ubicaciones."
+              />
+            </div>
+          ) : null}
           {loading ? <p className="py-3 text-center text-sm text-[var(--color-muted-foreground)]">Actualizando...</p> : null}
         </section>
 

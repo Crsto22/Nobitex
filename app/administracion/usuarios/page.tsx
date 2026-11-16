@@ -19,6 +19,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { UserAvatar } from "@/components/UserAvatar/user-avatar";
@@ -235,15 +236,11 @@ export default function UsuariosPage() {
           </div>
         ) : users.length === 0 ? (
           <div className="flex h-full min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-            <div className="text-center">
-              <UserCircleIcon size={48} weight="light" className="mx-auto text-[var(--color-muted-foreground)]" />
-              <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-                No se encontraron usuarios
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                Crea un usuario o ajusta los filtros.
-              </p>
-            </div>
+            <EmptyIllustration
+              image="addUser"
+              title="No se encontraron usuarios"
+              description="Crea un usuario o ajusta los filtros."
+            />
           </div>
         ) : (
           <div className="space-y-3 pb-2">

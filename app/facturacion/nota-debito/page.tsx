@@ -21,6 +21,7 @@ import {
 
 import { formatDate } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   debitNotesApi,
@@ -626,16 +627,7 @@ function MenuButton({
 function EmptyState({ text }: { text: string }) {
   return (
     <div className="flex min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-      <div className="text-center">
-        <ReceiptIcon
-          size={48}
-          weight="light"
-          className="mx-auto text-[var(--color-muted-foreground)]"
-        />
-        <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-          {text}
-        </p>
-      </div>
+      <EmptyIllustration image="approvedDocument" title={text} />
     </div>
   );
 }

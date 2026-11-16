@@ -14,6 +14,7 @@ import {
 import type { TooltipContentProps } from "recharts";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import {
   Bar,
   BarChart,
@@ -645,7 +646,11 @@ function ChartCard({
           <div className="h-full animate-pulse rounded-[14px] bg-[var(--color-input-bg)]" />
         ) : empty ? (
           <div className="grid h-full place-items-center text-sm text-[var(--color-muted-foreground)]">
-            Sin datos para mostrar
+            <EmptyIllustration
+              image="reports"
+              title="Sin datos para mostrar"
+              size="sm"
+            />
           </div>
         ) : (
           children

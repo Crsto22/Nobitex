@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { Button } from "@/components/ui/button";
@@ -1205,19 +1206,11 @@ function SeriesSkeleton() {
 function EmptySeries() {
   return (
     <div className="flex h-full min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-      <div className="text-center">
-        <WarningCircleIcon
-          size={48}
-          weight="light"
-          className="mx-auto text-[var(--color-muted-foreground)]"
-        />
-        <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-          No se encontraron series
-        </p>
-        <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-          Intenta con otros filtros de busqueda
-        </p>
-      </div>
+      <EmptyIllustration
+        image="approvedDocument"
+        title="No se encontraron series"
+        description="Intenta con otros filtros de busqueda"
+      />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { HistoryPeriodFilter } from "@/components/History/history-period-filter";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -262,9 +263,12 @@ export default function NuevaNotaDebitoPage() {
                   Cargando...
                 </p>
               ) : sales.length === 0 ? (
-                <p className="py-6 text-center text-sm text-[var(--color-muted-foreground)]">
-                  No hay comprobantes aceptados
-                </p>
+                <EmptyIllustration
+                  image="approvedDocument"
+                  title="No hay comprobantes aceptados"
+                  size="sm"
+                  className="py-4"
+                />
               ) : (
                 sales.map((sale) => (
                   <button

@@ -9,6 +9,7 @@ import {
 import type { TooltipContentProps } from "recharts";
 
 import type { DashboardTopVariantItem } from "@/lib/api/dashboard";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 
 const CustomTooltip = ({
   active,
@@ -80,7 +81,11 @@ export function TopVariantsChart({
           </ResponsiveContainer>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-            Sin datos para el periodo
+            <EmptyIllustration
+              image="reports"
+              title="Sin datos para el periodo"
+              size="sm"
+            />
           </div>
         )}
       </div>

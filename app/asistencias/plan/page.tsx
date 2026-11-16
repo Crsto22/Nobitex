@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { AffiliateCodeInput } from "@/components/AffiliateCode/affiliate-code-input";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
@@ -744,14 +745,7 @@ function StatusBadge({ status }: { status: PlatformReceiptStatus }) {
 }
 
 function EmptyState({ title }: { title: string }) {
-  return (
-    <div className="text-center text-[var(--color-muted-foreground)]">
-      <ReceiptIcon size={42} weight="light" className="mx-auto" />
-      <p className="mt-2 text-sm font-circular-bold text-[var(--color-text)]">
-        {title}
-      </p>
-    </div>
-  );
+  return <EmptyIllustration image="approvedDocument" title={title} />;
 }
 
 function MetricCard({

@@ -19,6 +19,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -654,23 +655,21 @@ export default function SucursalesPage() {
           </div>
         ) : (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] p-8 text-center shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-              <StorefrontIcon size={28} weight="fill" />
-            </div>
-            <h2 className="mt-4 text-lg font-black text-[var(--color-text)]">
-              No hay sucursales para mostrar
-            </h2>
-            <p className="mt-2 max-w-md text-sm font-medium text-[var(--color-muted-foreground)]">
-              Crea tiendas o almacenes para organizar ventas, stock y futuras
-              guias de remision.
-            </p>
-            <Button
-              type="button"
-              onClick={openCreateModal}
-              className="mt-5 h-10 rounded-[12px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
-            >
-              Crear sucursal
-            </Button>
+            <EmptyIllustration
+              image="warehouseLocation"
+              title="No hay sucursales para mostrar"
+              titleSize="lg"
+              description="Crea tiendas o almacenes para organizar ventas, stock y futuras guias de remision."
+              action={
+                <Button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="h-10 rounded-[12px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
+                >
+                  Crear sucursal
+                </Button>
+              }
+            />
           </div>
         )}
 

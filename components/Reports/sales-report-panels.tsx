@@ -16,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "@/components/DashboardShell/recharts-components";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import type {
   SalesReportResponse,
 } from "@/lib/api/reports";
@@ -276,7 +277,7 @@ export function SalesByBranchChart({
 function EmptyChart() {
   return (
     <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-      Sin datos para el periodo
+      <EmptyIllustration image="reports" title="Sin datos para el periodo" size="sm" />
     </div>
   );
 }

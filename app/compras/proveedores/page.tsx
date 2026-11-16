@@ -22,6 +22,7 @@ import {
   UsersThreeIcon,
 } from "@phosphor-icons/react/ssr";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -270,7 +271,13 @@ export default function SuppliersPage() {
             </article>
           ))}
           {!rows.length && !loading ? (
-            <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">Sin proveedores registrados</div>
+            <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-12">
+              <EmptyIllustration
+                image="users"
+                title="Sin proveedores registrados"
+                description="Agrega tu primer proveedor para registrar compras."
+              />
+            </div>
           ) : null}
         </section>
       </div>

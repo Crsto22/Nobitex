@@ -9,6 +9,7 @@ import {
 import type { TooltipContentProps } from "recharts";
 
 import type { DashboardSalesTrendItem } from "@/lib/api/dashboard";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 
 const emptySalesTrendData: DashboardSalesTrendItem[] = [];
 
@@ -107,7 +108,11 @@ export function SalesTrendChart({
           </ResponsiveContainer>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-            Sin datos para el periodo
+            <EmptyIllustration
+              image="reports"
+              title="Sin datos para el periodo"
+              size="sm"
+            />
           </div>
         )}
       </div>

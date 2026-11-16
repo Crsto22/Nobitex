@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   CaretDownIcon,
@@ -23,6 +22,7 @@ import {
 } from "@/components/ProductCatalog/product-card";
 import { SizeFilter } from "@/components/ProductCatalog/size-filter";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { branchesApi, type Branch } from "@/lib/api/branches";
@@ -719,19 +719,12 @@ function ProductGridSkeleton() {
 function EmptyProducts({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] py-16 text-center">
-      <Image
-        src="/img/productos-vacio.png"
-        width={256}
-        height={256}
-        alt="No hay productos"
-        className="h-auto w-[min(34%,70px)] max-h-[18dvh] object-contain opacity-90 sm:w-[min(38%,90px)] md:w-[min(42%,110px)] md:max-h-[24dvh] lg:w-[min(46%,120px)] lg:max-h-[26dvh] xl:w-[min(48%,130px)] xl:max-h-[28dvh]"
+      <EmptyIllustration
+        image="posSale"
+        title="No hay productos"
+        description={message}
+        size="lg"
       />
-      <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-        No hay productos
-      </p>
-      <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-        {message}
-      </p>
     </div>
   );
 }

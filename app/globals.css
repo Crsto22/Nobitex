@@ -363,6 +363,20 @@ h6,
   display: none;
 }
 
+/* Empty-state illustrations keep a light palette in light mode and are
+   inverted (preserving hue) so they blend with dark surfaces. */
+.empty-illustration {
+  transition:
+    filter 180ms ease,
+    opacity 180ms ease;
+}
+
+.dark .empty-illustration {
+  filter: invert(1) hue-rotate(180deg) saturate(0.9) brightness(1.08)
+    contrast(1.02);
+  opacity: 0.95;
+}
+
 /* Dashboard pages historically hide their own scrollbars. Keep those
    scroll areas visible and consistent inside the shared application shell. */
 .content-scrollbar .scrollbar-hidden {

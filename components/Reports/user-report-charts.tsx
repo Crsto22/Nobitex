@@ -21,6 +21,7 @@ import type {
   UserKpiItem,
 } from "@/lib/api/reports";
 import { cn } from "@/lib/utils";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 
 export type UserMetric = "amount" | "sales" | "ticket";
 type DailyMetric = "amount" | "sales" | "cancellations" | "cancelledAmount";
@@ -403,7 +404,7 @@ function ChartLegend({ color, label }: { color: string; label: string }) {
 function EmptyChart() {
   return (
     <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-      Sin datos para el periodo
+      <EmptyIllustration image="reports" title="Sin datos para el periodo" size="sm" />
     </div>
   );
 }

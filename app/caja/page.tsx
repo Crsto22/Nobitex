@@ -32,6 +32,7 @@ import {
   OpenCashRegisterModal,
 } from "@/components/CashRegister/cash-register-modals";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { CalendarInput } from "@/components/ui/calendar-input";
@@ -360,17 +361,11 @@ export default function CajaPage() {
             ))
           ) : sessions.length === 0 ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] p-8 text-center shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-              <ReceiptIcon
-                size={46}
-                weight="light"
-                className="text-[var(--color-muted-foreground)]"
+              <EmptyIllustration
+                image="cashRegister"
+                title="No hay cajas para mostrar"
+                description="Ajusta filtros o abre caja en una tienda habilitada."
               />
-              <h2 className="mt-3 text-base font-black text-[var(--color-text)]">
-                No hay cajas para mostrar
-              </h2>
-              <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                Ajusta filtros o abre caja en una tienda habilitada.
-              </p>
             </div>
           ) : (
             sessions.map((session) => {

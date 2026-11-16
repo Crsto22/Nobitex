@@ -12,6 +12,8 @@ const PUBLIC_PREFIXES = [
   "/img",
   "/image",
   "/Icon",
+  "/icons",
+  "/iconos-sistema",
   "/svg",
   "/font",
   "/mascot",

@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import { CalendarInput } from "@/components/ui/calendar-input";
@@ -400,19 +401,11 @@ export default function AccountsReceivablePage() {
             ))
           ) : items.length === 0 ? (
             <div className="flex min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-              <div className="text-center">
-                <WalletIcon
-                  size={48}
-                  weight="light"
-                  className="mx-auto text-[var(--color-muted-foreground)]"
-                />
-                <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-                  No se encontraron cuentas por cobrar
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                  Cambia los filtros, busca otro dato o actualiza la lista
-                </p>
-              </div>
+              <EmptyIllustration
+                image="emptyBox"
+                title="No se encontraron cuentas por cobrar"
+                description="Cambia los filtros, busca otro dato o actualiza la lista"
+              />
             </div>
           ) : (
             items.map((account) => {

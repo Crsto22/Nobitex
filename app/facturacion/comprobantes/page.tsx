@@ -21,6 +21,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   salesApi,
@@ -588,19 +589,11 @@ export default function ComprobantesPage() {
             ))
           ) : comprobantes.length === 0 ? (
             <div className="flex h-full min-h-[300px] items-center justify-center rounded-[14px] bg-[var(--color-card)]">
-              <div className="text-center">
-                <ReceiptIcon
-                  size={48}
-                  weight="light"
-                  className="mx-auto text-[var(--color-muted-foreground)]"
-                />
-                <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-                  No se encontraron comprobantes
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                  Intenta con otros filtros de busqueda
-                </p>
-              </div>
+              <EmptyIllustration
+                image="approvedDocument"
+                title="No se encontraron comprobantes"
+                description="Intenta con otros filtros de busqueda"
+              />
             </div>
           ) : (
             comprobantes.map((venta) => {

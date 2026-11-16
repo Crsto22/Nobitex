@@ -18,6 +18,7 @@ import {
 import type { TooltipContentProps } from "recharts";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { FilterBar } from "@/components/DashboardShell/filter-bar";
 import {
   Bar,
@@ -538,7 +539,11 @@ function AttendanceStatusChart({
           </>
         ) : (
           <div className="text-sm text-[var(--color-muted-foreground)]">
-            Sin datos para el periodo
+            <EmptyIllustration
+              image="reports"
+              title="Sin datos para el periodo"
+              size="sm"
+            />
           </div>
         )}
       </div>
@@ -791,7 +796,7 @@ function BranchTooltip({ active, payload }: TooltipContentProps) {
 function EmptyChartMessage() {
   return (
     <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-      Sin datos para el periodo
+      <EmptyIllustration image="reports" title="Sin datos para el periodo" size="sm" />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { CategoryFilter } from "@/components/ProductCatalog/category-filter";
 import { ColorFilter } from "@/components/ProductCatalog/color-filter";
 import { SizeFilter } from "@/components/ProductCatalog/size-filter";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { branchesApi, type Branch } from "@/lib/api/branches";
 import { categoriesApi, type Category } from "@/lib/api/categories";
 import { colorsApi, type Color } from "@/lib/api/colors";
@@ -486,8 +487,12 @@ function VariantGridSkeleton() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">
-      {message}
+    <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-12">
+      <EmptyIllustration
+        image="validatedBoxes"
+        title={message}
+        description="Cambia los filtros o registra movimientos de stock."
+      />
     </div>
   );
 }

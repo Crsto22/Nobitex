@@ -10,6 +10,7 @@ import {
   PlusIcon,
 } from "@phosphor-icons/react/ssr";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -138,7 +139,15 @@ export default function StockMovementsPage() {
               <div className="min-w-0 md:text-right"><p className="truncate text-sm text-[var(--color-text)]">{row.motivo || "Sin motivo"}</p><p className="text-xs text-[var(--color-muted-foreground)]">{new Date(row.createdAt).toLocaleString("es-PE")} · {row.creadoPor ? `${row.creadoPor.nombre} ${row.creadoPor.apellido || ""}` : "Sistema"}</p></div>
             </article>
           ))}
-          {!rows.length && !loading ? <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-16 text-center text-sm text-[var(--color-muted-foreground)]">Sin movimientos para los filtros seleccionados</div> : null}
+          {!rows.length && !loading ? (
+            <div className="rounded-[14px] bg-[var(--color-card)] px-4 py-12">
+              <EmptyIllustration
+                image="warehouseShelves"
+                title="Sin movimientos para los filtros seleccionados"
+                description="Cambia los filtros o registra un nuevo movimiento."
+              />
+            </div>
+          ) : null}
           {loading ? <p className="py-3 text-center text-sm text-[var(--color-muted-foreground)]">Actualizando...</p> : null}
         </section>
 

@@ -45,6 +45,7 @@ import {
   type ScannerRecentItem,
 } from "@/components/Ventas/barcode-scanner-drawer";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { branchesApi, type Branch } from "@/lib/api/branches";
 import { categoriesApi, type Category } from "@/lib/api/categories";
@@ -1263,10 +1264,11 @@ export default function CotizacionesPage() {
               ))
             ) : availableProducts.length === 0 ? (
               <div className="col-span-full flex min-h-[220px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] text-center">
-                <ProductPlaceholderImage className="h-16 w-16" />
-                <p className="mt-3 text-sm font-circular-regular text-[var(--color-text)]">
-                  No hay productos disponibles
-                </p>
+                <EmptyIllustration
+                  image="cartSettings"
+                  title="No hay productos disponibles"
+                  size="sm"
+                />
               </div>
             ) : (
               availableProducts.map((product) => (
@@ -1569,16 +1571,7 @@ export default function CotizacionesPage() {
           <div className="scrollbar-hidden mt-5 min-h-0 flex-1 overflow-y-auto px-2">
             {cartItems.length === 0 ? (
               <div className="flex h-full min-h-0 flex-col items-center justify-center rounded-[14px] px-6 text-center">
-                <Image
-                  src="/img/productos-vacio.png"
-                  width={256}
-                  height={256}
-                  alt="No hay productos"
-                  className="hidden h-auto w-[min(34%,70px)] max-h-[18dvh] object-contain opacity-90 sm:w-[min(38%,90px)] md:w-[min(42%,110px)] md:max-h-[24dvh] lg:block lg:w-[min(46%,120px)] lg:max-h-[26dvh] xl:w-[min(48%,130px)] xl:max-h-[28dvh]"
-                />
-                <p className="mt-3 text-sm font-black text-[var(--color-text)]">
-                  No hay productos
-                </p>
+                <EmptyIllustration image="cartSettings" title="No hay productos" />
               </div>
             ) : (
               <div className="space-y-4">

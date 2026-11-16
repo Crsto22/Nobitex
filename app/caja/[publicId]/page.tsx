@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   cashRegisterApi,
@@ -414,9 +415,12 @@ export default function CajaDetallePage() {
                   <MovementRow key={movement.publicId} movement={movement} />
                 ))
               ) : (
-                <p className="rounded-xl bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-muted-foreground)]">
-                  No hay movimientos registrados.
-                </p>
+                <div className="rounded-xl bg-[var(--color-card)] px-4 py-6">
+                  <EmptyIllustration
+                    image="validatedBoxes"
+                    title="No hay movimientos registrados."
+                  />
+                </div>
               )}
             </div>
           </section>

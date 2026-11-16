@@ -13,6 +13,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -454,23 +455,21 @@ export default function CatalogoMarcasPage() {
           </div>
         ) : (
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[14px] bg-[var(--color-card)] p-8 text-center shadow-[0_2px_10px_rgba(21,25,34,0.08)]">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-              <TagIcon size={26} weight="fill" />
-            </div>
-            <h2 className="mt-4 text-lg font-black text-[var(--color-text)]">
-              No hay marcas para mostrar
-            </h2>
-            <p className="mt-2 max-w-md text-sm font-medium text-[var(--color-muted-foreground)]">
-              Crea marcas como Nike, Adidas, marca propia o sin marca para tus
-              productos.
-            </p>
-            <Button
-              type="button"
-              onClick={openCreateModal}
-              className="mt-5 h-10 rounded-[12px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
-            >
-              Crear marca
-            </Button>
+            <EmptyIllustration
+              image="emptyBox"
+              title="No hay marcas para mostrar"
+              titleSize="lg"
+              description="Crea marcas como Nike, Adidas, marca propia o sin marca para tus productos."
+              action={
+                <Button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="h-10 rounded-[12px] bg-[var(--color-primary)] px-5 text-sm font-circular-bold text-white hover:opacity-90"
+                >
+                  Crear marca
+                </Button>
+              }
+            />
           </div>
         )}
 

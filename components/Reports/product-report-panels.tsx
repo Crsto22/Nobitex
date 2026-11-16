@@ -22,6 +22,7 @@ import {
   YAxis,
 } from "@/components/DashboardShell/recharts-components";
 import type { ProductReportResponse } from "@/lib/api/reports";
+import { EmptyIllustration } from "@/components/ui/empty-illustration";
 
 const chartColors = [
   "#2563eb",
@@ -315,7 +316,7 @@ export function RankingByAmountChart({
 function EmptyChart() {
   return (
     <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-      Sin datos para el periodo
+      <EmptyIllustration image="reports" title="Sin datos para el periodo" size="sm" />
     </div>
   );
 }
