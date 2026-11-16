@@ -10,6 +10,8 @@ import {
   CheckSquareIcon,
   ClockIcon,
   ColumnsIcon,
+  DownloadSimpleIcon,
+  DotsThreeVerticalIcon,
   FunnelIcon,
   HouseIcon,
   LinkIcon,
@@ -50,6 +52,7 @@ import {
   type VentaResponse,
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
+import { downloadBlob } from "@/lib/utils/download";
 
 type PageTab = "pendiente" | "enviado" | "entregada";
 type ViewMode = "pickup" | "courier";
@@ -276,6 +279,9 @@ export default function DeliveriesPage() {
     null,
   );
   const [printAllTotal, setPrintAllTotal] = useState(0);
+  const [isExportingShalom, setIsExportingShalom] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const requestIdRef = useRef(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -547,6 +553,57 @@ export default function DeliveriesPage() {
       });
     } finally {
       setIsLoadingPrintAll(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!actionsRef.current?.contains(event.target as Node)) {
+        setActionsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [actionsOpen]);
+
+  const exportShalomMassive = async () => {
+    if (isExportingShalom || isLoadingPrintAll) return;
+    setActionsOpen(false);
+    setIsExportingShalom(true);
+    try {
+      const selected = selectedShippingSales.map((sale) => sale.publicId);
+      const blob = await salesApi.exportShalomMassive({
+        mode: viewMode,
+        estado: "pendiente",
+        search: debouncedSearchTerm || undefined,
+        servicio:
+          viewMode === "courier" ? servicio || undefined : undefined,
+        period: dateFilter.period,
+        dateFrom: dateFilter.dateFrom,
+        dateTo: dateFilter.dateTo,
+        fechaEnvioDesde: dateFilter.fechaEnvioDesde,
+        fechaEnvioHasta: dateFilter.fechaEnvioHasta,
+        publicIds: selected.length > 0 ? selected : undefined,
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const isZip = blob.type.includes("zip");
+      downloadBlob(blob, `formato-shalom-${stamp}.${isZip ? "zip" : "xlsx"}`);
+      toast.showToast({
+        title: isZip ? "Formatos Shalom generados" : "Formato Shalom generado",
+        description:
+          "El estado de los envíos no cambia. Súbelo a Shalom y luego marca como enviado.",
+        variant: "success",
+      });
+    } catch (error: unknown) {
+      toast.showToast({
+        title: "No se pudo exportar a Shalom",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsExportingShalom(false);
     }
   };
 
@@ -911,21 +968,54 @@ export default function DeliveriesPage() {
                   />
                 </button>
               ) : null}
-              <button
-                type="button"
-                onClick={() => void openPrintAll()}
-                disabled={isLoading || isLoadingPrintAll}
-                aria-label="Imprimir todo"
-                title="Imprimir todo"
-                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] px-3 text-[11px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
-              >
-                {isLoadingPrintAll ? (
-                  <SpinnerGapIcon size={17} className="animate-spin" />
-                ) : (
-                  <PrinterIcon size={17} weight="bold" />
-                )}
-                <span className="whitespace-nowrap">Imprimir todo</span>
-              </button>
+              <div ref={actionsRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setActionsOpen((current) => !current)}
+                  aria-haspopup="menu"
+                  aria-expanded={actionsOpen}
+                  aria-label="Más acciones"
+                  title="Más acciones"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoadingPrintAll || isExportingShalom ? (
+                    <SpinnerGapIcon size={18} className="animate-spin" />
+                  ) : (
+                    <DotsThreeVerticalIcon size={22} weight="bold" />
+                  )}
+                </button>
+                {actionsOpen ? (
+                  <div
+                    role="menu"
+                    className="animate-in fade-in zoom-in-95 absolute right-0 top-full z-50 mt-2 w-64 rounded-[16px] bg-[var(--color-card)] p-1.5 shadow-[0_12px_32px_rgba(15,23,42,0.18)] ring-1 ring-[var(--color-border)] duration-150"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setActionsOpen(false);
+                        void openPrintAll();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                    >
+                      <PrinterIcon size={17} weight="bold" />
+                      Imprimir todo
+                    </button>
+                    {viewMode === "courier" ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => void exportShalomMassive()}
+                        className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+                      >
+                        <DownloadSimpleIcon size={17} weight="bold" />
+                        Exportar Shalom
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={refreshDeliveries}

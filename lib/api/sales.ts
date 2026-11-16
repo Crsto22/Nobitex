@@ -459,6 +459,10 @@ export type DeliveriesQuery = HistoryPeriodQuery & {
   fechaEnvioHasta?: string;
 };
 
+export type ShalomMassiveExportQuery = Omit<DeliveriesQuery, "page" | "limit"> & {
+  publicIds?: string[];
+};
+
 export type DeliveryCounts = {
   todos: number;
   shalom: number;
@@ -715,6 +719,14 @@ export const salesApi = {
     return authFetch<DeliveryPrintablesResponse>(
       `/sales/deliveries/printables?${buildDeliveriesParams(query).toString()}`,
     );
+  },
+
+  exportShalomMassive(query: ShalomMassiveExportQuery) {
+    return authBlobFetch(`/sales/deliveries/export-shalom`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
   },
 
   deliver(publicId: string, payload: DeliverSalePayload) {
