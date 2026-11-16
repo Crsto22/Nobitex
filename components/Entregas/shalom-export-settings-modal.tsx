@@ -2,15 +2,18 @@
 
 import {
   BarcodeIcon,
+  CheckCircleIcon,
+  MagnifyingGlassIcon,
+  MapPinIcon,
   PackageIcon,
   RulerIcon,
   SpinnerGapIcon,
+  XIcon,
 } from "@phosphor-icons/react/ssr";
 import { useEffect, useMemo, useState } from "react";
 
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
-import { Select } from "@/components/ui/select";
 import {
   salesApi,
   type ShalomExportMode,
@@ -80,6 +83,13 @@ const emptySettings: ShalomExportSettings = {
   peso: null,
 };
 
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es");
+}
+
 export function ShalomExportSettingsModal({
   isOpen,
   onClose,
@@ -93,6 +103,7 @@ export function ShalomExportSettingsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [origins, setOrigins] = useState<string[]>([]);
+  const [originQuery, setOriginQuery] = useState("");
   const [origen, setOrigen] = useState("");
   const [modo, setModo] = useState<ShalomExportMode>("ninguno");
   const [mercaderia, setMercaderia] = useState<ShalomPackageType | "">("");
@@ -103,6 +114,7 @@ export function ShalomExportSettingsModal({
 
   const applySettings = (settings: ShalomExportSettings) => {
     setOrigen(settings.origen ?? "");
+    setOriginQuery("");
     setModo(settings.modo);
     setMercaderia(settings.mercaderia ?? "");
     setAlto(settings.alto === null ? "" : String(settings.alto));
@@ -145,13 +157,11 @@ export function ShalomExportSettingsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const origenOptions = useMemo(
-    () => [
-      { value: "", label: "Sin origen" },
-      ...origins.map((name) => ({ value: name, label: name })),
-    ],
-    [origins],
-  );
+  const filteredOrigins = useMemo(() => {
+    const term = normalizeText(originQuery.trim());
+    if (!term) return origins;
+    return origins.filter((name) => normalizeText(name).includes(term));
+  }, [origins, originQuery]);
 
   const parseNumber = (value: string) => {
     const normalized = value.replace(",", ".").trim();
@@ -233,20 +243,119 @@ export function ShalomExportSettingsModal({
     >
       <div className="space-y-5">
         <div>
-          <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-            Origen
-          </span>
-          <Select
-            value={origen}
-            onChange={setOrigen}
-            options={origenOptions}
-            placeholder="Sin origen"
-            searchable
-            ariaLabel="Origen"
-            fixedMenu
-          />
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+              Origen
+            </span>
+            {origen ? (
+              <span className="truncate rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-circular-bold text-[var(--color-primary)]">
+                {origen}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="relative">
+            <MagnifyingGlassIcon
+              size={17}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+            />
+            <input
+              value={originQuery}
+              onChange={(event) => setOriginQuery(event.target.value)}
+              placeholder="Busca agencia o distrito (ej. Bagua, Arequipa)"
+              aria-label="Buscar agencia de origen"
+              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-10 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            />
+            {originQuery ? (
+              <button
+                type="button"
+                onClick={() => setOriginQuery("")}
+                aria-label="Limpiar búsqueda"
+                className="absolute right-3 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+              >
+                <XIcon size={12} weight="bold" />
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-2 max-h-52 space-y-1.5 overflow-y-auto pr-1">
+            <button
+              type="button"
+              onClick={() => setOrigen("")}
+              className={cn(
+                "flex w-full items-center justify-between gap-2 rounded-[12px] px-3 py-2.5 text-left text-sm transition-colors",
+                origen === ""
+                  ? "bg-[var(--color-primary)]/10 font-circular-bold text-[var(--color-primary)]"
+                  : "bg-[var(--color-sidebar-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+              )}
+            >
+              <span className="truncate">Sin origen</span>
+              {origen === "" ? (
+                <CheckCircleIcon
+                  size={18}
+                  weight="fill"
+                  className="shrink-0 text-[#059669]"
+                />
+              ) : null}
+            </button>
+
+            {filteredOrigins.map((name) => {
+              const active = origen === name;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setOrigen(name)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex w-full items-start gap-2 rounded-[12px] px-3 py-2.5 text-left transition-colors",
+                    active
+                      ? "bg-[var(--color-primary)]/10"
+                      : "bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]",
+                  )}
+                >
+                  <MapPinIcon
+                    size={17}
+                    weight="fill"
+                    className={cn(
+                      "mt-0.5 shrink-0",
+                      active
+                        ? "text-[var(--color-primary)]"
+                        : "text-[#dc2626]",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 truncate text-sm",
+                      active
+                        ? "font-circular-bold text-[var(--color-primary)]"
+                        : "text-[var(--color-text)]",
+                    )}
+                  >
+                    {name}
+                  </span>
+                  {active ? (
+                    <CheckCircleIcon
+                      size={18}
+                      weight="fill"
+                      className="shrink-0 text-[#059669]"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+
+            {filteredOrigins.length === 0 ? (
+              <div className="rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-6 text-center text-xs text-[var(--color-muted-foreground)]">
+                No encontramos agencias para esta búsqueda.
+              </div>
+            ) : null}
+          </div>
+
           <p className="mt-1.5 text-xs text-[var(--color-muted-foreground)]">
-            Se escribe en la columna ORIGEN de todas las filas.
+            {filteredOrigins.length}{" "}
+            {filteredOrigins.length === 1 ? "agencia" : "agencias"} · se escribe
+            en la columna ORIGEN de todas las filas.
           </p>
         </div>
 
@@ -304,29 +413,54 @@ export function ShalomExportSettingsModal({
             <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
               Mercadería
             </span>
-            <Select
-              value={mercaderia}
-              onChange={(value) => setMercaderia(value as ShalomPackageType)}
-              options={PACKAGE_TYPES.map((type) => ({
-                value: type,
-                label: type,
-              }))}
-              placeholder="Seleccionar"
-              ariaLabel="Mercadería"
-              fixedMenu
-            />
-            <p className="mt-1.5 text-xs text-[var(--color-muted-foreground)]">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {PACKAGE_TYPES.map((type) => {
+                const active = mercaderia === type;
+                const size = PACKAGE_DEFAULT_SIZES[type];
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setMercaderia(type)}
+                    aria-pressed={active}
+                    className={cn(
+                      "rounded-[14px] border-2 px-3 py-2.5 text-left transition-colors",
+                      active
+                        ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
+                        : "border-[var(--color-border)] bg-[var(--color-card)] hover:border-[var(--color-primary)]/40",
+                    )}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          "truncate text-xs font-circular-bold",
+                          active
+                            ? "text-[var(--color-primary)]"
+                            : "text-[var(--color-text)]",
+                        )}
+                      >
+                        {type}
+                      </span>
+                      {active ? (
+                        <CheckCircleIcon
+                          size={16}
+                          weight="fill"
+                          className="shrink-0 text-[#059669]"
+                        />
+                      ) : null}
+                    </span>
+                    <span className="mt-1 block text-[10px] leading-tight text-[var(--color-muted-foreground)]">
+                      {size.alto} × {size.ancho} × {size.largo} m · {size.peso}{" "}
+                      kg
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
               Solo se escribe el nombre en la columna MERCADERIA. Shalom
               calcula alto, ancho, largo y peso por defecto.
             </p>
-            {mercaderia ? (
-              <p className="mt-2 rounded-[10px] bg-[var(--color-input-bg)] px-3 py-2 text-xs font-circular-bold text-[var(--color-primary)]">
-                {mercaderia}: {PACKAGE_DEFAULT_SIZES[mercaderia].alto} ×{" "}
-                {PACKAGE_DEFAULT_SIZES[mercaderia].ancho} ×{" "}
-                {PACKAGE_DEFAULT_SIZES[mercaderia].largo} m ·{" "}
-                {PACKAGE_DEFAULT_SIZES[mercaderia].peso} kg (referencia Shalom)
-              </p>
-            ) : null}
           </div>
         ) : null}
 
