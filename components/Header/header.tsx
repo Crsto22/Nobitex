@@ -304,22 +304,30 @@ export function Header({
           </button>
 
           {isNotificationsOpen ? (
-            <div className="fixed left-3 right-3 top-16 z-[9999] overflow-hidden rounded-[14px] bg-[var(--color-background)] p-3 shadow-[0_12px_36px_rgba(21,25,34,0.24)] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[410px]">
-              <div className="flex h-10 items-center justify-between px-1">
-                <span className="text-sm font-circular-bold text-[var(--color-text)]">
-                  Notificaciones
-                </span>
+            <div className="fixed left-3 right-3 top-16 z-[9999] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-lg animate-in fade-in zoom-in-95 duration-150 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]">
+              <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border)] px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                    Notificaciones
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-circular-regular text-[var(--color-text)]/55">
+                    {notifications.unreadCount > 0
+                      ? `${notifications.unreadCount} sin leer`
+                      : "Estas al dia"}
+                  </p>
+                </div>
                 {notifications.unreadCount > 0 ? (
                   <button
                     type="button"
                     onClick={() => void markAllRead()}
-                    className="text-xs font-circular-bold text-[var(--color-primary)]"
+                    className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-primary)]/10 px-2.5 py-1 text-[10px] font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)]/15"
                   >
-                    Marcar todas como leidas
+                    <CheckCircleIcon size={12} weight="bold" />
+                    Marcar leidas
                   </button>
                 ) : null}
               </div>
-              <div className="max-h-[min(68vh,480px)] overflow-y-auto py-2">
+              <div className="max-h-[min(62vh,420px)] overflow-y-auto p-1.5">
                 {isLoadingNotifications && notifications.data.length === 0 ? (
                   <div className="px-4 py-10 text-center text-sm text-[var(--color-text)]/55">
                     Cargando...
@@ -329,36 +337,44 @@ export function Header({
                     {notificationsError}
                   </div>
                 ) : notifications.data.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-sm text-[var(--color-text)]/55">
-                    No tienes notificaciones
+                  <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                    <span className="grid size-10 place-items-center rounded-full bg-[var(--color-input-bg)] text-[var(--color-text)]/40">
+                      <BellIcon size={18} />
+                    </span>
+                    <p className="text-sm font-circular-bold text-[var(--color-text)]">
+                      Sin notificaciones
+                    </p>
+                    <p className="text-xs font-circular-regular text-[var(--color-text)]/55">
+                      Cuando tengas novedades apareceran aqui.
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {notifications.data.map((notification) => (
                       <button
                         key={notification.id}
                         type="button"
                         onClick={() => selectNotification(notification)}
                         className={cn(
-                          "flex w-full gap-3 rounded-[14px] bg-[var(--color-card)] p-3 text-left shadow-[0_2px_10px_rgba(21,25,34,0.12)] transition-shadow hover:shadow-[0_4px_16px_rgba(21,25,34,0.16)]",
+                          "flex w-full gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-button-hover)]",
                           !notification.readAt &&
                             "bg-[var(--color-primary)]/[0.06]",
                         )}
                       >
                         <NotificationIcon level={notification.level} />
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-start justify-between gap-2">
-                            <span className="text-sm font-circular-bold text-[var(--color-text)]">
+                          <span className="flex items-center gap-1.5">
+                            <span className="truncate text-sm font-circular-bold text-[var(--color-text)]">
                               {notification.title}
                             </span>
                             {!notification.readAt ? (
-                              <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[var(--color-primary)]" />
+                              <span className="size-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
                             ) : null}
                           </span>
                           <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-[var(--color-text)]/65">
                             {notification.message}
                           </span>
-                          <span className="mt-1 block text-[10px] text-[var(--color-text)]/45">
+                          <span className="mt-1 block text-[10px] font-circular-regular text-[var(--color-text)]/45">
                             {relativeDate(notification.createdAt)}
                           </span>
                         </span>
@@ -367,17 +383,19 @@ export function Header({
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsNotificationsOpen(false);
-                  router.push("/notificaciones");
-                }}
-                className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
-              >
-                Ver todas las notificaciones
-                <ArrowRightIcon size={14} />
-              </button>
+              <div className="border-t border-[var(--color-border)] p-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNotificationsOpen(false);
+                    router.push("/notificaciones");
+                  }}
+                  className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-xs font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+                >
+                  Ver todas las notificaciones
+                  <ArrowRightIcon size={14} />
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
