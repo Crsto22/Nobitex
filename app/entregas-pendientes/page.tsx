@@ -29,6 +29,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
+import { CalendarInput } from "@/components/ui/calendar-input";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
@@ -282,8 +283,7 @@ export default function DeliveriesPage() {
   const [dateFilterType, setDateFilterType] =
     useState<DateFilterType>("envio");
   const [datePreset, setDatePreset] = useState<DateRangePreset>("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [customDate, setCustomDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -317,12 +317,12 @@ export default function DeliveriesPage() {
 
     if (dateFilterType === "venta") {
       if (datePreset === "custom") {
-        if (!dateFrom || !dateTo || dateFrom > dateTo) return empty;
+        if (!customDate) return empty;
         return {
           ...empty,
           period: "custom" as const,
-          dateFrom,
-          dateTo,
+          dateFrom: customDate,
+          dateTo: customDate,
         };
       }
       if (
@@ -341,12 +341,8 @@ export default function DeliveriesPage() {
     let desde: string | undefined;
     let hasta: string | undefined;
     if (datePreset === "custom") {
-      desde = dateFrom || dateTo || undefined;
-      hasta = dateTo || dateFrom || undefined;
-      if (desde && hasta && desde > hasta) {
-        desde = undefined;
-        hasta = undefined;
-      }
+      desde = customDate || undefined;
+      hasta = customDate || undefined;
     } else {
       const today = limaToday();
       if (datePreset === "today") {
@@ -368,7 +364,7 @@ export default function DeliveriesPage() {
     }
 
     return { ...empty, fechaEnvioDesde: desde, fechaEnvioHasta: hasta };
-  }, [dateFilterType, datePreset, dateFrom, dateTo]);
+  }, [dateFilterType, datePreset, customDate]);
 
   const loadDeliveries = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -819,8 +815,7 @@ export default function DeliveriesPage() {
                 onChange={(value) => {
                   setDateFilterType(value as DateFilterType);
                   setDatePreset("");
-                  setDateFrom("");
-                  setDateTo("");
+                  setCustomDate("");
                   setPage(1);
                 }}
                 options={[
@@ -859,28 +854,17 @@ export default function DeliveriesPage() {
                 />
               ) : null}
               {dateFilterType && datePreset === "custom" ? (
-                <>
-                  <input
-                    type="date"
-                    aria-label="Desde"
-                    value={dateFrom}
-                    onChange={(event) => {
-                      setDateFrom(event.target.value);
-                      setPage(1);
-                    }}
-                    className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                  />
-                  <input
-                    type="date"
-                    aria-label="Hasta"
-                    value={dateTo}
-                    onChange={(event) => {
-                      setDateTo(event.target.value);
-                      setPage(1);
-                    }}
-                    className="h-11 rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                  />
-                </>
+                <CalendarInput
+                  className="lg:w-44"
+                  value={customDate}
+                  onChange={(value) => {
+                    setCustomDate(value);
+                    setPage(1);
+                  }}
+                  labelInline="Fecha"
+                  clearable
+                  popoverFixed
+                />
               ) : null}
             </div>
             <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -989,6 +973,7 @@ export default function DeliveriesPage() {
                   toggleShippingSale(sale, selected)
                 }
                 onPrintLabel={() => setLabelSales([sale])}
+                dateField={dateFilterType}
               />
             ))
           )}
@@ -1183,6 +1168,7 @@ function DeliveryRow({
   selected,
   onSelectedChange,
   onPrintLabel,
+  dateField,
 }: {
   sale: VentaResponse;
   canManageLink: boolean;
@@ -1193,12 +1179,14 @@ function DeliveryRow({
   selected: boolean;
   onSelectedChange: (selected: boolean) => void;
   onPrintLabel: () => void;
+  dateField: DateFilterType;
 }) {
   const [isMarkingShipped, setIsMarkingShipped] = useState(false);
   const toast = useSystemToast();
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
-  const isRecojoMetodo = sale.envio?.metodoEnvio === "RECOJO";
+  const isRecojoMetodo =
+    sale.envio?.metodoEnvio === "RECOJO" || !sale.envio;
   const isDomicilioMetodo =
     sale.envio?.metodoEnvio === "MOTORIZADO" ||
     sale.envio?.metodoEnvio === "DOMICILIO";
@@ -1209,6 +1197,15 @@ function DeliveryRow({
       : sale.cliente?.tipoDocumento === "dni"
         ? "DNI"
         : "";
+  const contactName =
+    sale.envio?.nombreCompleto?.trim() || sale.cliente?.nombre || "Cliente";
+  const contactPhone =
+    sale.envio?.celular?.trim() || sale.cliente?.telefono || null;
+  const contactDocument = sale.envio?.dni?.trim()
+    ? `${sale.envio.tipoDocumento ?? "DNI"} ${sale.envio.dni}`
+    : sale.cliente?.numeroDocumento
+      ? `${documentLabel || "DOC"} ${sale.cliente.numeroDocumento}`
+      : null;
 
   const markShipped = async () => {
     if (isMarkingShipped) return;
@@ -1242,7 +1239,7 @@ function DeliveryRow({
 
   return (
     <article className="overflow-hidden rounded-[16px] bg-[var(--color-card)] shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
-      <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-[220px_minmax(240px,1fr)_150px_150px_170px_auto] lg:items-center lg:gap-x-8">
+      <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-[220px_minmax(240px,1fr)_170px_150px_170px_auto] lg:items-center lg:gap-x-8">
         <div className="col-span-2 flex min-w-0 items-center gap-3 lg:col-span-1">
           {selectable ? (
             <label className="group relative inline-flex shrink-0 cursor-pointer select-none items-center">
@@ -1306,43 +1303,38 @@ function DeliveryRow({
                 : "Sin documento"}
             </p>
           </div>
-          {sale.envio &&
-          sale.envio.estado === "recibido" &&
-          (sale.envio.nombreCompleto ||
-            sale.envio.celular ||
-            sale.envio.dni) ? (
-            <div className="min-w-0 space-y-1 rounded-xl border border-dashed border-[var(--color-primary)] bg-[var(--color-primary)]/5 p-2 text-xs">
-              {sale.envio.nombreCompleto ? (
-                <p className="max-w-full truncate font-semibold text-[var(--color-text)]">
-                  {sale.envio.nombreCompleto}
-                </p>
-              ) : null}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--color-muted-foreground)]">
-                {sale.envio.celular ? (
-                  <span className="flex items-center gap-1">
-                    <PhoneIcon size={12} className="shrink-0" />
-                    {sale.envio.celular}
-                  </span>
-                ) : null}
-                {sale.envio.dni ? (
-                  <span>
-                    {sale.envio.tipoDocumento ?? "DNI"} {sale.envio.dni}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
         </div>
-        <InfoItem
-          icon={CalendarIcon}
-          label="Venta"
-          value={formatDateTime(sale.createdAt)}
-        />
-        <InfoItem
-          icon={CalendarIcon}
-          label={isRecojoMetodo ? "Fecha de recojo" : "Fecha de envío"}
-          value={formatFechaEnvio(sale.envio?.fechaEnvio ?? null)}
-        />
+        <div className="min-w-0">
+          <p className="text-[10px] text-[var(--color-muted-foreground)]">
+            Datos de la persona
+          </p>
+          <p
+            className="truncate text-xs font-bold text-[var(--color-text)]"
+            title={contactName}
+          >
+            {contactName}
+          </p>
+          <p className="flex items-center gap-1 truncate text-xs text-[var(--color-muted-foreground)]">
+            <PhoneIcon size={12} className="shrink-0" />
+            {contactPhone || "Sin celular"}
+          </p>
+          <p className="truncate text-xs text-[var(--color-muted-foreground)]">
+            {contactDocument || "Sin documento"}
+          </p>
+        </div>
+        {dateField === "venta" ? (
+          <InfoItem
+            icon={CalendarIcon}
+            label="Fecha de venta"
+            value={formatDateTime(sale.createdAt)}
+          />
+        ) : dateField === "envio" ? (
+          <InfoItem
+            icon={CalendarIcon}
+            label={isRecojoMetodo ? "Fecha de recojo" : "Fecha de envío"}
+            value={formatFechaEnvio(sale.envio?.fechaEnvio ?? null)}
+          />
+        ) : null}
         {status === "ENTREGADO" ? (
           <InfoItem
             icon={ClockIcon}
