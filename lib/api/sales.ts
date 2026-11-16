@@ -467,15 +467,6 @@ export type DeliveriesResponse = {
     total: number;
     totalPages: number;
   };
-  summary: {
-    porPreparar: number;
-    porDespachar: number;
-    enTransito: number;
-    entregados: number;
-    incidencias: number;
-    recojoParciales: number;
-    productosPendientes: number;
-  };
 };
 
 export type DeliverSalePayload = {

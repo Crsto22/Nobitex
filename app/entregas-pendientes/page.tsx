@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   CheckIcon,
+  CheckSquareIcon,
   ClockIcon,
   ColumnsIcon,
   FunnelIcon,
@@ -36,7 +37,6 @@ import {
   GenericClientAvatar,
   UserAvatar,
 } from "@/components/UserAvatar/user-avatar";
-import { branchesApi, type Branch } from "@/lib/api/branches";
 import {
   salesApi,
   type DeliveryStatusQuery,
@@ -69,15 +69,39 @@ const pickupTabConfig: Array<{ label: string; value: PageTab }> = [
   { label: "Entregados", value: "entregada" },
 ];
 
-const emptySummary = {
-  porPreparar: 0,
-  porDespachar: 0,
-  enTransito: 0,
-  entregados: 0,
-  incidencias: 0,
-  recojoParciales: 0,
-  productosPendientes: 0,
-};
+type ServiceTab = "" | "SHALOM" | "OLVA" | "MOTORIZADO" | "DOMICILIO";
+
+const serviceTabConfig: Array<{
+  label: string;
+  value: ServiceTab;
+  activeClass: string;
+}> = [
+  {
+    label: "Todos",
+    value: "",
+    activeClass: "bg-[var(--color-primary)] text-white shadow-sm",
+  },
+  {
+    label: "Shalom",
+    value: "SHALOM",
+    activeClass: "bg-[#dc2626] text-white shadow-sm hover:bg-[#b91c1c]",
+  },
+  {
+    label: "Olva",
+    value: "OLVA",
+    activeClass: "bg-[#facc15] text-black shadow-sm hover:bg-[#eab308]",
+  },
+  {
+    label: "Motorizado",
+    value: "MOTORIZADO",
+    activeClass: "bg-[#10b981] text-white shadow-sm hover:bg-[#059669]",
+  },
+  {
+    label: "Domicilio",
+    value: "DOMICILIO",
+    activeClass: "bg-[#7c3aed] text-white shadow-sm hover:bg-[#6d28d9]",
+  },
+];
 
 const logisticsLabels: Record<
   SaleShippingLogisticsStatus,
@@ -175,24 +199,45 @@ function canMarkShipped(sale: VentaResponse) {
   );
 }
 
+function isLocalDeliveryMethod(sale: VentaResponse) {
+  return (
+    sale.envio?.metodoEnvio === "MOTORIZADO" ||
+    sale.envio?.metodoEnvio === "DOMICILIO"
+  );
+}
+
+function canPrintLabel(sale: VentaResponse) {
+  if (!sale.envio || sale.envio.estado !== "recibido") return false;
+  if (isLocalDeliveryMethod(sale)) return true;
+  return Boolean(sale.envio.agencia);
+}
+
+function serviceLabel(sale: VentaResponse) {
+  if (sale.envio?.metodoEnvio === "MOTORIZADO") return "Motorizado";
+  if (sale.envio?.metodoEnvio === "DOMICILIO") return "Envío a domicilio";
+  return sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom";
+}
+
+function serviceDestination(sale: VentaResponse) {
+  if (isLocalDeliveryMethod(sale)) {
+    return sale.envio?.direccionEntrega || "Sin dirección";
+  }
+  return sale.envio?.agenciaNombre || "Agencia seleccionada";
+}
+
 export default function DeliveriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("courier");
   const [activeTab, setActiveTab] = useState<PageTab>("pendiente");
   const [sales, setSales] = useState<VentaResponse[]>([]);
-  const [summary, setSummary] = useState(emptySummary);
   const [meta, setMeta] = useState({
     page: 1,
     limit: pageSize,
     total: 0,
     totalPages: 1,
   });
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [servicio, setServicio] = useState<
-    "" | "SHALOM" | "OLVA" | "MOTORIZADO" | "DOMICILIO"
-  >("");
-  const [branchId, setBranchId] = useState("");
+  const [servicio, setServicio] = useState<ServiceTab>("");
   const [dateFilterType, setDateFilterType] =
     useState<DateFilterType>("envio");
   const [datePreset, setDatePreset] = useState<DateRangePreset>("today");
@@ -289,7 +334,6 @@ export default function DeliveriesPage() {
         limit: pageSize,
         search: debouncedSearchTerm || undefined,
         servicio: viewMode === "courier" ? servicio || undefined : undefined,
-        sucursalId: branchId || undefined,
         period: dateFilter.period,
         dateFrom: dateFilter.dateFrom,
         dateTo: dateFilter.dateTo,
@@ -300,7 +344,6 @@ export default function DeliveriesPage() {
         (sale) => !sale.envio || sale.envio.estado === "recibido",
       );
       setSales(readySales);
-      setSummary(response.summary ?? emptySummary);
       setMeta(
         response.meta ?? {
           page,
@@ -321,7 +364,6 @@ export default function DeliveriesPage() {
     }
   }, [
     activeTab,
-    branchId,
     servicio,
     dateFilter,
     debouncedSearchTerm,
@@ -337,13 +379,6 @@ export default function DeliveriesPage() {
     }, 350);
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
-
-  useEffect(() => {
-    void branchesApi
-      .findAll({ estado: "activo", tipo: "tienda", limit: 100 })
-      .then((response) => setBranches(response.data))
-      .catch(() => setBranches([]));
-  }, []);
 
   useEffect(() => {
     // La carga remota sincroniza la vista cada vez que cambian filtros o página.
@@ -365,55 +400,6 @@ export default function DeliveriesPage() {
     [],
   );
 
-  const cards =
-    viewMode === "pickup"
-      ? [
-          {
-            label: "Por entregar",
-            value: summary.porPreparar,
-            icon: StorefrontIcon,
-            color: "text-[#f59e0b]",
-            background: "bg-[#f59e0b]/10",
-          },
-          {
-            label: "Entregas parciales",
-            value: summary.recojoParciales,
-            icon: PackageIcon,
-            color: "text-[#7c3aed]",
-            background: "bg-[#7c3aed]/10",
-          },
-          {
-            label: "Entregados",
-            value: summary.entregados,
-            icon: CheckCircleIcon,
-            color: "text-[#10b981]",
-            background: "bg-[#10b981]/10",
-          },
-          {
-            label: "Productos pendientes",
-            value: summary.productosPendientes,
-            icon: PackageIcon,
-            color: "text-[#3b82f6]",
-            background: "bg-[#3b82f6]/10",
-          },
-        ]
-      : [
-          {
-            label: "Pendientes",
-            value: summary.porPreparar + summary.porDespachar,
-            icon: PackageIcon,
-            color: "text-[#f59e0b]",
-            background: "bg-[#f59e0b]/10",
-          },
-          {
-            label: "Enviados",
-            value:
-              summary.enTransito + summary.entregados + summary.incidencias,
-            icon: TruckIcon,
-            color: "text-[#3b82f6]",
-            background: "bg-[#3b82f6]/10",
-          },
-        ];
   const visibleTabs =
     viewMode === "pickup" ? pickupTabConfig : courierTabConfig;
 
@@ -510,57 +496,7 @@ export default function DeliveriesPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <div
-                key={card.label}
-                className="flex items-center gap-3 rounded-2xl bg-[var(--color-sidebar-bg)] p-4 shadow-sm sm:p-5"
-              >
-                <div
-                  className={cn(
-                    "flex size-11 shrink-0 items-center justify-center rounded-xl",
-                    card.background,
-                  )}
-                >
-                  <Icon size={22} weight="fill" className={card.color} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
-                    {card.label}
-                  </p>
-                  <p className="text-2xl font-black leading-none text-[var(--color-text)]">
-                    {card.value}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         <div className="sticky -top-4 z-30 -mx-3 space-y-3 bg-[var(--color-background)] px-3 py-2 sm:-mx-4 sm:px-4 lg:-mx-6 lg:px-6">
-          <div className="flex w-full overflow-x-auto rounded-[16px] bg-[var(--color-input-bg)] p-1 sm:max-w-3xl">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => {
-                  setActiveTab(tab.value);
-                  setPage(1);
-                }}
-                className={cn(
-                  "h-10 min-w-32 flex-1 rounded-[14px] px-3 text-sm font-circular-bold transition-colors",
-                  activeTab === tab.value
-                    ? "bg-[var(--color-card)] text-[var(--color-primary)] shadow-sm"
-                    : "text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
           {viewMode === "courier" && markableSelected.length > 0 ? (
             <button
               type="button"
@@ -580,6 +516,35 @@ export default function DeliveriesPage() {
               <PrinterIcon size={17} weight="bold" />
               Imprimir seleccionados ({selectedShippingSales.length})
             </button>
+          ) : null}
+
+          {viewMode === "courier" ? (
+            <div
+              role="tablist"
+              aria-label="Servicio de envío"
+              className="flex w-full gap-1 overflow-x-auto rounded-[16px] bg-[var(--color-input-bg)] p-1 sm:max-w-2xl"
+            >
+              {serviceTabConfig.map((tab) => (
+                <button
+                  key={tab.value || "todos"}
+                  type="button"
+                  role="tab"
+                  aria-selected={servicio === tab.value}
+                  onClick={() => {
+                    setServicio(tab.value);
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "h-10 min-w-fit flex-1 rounded-[14px] px-4 text-xs font-circular-bold whitespace-nowrap transition-colors sm:text-sm",
+                    servicio === tab.value
+                      ? tab.activeClass
+                      : "text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           ) : null}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-wrap">
@@ -603,44 +568,14 @@ export default function DeliveriesPage() {
                 showFilters ? "" : "hidden lg:flex",
               )}
             >
-              {viewMode === "courier" ? (
-                <FilterSelect
-                  className="lg:w-48"
-                  value={servicio}
-                  onChange={(value) => {
-                    setServicio(
-                      value as
-                        | ""
-                        | "SHALOM"
-                        | "OLVA"
-                        | "MOTORIZADO"
-                        | "DOMICILIO",
-                    );
-                    setPage(1);
-                  }}
-                  options={[
-                    { value: "", label: "Todos los servicios" },
-                    { value: "SHALOM", label: "Shalom" },
-                    { value: "OLVA", label: "Olva" },
-                    { value: "MOTORIZADO", label: "Motorizado" },
-                    { value: "DOMICILIO", label: "Envío a domicilio" },
-                  ]}
-                />
-              ) : null}
               <FilterSelect
-                className="lg:w-44"
-                value={branchId}
+                className="lg:w-40"
+                value={activeTab}
                 onChange={(value) => {
-                  setBranchId(value);
+                  setActiveTab(value as PageTab);
                   setPage(1);
                 }}
-                options={[
-                  { value: "", label: "Todas las sucursales" },
-                  ...branches.map((branch) => ({
-                    value: branch.id,
-                    label: branch.nombre,
-                  })),
-                ]}
+                options={visibleTabs}
               />
               <FilterSelect
                 className="lg:w-44"
@@ -712,13 +647,13 @@ export default function DeliveriesPage() {
                 </>
               ) : null}
             </div>
-            <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <button
                 type="button"
                 onClick={() => setShowFilters((current) => !current)}
                 aria-expanded={showFilters}
                 className={cn(
-                  "flex h-11 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-circular-bold transition-colors lg:hidden",
+                  "flex h-11 flex-1 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-circular-bold transition-colors lg:hidden",
                   showFilters
                     ? "bg-[var(--color-primary)] text-white"
                     : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
@@ -727,40 +662,52 @@ export default function DeliveriesPage() {
                 <FunnelIcon size={16} weight="bold" />
                 Filtros
               </button>
+              {viewMode === "courier" && selectableSales.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  aria-label={
+                    allSelectableSelected
+                      ? "Deseleccionar todo"
+                      : "Seleccionar todo"
+                  }
+                  title={
+                    allSelectableSelected
+                      ? "Deseleccionar todo"
+                      : "Seleccionar todo"
+                  }
+                  aria-pressed={allSelectableSelected}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] transition-colors",
+                    allSelectableSelected
+                      ? "bg-[var(--color-primary)] text-white hover:opacity-90"
+                      : "bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]",
+                  )}
+                >
+                  <CheckSquareIcon
+                    size={19}
+                    weight={allSelectableSelected ? "fill" : "bold"}
+                  />
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => void loadDeliveries()}
-                className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-5 text-sm font-circular-bold text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+                aria-label="Actualizar"
+                title="Actualizar"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
               >
                 <ArrowsClockwiseIcon
-                  size={16}
+                  size={18}
                   weight="bold"
                   className={cn(isLoading && "animate-spin")}
                 />
-                Actualizar
               </button>
             </div>
           </div>
         </div>
 
         <div className="space-y-3 pb-2">
-          {viewMode === "courier" && selectableSales.length > 0 ? (
-            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--color-card)] px-4 py-2.5 shadow-[0_2px_10px_rgba(21,25,34,0.10)]">
-              <p className="truncate text-xs font-medium text-[var(--color-muted-foreground)]">
-                {selectedShippingSales.length > 0
-                  ? `${selectedShippingSales.length} seleccionado${selectedShippingSales.length === 1 ? "" : "s"}`
-                  : `${selectableSales.length} por seleccionar`}
-              </p>
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className="inline-flex shrink-0 items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-xs font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)]/10"
-              >
-                <CheckIcon size={14} weight="bold" />
-                {allSelectableSelected ? "Deseleccionar todo" : "Seleccionar todo"}
-              </button>
-            </div>
-          ) : null}
           {isLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div
@@ -1090,7 +1037,7 @@ function DeliveryRow({
           (sale.envio.nombreCompleto ||
             sale.envio.celular ||
             sale.envio.dni) ? (
-            <div className="min-w-0 space-y-1 rounded-xl border border-dashed border-[var(--color-primary)] bg-white p-2 text-xs">
+            <div className="min-w-0 space-y-1 rounded-xl border border-dashed border-[var(--color-primary)] bg-[var(--color-primary)]/5 p-2 text-xs">
               {sale.envio.nombreCompleto ? (
                 <p className="max-w-full truncate font-semibold text-[var(--color-text)]">
                   {sale.envio.nombreCompleto}
@@ -1262,7 +1209,7 @@ function DeliveryRow({
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
-          {sale.envio?.agencia && sale.envio?.estado === "recibido" ? (
+          {canPrintLabel(sale) ? (
             <button
               type="button"
               onClick={onPrintLabel}
@@ -1545,8 +1492,7 @@ function ShippingLabelModal({
                   {sale.correlativo} · {customerName(sale)}
                 </p>
                 <p className="mt-1 truncate text-xs text-[var(--color-muted-foreground)]">
-                  {sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom"} ·{" "}
-                  {sale.envio?.agenciaNombre || "Agencia seleccionada"}
+                  {serviceLabel(sale)} · {serviceDestination(sale)}
                 </p>
               </div>
               <div>
@@ -1847,8 +1793,7 @@ function BulkShipModal({
                 {sale.correlativo}
               </p>
               <p className="truncate text-xs text-[var(--color-muted-foreground)]">
-                {sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom"} ·{" "}
-                {sale.envio?.agenciaNombre || "Agencia seleccionada"}
+                {serviceLabel(sale)} · {serviceDestination(sale)}
               </p>
             </div>
             <span className="shrink-0 truncate text-xs text-[var(--color-muted-foreground)]">
