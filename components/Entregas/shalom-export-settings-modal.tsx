@@ -28,6 +28,22 @@ const PACKAGE_TYPES: ShalomPackageType[] = [
   "PAQUETE L",
 ];
 
+/**
+ * Medidas por defecto que Shalom aplica a cada mercaderia.
+ * Solo son informativas: en el Excel basta con el nombre del paquete.
+ */
+const PACKAGE_DEFAULT_SIZES: Record<
+  ShalomPackageType,
+  { alto: number; ancho: number; largo: number; peso: number }
+> = {
+  SOBRE: { alto: 0.1, ancho: 0.1, largo: 0.15, peso: 0 },
+  "PAQUETE XXS": { alto: 0.15, ancho: 0.1, largo: 0.1, peso: 0.25 },
+  "PAQUETE XS": { alto: 0.2, ancho: 0.15, largo: 0.12, peso: 0.5 },
+  "PAQUETE S": { alto: 0.3, ancho: 0.3, largo: 0.12, peso: 2 },
+  "PAQUETE M": { alto: 0.3, ancho: 0.24, largo: 0.2, peso: 5 },
+  "PAQUETE L": { alto: 0.42, ancho: 0.3, largo: 0.23, peso: 10 },
+};
+
 const MODES: Array<{
   value: ShalomExportMode;
   label: string;
@@ -43,7 +59,7 @@ const MODES: Array<{
   {
     value: "mercaderia",
     label: "Por mercadería",
-    description: "Rellena mercadería y sus medidas",
+    description: "Rellena solo la mercadería",
     icon: PackageIcon,
   },
   {
@@ -300,8 +316,17 @@ export function ShalomExportSettingsModal({
               fixedMenu
             />
             <p className="mt-1.5 text-xs text-[var(--color-muted-foreground)]">
-              Se escribirán también las medidas de ese paquete.
+              Solo se escribe el nombre en la columna MERCADERIA. Shalom
+              calcula alto, ancho, largo y peso por defecto.
             </p>
+            {mercaderia ? (
+              <p className="mt-2 rounded-[10px] bg-[var(--color-input-bg)] px-3 py-2 text-xs font-circular-bold text-[var(--color-primary)]">
+                {mercaderia}: {PACKAGE_DEFAULT_SIZES[mercaderia].alto} ×{" "}
+                {PACKAGE_DEFAULT_SIZES[mercaderia].ancho} ×{" "}
+                {PACKAGE_DEFAULT_SIZES[mercaderia].largo} m ·{" "}
+                {PACKAGE_DEFAULT_SIZES[mercaderia].peso} kg (referencia Shalom)
+              </p>
+            ) : null}
           </div>
         ) : null}
 
