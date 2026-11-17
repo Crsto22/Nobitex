@@ -483,6 +483,15 @@ export type ShalomExportSettings = {
   peso: number | null;
 };
 
+export type ShalomOrigin = {
+  externalId: string;
+  nombre: string;
+  departamento: string | null;
+  provincia: string | null;
+  distrito: string | null;
+  direccion: string | null;
+};
+
 export type DeliveryCounts = {
   todos: number;
   shalom: number;
@@ -754,7 +763,7 @@ export const salesApi = {
   },
 
   getShalomExportOrigins() {
-    return authFetch<{ data: string[] }>(
+    return authFetch<{ data: ShalomOrigin[] }>(
       "/sales/shalom-export-settings/origins",
     );
   },

@@ -18,6 +18,7 @@ import {
   salesApi,
   type ShalomExportMode,
   type ShalomExportSettings,
+  type ShalomOrigin,
   type ShalomPackageType,
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
@@ -102,8 +103,9 @@ export function ShalomExportSettingsModal({
   const toast = useSystemToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [origins, setOrigins] = useState<string[]>([]);
+  const [origins, setOrigins] = useState<ShalomOrigin[]>([]);
   const [originQuery, setOriginQuery] = useState("");
+  const [originDepartment, setOriginDepartment] = useState("");
   const [origen, setOrigen] = useState("");
   const [modo, setModo] = useState<ShalomExportMode>("ninguno");
   const [mercaderia, setMercaderia] = useState<ShalomPackageType | "">("");
@@ -115,6 +117,7 @@ export function ShalomExportSettingsModal({
   const applySettings = (settings: ShalomExportSettings) => {
     setOrigen(settings.origen ?? "");
     setOriginQuery("");
+    setOriginDepartment("");
     setModo(settings.modo);
     setMercaderia(settings.mercaderia ?? "");
     setAlto(settings.alto === null ? "" : String(settings.alto));
@@ -157,11 +160,34 @@ export function ShalomExportSettingsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  const departments = useMemo(() => {
+    const unique = new Set<string>();
+    origins.forEach((item) => {
+      if (item.departamento) unique.add(item.departamento);
+    });
+    return [...unique].sort((a, b) => a.localeCompare(b, "es"));
+  }, [origins]);
+
   const filteredOrigins = useMemo(() => {
     const term = normalizeText(originQuery.trim());
-    if (!term) return origins;
-    return origins.filter((name) => normalizeText(name).includes(term));
-  }, [origins, originQuery]);
+    return origins.filter((item) => {
+      if (originDepartment && item.departamento !== originDepartment) {
+        return false;
+      }
+      if (!term) return true;
+      const haystack = normalizeText(
+        [
+          item.externalId,
+          item.nombre,
+          item.departamento ?? "",
+          item.provincia ?? "",
+          item.distrito ?? "",
+          item.direccion ?? "",
+        ].join(" "),
+      );
+      return haystack.includes(term);
+    });
+  }, [origins, originQuery, originDepartment]);
 
   const parseNumber = (value: string) => {
     const normalized = value.replace(",", ".").trim();
@@ -254,28 +280,43 @@ export function ShalomExportSettingsModal({
             ) : null}
           </div>
 
-          <div className="relative">
-            <MagnifyingGlassIcon
-              size={17}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-            />
-            <input
-              value={originQuery}
-              onChange={(event) => setOriginQuery(event.target.value)}
-              placeholder="Busca agencia o distrito (ej. Bagua, Arequipa)"
-              aria-label="Buscar agencia de origen"
-              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-10 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-            />
-            {originQuery ? (
-              <button
-                type="button"
-                onClick={() => setOriginQuery("")}
-                aria-label="Limpiar búsqueda"
-                className="absolute right-3 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
-              >
-                <XIcon size={12} weight="bold" />
-              </button>
-            ) : null}
+          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_200px]">
+            <div className="relative">
+              <MagnifyingGlassIcon
+                size={17}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+              />
+              <input
+                value={originQuery}
+                onChange={(event) => setOriginQuery(event.target.value)}
+                placeholder="Busca por código, agencia, distrito…"
+                aria-label="Buscar agencia de origen"
+                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-10 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+              {originQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setOriginQuery("")}
+                  aria-label="Limpiar búsqueda"
+                  className="absolute right-3 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+                >
+                  <XIcon size={12} weight="bold" />
+                </button>
+              ) : null}
+            </div>
+            <select
+              value={originDepartment}
+              onChange={(event) => setOriginDepartment(event.target.value)}
+              aria-label="Filtrar por departamento"
+              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            >
+              <option value="">Todos los departamentos</option>
+              {departments.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="mt-2 max-h-52 space-y-1.5 overflow-y-auto pr-1">
@@ -299,13 +340,16 @@ export function ShalomExportSettingsModal({
               ) : null}
             </button>
 
-            {filteredOrigins.map((name) => {
-              const active = origen === name;
+            {filteredOrigins.map((item) => {
+              const active = origen === item.nombre;
+              const location = [item.departamento, item.provincia, item.distrito]
+                .filter(Boolean)
+                .join(" · ");
               return (
                 <button
-                  key={name}
+                  key={item.externalId}
                   type="button"
-                  onClick={() => setOrigen(name)}
+                  onClick={() => setOrigen(item.nombre)}
                   aria-pressed={active}
                   className={cn(
                     "flex w-full items-start gap-2 rounded-[12px] px-3 py-2.5 text-left transition-colors",
@@ -324,21 +368,35 @@ export function ShalomExportSettingsModal({
                         : "text-[#dc2626]",
                     )}
                   />
-                  <span
-                    className={cn(
-                      "min-w-0 flex-1 truncate text-sm",
-                      active
-                        ? "font-circular-bold text-[var(--color-primary)]"
-                        : "text-[var(--color-text)]",
-                    )}
-                  >
-                    {name}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "min-w-0 truncate text-sm",
+                          active
+                            ? "font-circular-bold text-[var(--color-primary)]"
+                            : "text-[var(--color-text)]",
+                        )}
+                      >
+                        {item.nombre}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-[var(--color-input-bg)] px-1.5 py-0.5 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
+                        {item.externalId}
+                      </span>
+                    </span>
+                    {location || item.direccion ? (
+                      <span className="mt-0.5 block truncate text-[11px] leading-4 text-[var(--color-muted-foreground)]">
+                        {[location, item.direccion]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    ) : null}
                   </span>
                   {active ? (
                     <CheckCircleIcon
                       size={18}
                       weight="fill"
-                      className="shrink-0 text-[#059669]"
+                      className="mt-0.5 shrink-0 text-[#059669]"
                     />
                   ) : null}
                 </button>
@@ -353,9 +411,8 @@ export function ShalomExportSettingsModal({
           </div>
 
           <p className="mt-1.5 text-xs text-[var(--color-muted-foreground)]">
-            {filteredOrigins.length}{" "}
-            {filteredOrigins.length === 1 ? "agencia" : "agencias"} · se escribe
-            en la columna ORIGEN de todas las filas.
+            {filteredOrigins.length} de {origins.length} agencias · se escribe
+            el nombre corto en la columna ORIGEN de todas las filas.
           </p>
         </div>
 
