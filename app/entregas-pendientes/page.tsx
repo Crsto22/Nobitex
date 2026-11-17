@@ -52,6 +52,7 @@ import {
   type DeliveryStatusQuery,
   type SaleShippingDetails,
   type SaleShippingLogisticsStatus,
+  type ShalomExportSettings,
   type VentaResponse,
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
@@ -283,6 +284,8 @@ export default function DeliveriesPage() {
   );
   const [printAllTotal, setPrintAllTotal] = useState(0);
   const [isExportingShalom, setIsExportingShalom] = useState(false);
+  const [shalomSettings, setShalomSettings] =
+    useState<ShalomExportSettings | null>(null);
   const [shalomSettingsOpen, setShalomSettingsOpen] = useState(false);
   const [shalomConfirm, setShalomConfirm] = useState<{
     total: number;
@@ -576,6 +579,21 @@ export default function DeliveriesPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [actionsOpen]);
 
+  useEffect(() => {
+    let active = true;
+    void salesApi
+      .getShalomExportSettings()
+      .then((settings) => {
+        if (active) setShalomSettings(settings);
+      })
+      .catch(() => {
+        if (active) setShalomSettings(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const exportShalomMassive = async (publicIds?: string[]) => {
     if (isExportingShalom || isLoadingPrintAll) return;
     setActionsOpen(false);
@@ -690,6 +708,25 @@ export default function DeliveriesPage() {
   );
   const canExportShalom =
     viewMode === "courier" && (servicio === "" || servicio === "SHALOM");
+  const activeShalomSettings = useMemo(() => {
+    if (!shalomSettings) return 0;
+    const hasOrigen = Boolean(shalomSettings.origen);
+    const hasMercaderia =
+      shalomSettings.modo === "mercaderia" &&
+      Boolean(shalomSettings.mercaderia);
+    const hasMedidas =
+      shalomSettings.modo === "medidas" &&
+      [
+        shalomSettings.alto,
+        shalomSettings.ancho,
+        shalomSettings.largo,
+        shalomSettings.peso,
+      ].every((value) => value !== null);
+
+    return (
+      (hasOrigen ? 1 : 0) + (hasMercaderia ? 1 : 0) + (hasMedidas ? 1 : 0)
+    );
+  }, [shalomSettings]);
   const shalomExportCount =
     selectedShippingSales.length > 0
       ? selectedShalomSales.length
@@ -1083,11 +1120,24 @@ export default function DeliveriesPage() {
                             setActionsOpen(false);
                             setShalomSettingsOpen(true);
                           }}
-                          aria-label="Ajustes de exportación Shalom"
-                          title="Ajustes de exportación Shalom"
-                          className="flex size-9 shrink-0 items-center justify-center rounded-[10px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+                          aria-label={
+                            activeShalomSettings > 0
+                              ? `Ajustes de exportación Shalom (${activeShalomSettings} configurado${activeShalomSettings === 1 ? "" : "s"})`
+                              : "Ajustes de exportación Shalom"
+                          }
+                          title={
+                            activeShalomSettings > 0
+                              ? `${activeShalomSettings} ajuste${activeShalomSettings === 1 ? "" : "s"} activo${activeShalomSettings === 1 ? "" : "s"} · se aplicará${activeShalomSettings === 1 ? "" : "n"} al exportar`
+                              : "Ajustes de exportación Shalom"
+                          }
+                          className="relative flex size-9 shrink-0 items-center justify-center rounded-[10px] text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
                         >
                           <GearSixIcon size={18} weight="bold" />
+                          {activeShalomSettings > 0 ? (
+                            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[9px] font-bold leading-none text-white ring-2 ring-[var(--color-card)]">
+                              {activeShalomSettings}
+                            </span>
+                          ) : null}
                         </button>
                       </div>
                     ) : null}
@@ -1259,6 +1309,7 @@ export default function DeliveriesPage() {
       <ShalomExportSettingsModal
         isOpen={shalomSettingsOpen}
         onClose={() => setShalomSettingsOpen(false)}
+        onSaved={(saved) => setShalomSettings(saved)}
       />
     </DashboardShell>
   );
