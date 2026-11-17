@@ -51,25 +51,21 @@ const PACKAGE_DEFAULT_SIZES: Record<
 const MODES: Array<{
   value: ShalomExportMode;
   label: string;
-  description: string;
   icon: typeof PackageIcon;
 }> = [
   {
     value: "ninguno",
     label: "Sin relleno",
-    description: "Se descarga como hasta ahora",
     icon: BarcodeIcon,
   },
   {
     value: "mercaderia",
     label: "Por mercadería",
-    description: "Rellena solo la mercadería",
     icon: PackageIcon,
   },
   {
     value: "medidas",
     label: "Por medidas",
-    description: "Rellena alto, ancho, largo y peso",
     icon: RulerIcon,
   },
 ];
@@ -409,11 +405,6 @@ export function ShalomExportSettingsModal({
               </div>
             ) : null}
           </div>
-
-          <p className="mt-1.5 text-xs text-[var(--color-muted-foreground)]">
-            {filteredOrigins.length} de {origins.length} agencias · se escribe
-            el nombre corto en la columna ORIGEN de todas las filas.
-          </p>
         </div>
 
         <div>
@@ -455,9 +446,6 @@ export function ShalomExportSettingsModal({
                     )}
                   >
                     {option.label}
-                  </span>
-                  <span className="text-[10px] leading-tight text-[var(--color-muted-foreground)]">
-                    {option.description}
                   </span>
                 </button>
               );
@@ -514,10 +502,6 @@ export function ShalomExportSettingsModal({
                 );
               })}
             </div>
-            <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
-              Solo se escribe el nombre en la columna MERCADERIA. Shalom
-              calcula alto, ancho, largo y peso por defecto.
-            </p>
           </div>
         ) : null}
 
