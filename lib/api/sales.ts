@@ -492,6 +492,16 @@ export type ShalomOrigin = {
   direccion: string | null;
 };
 
+export type ShalomOriginsResponse = {
+  data: ShalomOrigin[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export type DeliveryCounts = {
   todos: number;
   shalom: number;
@@ -762,9 +772,17 @@ export const salesApi = {
     return authFetch<ShalomExportSettings>("/sales/shalom-export-settings");
   },
 
-  getShalomExportOrigins() {
-    return authFetch<{ data: ShalomOrigin[] }>(
-      "/sales/shalom-export-settings/origins",
+  getShalomExportOrigins(
+    params: { page?: number; limit?: number; search?: string } = {},
+  ) {
+    const search = new URLSearchParams();
+    if (params.page) search.set("page", String(params.page));
+    if (params.limit) search.set("limit", String(params.limit));
+    if (params.search) search.set("search", params.search);
+    const queryString = search.toString();
+
+    return authFetch<ShalomOriginsResponse>(
+      `/sales/shalom-export-settings/origins${queryString ? `?${queryString}` : ""}`,
     );
   },
 

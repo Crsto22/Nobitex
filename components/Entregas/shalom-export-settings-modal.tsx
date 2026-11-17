@@ -10,7 +10,7 @@ import {
   SpinnerGapIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
@@ -80,13 +80,6 @@ const emptySettings: ShalomExportSettings = {
   peso: null,
 };
 
-function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("es");
-}
-
 export function ShalomExportSettingsModal({
   isOpen,
   onClose,
@@ -100,8 +93,16 @@ export function ShalomExportSettingsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [origins, setOrigins] = useState<ShalomOrigin[]>([]);
+  const [originsMeta, setOriginsMeta] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
+  const [originPage, setOriginPage] = useState(1);
   const [originQuery, setOriginQuery] = useState("");
-  const [originDepartment, setOriginDepartment] = useState("");
+  const [debouncedOriginQuery, setDebouncedOriginQuery] = useState("");
+  const [isLoadingOrigins, setIsLoadingOrigins] = useState(false);
   const [origen, setOrigen] = useState("");
   const [modo, setModo] = useState<ShalomExportMode>("ninguno");
   const [mercaderia, setMercaderia] = useState<ShalomPackageType | "">("");
@@ -112,8 +113,6 @@ export function ShalomExportSettingsModal({
 
   const applySettings = (settings: ShalomExportSettings) => {
     setOrigen(settings.origen ?? "");
-    setOriginQuery("");
-    setOriginDepartment("");
     setModo(settings.modo);
     setMercaderia(settings.mercaderia ?? "");
     setAlto(settings.alto === null ? "" : String(settings.alto));
@@ -127,15 +126,15 @@ export function ShalomExportSettingsModal({
     let active = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
+    setOriginQuery("");
+    setDebouncedOriginQuery("");
+    setOriginPage(1);
 
-    Promise.all([
-      salesApi.getShalomExportSettings(),
-      salesApi.getShalomExportOrigins(),
-    ])
-      .then(([settings, list]) => {
+    salesApi
+      .getShalomExportSettings()
+      .then((settings) => {
         if (!active) return;
         applySettings(settings ?? emptySettings);
-        setOrigins(list.data ?? []);
       })
       .catch((error: unknown) => {
         if (!active) return;
@@ -156,34 +155,50 @@ export function ShalomExportSettingsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const departments = useMemo(() => {
-    const unique = new Set<string>();
-    origins.forEach((item) => {
-      if (item.departamento) unique.add(item.departamento);
-    });
-    return [...unique].sort((a, b) => a.localeCompare(b, "es"));
-  }, [origins]);
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedOriginQuery(originQuery.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [originQuery]);
 
-  const filteredOrigins = useMemo(() => {
-    const term = normalizeText(originQuery.trim());
-    return origins.filter((item) => {
-      if (originDepartment && item.departamento !== originDepartment) {
-        return false;
-      }
-      if (!term) return true;
-      const haystack = normalizeText(
-        [
-          item.externalId,
-          item.nombre,
-          item.departamento ?? "",
-          item.provincia ?? "",
-          item.distrito ?? "",
-          item.direccion ?? "",
-        ].join(" "),
-      );
-      return haystack.includes(term);
-    });
-  }, [origins, originQuery, originDepartment]);
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoadingOrigins(true);
+
+    salesApi
+      .getShalomExportOrigins({
+        page: originPage,
+        limit: 10,
+        search: debouncedOriginQuery || undefined,
+      })
+      .then((response) => {
+        if (!active) return;
+        setOrigins(response.data ?? []);
+        setOriginsMeta(
+          response.meta ?? {
+            page: originPage,
+            limit: 10,
+            total: 0,
+            totalPages: 1,
+          },
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setOrigins([]);
+      })
+      .finally(() => {
+        if (active) setIsLoadingOrigins(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, originPage, debouncedOriginQuery]);
 
   const parseNumber = (value: string) => {
     const normalized = value.replace(",", ".").trim();
@@ -276,43 +291,34 @@ export function ShalomExportSettingsModal({
             ) : null}
           </div>
 
-          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_200px]">
-            <div className="relative">
-              <MagnifyingGlassIcon
-                size={17}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-              />
-              <input
-                value={originQuery}
-                onChange={(event) => setOriginQuery(event.target.value)}
-                placeholder="Busca por código, agencia, distrito…"
-                aria-label="Buscar agencia de origen"
-                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-10 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-              />
-              {originQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setOriginQuery("")}
-                  aria-label="Limpiar búsqueda"
-                  className="absolute right-3 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
-                >
-                  <XIcon size={12} weight="bold" />
-                </button>
-              ) : null}
-            </div>
-            <select
-              value={originDepartment}
-              onChange={(event) => setOriginDepartment(event.target.value)}
-              aria-label="Filtrar por departamento"
-              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-            >
-              <option value="">Todos los departamentos</option>
-              {departments.map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-            </select>
+          <div className="relative mt-2">
+            <MagnifyingGlassIcon
+              size={17}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+            />
+            <input
+              value={originQuery}
+              onChange={(event) => {
+                setOriginQuery(event.target.value);
+                setOriginPage(1);
+              }}
+              placeholder="Busca por código, agencia, distrito…"
+              aria-label="Buscar agencia de origen"
+              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-10 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            />
+            {originQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOriginQuery("");
+                  setOriginPage(1);
+                }}
+                aria-label="Limpiar búsqueda"
+                className="absolute right-3 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted-foreground)] hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)]"
+              >
+                <XIcon size={12} weight="bold" />
+              </button>
+            ) : null}
           </div>
 
           <div className="mt-2 max-h-52 space-y-1.5 overflow-y-auto pr-1">
@@ -336,7 +342,7 @@ export function ShalomExportSettingsModal({
               ) : null}
             </button>
 
-            {filteredOrigins.map((item) => {
+            {origins.map((item) => {
               const active = origen === item.nombre;
               const location = [item.departamento, item.provincia, item.distrito]
                 .filter(Boolean)
@@ -399,11 +405,41 @@ export function ShalomExportSettingsModal({
               );
             })}
 
-            {filteredOrigins.length === 0 ? (
+            {isLoadingOrigins ? (
+              <div className="flex items-center justify-center gap-2 rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-6 text-xs text-[var(--color-muted-foreground)]">
+                <SpinnerGapIcon size={15} className="animate-spin" />
+                Buscando agencias…
+              </div>
+            ) : origins.length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-6 text-center text-xs text-[var(--color-muted-foreground)]">
                 No encontramos agencias para esta búsqueda.
               </div>
             ) : null}
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-2 text-xs text-[var(--color-muted-foreground)]">
+            <button
+              type="button"
+              onClick={() => setOriginPage((current) => Math.max(1, current - 1))}
+              disabled={isLoadingOrigins || originsMeta.page <= 1}
+              className="flex h-8 items-center justify-center rounded-[10px] bg-[var(--color-input-bg)] px-3 font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <span className="truncate">
+              Página {originsMeta.page} de {originsMeta.totalPages} ·{" "}
+              {originsMeta.total} agencias
+            </span>
+            <button
+              type="button"
+              onClick={() => setOriginPage((current) => current + 1)}
+              disabled={
+                isLoadingOrigins || originsMeta.page >= originsMeta.totalPages
+              }
+              className="flex h-8 items-center justify-center rounded-[10px] bg-[var(--color-input-bg)] px-3 font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
 
