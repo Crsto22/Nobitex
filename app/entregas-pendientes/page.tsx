@@ -1981,13 +1981,13 @@ function DeliveryRow({
                 )}
                 <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-[var(--color-text)]">
+                    <p className="truncate text-xs font-black text-[var(--color-text)]">
                       {sale.envio.estado === "recibido"
                         ? sale.envio.agenciaNombre || "Agencia seleccionada"
                         : "Esperando datos del cliente"}
                     </p>
-                    <p className="flex items-center gap-1 truncate text-xs text-[var(--color-muted-foreground)]">
-                      <MapPinIcon size={13} />
+                    <p className="flex items-center gap-1 truncate text-[11px] text-[var(--color-muted-foreground)]">
+                      <MapPinIcon size={12} />
                       {sale.envio.estado === "recibido"
                         ? [
                             sale.envio.agenciaDistrito,
