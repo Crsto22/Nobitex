@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState, type ComponentType } from "react";
 import {
+  CheckCircleIcon,
   EnvelopeSimpleIcon,
   KeyIcon,
+  MagnifyingGlassIcon,
+  MapPinIcon,
   PackageIcon,
   SealCheckIcon,
   SpinnerGapIcon,
@@ -14,7 +17,13 @@ import {
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
+import {
+  salesApi,
+  type ShalomExportSettings,
+  type ShalomOrigin,
+} from "@/lib/api/sales";
 import { shalomProApi, type ShalomProStatus } from "@/lib/api/shalom-pro";
+import { cn } from "@/lib/utils";
 
 const PACKAGE_TYPES = [
   "SOBRE",
@@ -50,6 +59,14 @@ export default function ShalomProPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [packageType, setPackageType] = useState("PAQUETE S");
+  const [exportSettings, setExportSettings] =
+    useState<ShalomExportSettings | null>(null);
+  const [origin, setOrigin] = useState("");
+  const [originQuery, setOriginQuery] = useState("");
+  const [debouncedOriginQuery, setDebouncedOriginQuery] = useState("");
+  const [origins, setOrigins] = useState<ShalomOrigin[]>([]);
+  const [isLoadingOrigins, setIsLoadingOrigins] = useState(false);
+  const [isSavingOrigin, setIsSavingOrigin] = useState(false);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -72,6 +89,91 @@ export default function ShalomProPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadStatus();
   }, [loadStatus]);
+
+  useEffect(() => {
+    let active = true;
+    salesApi
+      .getShalomExportSettings()
+      .then((data) => {
+        if (!active) return;
+        setExportSettings(data);
+        setOrigin(data?.origen ?? "");
+      })
+      .catch(() => {
+        if (active) setExportSettings(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedOriginQuery(originQuery.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [originQuery]);
+
+  useEffect(() => {
+    let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoadingOrigins(true);
+    salesApi
+      .getShalomExportOrigins({
+        page: 1,
+        limit: 12,
+        search: debouncedOriginQuery || undefined,
+      })
+      .then((response) => {
+        if (active) setOrigins(response.data ?? []);
+      })
+      .catch(() => {
+        if (active) setOrigins([]);
+      })
+      .finally(() => {
+        if (active) setIsLoadingOrigins(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [debouncedOriginQuery]);
+
+  const chooseOrigin = async (nombre: string) => {
+    if (isSavingOrigin || nombre === origin) return;
+    setIsSavingOrigin(true);
+    try {
+      const base: ShalomExportSettings = exportSettings ?? {
+        origen: null,
+        modo: "ninguno",
+        mercaderia: null,
+        alto: null,
+        ancho: null,
+        largo: null,
+        peso: null,
+      };
+      const saved = await salesApi.updateShalomExportSettings({
+        ...base,
+        origen: nombre,
+      });
+      setExportSettings(saved);
+      setOrigin(saved.origen ?? nombre);
+      toast.showToast({
+        title: "Agencia de origen guardada",
+        description: nombre,
+        variant: "success",
+      });
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo guardar la agencia",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsSavingOrigin(false);
+    }
+  };
 
   const connect = async () => {
     if (isSaving) return;
@@ -208,12 +310,15 @@ export default function ShalomProPage() {
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="rounded-2xl bg-[var(--color-card)] p-4 sm:p-5">
-            <h3 className="text-xs font-circular-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
-              Credenciales
-            </h3>
+          <div className="overflow-hidden rounded-2xl bg-[var(--color-card)]">
+            <div className="bg-[#dc2626] px-4 py-2.5 sm:px-5">
+              <span className="text-sm font-circular-bold uppercase tracking-wide text-white">
+                Shalom
+              </span>
+            </div>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="p-4 sm:p-5">
+            <div className="grid gap-3 sm:grid-cols-2">
               <label className="min-w-0">
                 <span className="mb-1.5 block text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
                   Correo de Shalom
@@ -267,17 +372,108 @@ export default function ShalomProPage() {
                   </select>
                 </div>
               </label>
+            </div>
 
-              <label className="min-w-0">
-                <span className="mb-1.5 block text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
                   Agencia de origen
                 </span>
-                <input
-                  value="Se toma de Configuración → Envíos"
-                  readOnly
-                  className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-muted-foreground)] outline-none"
+                {origin ? (
+                  <span className="max-w-[60%] truncate rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-circular-bold text-[var(--color-primary)]">
+                    {origin}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="relative">
+                <MagnifyingGlassIcon
+                  size={17}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
                 />
-              </label>
+                <input
+                  value={originQuery}
+                  onChange={(event) => setOriginQuery(event.target.value)}
+                  placeholder="Busca por código, agencia o distrito…"
+                  aria-label="Buscar agencia de origen de Shalom"
+                  className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                />
+              </div>
+
+              <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                {isLoadingOrigins ? (
+                  <div className="flex items-center justify-center gap-2 rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-4 text-xs text-[var(--color-muted-foreground)]">
+                    <SpinnerGapIcon size={15} className="animate-spin" />
+                    Buscando agencias…
+                  </div>
+                ) : origins.length === 0 ? (
+                  <div className="rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-4 text-center text-xs text-[var(--color-muted-foreground)]">
+                    No encontramos agencias para esta búsqueda.
+                  </div>
+                ) : (
+                  origins.map((item) => {
+                    const active = origin === item.nombre;
+                    const location = [
+                      item.departamento,
+                      item.provincia,
+                      item.distrito,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+
+                    return (
+                      <button
+                        key={item.externalId}
+                        type="button"
+                        onClick={() => void chooseOrigin(item.nombre)}
+                        aria-pressed={active}
+                        disabled={isSavingOrigin}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left transition-colors disabled:opacity-60",
+                          active
+                            ? "bg-[var(--color-primary)]/10"
+                            : "bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]",
+                        )}
+                      >
+                        <MapPinIcon
+                          size={16}
+                          weight="fill"
+                          className={cn(
+                            "shrink-0",
+                            active
+                              ? "text-[var(--color-primary)]"
+                              : "text-[#dc2626]",
+                          )}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              "block truncate text-sm",
+                              active
+                                ? "font-circular-bold text-[var(--color-primary)]"
+                                : "text-[var(--color-text)]",
+                            )}
+                          >
+                            {item.nombre}
+                          </span>
+                          {location ? (
+                            <span className="block truncate text-[10px] text-[var(--color-muted-foreground)]">
+                              {location}
+                            </span>
+                          ) : null}
+                        </span>
+                        {active ? (
+                          <CheckCircleIcon
+                            size={17}
+                            weight="fill"
+                            className="shrink-0 text-[#059669]"
+                          />
+                        ) : null}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -307,6 +503,7 @@ export default function ShalomProPage() {
                 {status.lastError}
               </p>
             ) : null}
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">
