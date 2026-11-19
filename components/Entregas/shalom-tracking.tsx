@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 /** Estados reales del rastreo (mismos que shalom-service). */
 const DEFAULT_STAGES = [
-  "Registrado",
+  "En origen",
   "En tránsito",
   "En destino",
   "Entregado",
@@ -47,11 +47,14 @@ export function ShalomMiniProgress({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
 
-  const stages = resolveStages();
+  const stages = resolveStages(envio);
   const progress = resolveProgress(envio);
-  const currentLabel = resolveCurrentLabel(envio, stages, progress);
+  const current = resolveCurrentIndex(envio, stages, progress);
+  const currentLabel = resolveCurrentLabel(envio, stages, current);
   const isCanceled = envio.shalomEstado === "ANULADO";
   const isIncident = envio.shalomEstado === "INCIDENCIA";
+  // Guia creada pero el paquete aun no fue recepcionado en la agencia.
+  const notConfirmed = progress === 0 && !isIncident && !isCanceled;
 
   const refresh = async () => {
     if (isRefreshing) return;
@@ -78,10 +81,27 @@ export function ShalomMiniProgress({
     }
   };
 
+  const refreshButton = (
+    <button
+      type="button"
+      onClick={() => void refresh()}
+      disabled={isRefreshing}
+      aria-label="Actualizar estado de Shalom"
+      title="Actualizar estado en Shalom"
+      className="flex size-6 shrink-0 items-center justify-center rounded-full text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
+    >
+      <ArrowsClockwiseIcon
+        size={13}
+        weight="bold"
+        className={cn(isRefreshing && "animate-spin")}
+      />
+    </button>
+  );
+
   const stepper = (
     <>
       {stages.map((label, index) => {
-        const done = index <= progress;
+        const done = index <= current;
 
         return (
           <Fragment key={`${label}-${index}`}>
@@ -89,7 +109,7 @@ export function ShalomMiniProgress({
               <span
                 className={cn(
                   "mx-1 mt-[5px] h-0.5 min-w-3 flex-1 sm:mt-[7px] sm:min-w-8",
-                  index <= progress
+                  index <= current
                     ? "bg-[#dc2626]"
                     : "bg-[var(--color-border)]",
                 )}
@@ -102,7 +122,7 @@ export function ShalomMiniProgress({
                   done
                     ? "border-[#dc2626] bg-[#dc2626]"
                     : "border-[var(--color-border)] bg-transparent",
-                  index === progress
+                  index === current
                     ? "ring-2 ring-[#dc2626]/15 sm:ring-4"
                     : "",
                 )}
@@ -110,7 +130,7 @@ export function ShalomMiniProgress({
               <span
                 className={cn(
                   "hidden max-w-20 truncate text-[10px] leading-none sm:block",
-                  index <= progress
+                  index <= current
                     ? "font-circular-bold text-[#dc2626]"
                     : "text-[var(--color-muted-foreground)]",
                 )}
@@ -125,29 +145,31 @@ export function ShalomMiniProgress({
     </>
   );
 
-  // Sin orden de Shalom el avance no es real: se muestra difuminado.
-  // Solo aplica a envios donde ya se intento registrar (en espera/error).
-  if (!envio.shalomOrden) {
-    if (!envio.shalomJobId && !envio.shalomEstado) {
-      return null;
-    }
+  const hasAttempt = Boolean(
+    envio.shalomOrden || envio.shalomJobId || envio.shalomEstado,
+  );
+  if (!hasAttempt) return null;
 
+  if (notConfirmed) {
     return (
-      <div className="relative flex items-start rounded-lg px-1 py-0.5">
-        <div
-          className="pointer-events-none select-none opacity-50 blur-[1.5px]"
-          aria-hidden="true"
-        >
-          {stepper}
-        </div>
-        <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[var(--color-card)] px-2 py-1 text-[9px] font-circular-bold text-[var(--color-muted-foreground)] shadow-sm ring-1 ring-[var(--color-border)]">
-            {isShalomWaiting(envio.shalomEstado) ? (
-              <SpinnerGapIcon size={10} className="animate-spin" />
-            ) : null}
-            Envío no confirmado
+      <div className="flex items-center gap-1.5">
+        <div className="relative flex items-start rounded-lg px-1 py-0.5">
+          <div
+            className="pointer-events-none select-none opacity-50 blur-[1.5px]"
+            aria-hidden="true"
+          >
+            {stepper}
+          </div>
+          <span className="absolute inset-0 flex items-center justify-center">
+            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[var(--color-card)] px-2 py-1 text-[9px] font-circular-bold text-[var(--color-muted-foreground)] shadow-sm ring-1 ring-[var(--color-border)]">
+              {isShalomWaiting(envio.shalomEstado) ? (
+                <SpinnerGapIcon size={10} className="animate-spin" />
+              ) : null}
+              Envío no confirmado
+            </span>
           </span>
-        </span>
+        </div>
+        {refreshButton}
       </div>
     );
   }
@@ -198,20 +220,7 @@ export function ShalomMiniProgress({
           </>
         )}
 
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          disabled={isRefreshing}
-          aria-label="Actualizar estado de Shalom"
-          title="Actualizar estado en Shalom"
-          className="flex size-6 shrink-0 items-center justify-center rounded-full text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
-        >
-          <ArrowsClockwiseIcon
-            size={13}
-            weight="bold"
-            className={cn(isRefreshing && "animate-spin")}
-          />
-        </button>
+        {refreshButton}
       </div>
 
       <ShalomTimelineModal
@@ -220,7 +229,7 @@ export function ShalomMiniProgress({
         correlativo={correlativo}
         envio={envio}
         stages={stages}
-        progress={progress}
+        current={current}
         currentLabel={currentLabel}
         isIncident={isIncident}
         isCanceled={isCanceled}
@@ -235,7 +244,7 @@ function ShalomTimelineModal({
   correlativo,
   envio,
   stages,
-  progress,
+  current,
   currentLabel,
   isIncident,
   isCanceled,
@@ -245,7 +254,7 @@ function ShalomTimelineModal({
   correlativo: string;
   envio: SaleShippingDetails;
   stages: string[];
-  progress: number;
+  current: number;
   currentLabel: string;
   isIncident: boolean;
   isCanceled: boolean;
@@ -336,7 +345,7 @@ function ShalomTimelineModal({
           </p>
           <div className="mb-5 flex items-start">
             {stages.map((stage, index) => {
-              const done = index <= progress;
+              const done = index <= current;
 
               return (
                 <Fragment key={`${stage}-${index}`}>
@@ -344,7 +353,7 @@ function ShalomTimelineModal({
                     <span
                       className={cn(
                         "mx-1.5 mt-2 h-1 flex-1 rounded-full",
-                        index <= progress
+                        index <= current
                           ? "bg-[#dc2626]"
                           : "bg-[var(--color-border)]",
                       )}
@@ -362,7 +371,7 @@ function ShalomTimelineModal({
                     <span
                       className={cn(
                         "hidden max-w-24 truncate text-xs sm:block",
-                        index <= progress
+                        index <= current
                           ? "font-circular-bold text-[#dc2626]"
                           : "text-[var(--color-muted-foreground)]",
                       )}
@@ -407,9 +416,9 @@ function ShalomTimelineModal({
           </p>
           <ol className="space-y-0">
             {stages.map((stage, index) => {
-              const done = index < progress;
-              const current = index === progress;
-              const pending = index > progress;
+              const done = index < current;
+              const isCurrent = index === current;
+              const pending = index > current;
 
               return (
                 <li key={`${stage}-${index}`} className="flex gap-3">
@@ -419,7 +428,7 @@ function ShalomTimelineModal({
                         "flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold",
                         done
                           ? "border-[#dc2626] bg-[#dc2626] text-white"
-                          : current
+                          : isCurrent
                             ? "border-[#dc2626] bg-[var(--color-card)] text-[#dc2626] ring-4 ring-[#dc2626]/10"
                             : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted-foreground)]",
                       )}
@@ -441,7 +450,7 @@ function ShalomTimelineModal({
                     <p
                       className={cn(
                         "text-[15px]",
-                        current
+                        isCurrent
                           ? "font-circular-bold text-[#dc2626]"
                           : done
                             ? "font-circular-bold text-[var(--color-text)]"
@@ -451,7 +460,7 @@ function ShalomTimelineModal({
                       {stage}
                     </p>
                     <p className="text-xs text-[var(--color-muted-foreground)]">
-                      {pending ? "Pendiente" : current ? label : "Completado"}
+                      {pending ? "Pendiente" : isCurrent ? label : "Completado"}
                     </p>
                   </div>
                 </li>
@@ -506,26 +515,52 @@ function isShalomWaiting(estado: string | null) {
   return Boolean(estado && WAITING_STATES.has(estado));
 }
 
-/** Nombres reales del timeline de Shalom o nuestros estados por defecto. */
-function resolveStages(): string[] {
-  // Siempre nuestras 4 etapas: los nombres de Shalom ("En origen") confunden
-  // cuando la guia aun no fue recepcionada en la agencia.
+/** Nombres reales del timeline de Shalom o nuestras etapas por defecto. */
+function resolveStages(envio: SaleShippingDetails): string[] {
+  const timeline = envio.shalomTimeline;
+  if (timeline && timeline.length > 0) {
+    return timeline.map((step) => step.nombre).slice(0, 4);
+  }
   return [...DEFAULT_STAGES];
 }
 
-/**
- * Texto del estado actual. Con progreso 0 la guia existe pero el paquete
- * todavia no fue llevado a la agencia: "Envio no confirmado".
- */
-function resolveCurrentLabel(
+/** Indice de la etapa actual (0-based). */
+function resolveCurrentIndex(
   envio: SaleShippingDetails,
   stages: string[],
   progress: number,
 ) {
-  if (progress === 0) return "Envío no confirmado";
+  const timeline = envio.shalomTimeline;
+  if (timeline && timeline.length > 0) {
+    const lastActive = timeline.reduce(
+      (acc, step, index) => (step.activo ? index : acc),
+      -1,
+    );
+    if (lastActive >= 0) {
+      return Math.min(lastActive, stages.length - 1);
+    }
+  }
+
+  if (envio.shalomEstado === "ENTREGADO") return stages.length - 1;
+
+  const label = (envio.shalomEstadoLabel ?? "").toLowerCase();
+  if (label.includes("entregad")) return stages.length - 1;
+  if (label.includes("destino")) return Math.min(2, stages.length - 1);
+  if (label.includes("origen")) return 0;
+
+  if (progress <= 0) return 0;
+  return Math.min(progress - 1, stages.length - 1);
+}
+
+/** Texto del estado actual mostrado bajo la etapa. */
+function resolveCurrentLabel(
+  envio: SaleShippingDetails,
+  stages: string[],
+  current: number,
+) {
   return (
     envio.shalomEstadoLabel ??
-    stages[Math.min(progress, stages.length - 1)] ??
+    stages[Math.min(current, stages.length - 1)] ??
     "Registrado"
   );
 }
