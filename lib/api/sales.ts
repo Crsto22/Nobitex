@@ -568,6 +568,8 @@ export type RegisterShalomPayload = {
   extraSecurity?: boolean;
   cashOnDelivery?: boolean;
   documentType?: "DNI" | "CE";
+  /** Documento editado en el modal (si la venta lo tenía mal). */
+  recipientDocument?: string;
   recipientName?: string;
   recipientPaternalLastName?: string;
   recipientMaternalLastName?: string;

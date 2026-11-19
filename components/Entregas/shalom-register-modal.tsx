@@ -52,6 +52,8 @@ export function ShalomRegisterModal({
   const [packageType, setPackageType] = useState<ShalomPackageType>(
     defaultPackageType,
   );
+  const [documentType, setDocumentType] = useState<"DNI" | "CE">("DNI");
+  const [documentNumber, setDocumentNumber] = useState("");
   const [extraSecurity, setExtraSecurity] = useState(false);
   const [cashOnDelivery, setCashOnDelivery] = useState(false);
   const [names, setNames] = useState("");
@@ -67,7 +69,6 @@ export function ShalomRegisterModal({
   const [isLoadingOrigins, setIsLoadingOrigins] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const documentType = sale?.envio?.tipoDocumento ?? "DNI";
   const needsOrigin = Boolean(isOpen) && !settings?.origen && !origin;
   const keyIssue = securityKey ? securityKeyIssue(securityKey) : null;
 
@@ -77,6 +78,8 @@ export function ShalomRegisterModal({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSecurityKey("");
     setPackageType(defaultPackageType);
+    setDocumentType(sale?.envio?.tipoDocumento ?? "DNI");
+    setDocumentNumber(sale?.envio?.dni ?? "");
     setExtraSecurity(false);
     setCashOnDelivery(false);
     setNames(nameParts.names);
@@ -154,6 +157,15 @@ export function ShalomRegisterModal({
       return;
     }
 
+    if (!/^\d{6,12}$/.test(documentNumber.trim())) {
+      toast.showToast({
+        title: "Documento inválido",
+        description: "Ingresa un DNI o CE de 6 a 12 dígitos.",
+        variant: "error",
+      });
+      return;
+    }
+
     if (!names.trim() || !paternal.trim() || !maternal.trim()) {
       toast.showToast({
         title: "Completa el destinatario",
@@ -181,6 +193,7 @@ export function ShalomRegisterModal({
         extraSecurity,
         cashOnDelivery,
         documentType,
+        recipientDocument: documentNumber.trim(),
         recipientName: names.trim() || undefined,
         recipientPaternalLastName: paternal.trim() || undefined,
         recipientMaternalLastName: maternal.trim() || undefined,
@@ -289,9 +302,39 @@ export function ShalomRegisterModal({
 
         <div>
           <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-            Destinatario ({documentType})
+            Destinatario
           </span>
           <div className="grid gap-3 sm:grid-cols-2">
+            <label className="min-w-0">
+              <span className="mb-1.5 block text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+                Documento
+              </span>
+              <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3">
+                <select
+                  value={documentType}
+                  onChange={(event) =>
+                    setDocumentType(event.target.value as "DNI" | "CE")
+                  }
+                  aria-label="Tipo de documento"
+                  className="h-11 shrink-0 bg-transparent text-sm font-circular-bold text-[var(--color-input-text)] outline-none"
+                >
+                  <option value="DNI">DNI</option>
+                  <option value="CE">CE</option>
+                </select>
+                <input
+                  value={documentNumber}
+                  onChange={(event) =>
+                    setDocumentNumber(
+                      event.target.value.replace(/\D/g, "").slice(0, 12),
+                    )
+                  }
+                  inputMode="numeric"
+                  placeholder="Número de documento"
+                  aria-label="Número de documento del destinatario"
+                  className="h-11 w-full bg-transparent text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)]"
+                />
+              </div>
+            </label>
             <TextField
               label="Nombres"
               value={names}
@@ -319,8 +362,8 @@ export function ShalomRegisterModal({
           </div>
           <p className="mt-2 flex items-start gap-1.5 text-[10px] leading-4 text-[var(--color-muted-foreground)]">
             <InfoIcon size={13} className="mt-0.5 shrink-0" />
-            Nombres y ambos apellidos son obligatorios: Shalom los pide cuando
-            no reconoce el documento.
+            Corrige el documento si la venta lo tiene mal. Nombres y ambos
+            apellidos son obligatorios cuando Shalom no reconoce el documento.
           </p>
         </div>
 
