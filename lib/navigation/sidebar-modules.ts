@@ -78,19 +78,17 @@ export const sidebarSections: SidebarSection[] = [
         icon: ShoppingCartIcon,
         route: "/ventas",
       },
-      { key: "caja", label: "Caja", icon: ReceiptIcon, route: "/caja" },
+      {
+        key: "caja",
+        label: "Caja",
+        icon: ReceiptIcon,
+        route: "/caja",
+      },
       {
         key: "cotizaciones",
         label: "Cotizaciones",
         icon: FileTextIcon,
         route: "/cotizaciones",
-      },
-      {
-        key: "entregas-pendientes",
-        label: "Entregas y envíos",
-        icon: TruckIcon,
-        route: "/entregas-pendientes",
-        badge: "new",
       },
       {
         key: "clientes",
@@ -103,6 +101,26 @@ export const sidebarSections: SidebarSection[] = [
         label: "Cuentas por cobrar",
         icon: CreditCardIcon,
         route: "/cuentas-por-cobrar",
+      },
+    ],
+  },
+  {
+    key: "gestion-envios",
+    label: "Gestión de Envíos",
+    icon: TruckIcon,
+    children: [
+      {
+        key: "entregas-pendientes",
+        label: "Entregas y envíos",
+        icon: PackageIcon,
+        route: "/entregas-pendientes",
+        badge: "new",
+      },
+      {
+        key: "shalom-pro",
+        label: "Shalom PRO",
+        icon: ShieldCheckIcon,
+        route: "/configuracion/shalom-pro",
       },
     ],
   },

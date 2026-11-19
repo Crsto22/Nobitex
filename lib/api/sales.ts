@@ -554,6 +554,34 @@ export type DispatchToCourierPayload = {
   notas?: string;
 };
 
+export type RegisterShalomPayload = {
+  /** Clave de 4 digitos definida por el vendedor. */
+  securityKey: string;
+  packageType?: ShalomPackageType;
+  extraSecurity?: boolean;
+  cashOnDelivery?: boolean;
+};
+
+export type RegisterShalomResponse = {
+  jobId: string | null;
+  status: string;
+  alreadyRegistered?: boolean;
+  orden?: string | null;
+  codigo?: string | null;
+};
+
+export type ShalomOrderStatusResponse = {
+  jobId: string | null;
+  orden: string | null;
+  codigo: string | null;
+  monto: string | number | null;
+  estado: string | null;
+  error: string | null;
+  registradoAt: string | null;
+  syncAt: string | null;
+  estadoLogistico: string;
+};
+
 export type ComprobanteSunatEstado =
   | "pendiente_envio"
   | "enviando"
@@ -808,6 +836,29 @@ export const salesApi = {
         method: "POST",
         body: JSON.stringify(payload),
       },
+    );
+  },
+
+  registerShalom(publicId: string, payload: RegisterShalomPayload) {
+    return authFetch<RegisterShalomResponse>(
+      `/sales/${publicId}/shalom-register`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  getShalomStatus(publicId: string) {
+    return authFetch<ShalomOrderStatusResponse>(
+      `/sales/${publicId}/shalom`,
+    );
+  },
+
+  syncShalom(publicId: string) {
+    return authFetch<ShalomOrderStatusResponse>(
+      `/sales/${publicId}/shalom-sync`,
+      { method: "POST" },
     );
   },
 

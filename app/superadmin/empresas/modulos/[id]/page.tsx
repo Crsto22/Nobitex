@@ -24,7 +24,6 @@ const moduleGroups = [
       "ventas-pos",
       "caja",
       "cotizaciones",
-      "entregas-pendientes",
       "clientes",
       "cuentas-cobrar",
       "historial-ventas",
@@ -34,6 +33,10 @@ const moduleGroups = [
       "nota-debito",
       "series",
     ],
+  },
+  {
+    label: "Gestión de Envíos",
+    keys: ["entregas-pendientes", "shalom-pro"],
   },
   {
     label: "Inventario",
