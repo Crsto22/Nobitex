@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ComponentType } from "react";
-import Image from "next/image";
 import {
   EnvelopeSimpleIcon,
   KeyIcon,
@@ -15,11 +14,7 @@ import {
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
-import {
-  shalomProApi,
-  type ShalomProConnectionStatus,
-  type ShalomProStatus,
-} from "@/lib/api/shalom-pro";
+import { shalomProApi, type ShalomProStatus } from "@/lib/api/shalom-pro";
 
 const PACKAGE_TYPES = [
   "SOBRE",
@@ -29,28 +24,6 @@ const PACKAGE_TYPES = [
   "PAQUETE M",
   "PAQUETE L",
 ];
-
-const STATUS_UI: Record<
-  ShalomProConnectionStatus,
-  { label: string; className: string }
-> = {
-  SIN_CONECTAR: {
-    label: "Sin conectar",
-    className: "bg-amber-500/10 text-amber-600",
-  },
-  PENDING: {
-    label: "Conectando",
-    className: "bg-sky-500/10 text-sky-600",
-  },
-  ACTIVE: {
-    label: "Conectado",
-    className: "bg-[#059669]/10 text-[#047857]",
-  },
-  ERROR: {
-    label: "Requiere atención",
-    className: "bg-[#dc2626]/10 text-[#dc2626]",
-  },
-};
 
 type StatusTone = "ok" | "warn" | "error" | "muted";
 
@@ -163,7 +136,6 @@ export default function ShalomProPage() {
     }
   };
 
-  const ui = STATUS_UI[status?.status ?? "SIN_CONECTAR"];
   const connected = status?.connected ?? false;
 
   const statusCards: StatusCard[] = [
@@ -233,40 +205,6 @@ export default function ShalomProPage() {
               </div>
             );
           })}
-        </div>
-
-        <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-card)] p-4">
-          <Image
-            src="/envios/shalom.svg"
-            alt="Shalom PRO"
-            width={44}
-            height={44}
-            unoptimized
-            className="h-11 w-11 shrink-0 rounded-xl object-contain"
-          />
-          <div className="min-w-0">
-            <h2 className="text-sm font-circular-bold text-[var(--color-text)]">
-              Cuenta de Shalom PRO de la empresa
-            </h2>
-            <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
-              Conecta la cuenta de Shalom PRO para registrar envíos desde Nuvex. La contraseña se
-              guarda cifrada en el servicio de Shalom; Nuvex no la almacena.
-            </p>
-          </div>
-          <span className="ml-auto shrink-0">
-            {isLoading ? (
-              <span className="flex items-center gap-2 rounded-full bg-[var(--color-input-bg)] px-3 py-1 text-[11px] text-[var(--color-muted-foreground)]">
-                <SpinnerGapIcon size={14} className="animate-spin" />
-                Cargando
-              </span>
-            ) : (
-              <span
-                className={`rounded-full px-3 py-1 text-[11px] font-circular-bold ${ui.className}`}
-              >
-                {ui.label}
-              </span>
-            )}
-          </span>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
