@@ -11,6 +11,7 @@ import {
   CheckSquareIcon,
   ClockIcon,
   ColumnsIcon,
+  CurrencyCircleDollarIcon,
   DownloadSimpleIcon,
   DotsThreeVerticalIcon,
   FunnelIcon,
@@ -2044,6 +2045,19 @@ function DeliveryRow({
                             <span className="max-w-36 truncate">
                               {sale.envio.shalomOrden}
                             </span>
+                          </span>
+                        ) : null}
+                        {sale.envio.shalomMonto ? (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-[#059669]/10 px-2 py-1 font-circular-bold text-[#047857] ring-1 ring-[#059669]/15"
+                            title={`Monto de la guía ${sale.envio.shalomMonto}`}
+                          >
+                            <CurrencyCircleDollarIcon
+                              size={11}
+                              weight="bold"
+                              className="shrink-0"
+                            />
+                            S/ {Number(sale.envio.shalomMonto).toFixed(2)}
                           </span>
                         ) : null}
                       </div>
