@@ -2018,10 +2018,22 @@ function DeliveryRow({
                       </span>
                     </p>
                     {sale.envio.agencia === "SHALOM" &&
-                    sale.envio.shalomCodigo ? (
-                      <span className="mt-1 inline-flex rounded bg-[var(--color-card)] px-1.5 py-0.5 text-[9px] font-circular-bold text-[var(--color-muted-foreground)]">
-                        Cód. seguimiento {sale.envio.shalomCodigo}
-                      </span>
+                    (sale.envio.shalomCodigo || sale.envio.shalomOrden) ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-1 text-[9px] text-[var(--color-muted-foreground)]">
+                        {sale.envio.shalomCodigo ? (
+                          <span className="rounded bg-[var(--color-card)] px-1.5 py-0.5 font-circular-bold">
+                            Cód. {sale.envio.shalomCodigo}
+                          </span>
+                        ) : null}
+                        {sale.envio.shalomOrden ? (
+                          <span
+                            className="max-w-40 truncate rounded bg-[var(--color-card)] px-1.5 py-0.5 font-circular-bold"
+                            title={sale.envio.shalomOrden}
+                          >
+                            N° {sale.envio.shalomOrden}
+                          </span>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                   {sale.envio.agencia === "SHALOM" ? (
