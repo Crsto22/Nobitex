@@ -243,10 +243,10 @@ export function ShalomRegisterModal({
   };
 
   const originSelector = (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-          Agencia de origen
+    <div className="rounded-[14px] bg-[var(--color-input-bg)] p-3">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+          Origen
         </span>
         {origin && !needsOrigin ? (
           <button
@@ -276,7 +276,7 @@ export function ShalomRegisterModal({
               onChange={(event) => setOriginQuery(event.target.value)}
               placeholder="Busca por código, agencia o distrito…"
               aria-label="Buscar agencia de origen"
-              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              className="h-11 w-full rounded-[14px] bg-[var(--color-card)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>
 
@@ -359,7 +359,7 @@ export function ShalomRegisterModal({
           ) : null}
         </>
       ) : (
-        <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3 py-2.5">
+        <div className="flex items-center gap-2">
           <MapPinIcon size={16} weight="fill" className="shrink-0 text-[#dc2626]" />
           <span className="min-w-0 flex-1 truncate text-sm font-circular-bold text-[var(--color-text)]">
             {origin}
@@ -378,8 +378,15 @@ export function ShalomRegisterModal({
       size="xl"
     >
       <div className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
           {originSelector}
+          <div className="hidden shrink-0 items-center justify-center gap-1 md:flex">
+            <span className="size-2 rounded-full border-2 border-[#dc2626]" />
+            <span className="h-0 w-5 border-t-2 border-dashed border-[#dc2626]/40" />
+            <TruckIcon size={18} weight="fill" className="text-[#dc2626]" />
+            <span className="h-0 w-5 border-t-2 border-dashed border-[#dc2626]/40" />
+            <span className="size-2 rounded-full bg-[#dc2626]" />
+          </div>
           <div className="flex items-start gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3">
             <MapPinIcon
               size={16}
@@ -388,7 +395,7 @@ export function ShalomRegisterModal({
             />
             <div className="min-w-0">
               <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-                Agencia de destino
+                Destino
               </p>
               <p
                 className="truncate text-sm font-circular-bold text-[var(--color-text)]"
