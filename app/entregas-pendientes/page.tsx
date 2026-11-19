@@ -2119,11 +2119,7 @@ function DeliveryRow({
               )}
               Enviar
             </button>
-          ) : sale.envio?.agencia === "SHALOM" && shalomPrimary ? null : (
-            <span className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-[#3b82f6]/10 px-4 text-xs font-bold text-[#1d4ed8]">
-              <TruckIcon size={17} weight="fill" /> Enviado
-            </span>
-          )}
+          ) : null}
         </div>
       </div>
 
