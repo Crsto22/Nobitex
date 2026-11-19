@@ -375,6 +375,9 @@ export default function DeliveriesPage() {
   const [shalomPackage, setShalomPackage] =
     useState<ShalomPackageType>("PAQUETE S");
   const [shalomPolling, setShalomPolling] = useState<string[]>([]);
+  const [shalomShipWithout, setShalomShipWithout] =
+    useState<VentaResponse | null>(null);
+  const [isShalomShipping, setIsShalomShipping] = useState(false);
 
   const dateFilter = useMemo(() => {
     const empty = {
@@ -666,6 +669,47 @@ export default function DeliveriesPage() {
       return next.length === current.length ? current : next;
     });
   }, [canUseShalom, sales]);
+
+  const shipWithoutShalom = async (sale: VentaResponse) => {
+    if (isShalomShipping) return;
+
+    const detalles = sale.detalles
+      .map((detail) => ({
+        ventaDetalleId: detail.id,
+        cantidad: Math.max(0, detail.cantidad - detail.cantidadEntregada),
+      }))
+      .filter((item) => item.cantidad > 0);
+
+    if (detalles.length === 0) {
+      toast.showToast({
+        title: "No hay unidades pendientes",
+        description: "Esta venta ya fue entregada por completo.",
+        variant: "info",
+      });
+      return;
+    }
+
+    setIsShalomShipping(true);
+    try {
+      await salesApi.dispatchToCourier(sale.publicId, { detalles });
+      toast.showToast({
+        title: "Envío marcado como enviado",
+        description: `${sale.correlativo} · sin guía de Shalom`,
+        variant: "success",
+      });
+      setShalomShipWithout(null);
+      refreshDeliveries();
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo enviar",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsShalomShipping(false);
+    }
+  };
 
   const updateShippingLocally = useCallback(
     (saleId: string, shipping: SaleShippingDetails) => {
@@ -1510,6 +1554,26 @@ export default function DeliveriesPage() {
             current.includes(publicId) ? current : [...current, publicId],
           )
         }
+        onShipWithoutShalom={() => {
+          if (!shalomSale) return;
+          const sale = shalomSale;
+          setShalomSale(null);
+          setShalomShipWithout(sale);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={Boolean(shalomShipWithout)}
+        onClose={() => setShalomShipWithout(null)}
+        onConfirm={async () => {
+          if (!shalomShipWithout) return;
+          await shipWithoutShalom(shalomShipWithout);
+        }}
+        tone="primary"
+        title="Enviar sin Shalom"
+        description={`La venta ${
+          shalomShipWithout?.correlativo ?? ""
+        } se marcará como enviada sin generar guía de Shalom.`}
+        confirmLabel="Sí, enviar"
       />
     </DashboardShell>
   );
@@ -1649,6 +1713,7 @@ function DeliveryRow({
       ? `${documentLabel || "DOC"} ${sale.cliente.numeroDocumento}`
       : null;
   const shalomPending = isShalomPolling || shalomInProgress(sale.envio);
+  const shalomPrimary = canRegisterShalom && canRegisterInShalom(sale);
 
   const markShipped = async () => {
     if (isMarkingShipped) return;
@@ -2023,7 +2088,8 @@ function DeliveryRow({
             <PrimaryButton onClick={onManageLink} icon={LinkIcon}>
               Gestionar enlace
             </PrimaryButton>
-          ) : status === "POR_PREPARAR" || status === "POR_DESPACHAR" ? (
+          ) : (status === "POR_PREPARAR" || status === "POR_DESPACHAR") &&
+            !(sale.envio?.agencia === "SHALOM" && shalomPrimary) ? (
             <button
               type="button"
               onClick={() => void markShipped()}
@@ -2037,7 +2103,7 @@ function DeliveryRow({
               )}
               Enviar
             </button>
-          ) : (
+          ) : sale.envio?.agencia === "SHALOM" && shalomPrimary ? null : (
             <span className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-[#3b82f6]/10 px-4 text-xs font-bold text-[#1d4ed8]">
               <TruckIcon size={17} weight="fill" /> Enviado
             </span>

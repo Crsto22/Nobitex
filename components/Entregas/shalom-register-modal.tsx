@@ -8,6 +8,7 @@ import {
   MagnifyingGlassIcon,
   MapPinIcon,
   SpinnerGapIcon,
+  TruckIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { Modal } from "@/components/Modal/modal";
@@ -42,6 +43,8 @@ type ShalomRegisterModalProps = {
   onClose: () => void;
   /** Se dispara cuando el job quedo encolado (o ya estaba registrado). */
   onRegistered: (publicId: string) => void;
+  /** Despacha la venta sin generar guia de Shalom. */
+  onShipWithoutShalom?: () => void;
 };
 
 export function ShalomRegisterModal({
@@ -50,6 +53,7 @@ export function ShalomRegisterModal({
   defaultPackageType = "PAQUETE S",
   onClose,
   onRegistered,
+  onShipWithoutShalom,
 }: ShalomRegisterModalProps) {
   const toast = useSystemToast();
   const [securityKey, setSecurityKey] = useState("");
@@ -564,6 +568,18 @@ export function ShalomRegisterModal({
             Registrar en Shalom
           </button>
         </div>
+
+        {onShipWithoutShalom ? (
+          <button
+            type="button"
+            onClick={onShipWithoutShalom}
+            disabled={isSaving}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] text-xs font-circular-bold text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
+          >
+            <TruckIcon size={16} weight="bold" />
+            Enviar sin registrar en Shalom
+          </button>
+        ) : null}
       </div>
     </Modal>
   );
