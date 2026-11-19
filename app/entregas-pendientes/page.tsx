@@ -37,7 +37,7 @@ import {
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ShalomExportSettingsModal } from "@/components/Entregas/shalom-export-settings-modal";
 import { ShalomRegisterModal } from "@/components/Entregas/shalom-register-modal";
-import { ShalomTrackingCard } from "@/components/Entregas/shalom-tracking";
+import { ShalomMiniProgress } from "@/components/Entregas/shalom-tracking";
 import { Modal } from "@/components/Modal/modal";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CalendarInput } from "@/components/ui/calendar-input";
@@ -1929,17 +1929,6 @@ function DeliveryRow({
         </span>
       </div>
 
-      {sale.envio?.shalomOrden ? (
-        <div className="px-4 pt-3">
-          <ShalomTrackingCard
-            publicId={sale.publicId}
-            correlativo={sale.correlativo}
-            envio={sale.envio}
-            onRefreshed={onMarkShipped}
-          />
-        </div>
-      ) : null}
-
       <div className="grid gap-4 border-t border-[var(--color-border)] px-4 py-3 lg:grid-cols-[minmax(300px,1.3fr)_auto] lg:items-center">
         <div className="min-w-0">
           {isCourier && sale.envio ? (
@@ -2013,10 +2002,19 @@ function DeliveryRow({
                     </p>
                   </div>
                   {sale.envio.agencia === "SHALOM" ? (
-                    <ShalomStatusLine
-                      envio={sale.envio}
-                      pending={shalomPending}
-                    />
+                    sale.envio.shalomOrden ? (
+                      <ShalomMiniProgress
+                        publicId={sale.publicId}
+                        correlativo={sale.correlativo}
+                        envio={sale.envio}
+                        onRefreshed={onMarkShipped}
+                      />
+                    ) : (
+                      <ShalomStatusLine
+                        envio={sale.envio}
+                        pending={shalomPending}
+                      />
+                    )
                   ) : null}
                 </div>
               </div>

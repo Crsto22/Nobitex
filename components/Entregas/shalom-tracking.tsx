@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   ArrowsClockwiseIcon,
   CheckIcon,
-  ClockIcon,
-  MapPinIcon,
   WarningOctagonIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -18,64 +16,39 @@ import {
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_STEPS: ShalomTrackingStep[] = [
-  { nombre: "Registrado", activo: true },
-  { nombre: "En tránsito", activo: false },
-  { nombre: "En destino", activo: false },
-  { nombre: "Entregado", activo: false },
-];
+/** Estados reales del rastreo (mismos que shalom-service). */
+const DEFAULT_STAGES = [
+  "Registrado",
+  "En tránsito",
+  "En destino",
+  "Entregado",
+] as const;
 
-type ShalomTrackingCardProps = {
+type ShalomMiniProgressProps = {
   publicId: string;
   correlativo: string;
   envio: SaleShippingDetails;
   onRefreshed: () => void;
 };
 
-export function ShalomTrackingCard({
+/**
+ * Avance compacto del envio Shalom al costado de la agencia de destino.
+ * Los pasos salen del timeline real de Shalom (o de nuestros estados).
+ */
+export function ShalomMiniProgress({
   publicId,
   correlativo,
   envio,
   onRefreshed,
-}: ShalomTrackingCardProps) {
+}: ShalomMiniProgressProps) {
   const toast = useSystemToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
 
-  const steps =
-    envio.shalomTimeline && envio.shalomTimeline.length > 0
-      ? envio.shalomTimeline
-      : DEFAULT_STEPS;
+  const stages = resolveStages(envio);
   const progress = resolveProgress(envio);
-  const label =
-    envio.shalomEstadoLabel ??
-    steps[Math.min(progress, steps.length - 1)]?.nombre ??
-    "Registrado";
   const isCanceled = envio.shalomEstado === "ANULADO";
   const isIncident = envio.shalomEstado === "INCIDENCIA";
-  const isDelivered = progress >= 3 || envio.shalomEstado === "ENTREGADO";
-
-  const accent = isIncident
-    ? "text-[#dc2626]"
-    : isCanceled
-      ? "text-[#b45309]"
-      : isDelivered
-        ? "text-[#059669]"
-        : "text-[#dc2626]";
-  const accentBorder = isIncident
-    ? "border-[#dc2626]"
-    : isCanceled
-      ? "border-[#b45309]"
-      : isDelivered
-        ? "border-[#059669]"
-        : "border-[#dc2626]";
-  const accentBg = isIncident
-    ? "bg-[#dc2626]"
-    : isCanceled
-      ? "bg-[#b45309]"
-      : isDelivered
-        ? "bg-[#059669]"
-        : "bg-[#dc2626]";
 
   const refresh = async () => {
     if (isRefreshing) return;
@@ -104,140 +77,92 @@ export function ShalomTrackingCard({
 
   return (
     <>
-      <div className="rounded-[14px] bg-[var(--color-input-bg)] p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded bg-[#dc2626] px-1.5 py-0.5 text-[9px] font-black tracking-wide text-white">
-            SHALOM
-          </span>
-          <span className="truncate text-xs font-circular-bold text-[var(--color-text)]">
-            {envio.shalomOrden}
-          </span>
-          {envio.shalomCodigo ? (
-            <span className="rounded-full bg-[var(--color-card)] px-2 py-0.5 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
-              Código {envio.shalomCodigo}
-            </span>
-          ) : null}
-          <span className="ml-auto flex items-center gap-1 text-[10px] text-[var(--color-muted-foreground)]">
-            <ClockIcon size={12} />
-            {timeAgo(envio.shalomSyncAt) ?? "sin actualizar"}
-          </span>
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            disabled={isRefreshing}
-            aria-label="Actualizar estado"
-            title="Consultar el estado actual en Shalom"
-            className="flex size-7 shrink-0 items-center justify-center rounded-full text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
-          >
-            <ArrowsClockwiseIcon
-              size={15}
-              weight="bold"
-              className={cn(isRefreshing && "animate-spin")}
-            />
-          </button>
+      <div className="flex items-center gap-1.5">
+        {isIncident || isCanceled ? (
           <button
             type="button"
             onClick={() => setTimelineOpen(true)}
-            className="shrink-0 text-[10px] font-circular-bold text-[var(--color-primary)] hover:underline"
-          >
-            Ver timeline
-          </button>
-        </div>
-
-        {isIncident || isCanceled ? (
-          <div
             className={cn(
-              "mt-3 flex items-start gap-2 rounded-[12px] p-2.5 text-xs",
+              "flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-circular-bold hover:opacity-80",
               isIncident
                 ? "bg-[#dc2626]/10 text-[#b91c1c]"
                 : "bg-[#b45309]/10 text-[#b45309]",
             )}
+            title="Ver timeline de Shalom"
           >
-            <WarningOctagonIcon size={16} weight="fill" className="mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <p className="font-circular-bold">
-                {isIncident ? "Incidencia en el envío" : "Envío anulado"}
-              </p>
-              <p className="truncate text-[11px]">{label}</p>
-            </div>
-          </div>
+            <WarningOctagonIcon size={12} weight="fill" />
+            {isIncident ? "Incidencia" : "Anulado"}
+          </button>
         ) : (
-          <>
-            <div className="mt-3 flex items-start justify-between gap-1">
-              {steps.map((step, index) => {
-                const done = index < progress || isDelivered;
-                const current = index === progress && !isDelivered;
+          <button
+            type="button"
+            onClick={() => setTimelineOpen(true)}
+            title={
+              envio.shalomEstadoLabel
+                ? `Shalom: ${envio.shalomEstadoLabel}`
+                : "Ver timeline de Shalom"
+            }
+            className="flex items-start rounded-lg px-1 py-0.5 hover:bg-[var(--color-button-hover)]"
+          >
+            {stages.map((label, index) => {
+              const done = index <= progress;
 
-                return (
-                  <div
-                    key={`${step.nombre}-${index}`}
-                    className="flex min-w-0 flex-1 flex-col items-center gap-1"
-                  >
-                    <div className="flex w-full items-center">
-                      <span
-                        className={cn(
-                          "h-0 flex-1 border-t-2",
-                          index === 0
-                            ? "border-transparent"
-                            : index <= progress
-                              ? accentBorder
-                              : "border-dashed border-[var(--color-border)]",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors",
-                          done
-                            ? cn(accentBorder, accentBg, "text-white")
-                            : current
-                              ? cn(accentBorder, "bg-[var(--color-card)] ring-4 ring-[#dc2626]/15", accent)
-                              : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted-foreground)]",
-                        )}
-                      >
-                        {done ? (
-                          <CheckIcon size={12} weight="bold" />
-                        ) : (
-                          index + 1
-                        )}
-                      </span>
-                      <span
-                        className={cn(
-                          "h-0 flex-1 border-t-2",
-                          index === steps.length - 1
-                            ? "border-transparent"
-                            : index < progress
-                              ? accentBorder
-                              : "border-dashed border-[var(--color-border)]",
-                        )}
-                      />
-                    </div>
+              return (
+                <Fragment key={`${label}-${index}`}>
+                  {index > 0 ? (
                     <span
                       className={cn(
-                        "w-full truncate text-center text-[9px] leading-tight",
+                        "mx-0.5 mt-[5px] h-px min-w-3 flex-1 sm:min-w-5",
+                        index <= progress
+                          ? "bg-[#dc2626]"
+                          : "bg-[var(--color-border)]",
+                      )}
+                    />
+                  ) : null}
+                  <span className="flex flex-col items-center gap-1">
+                    <span
+                      className={cn(
+                        "size-2.5 rounded-full border-2 transition-colors",
+                        done
+                          ? "border-[#dc2626] bg-[#dc2626]"
+                          : "border-[var(--color-border)] bg-transparent",
                         index === progress
-                          ? cn("font-circular-bold", accent)
+                          ? "ring-2 ring-[#dc2626]/20"
+                          : "",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "max-w-14 truncate text-[9px] leading-none",
+                        index <= progress
+                          ? "font-circular-bold text-[#dc2626]"
                           : "text-[var(--color-muted-foreground)]",
                       )}
-                      title={step.nombre}
+                      title={label}
                     >
-                      {step.nombre}
+                      {label}
                     </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            <p
-              className={cn(
-                "mt-2 flex items-center gap-1.5 text-xs font-circular-bold",
-                accent,
-              )}
-            >
-              <MapPinIcon size={13} weight="fill" className="shrink-0" />
-              <span className="truncate">{label}</span>
-            </p>
-          </>
+                  </span>
+                </Fragment>
+              );
+            })}
+          </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          disabled={isRefreshing}
+          aria-label="Actualizar estado de Shalom"
+          title="Actualizar estado en Shalom"
+          className="flex size-6 shrink-0 items-center justify-center rounded-full text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
+        >
+          <ArrowsClockwiseIcon
+            size={13}
+            weight="bold"
+            className={cn(isRefreshing && "animate-spin")}
+          />
+        </button>
       </div>
 
       <ShalomTimelineModal
@@ -245,9 +170,10 @@ export function ShalomTrackingCard({
         onClose={() => setTimelineOpen(false)}
         correlativo={correlativo}
         envio={envio}
-        steps={steps}
+        stages={stages}
         progress={progress}
-        label={label}
+        isIncident={isIncident}
+        isCanceled={isCanceled}
       />
     </>
   );
@@ -258,18 +184,25 @@ function ShalomTimelineModal({
   onClose,
   correlativo,
   envio,
-  steps,
+  stages,
   progress,
-  label,
+  isIncident,
+  isCanceled,
 }: {
   isOpen: boolean;
   onClose: () => void;
   correlativo: string;
   envio: SaleShippingDetails;
-  steps: ShalomTrackingStep[];
+  stages: string[];
   progress: number;
-  label: string;
+  isIncident: boolean;
+  isCanceled: boolean;
 }) {
+  const label =
+    envio.shalomEstadoLabel ??
+    stages[Math.min(progress, stages.length - 1)] ??
+    "Registrado";
+
   const events = [...envio.historial]
     .filter((item) => /shalom/i.test(item.detalle ?? ""))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -289,18 +222,86 @@ function ShalomTimelineModal({
           <p className="mb-3 text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
             Recorrido
           </p>
+          <div className="mb-5 flex items-start">
+            {stages.map((stage, index) => {
+              const done = index <= progress;
+
+              return (
+                <Fragment key={`${stage}-${index}`}>
+                  {index > 0 ? (
+                    <span
+                      className={cn(
+                        "mx-1 mt-[7px] h-0.5 flex-1",
+                        index <= progress
+                          ? "bg-[#dc2626]"
+                          : "bg-[var(--color-border)]",
+                      )}
+                    />
+                  ) : null}
+                  <span className="flex flex-col items-center gap-1.5">
+                    <span
+                      className={cn(
+                        "size-4 rounded-full border-2",
+                        done
+                          ? "border-[#dc2626] bg-[#dc2626]"
+                          : "border-[var(--color-border)] bg-[var(--color-card)]",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "max-w-20 truncate text-[11px]",
+                        index <= progress
+                          ? "font-circular-bold text-[#dc2626]"
+                          : "text-[var(--color-muted-foreground)]",
+                      )}
+                      title={stage}
+                    >
+                      {stage}
+                    </span>
+                  </span>
+                </Fragment>
+              );
+            })}
+          </div>
+
+          {isIncident || isCanceled ? (
+            <div
+              className={cn(
+                "mb-4 flex items-start gap-2 rounded-[12px] p-2.5 text-xs",
+                isIncident
+                  ? "bg-[#dc2626]/10 text-[#b91c1c]"
+                  : "bg-[#b45309]/10 text-[#b45309]",
+              )}
+            >
+              <WarningOctagonIcon
+                size={16}
+                weight="fill"
+                className="mt-0.5 shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="font-circular-bold">
+                  {isIncident ? "Incidencia en el envío" : "Envío anulado"}
+                </p>
+                <p className="truncate text-[11px]">{label}</p>
+              </div>
+            </div>
+          ) : null}
+
+          <p className="mb-3 text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+            Etapas de Shalom
+          </p>
           <ol className="space-y-0">
-            {steps.map((step, index) => {
+            {stages.map((stage, index) => {
               const done = index < progress;
               const current = index === progress;
               const pending = index > progress;
 
               return (
-                <li key={`${step.nombre}-${index}`} className="flex gap-3">
+                <li key={`${stage}-${index}`} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <span
                       className={cn(
-                        "flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold",
+                        "flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-bold",
                         done
                           ? "border-[#dc2626] bg-[#dc2626] text-white"
                           : current
@@ -308,9 +309,9 @@ function ShalomTimelineModal({
                             : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted-foreground)]",
                       )}
                     >
-                      {done ? <CheckIcon size={13} weight="bold" /> : index + 1}
+                      {done ? <CheckIcon size={12} weight="bold" /> : index + 1}
                     </span>
-                    {index < steps.length - 1 ? (
+                    {index < stages.length - 1 ? (
                       <span
                         className={cn(
                           "my-1 w-0 flex-1 border-l-2",
@@ -321,7 +322,7 @@ function ShalomTimelineModal({
                       />
                     ) : null}
                   </div>
-                  <div className="min-w-0 pb-4">
+                  <div className="min-w-0 pb-3">
                     <p
                       className={cn(
                         "text-sm",
@@ -332,14 +333,10 @@ function ShalomTimelineModal({
                             : "text-[var(--color-muted-foreground)]",
                       )}
                     >
-                      {step.nombre}
+                      {stage}
                     </p>
                     <p className="text-[11px] text-[var(--color-muted-foreground)]">
-                      {pending
-                        ? "Pendiente"
-                        : current
-                          ? label
-                          : "Completado"}
+                      {pending ? "Pendiente" : current ? label : "Completado"}
                     </p>
                   </div>
                 </li>
@@ -380,6 +377,16 @@ function ShalomTimelineModal({
   );
 }
 
+/** Nombres reales del timeline de Shalom o nuestros estados por defecto. */
+function resolveStages(envio: SaleShippingDetails): string[] {
+  const timeline: ShalomTrackingStep[] | null = envio.shalomTimeline;
+  if (timeline && timeline.length > 0) {
+    return timeline.map((step) => step.nombre).slice(0, 4);
+  }
+  return [...DEFAULT_STAGES];
+}
+
+/** 0..3 segun el progreso real de Shalom. */
 function resolveProgress(envio: SaleShippingDetails) {
   if (typeof envio.shalomProgreso === "number" && envio.shalomProgreso >= 0) {
     return Math.min(3, envio.shalomProgreso);
@@ -414,22 +421,6 @@ function traducirEstado(estado: string) {
     default:
       return estado;
   }
-}
-
-function timeAgo(value: string | null) {
-  if (!value) return null;
-  const diff = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diff) || diff < 0) return null;
-
-  const minutes = Math.round(diff / 60_000);
-  if (minutes < 1) return "hace instantes";
-  if (minutes < 60) return `hace ${minutes} min`;
-
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `hace ${hours} h`;
-
-  const days = Math.round(hours / 24);
-  return `hace ${days} d`;
 }
 
 function formatDateTime(value: string) {
