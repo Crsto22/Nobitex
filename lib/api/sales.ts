@@ -586,8 +586,16 @@ export type RegisterShalomResponse = {
   codigo?: string | null;
 };
 
-export type ShalomOrderStatusResponse = {
-  jobId: string | null;
+export type DniLookupResponse = {
+  success: boolean;
+  dni: string;
+  nombres: string | null;
+  apellidoPaterno: string | null;
+  apellidoMaterno: string | null;
+  usage?: { used: number; limit: number; remaining: number };
+};
+
+export type ShalomOrderStatusResponse = {  jobId: string | null;
   orden: string | null;
   codigo: string | null;
   monto: string | number | null;
@@ -853,6 +861,10 @@ export const salesApi = {
         body: JSON.stringify(payload),
       },
     );
+  },
+
+  lookupDni(dni: string) {
+    return authFetch<DniLookupResponse>(`/sales/dni/${dni}`);
   },
 
   registerShalom(publicId: string, payload: RegisterShalomPayload) {

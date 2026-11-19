@@ -71,11 +71,26 @@ export type SearchShippingAgenciesOptions = {
   lng?: number;
 };
 
+export type PublicDniLookup = {
+  success: boolean;
+  dni: string;
+  nombres: string | null;
+  apellidoPaterno: string | null;
+  apellidoMaterno: string | null;
+};
+
 export const shippingLinksApi = {
   findOne(code: string) {
     return apiRequest<PublicShippingLink>(`/public/shipping-links/${code}`, {
       cache: "no-store",
     });
+  },
+
+  lookupDni(code: string, dni: string) {
+    return apiRequest<PublicDniLookup>(
+      `/public/shipping-links/${code}/dni/${dni}`,
+      { cache: "no-store" },
+    );
   },
 
   submit(code: string, payload: SubmitShippingDetails) {

@@ -397,6 +397,7 @@ export default function ShippingDetailsPage() {
                   <form ref={formRef} onSubmit={submit} className="space-y-5">
               {step === 1 ? (
                 <StepOne
+                  code={code}
                   form={form}
                   metodos={link.metodosEnvio}
                   onFormChange={setForm}
@@ -512,12 +513,14 @@ export default function ShippingDetailsPage() {
 }
 
 function StepOne({
+  code,
   form,
   metodos,
   onFormChange,
   onMetodoChange,
   onContinue,
 }: {
+  code: string;
   form: {
     nombreCompleto: string;
     dni: string;
@@ -537,6 +540,59 @@ function StepOne({
   const selectedMetodo =
     metodos.find((metodo) => metodo.metodo === form.metodo) ?? null;
   const carouselRef = useRef<HTMLDivElement>(null);
+  const autoNameRef = useRef("");
+  const [dniLookup, setDniLookup] = useState<"idle" | "loading" | "notfound">(
+    "idle",
+  );
+
+  useEffect(() => {
+    if (form.tipoDocumento !== "DNI" || form.dni.length !== 8) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDniLookup("idle");
+      return;
+    }
+
+    let active = true;
+    const timeout = window.setTimeout(() => {
+      setDniLookup("loading");
+      shippingLinksApi
+        .lookupDni(code, form.dni)
+        .then((data) => {
+          if (!active) return;
+          const full = [
+            data.nombres,
+            data.apellidoPaterno,
+            data.apellidoMaterno,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (!full) {
+            setDniLookup("notfound");
+            return;
+          }
+
+          const previousAuto = autoNameRef.current;
+          autoNameRef.current = full;
+          onFormChange((current) => {
+            const currentName = current.nombreCompleto.trim();
+            if (currentName && currentName !== previousAuto) return current;
+            return { ...current, nombreCompleto: full };
+          });
+          setDniLookup("idle");
+        })
+        .catch(() => {
+          if (active) setDniLookup("notfound");
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [code, form.dni, form.tipoDocumento, onFormChange]);
   const cardWidthClass =
     metodos.length <= 2
       ? "w-[calc(50%-0.375rem)] max-w-[240px]"
@@ -622,6 +678,16 @@ function StepOne({
             placeholder={form.tipoDocumento === "DNI" ? "12345678" : "001234567"}
           />
         </div>
+        {dniLookup === "loading" ? (
+          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--color-muted-foreground)]">
+            <SpinnerGapIcon size={12} className="animate-spin" />
+            Buscando datos del DNI…
+          </p>
+        ) : dniLookup === "notfound" ? (
+          <p className="mt-2 text-[11px] text-[#b45309]">
+            No encontramos ese DNI. Escribe el nombre manualmente.
+          </p>
+        ) : null}
       </div>
       <Field icon={<PhoneIcon size={19} />} label="Celular">
         <input

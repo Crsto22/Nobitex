@@ -61,6 +61,8 @@ export function ShalomRegisterModal({
   );
   const [documentType, setDocumentType] = useState<"DNI" | "CE">("DNI");
   const [documentNumber, setDocumentNumber] = useState("");
+  const [isLookingUpDni, setIsLookingUpDni] = useState(false);
+  const [lastLookupDni, setLastLookupDni] = useState<string | null>(null);
   const [extraSecurity, setExtraSecurity] = useState(false);
   const [cashOnDelivery, setCashOnDelivery] = useState(false);
   const [names, setNames] = useState("");
@@ -87,6 +89,8 @@ export function ShalomRegisterModal({
     setPackageType(defaultPackageType);
     setDocumentType(sale?.envio?.tipoDocumento ?? "DNI");
     setDocumentNumber(sale?.envio?.dni ?? "");
+    setIsLookingUpDni(false);
+    setLastLookupDni(null);
     setExtraSecurity(false);
     setCashOnDelivery(false);
     setNames(nameParts.names);
@@ -158,6 +162,48 @@ export function ShalomRegisterModal({
         setSecurityKey(candidate);
         return;
       }
+    }
+  };
+
+  const lookupDni = async () => {
+    if (isLookingUpDni) return;
+    const dni = documentNumber.trim();
+
+    if (documentType !== "DNI" || !/^\d{8}$/.test(dni)) {
+      toast.showToast({
+        title: "DNI inválido",
+        description: "Ingresa los 8 dígitos del DNI.",
+        variant: "error",
+      });
+      return;
+    }
+    if (lastLookupDni === dni) return;
+
+    setIsLookingUpDni(true);
+    try {
+      const data = await salesApi.lookupDni(dni);
+      setNames(data.nombres ?? "");
+      setPaternal(data.apellidoPaterno ?? "");
+      setMaternal(data.apellidoMaterno ?? "");
+      setLastLookupDni(dni);
+      const remaining = data.usage?.remaining;
+      toast.showToast({
+        title: "Datos encontrados",
+        description:
+          remaining !== undefined
+            ? `Te quedan ${remaining} consultas de tu plan`
+            : undefined,
+        variant: "success",
+      });
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo consultar el DNI",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsLookingUpDni(false);
     }
   };
 
@@ -444,16 +490,37 @@ export function ShalomRegisterModal({
                 </select>
                 <input
                   value={documentNumber}
-                  onChange={(event) =>
-                    setDocumentNumber(
-                      event.target.value.replace(/\D/g, "").slice(0, 12),
-                    )
-                  }
+                  onChange={(event) => {
+                    const value = event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 12);
+                    setDocumentNumber(value);
+                    if (value !== lastLookupDni) setLastLookupDni(null);
+                  }}
                   inputMode="numeric"
                   placeholder="Número de documento"
                   aria-label="Número de documento del destinatario"
                   className="h-11 w-full bg-transparent text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)]"
                 />
+                <button
+                  type="button"
+                  onClick={() => void lookupDni()}
+                  disabled={
+                    isLookingUpDni ||
+                    documentType !== "DNI" ||
+                    documentNumber.length !== 8 ||
+                    lastLookupDni === documentNumber
+                  }
+                  aria-label="Buscar DNI"
+                  title="Buscar en RENIEC (consume 1 consulta del plan)"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isLookingUpDni ? (
+                    <SpinnerGapIcon size={16} className="animate-spin" />
+                  ) : (
+                    <MagnifyingGlassIcon size={17} />
+                  )}
+                </button>
               </div>
             </label>
             <TextField
