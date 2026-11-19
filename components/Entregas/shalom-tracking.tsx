@@ -126,7 +126,12 @@ export function ShalomMiniProgress({
   );
 
   // Sin orden de Shalom el avance no es real: se muestra difuminado.
+  // Solo aplica a envios donde ya se intento registrar (en espera/error).
   if (!envio.shalomOrden) {
+    if (!envio.shalomJobId && !envio.shalomEstado) {
+      return null;
+    }
+
     return (
       <div className="relative flex items-start rounded-lg px-1 py-0.5">
         <div
