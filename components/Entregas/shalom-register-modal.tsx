@@ -15,7 +15,6 @@ import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   salesApi,
-  type ShalomExportSettings,
   type ShalomOrigin,
   type ShalomPackageType,
   type VentaResponse,
@@ -68,8 +67,8 @@ export function ShalomRegisterModal({
   const [paternal, setPaternal] = useState("");
   const [maternal, setMaternal] = useState("");
   const [phone, setPhone] = useState("");
-  const [settings, setSettings] = useState<ShalomExportSettings | null>(null);
   const [origin, setOrigin] = useState("");
+  const [originPickerOpen, setOriginPickerOpen] = useState(false);
   const [originQuery, setOriginQuery] = useState("");
   const [debouncedOriginQuery, setDebouncedOriginQuery] = useState("");
   const [origins, setOrigins] = useState<ShalomOrigin[]>([]);
@@ -77,7 +76,7 @@ export function ShalomRegisterModal({
   const [isLoadingOrigins, setIsLoadingOrigins] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const needsOrigin = Boolean(isOpen) && !settings?.origen && !origin;
+  const needsOrigin = Boolean(isOpen) && (!origin || originPickerOpen);
   const keyIssue = securityKey ? securityKeyIssue(securityKey) : null;
 
   useEffect(() => {
@@ -95,21 +94,19 @@ export function ShalomRegisterModal({
     setMaternal(nameParts.maternal);
     setPhone(sale?.envio?.celular ?? "");
     setOrigin("");
+    setOriginPickerOpen(false);
     setOriginQuery("");
     setDebouncedOriginQuery("");
-    setSettings(null);
     setIsLoadingSettings(true);
 
     salesApi
       .getShalomExportSettings()
       .then((response) => {
         if (!isOpen) return;
-        setSettings(response);
         setOrigin(response?.origen ?? "");
       })
       .catch(() => {
         if (!isOpen) return;
-        setSettings(null);
       })
       .finally(() => {
         if (isOpen) setIsLoadingSettings(false);
@@ -196,7 +193,7 @@ export function ShalomRegisterModal({
       return;
     }
 
-    if (!settings?.origen && !origin.trim()) {
+    if (!origin.trim()) {
       toast.showToast({
         title: "Falta la agencia de origen",
         description: "Selecciona desde qué agencia de Shalom sale el envío.",
@@ -448,16 +445,29 @@ export function ShalomRegisterModal({
           />
         </div>
 
-        {isLoadingSettings ? (
-          <div className="flex items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
-            <SpinnerGapIcon size={14} className="animate-spin" />
-            Revisando la agencia de origen…
-          </div>
-        ) : needsOrigin ? (
-          <div>
-            <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
               Agencia de origen
             </span>
+            {origin && !needsOrigin ? (
+              <button
+                type="button"
+                onClick={() => setOriginPickerOpen(true)}
+                className="text-[11px] font-circular-bold text-[var(--color-primary)]"
+              >
+                Cambiar
+              </button>
+            ) : null}
+          </div>
+
+          {isLoadingSettings ? (
+            <div className="flex items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+              <SpinnerGapIcon size={14} className="animate-spin" />
+              Revisando la agencia de origen…
+            </div>
+          ) : needsOrigin ? (
+            <>
             <div className="relative">
               <MagnifyingGlassIcon
                 size={17}
@@ -489,7 +499,10 @@ export function ShalomRegisterModal({
                     <button
                       key={item.externalId}
                       type="button"
-                      onClick={() => setOrigin(item.nombre)}
+                      onClick={() => {
+                        setOrigin(item.nombre);
+                        setOriginPickerOpen(false);
+                      }}
                       aria-pressed={active}
                       className={cn(
                         "flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left transition-colors",
@@ -539,13 +552,25 @@ export function ShalomRegisterModal({
                 })
               )}
             </div>
-          </div>
-        ) : (
-          <p className="flex items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
-            <MapPinIcon size={15} weight="fill" className="shrink-0 text-[#dc2626]" />
-            Origen: {settings?.origen ?? origin}
-          </p>
-        )}
+            {origin ? (
+              <button
+                type="button"
+                onClick={() => setOriginPickerOpen(false)}
+                className="mt-2 text-[11px] font-circular-bold text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]"
+              >
+                Mantener {origin}
+              </button>
+            ) : null}
+            </>
+          ) : (
+            <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3 py-2.5">
+              <MapPinIcon size={16} weight="fill" className="shrink-0 text-[#dc2626]" />
+              <span className="min-w-0 flex-1 truncate text-sm font-circular-bold text-[var(--color-text)]">
+                {origin}
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3 pt-1">
           <button
