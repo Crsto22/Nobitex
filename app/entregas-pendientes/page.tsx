@@ -30,12 +30,14 @@ import {
   SpinnerGapIcon,
   StorefrontIcon,
   TruckIcon,
+  WarningOctagonIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ShalomExportSettingsModal } from "@/components/Entregas/shalom-export-settings-modal";
 import { ShalomRegisterModal } from "@/components/Entregas/shalom-register-modal";
+import { Modal } from "@/components/Modal/modal";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
@@ -1621,6 +1623,7 @@ function DeliveryRow({
 }) {
   const [isMarkingShipped, setIsMarkingShipped] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [shalomErrorOpen, setShalomErrorOpen] = useState(false);
   const toast = useSystemToast();
   const status = logisticsStatus(sale);
   const statusConfig = logisticsLabels[status];
@@ -1958,6 +1961,17 @@ function DeliveryRow({
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
+          {sale.envio?.shalomError ? (
+            <button
+              type="button"
+              onClick={() => setShalomErrorOpen(true)}
+              aria-label="Ver el error de Shalom"
+              title="Ver el error de Shalom"
+              className="inline-flex size-10 items-center justify-center rounded-[14px] bg-[#dc2626]/10 text-[#dc2626] transition-colors hover:bg-[#dc2626]/20"
+            >
+              <WarningOctagonIcon size={19} weight="fill" />
+            </button>
+          ) : null}
           {canRegisterShalom && canRegisterInShalom(sale) ? (
             <button
               type="button"
@@ -2030,6 +2044,41 @@ function DeliveryRow({
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={shalomErrorOpen}
+        onClose={() => setShalomErrorOpen(false)}
+        title="Shalom rechazó el registro"
+        description={sale.correlativo}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-[12px] bg-[#dc2626]/10 p-3 text-xs leading-5 text-[#b91c1c]">
+            {sale.envio?.shalomError}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShalomErrorOpen(false)}
+              className="h-10 flex-1 rounded-[12px] bg-[var(--color-input-bg)] text-xs font-circular-bold text-[var(--color-text)]"
+            >
+              Cerrar
+            </button>
+            {canRegisterShalom && canRegisterInShalom(sale) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setShalomErrorOpen(false);
+                  onRegisterShalom();
+                }}
+                className="h-10 flex-1 rounded-[12px] bg-[var(--color-primary)] text-xs font-circular-bold text-white hover:opacity-90"
+              >
+                Reintentar
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </Modal>
     </article>
   );
 }
@@ -2065,17 +2114,6 @@ function ShalomStatusLine({
       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[var(--color-input-bg)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-muted-foreground)]">
         <SpinnerGapIcon size={13} className="shrink-0 animate-spin" />
         Registrando en Shalom…
-      </span>
-    );
-  }
-
-  if (envio.shalomError) {
-    return (
-      <span
-        title={envio.shalomError}
-        className="min-w-0 max-w-full truncate text-[11px] font-bold text-[#b91c1c]"
-      >
-        Shalom: {envio.shalomError}
       </span>
     );
   }
