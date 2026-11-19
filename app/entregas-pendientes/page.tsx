@@ -2037,6 +2037,17 @@ function DeliveryRow({
               <WarningOctagonIcon size={19} weight="fill" />
             </button>
           ) : null}
+          {canPrintLabel(sale) ? (
+            <button
+              type="button"
+              onClick={onPrintLabel}
+              aria-label="Imprimir etiqueta"
+              title="Imprimir etiqueta"
+              className="inline-flex size-10 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
+            >
+              <PrinterIcon size={17} weight="bold" />
+            </button>
+          ) : null}
           {canRegisterShalom && canRegisterInShalom(sale) ? (
             <button
               type="button"
@@ -2057,17 +2068,6 @@ function DeliveryRow({
                 : sale.envio?.shalomError
                   ? "Reintentar en Shalom"
                   : "Registrar en Shalom"}
-            </button>
-          ) : null}
-          {canPrintLabel(sale) ? (
-            <button
-              type="button"
-              onClick={onPrintLabel}
-              aria-label="Imprimir etiqueta"
-              title="Imprimir etiqueta"
-              className="inline-flex size-10 items-center justify-center rounded-[14px] bg-[var(--color-input-bg)] text-[var(--color-text)] hover:bg-[var(--color-button-hover)]"
-            >
-              <PrinterIcon size={17} weight="bold" />
             </button>
           ) : null}
           {!isCourier ? (
