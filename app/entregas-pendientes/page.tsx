@@ -1979,42 +1979,46 @@ function DeliveryRow({
                     <ClockIcon size={20} weight="fill" />
                   </span>
                 )}
-                <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1">
-                  <div className="min-w-0">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2">
+                  <div className="min-w-0 flex-1 basis-40">
                     <p className="truncate text-[11px] font-black text-[var(--color-text)]">
                       {sale.envio.estado === "recibido"
                         ? sale.envio.agenciaNombre || "Agencia seleccionada"
                         : "Esperando datos del cliente"}
                     </p>
-                    <p className="flex items-center gap-1 truncate text-[10px] text-[var(--color-muted-foreground)]">
-                      <MapPinIcon size={11} />
-                      {sale.envio.estado === "recibido"
-                        ? [
-                            sale.envio.agenciaDistrito,
-                            sale.envio.agenciaProvincia,
-                            sale.envio.agenciaDepartamento,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")
-                        : canManageLink
-                          ? "Comparte o revisa el enlace de envío"
-                          : "Esperando datos del cliente"}
+                    <p className="flex min-w-0 items-center gap-1 text-[10px] text-[var(--color-muted-foreground)]">
+                      <MapPinIcon size={11} className="shrink-0" />
+                      <span className="truncate">
+                        {sale.envio.estado === "recibido"
+                          ? [
+                              sale.envio.agenciaDistrito,
+                              sale.envio.agenciaProvincia,
+                              sale.envio.agenciaDepartamento,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")
+                          : canManageLink
+                            ? "Comparte o revisa el enlace de envío"
+                            : "Esperando datos del cliente"}
+                      </span>
                     </p>
                   </div>
                   {sale.envio.agencia === "SHALOM" ? (
-                    sale.envio.shalomOrden ? (
-                      <ShalomMiniProgress
-                        publicId={sale.publicId}
-                        correlativo={sale.correlativo}
-                        envio={sale.envio}
-                        onRefreshed={onMarkShipped}
-                      />
-                    ) : (
-                      <ShalomStatusLine
-                        envio={sale.envio}
-                        pending={shalomPending}
-                      />
-                    )
+                    <div className="shrink-0">
+                      {sale.envio.shalomOrden ? (
+                        <ShalomMiniProgress
+                          publicId={sale.publicId}
+                          correlativo={sale.correlativo}
+                          envio={sale.envio}
+                          onRefreshed={onMarkShipped}
+                        />
+                      ) : (
+                        <ShalomStatusLine
+                          envio={sale.envio}
+                          pending={shalomPending}
+                        />
+                      )}
+                    </div>
                   ) : null}
                 </div>
               </div>

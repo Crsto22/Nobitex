@@ -239,6 +239,7 @@ export type SaleShippingDetails = {
   shalomProgreso: number | null;
   shalomTimeline: ShalomTrackingStep[] | null;
   shalomOrden: string | null;
+  shalomOrigen: string | null;
   shalomCodigo: string | null;
   shalomMonto: string | null;
   shalomError: string | null;

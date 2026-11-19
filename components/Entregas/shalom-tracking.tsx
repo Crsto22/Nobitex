@@ -217,6 +217,41 @@ function ShalomTimelineModal({
       }`}
       size="xl"
     >
+      <div className="mb-5 grid gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+        <div className="min-w-0">
+          <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+            Origen
+          </p>
+          <p
+            className="truncate text-sm font-circular-bold text-[var(--color-text)]"
+            title={envio.shalomOrigen ?? undefined}
+          >
+            {envio.shalomOrigen ?? "No registrado"}
+          </p>
+        </div>
+        <div className="hidden items-center gap-1 sm:flex">
+          <span className="size-2 rounded-full border-2 border-[#dc2626]" />
+          <span className="h-0 w-6 border-t-2 border-dashed border-[#dc2626]/40" />
+          <span className="size-2 rounded-full bg-[#dc2626]" />
+        </div>
+        <div className="min-w-0 sm:text-right">
+          <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+            Destino
+          </p>
+          <p
+            className="truncate text-sm font-circular-bold text-[var(--color-text)]"
+            title={envio.agenciaNombre ?? undefined}
+          >
+            {envio.agenciaNombre ?? "Agencia seleccionada"}
+          </p>
+          <p className="truncate text-[10px] text-[var(--color-muted-foreground)]">
+            {[envio.agenciaDistrito, envio.agenciaProvincia, envio.agenciaDepartamento]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        </div>
+      </div>
+
       <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div>
           <p className="mb-3 text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
