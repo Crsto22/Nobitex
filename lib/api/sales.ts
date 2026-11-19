@@ -229,6 +229,13 @@ export type SaleShippingDetails = {
   recibidoAt: string | null;
   despachadoAt: string | null;
   entregadoAt: string | null;
+  shalomJobId: string | null;
+  shalomEstado: string | null;
+  shalomOrden: string | null;
+  shalomCodigo: string | null;
+  shalomMonto: string | null;
+  shalomError: string | null;
+  shalomRegistradoAt: string | null;
   incidencias: Array<{
     publicId: string;
     motivo: string;
@@ -560,6 +567,13 @@ export type RegisterShalomPayload = {
   packageType?: ShalomPackageType;
   extraSecurity?: boolean;
   cashOnDelivery?: boolean;
+  documentType?: "DNI" | "CE";
+  recipientName?: string;
+  recipientPaternalLastName?: string;
+  recipientMaternalLastName?: string;
+  recipientPhone?: string;
+  /** Agencia de origen elegida en el modal; se recuerda para la empresa. */
+  originAgency?: string;
 };
 
 export type RegisterShalomResponse = {

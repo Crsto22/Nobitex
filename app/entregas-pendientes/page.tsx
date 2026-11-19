@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import {
   ArrowsClockwiseIcon,
   CalendarIcon,
@@ -34,6 +35,7 @@ import {
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ShalomExportSettingsModal } from "@/components/Entregas/shalom-export-settings-modal";
+import { ShalomRegisterModal } from "@/components/Entregas/shalom-register-modal";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
@@ -53,8 +55,11 @@ import {
   type SaleShippingDetails,
   type SaleShippingLogisticsStatus,
   type ShalomExportSettings,
+  type ShalomOrderStatusResponse,
+  type ShalomPackageType,
   type VentaResponse,
 } from "@/lib/api/sales";
+import { shalomProApi } from "@/lib/api/shalom-pro";
 import { cn } from "@/lib/utils";
 import { downloadBlob } from "@/lib/utils/download";
 
@@ -73,6 +78,14 @@ type DateRangePreset =
 
 const pageSize = 20;
 const MAX_SELECTED_LABELS = 100;
+const SHALOM_PACKAGE_TYPES: ShalomPackageType[] = [
+  "SOBRE",
+  "PAQUETE XXS",
+  "PAQUETE XS",
+  "PAQUETE S",
+  "PAQUETE M",
+  "PAQUETE L",
+];
 
 const emptyDeliveryCounts: DeliveryCounts = {
   todos: 0,
@@ -267,6 +280,37 @@ function serviceDestination(sale: VentaResponse) {
   return sale.envio?.agenciaNombre || "Agencia seleccionada";
 }
 
+const SHALOM_TERMINAL_STATES = new Set([
+  "COMPLETED",
+  "DEAD",
+  "FAILED",
+  "REGISTRADO",
+  "ERROR",
+]);
+
+function shalomInProgress(envio: SaleShippingDetails | null | undefined) {
+  const estado = envio?.shalomEstado;
+  if (!estado) return false;
+  return !SHALOM_TERMINAL_STATES.has(estado);
+}
+
+/** El job termino pero la orden no llego a Nuvex (webhook perdido). */
+function shalomNeedsSync(envio: SaleShippingDetails | null | undefined) {
+  if (!envio?.shalomJobId || envio.shalomOrden) return false;
+  return envio.shalomEstado === "COMPLETED" || envio.shalomEstado === "REGISTRADO";
+}
+
+function canRegisterInShalom(sale: VentaResponse) {
+  const envio = sale.envio;
+  if (!envio || envio.agencia !== "SHALOM") return false;
+  if (envio.estado !== "recibido") return false;
+  if (envio.shalomOrden || shalomInProgress(envio)) return false;
+  return (
+    envio.estadoLogistico === "POR_PREPARAR" ||
+    envio.estadoLogistico === "POR_DESPACHAR"
+  );
+}
+
 export default function DeliveriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("courier");
   const [activeTab, setActiveTab] = useState<PageTab>("pendiente");
@@ -323,6 +367,12 @@ export default function DeliveriesPage() {
   const { user } = useAuth();
   const canUseShipping =
     user?.moduleKeys?.includes("envios-config") ?? false;
+  const canUseShalom = user?.moduleKeys?.includes("shalom-pro") ?? false;
+  const [shalomSale, setShalomSale] = useState<VentaResponse | null>(null);
+  const [shalomConnected, setShalomConnected] = useState(false);
+  const [shalomPackage, setShalomPackage] =
+    useState<ShalomPackageType>("PAQUETE S");
+  const [shalomPolling, setShalomPolling] = useState<string[]>([]);
 
   const dateFilter = useMemo(() => {
     const empty = {
@@ -490,6 +540,130 @@ export default function DeliveriesPage() {
       setPage(1);
     }
   }, [loadDeliveries, page]);
+
+  const applyShalomStatus = useCallback(
+    (publicId: string, status: ShalomOrderStatusResponse) => {
+      setSales((current) =>
+        current.map((sale) => {
+          if (sale.publicId !== publicId || !sale.envio) return sale;
+          return {
+            ...sale,
+            envio: {
+              ...sale.envio,
+              shalomJobId: status.jobId,
+              shalomEstado: status.estado,
+              shalomOrden: status.orden,
+              shalomCodigo: status.codigo,
+              shalomMonto: status.monto === null ? null : String(status.monto),
+              shalomError: status.error,
+              shalomRegistradoAt: status.registradoAt,
+              estadoLogistico:
+                status.estadoLogistico as SaleShippingLogisticsStatus,
+            },
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!canUseShalom) return;
+    let active = true;
+
+    shalomProApi
+      .status()
+      .then((status) => {
+        if (!active) return;
+        setShalomConnected(status.connected);
+        const packageType = status.defaultPackageType as
+          | ShalomPackageType
+          | null;
+        if (packageType && SHALOM_PACKAGE_TYPES.includes(packageType)) {
+          setShalomPackage(packageType);
+        }
+      })
+      .catch(() => {
+        if (active) setShalomConnected(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [canUseShalom]);
+
+  useEffect(() => {
+    if (shalomPolling.length === 0) return;
+
+    let active = true;
+    const poll = async () => {
+      for (const publicId of shalomPolling) {
+        try {
+          const status = await salesApi.syncShalom(publicId);
+          if (!active) return;
+          applyShalomStatus(publicId, status);
+
+          if (status.orden) {
+            setShalomPolling((current) =>
+              current.filter((id) => id !== publicId),
+            );
+            toast.showToast({
+              title: "Registrado en Shalom",
+              description: `Orden ${status.orden}${
+                status.codigo ? ` · Código ${status.codigo}` : ""
+              }`,
+              variant: "success",
+            });
+            refreshDeliveries();
+          } else if (
+            status.estado &&
+            ["DEAD", "FAILED", "ERROR"].includes(status.estado)
+          ) {
+            setShalomPolling((current) =>
+              current.filter((id) => id !== publicId),
+            );
+            toast.showToast({
+              title: "Shalom rechazó el registro",
+              description:
+                status.error ?? "Revisa los datos e intenta nuevamente.",
+              variant: "error",
+            });
+            refreshDeliveries();
+          }
+        } catch {
+          // Se reintenta en el siguiente ciclo.
+        }
+      }
+    };
+
+    void poll();
+    const interval = window.setInterval(() => {
+      void poll();
+    }, 5000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [applyShalomStatus, refreshDeliveries, shalomPolling, toast]);
+
+  // Retoma el seguimiento de jobs en curso (por ejemplo, tras recargar la pagina).
+  useEffect(() => {
+    if (!canUseShalom) return;
+    const inFlight = sales
+      .filter((sale) => shalomInProgress(sale.envio))
+      .map((sale) => sale.publicId);
+    if (inFlight.length === 0) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShalomPolling((current) => {
+      const next = [...current];
+      for (const publicId of inFlight) {
+        if (!next.includes(publicId)) next.push(publicId);
+      }
+      return next.length === current.length ? current : next;
+    });
+  }, [canUseShalom, sales]);
 
   const updateShippingLocally = useCallback(
     (saleId: string, shipping: SaleShippingDetails) => {
@@ -1180,6 +1354,19 @@ export default function DeliveriesPage() {
                 }
                 onPrintLabel={() => setLabelSales([sale])}
                 dateField={dateFilterType}
+                canRegisterShalom={canUseShalom && shalomConnected}
+                isShalomPolling={shalomPolling.includes(sale.publicId)}
+                onRegisterShalom={() => {
+                  if (shalomNeedsSync(sale.envio)) {
+                    setShalomPolling((current) =>
+                      current.includes(sale.publicId)
+                        ? current
+                        : [...current, sale.publicId],
+                    );
+                    return;
+                  }
+                  setShalomSale(sale);
+                }}
               />
             ))
           )}
@@ -1311,6 +1498,17 @@ export default function DeliveriesPage() {
         onClose={() => setShalomSettingsOpen(false)}
         onSaved={(saved) => setShalomSettings(saved)}
       />
+      <ShalomRegisterModal
+        isOpen={Boolean(shalomSale)}
+        sale={shalomSale}
+        defaultPackageType={shalomPackage}
+        onClose={() => setShalomSale(null)}
+        onRegistered={(publicId) =>
+          setShalomPolling((current) =>
+            current.includes(publicId) ? current : [...current, publicId],
+          )
+        }
+      />
     </DashboardShell>
   );
 }
@@ -1403,6 +1601,9 @@ function DeliveryRow({
   onSelectedChange,
   onPrintLabel,
   dateField,
+  canRegisterShalom,
+  isShalomPolling,
+  onRegisterShalom,
 }: {
   sale: VentaResponse;
   canManageLink: boolean;
@@ -1414,6 +1615,9 @@ function DeliveryRow({
   onSelectedChange: (selected: boolean) => void;
   onPrintLabel: () => void;
   dateField: DateFilterType;
+  canRegisterShalom: boolean;
+  isShalomPolling: boolean;
+  onRegisterShalom: () => void;
 }) {
   const [isMarkingShipped, setIsMarkingShipped] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -1441,6 +1645,7 @@ function DeliveryRow({
     : sale.cliente?.numeroDocumento
       ? `${documentLabel || "DOC"} ${sale.cliente.numeroDocumento}`
       : null;
+  const shalomPending = isShalomPolling || shalomInProgress(sale.envio);
 
   const markShipped = async () => {
     if (isMarkingShipped) return;
@@ -1726,6 +1931,12 @@ function DeliveryRow({
                           : "Esperando datos del cliente"}
                     </p>
                   </div>
+                  {sale.envio.agencia === "SHALOM" ? (
+                    <ShalomStatusLine
+                      envio={sale.envio}
+                      pending={shalomPending}
+                    />
+                  ) : null}
                 </div>
               </div>
             )
@@ -1747,6 +1958,28 @@ function DeliveryRow({
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
+          {canRegisterShalom && canRegisterInShalom(sale) ? (
+            <button
+              type="button"
+              onClick={onRegisterShalom}
+              title="Registrar el envío en Shalom PRO"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[#dc2626] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:bg-[#b91c1c]"
+            >
+              <Image
+                src="/envios/shalom.svg"
+                alt=""
+                width={16}
+                height={16}
+                unoptimized
+                className="size-4 shrink-0 rounded-[4px]"
+              />
+              {shalomNeedsSync(sale.envio)
+                ? "Sincronizar Shalom"
+                : sale.envio?.shalomError
+                  ? "Reintentar en Shalom"
+                  : "Registrar en Shalom"}
+            </button>
+          ) : null}
           {canPrintLabel(sale) ? (
             <button
               type="button"
@@ -1799,6 +2032,55 @@ function DeliveryRow({
       </div>
     </article>
   );
+}
+
+function ShalomStatusLine({
+  envio,
+  pending,
+}: {
+  envio: SaleShippingDetails;
+  pending: boolean;
+}) {
+  if (envio.shalomOrden) {
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#dc2626]/10 px-2.5 py-1 text-[11px] font-bold text-[#b91c1c]">
+        <Image
+          src="/envios/shalom.svg"
+          alt=""
+          width={14}
+          height={14}
+          unoptimized
+          className="size-3.5 shrink-0 rounded-[3px]"
+        />
+        <span className="truncate">
+          Orden {envio.shalomOrden}
+          {envio.shalomCodigo ? ` · Código ${envio.shalomCodigo}` : ""}
+        </span>
+      </span>
+    );
+  }
+
+  if (pending) {
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[var(--color-input-bg)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-muted-foreground)]">
+        <SpinnerGapIcon size={13} className="shrink-0 animate-spin" />
+        Registrando en Shalom…
+      </span>
+    );
+  }
+
+  if (envio.shalomError) {
+    return (
+      <span
+        title={envio.shalomError}
+        className="min-w-0 max-w-full truncate text-[11px] font-bold text-[#b91c1c]"
+      >
+        Shalom: {envio.shalomError}
+      </span>
+    );
+  }
+
+  return null;
 }
 
 function InfoItem({
