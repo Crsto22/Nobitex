@@ -311,11 +311,7 @@ export default function ShalomProPage() {
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="rounded-2xl bg-[var(--color-card)] p-4 sm:p-5">
-            <span className="inline-flex items-center rounded-full bg-[#dc2626] px-3 py-1 text-[11px] font-circular-bold uppercase tracking-wide text-white">
-              Shalom
-            </span>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <label className="min-w-0">
                 <span className="mb-1.5 block text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
                   Correo de Shalom
