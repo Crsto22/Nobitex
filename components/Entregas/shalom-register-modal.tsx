@@ -154,10 +154,11 @@ export function ShalomRegisterModal({
       return;
     }
 
-    if (documentType !== "DNI" && (!names.trim() || !paternal.trim())) {
+    if (!names.trim() || !paternal.trim() || !maternal.trim()) {
       toast.showToast({
         title: "Completa el destinatario",
-        description: "Para CE, Shalom exige nombres y apellidos.",
+        description:
+          "Shalom exige nombres y ambos apellidos cuando no reconoce el documento.",
         variant: "error",
       });
       return;
@@ -307,7 +308,7 @@ export function ShalomRegisterModal({
               label="Apellido materno"
               value={maternal}
               onChange={setMaternal}
-              placeholder="Opcional"
+              placeholder="Apellido materno"
             />
             <TextField
               label="Celular"
@@ -318,8 +319,8 @@ export function ShalomRegisterModal({
           </div>
           <p className="mt-2 flex items-start gap-1.5 text-[10px] leading-4 text-[var(--color-muted-foreground)]">
             <InfoIcon size={13} className="mt-0.5 shrink-0" />
-            Shalom autocompleta los datos desde el documento; si no lo reconoce,
-            usa estos campos.
+            Nombres y ambos apellidos son obligatorios: Shalom los pide cuando
+            no reconoce el documento.
           </p>
         </div>
 
@@ -537,7 +538,8 @@ function splitFullName(full: string) {
     return { names: parts[0] ?? "", paternal: "", maternal: "" };
   }
   if (parts.length === 2) {
-    return { names: parts[0] ?? "", paternal: parts[1] ?? "", maternal: "" };
+    // Ambiguo: "Cristhofer Leonardo" suele ser nombre + segundo nombre.
+    return { names: parts.join(" "), paternal: "", maternal: "" };
   }
   if (parts.length === 3) {
     return {
