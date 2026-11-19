@@ -22,13 +22,17 @@ import {
 import { securityKeyIssue } from "@/lib/shalom/security-key";
 import { cn } from "@/lib/utils";
 
-const PACKAGE_TYPES: ShalomPackageType[] = [
-  "SOBRE",
-  "PAQUETE XXS",
-  "PAQUETE XS",
-  "PAQUETE S",
-  "PAQUETE M",
-  "PAQUETE L",
+const PACKAGE_OPTIONS: Array<{
+  type: ShalomPackageType;
+  label: string;
+  detail: string;
+}> = [
+  { type: "SOBRE", label: "Sobre", detail: "Documento A4" },
+  { type: "PAQUETE XXS", label: "XXS", detail: "15×10×10 cm · 250 g" },
+  { type: "PAQUETE XS", label: "XS", detail: "20×15×12 cm · 500 g" },
+  { type: "PAQUETE S", label: "S", detail: "20×13×12 cm · 2 kg" },
+  { type: "PAQUETE M", label: "M", detail: "24×30×20 cm · 5 kg" },
+  { type: "PAQUETE L", label: "L", detail: "42×30×23 cm · 10 kg" },
 ];
 
 type ShalomRegisterModalProps = {
@@ -144,6 +148,18 @@ export function ShalomRegisterModal({
     };
   }, [isOpen, needsOrigin, debouncedOriginQuery]);
 
+  const generatePin = () => {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const buffer = new Uint32Array(1);
+      crypto.getRandomValues(buffer);
+      const candidate = String(1000 + (buffer[0] % 9000));
+      if (!securityKeyIssue(candidate)) {
+        setSecurityKey(candidate);
+        return;
+      }
+    }
+  };
+
   const submit = async () => {
     if (!sale || isSaving) return;
 
@@ -230,74 +246,39 @@ export function ShalomRegisterModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Registrar en Shalom"
-      description={
-        sale
-          ? `${sale.correlativo} · ${sale.envio?.agenciaNombre ?? "Agencia de destino"}`
-          : undefined
-      }
+      description={sale ? `${sale.correlativo} · ${customerNameOf(sale)}` : undefined}
       size="lg"
     >
       <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <label className="min-w-0">
-            <span className="mb-1.5 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-              Clave de seguridad
-            </span>
-            <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3">
-              <KeyIcon
-                size={16}
-                className="shrink-0 text-[var(--color-muted-foreground)]"
-              />
-              <input
-                value={securityKey}
-                onChange={(event) =>
-                  setSecurityKey(event.target.value.replace(/\D/g, "").slice(0, 4))
-                }
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="4 dígitos"
-                aria-label="Clave de seguridad de Shalom"
-                className="h-11 w-full bg-transparent text-sm tracking-[0.35em] text-[var(--color-input-text)] outline-none placeholder:tracking-normal placeholder:text-[var(--color-placeholder)]"
-              />
-            </div>
-            <span className="mt-1 block text-[10px] leading-4 text-[var(--color-muted-foreground)]">
-              {keyIssue ?? "La define el vendedor. Shalom rechaza 1234 y 1111."}
-            </span>
-          </label>
-
-          <label className="min-w-0">
-            <span className="mb-1.5 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-              Tipo de paquete
-            </span>
-            <select
-              value={packageType}
-              onChange={(event) =>
-                setPackageType(event.target.value as ShalomPackageType)
-              }
-              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-input-text)] outline-none"
+        <div className="flex items-start gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3">
+          <MapPinIcon
+            size={16}
+            weight="fill"
+            className="mt-0.5 shrink-0 text-[#dc2626]"
+          />
+          <div className="min-w-0">
+            <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+              Agencia de destino
+            </p>
+            <p
+              className="truncate text-sm font-circular-bold text-[var(--color-text)]"
+              title={sale?.envio?.agenciaNombre ?? undefined}
             >
-              {PACKAGE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2">
-          <ToggleOption
-            label="Sobreprotegido"
-            description="Servicio adicional de Shalom"
-            active={extraSecurity}
-            onToggle={() => setExtraSecurity((current) => !current)}
-          />
-          <ToggleOption
-            label="Cobro en destino"
-            description="El cliente paga al recibir"
-            active={cashOnDelivery}
-            onToggle={() => setCashOnDelivery((current) => !current)}
-          />
+              {sale?.envio?.agenciaNombre ?? "Agencia seleccionada"}
+            </p>
+            <p className="truncate text-[11px] text-[var(--color-muted-foreground)]">
+              {[
+                sale?.envio?.agenciaDistrito,
+                sale?.envio?.agenciaProvincia,
+                sale?.envio?.agenciaDepartamento,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "La eligió el cliente en el enlace de envío"}
+            </p>
+          </div>
+          <span className="ml-auto shrink-0 rounded-full bg-[var(--color-card)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
+            Aéreo según destino
+          </span>
         </div>
 
         <div>
@@ -365,6 +346,102 @@ export function ShalomRegisterModal({
             Corrige el documento si la venta lo tiene mal. Nombres y ambos
             apellidos son obligatorios cuando Shalom no reconoce el documento.
           </p>
+        </div>
+
+        <div>
+          <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+            Tamaño del paquete
+          </span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {PACKAGE_OPTIONS.map((option) => {
+              const active = packageType === option.type;
+              return (
+                <button
+                  key={option.type}
+                  type="button"
+                  onClick={() => setPackageType(option.type)}
+                  aria-pressed={active}
+                  className={cn(
+                    "rounded-[14px] border-2 px-3 py-2.5 text-left transition-colors",
+                    active
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
+                      : "border-[var(--color-border)] bg-[var(--color-card)] hover:border-[var(--color-primary)]/40",
+                  )}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span
+                      className={cn(
+                        "truncate text-xs font-circular-bold",
+                        active
+                          ? "text-[var(--color-primary)]"
+                          : "text-[var(--color-text)]",
+                      )}
+                    >
+                      {option.label}
+                    </span>
+                    {active ? (
+                      <CheckCircleIcon
+                        size={15}
+                        weight="fill"
+                        className="shrink-0 text-[#059669]"
+                      />
+                    ) : null}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[10px] leading-tight text-[var(--color-muted-foreground)]">
+                    {option.detail}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+            Clave de retiro del cliente
+          </span>
+          <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3">
+            <KeyIcon
+              size={16}
+              className="shrink-0 text-[var(--color-muted-foreground)]"
+            />
+            <input
+              value={securityKey}
+              onChange={(event) =>
+                setSecurityKey(event.target.value.replace(/\D/g, "").slice(0, 4))
+              }
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="4 dígitos"
+              aria-label="Clave de retiro de Shalom"
+              className="h-11 w-full bg-transparent text-sm tracking-[0.35em] text-[var(--color-input-text)] outline-none placeholder:tracking-normal placeholder:text-[var(--color-placeholder)]"
+            />
+            <button
+              type="button"
+              onClick={generatePin}
+              className="shrink-0 rounded-full bg-[var(--color-card)] px-3 py-1.5 text-[11px] font-circular-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-button-hover)]"
+            >
+              Generar PIN
+            </button>
+          </div>
+          <span className="mt-1 block text-[10px] leading-4 text-[var(--color-muted-foreground)]">
+            {keyIssue ?? "La define el vendedor. Shalom rechaza 1234 y 1111."}
+          </span>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <ToggleOption
+            label="Sobreprotegido"
+            description="Servicio adicional de Shalom"
+            active={extraSecurity}
+            onToggle={() => setExtraSecurity((current) => !current)}
+          />
+          <ToggleOption
+            label="Cobro seguro"
+            description="Shalom cobra al destinatario al entregar"
+            active={cashOnDelivery}
+            onToggle={() => setCashOnDelivery((current) => !current)}
+          />
         </div>
 
         {isLoadingSettings ? (
@@ -571,6 +648,10 @@ function ToggleOption({
       </span>
     </button>
   );
+}
+
+function customerNameOf(sale: VentaResponse) {
+  return sale.envio?.nombreCompleto?.trim() || sale.cliente?.nombre || "Cliente";
 }
 
 /** Reparte "Juan Pérez Gómez" en nombres y apellidos editables. */
