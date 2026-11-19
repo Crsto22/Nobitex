@@ -3,7 +3,9 @@
 import { Fragment, useState } from "react";
 import {
   ArrowsClockwiseIcon,
+  BarcodeIcon,
   CheckIcon,
+  HashIcon,
   WarningOctagonIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -223,11 +225,39 @@ function ShalomTimelineModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Rastreo de Shalom"
-      description={`${correlativo} · ${envio.shalomOrden ?? "Sin orden"}${
-        envio.shalomCodigo ? ` · Código ${envio.shalomCodigo}` : ""
-      }`}
+      description={correlativo}
       size="xl"
     >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {envio.shalomCodigo ? (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#dc2626]/10 px-3 py-1.5 text-xs font-circular-bold text-[#b91c1c] ring-1 ring-[#dc2626]/20"
+            title={`Código de seguimiento ${envio.shalomCodigo}`}
+          >
+            <BarcodeIcon size={15} weight="bold" className="shrink-0" />
+            Código {envio.shalomCodigo}
+          </span>
+        ) : null}
+        {envio.shalomOrden ? (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-input-bg)] px-3 py-1.5 text-xs font-circular-bold text-[var(--color-text)] ring-1 ring-[var(--color-border)]"
+            title={`Número de orden ${envio.shalomOrden}`}
+          >
+            <HashIcon
+              size={15}
+              weight="bold"
+              className="shrink-0 text-[var(--color-muted-foreground)]"
+            />
+            Orden {envio.shalomOrden}
+          </span>
+        ) : null}
+        {envio.shalomMonto ? (
+          <span className="inline-flex items-center rounded-full bg-[var(--color-input-bg)] px-3 py-1.5 text-xs font-circular-bold text-[var(--color-muted-foreground)] ring-1 ring-[var(--color-border)]">
+            S/ {Number(envio.shalomMonto).toFixed(2)}
+          </span>
+        ) : null}
+      </div>
+
       <div className="mb-5 grid gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
         <div className="min-w-0">
           <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
