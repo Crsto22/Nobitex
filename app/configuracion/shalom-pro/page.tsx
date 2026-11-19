@@ -205,7 +205,37 @@ export default function ShalomProPage() {
       headerParent={{ label: "Gestión de Envíos", href: "/entregas-pendientes" }}
     >
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
-        <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          {statusCards.map((card) => {
+            const Icon = card.icon;
+            const tone = TONE[card.tone];
+
+            return (
+              <div
+                key={card.label}
+                className="flex flex-col gap-4 rounded-2xl p-5 shadow-sm bg-[var(--color-sidebar-bg)]"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone.tile}`}
+                  >
+                    <Icon size={22} weight="fill" className={tone.color} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--color-muted-foreground)]">
+                      {card.label}
+                    </p>
+                    <p className="truncate text-xl leading-tight text-[var(--color-text)] font-circular-bold">
+                      {card.value}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-card)] p-4">
           <Image
             src="/envios/shalom.svg"
             alt="Shalom PRO"
@@ -239,38 +269,8 @@ export default function ShalomProPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-          {statusCards.map((card) => {
-            const Icon = card.icon;
-            const tone = TONE[card.tone];
-
-            return (
-              <div
-                key={card.label}
-                className="flex flex-col gap-4 rounded-2xl p-5 shadow-sm bg-[var(--color-sidebar-bg)]"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone.tile}`}
-                  >
-                    <Icon size={22} weight="fill" className={tone.color} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--color-muted-foreground)]">
-                      {card.label}
-                    </p>
-                    <p className="truncate text-xl leading-tight text-[var(--color-text)] font-circular-bold">
-                      {card.value}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 sm:p-5">
+          <div className="rounded-2xl bg-[var(--color-card)] p-4 sm:p-5">
             <h3 className="text-xs font-circular-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
               Credenciales
             </h3>
@@ -372,7 +372,7 @@ export default function ShalomProPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+            <div className="rounded-2xl bg-[var(--color-card)] p-4">
               <h3 className="text-xs font-circular-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
                 Cómo funciona
               </h3>
