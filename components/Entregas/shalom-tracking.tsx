@@ -94,59 +94,70 @@ export function ShalomMiniProgress({
             {isIncident ? "Incidencia" : "Anulado"}
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={() => setTimelineOpen(true)}
-            title={
-              envio.shalomEstadoLabel
-                ? `Shalom: ${envio.shalomEstadoLabel}`
-                : "Ver timeline de Shalom"
-            }
-            className="flex items-start rounded-lg px-1 py-0.5 hover:bg-[var(--color-button-hover)]"
-          >
-            {stages.map((label, index) => {
-              const done = index <= progress;
+          <>
+            <button
+              type="button"
+              onClick={() => setTimelineOpen(true)}
+              title={
+                envio.shalomEstadoLabel
+                  ? `Shalom: ${envio.shalomEstadoLabel}`
+                  : "Ver timeline de Shalom"
+              }
+              className="flex min-w-0 items-start rounded-lg px-1 py-0.5 hover:bg-[var(--color-button-hover)]"
+            >
+              {stages.map((label, index) => {
+                const done = index <= progress;
 
-              return (
-                <Fragment key={`${label}-${index}`}>
-                  {index > 0 ? (
-                    <span
-                      className={cn(
-                        "mx-1 mt-[7px] h-0.5 min-w-5 flex-1 sm:min-w-8",
-                        index <= progress
-                          ? "bg-[#dc2626]"
-                          : "bg-[var(--color-border)]",
-                      )}
-                    />
-                  ) : null}
-                  <span className="flex flex-col items-center gap-1.5">
-                    <span
-                      className={cn(
-                        "size-4 rounded-full border-2 transition-colors",
-                        done
-                          ? "border-[#dc2626] bg-[#dc2626]"
-                          : "border-[var(--color-border)] bg-transparent",
-                        index === progress
-                          ? "ring-4 ring-[#dc2626]/15"
-                          : "",
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "max-w-20 truncate text-[10px] leading-none sm:text-[11px]",
-                        index <= progress
-                          ? "font-circular-bold text-[#dc2626]"
-                          : "text-[var(--color-muted-foreground)]",
-                      )}
-                      title={label}
-                    >
-                      {label}
+                return (
+                  <Fragment key={`${label}-${index}`}>
+                    {index > 0 ? (
+                      <span
+                        className={cn(
+                          "mx-1 mt-[5px] h-0.5 min-w-3 flex-1 sm:mt-[7px] sm:min-w-8",
+                          index <= progress
+                            ? "bg-[#dc2626]"
+                            : "bg-[var(--color-border)]",
+                        )}
+                      />
+                    ) : null}
+                    <span className="flex flex-col items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "size-3 rounded-full border-2 transition-colors sm:size-4",
+                          done
+                            ? "border-[#dc2626] bg-[#dc2626]"
+                            : "border-[var(--color-border)] bg-transparent",
+                          index === progress
+                            ? "ring-2 ring-[#dc2626]/15 sm:ring-4"
+                            : "",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "hidden max-w-20 truncate text-[10px] leading-none sm:block",
+                          index <= progress
+                            ? "font-circular-bold text-[#dc2626]"
+                            : "text-[var(--color-muted-foreground)]",
+                        )}
+                        title={label}
+                      >
+                        {label}
+                      </span>
                     </span>
-                  </span>
-                </Fragment>
-              );
-            })}
-          </button>
+                  </Fragment>
+                );
+              })}
+            </button>
+            <span
+              className={cn(
+                "max-w-24 truncate text-[10px] leading-none sm:hidden",
+                isCanceled ? "text-[#b45309]" : "font-circular-bold text-[#dc2626]",
+              )}
+              title={envio.shalomEstadoLabel ?? undefined}
+            >
+              {envio.shalomEstadoLabel ?? stages[Math.min(progress, stages.length - 1)]}
+            </span>
+          </>
         )}
 
         <button
@@ -284,7 +295,7 @@ function ShalomTimelineModal({
                     />
                     <span
                       className={cn(
-                        "max-w-24 truncate text-xs",
+                        "hidden max-w-24 truncate text-xs sm:block",
                         index <= progress
                           ? "font-circular-bold text-[#dc2626]"
                           : "text-[var(--color-muted-foreground)]",
@@ -298,6 +309,9 @@ function ShalomTimelineModal({
               );
             })}
           </div>
+          <p className="mb-5 -mt-2 text-center text-xs font-circular-bold text-[#dc2626] sm:hidden">
+            {label}
+          </p>
 
           {isIncident || isCanceled ? (
             <div
