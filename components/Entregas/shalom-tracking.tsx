@@ -153,9 +153,9 @@ export function ShalomMiniProgress({
   if (notConfirmed) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="relative flex items-start rounded-lg px-1 py-0.5">
+        <div className="relative flex min-w-0 items-start rounded-lg px-1 py-0.5">
           <div
-            className="pointer-events-none select-none opacity-50 blur-[1.5px]"
+            className="flex pointer-events-none select-none items-start opacity-50 blur-[1.5px]"
             aria-hidden="true"
           >
             {stepper}
