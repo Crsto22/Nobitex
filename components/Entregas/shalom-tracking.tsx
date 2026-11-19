@@ -165,7 +165,7 @@ export function ShalomMiniProgress({
               {isShalomWaiting(envio.shalomEstado) ? (
                 <SpinnerGapIcon size={10} className="animate-spin" />
               ) : null}
-              Envío no confirmado
+              Llevar a la agencia
             </span>
           </span>
         </div>
