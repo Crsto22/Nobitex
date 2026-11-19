@@ -37,6 +37,7 @@ import {
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ShalomExportSettingsModal } from "@/components/Entregas/shalom-export-settings-modal";
 import { ShalomRegisterModal } from "@/components/Entregas/shalom-register-modal";
+import { ShalomTrackingCard } from "@/components/Entregas/shalom-tracking";
 import { Modal } from "@/components/Modal/modal";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";
 import { CalendarInput } from "@/components/ui/calendar-input";
@@ -1928,6 +1929,17 @@ function DeliveryRow({
         </span>
       </div>
 
+      {sale.envio?.shalomOrden ? (
+        <div className="px-4 pt-3">
+          <ShalomTrackingCard
+            publicId={sale.publicId}
+            correlativo={sale.correlativo}
+            envio={sale.envio}
+            onRefreshed={onMarkShipped}
+          />
+        </div>
+      ) : null}
+
       <div className="grid gap-4 border-t border-[var(--color-border)] px-4 py-3 lg:grid-cols-[minmax(300px,1.3fr)_auto] lg:items-center">
         <div className="min-w-0">
           {isCourier && sale.envio ? (
@@ -2157,26 +2169,7 @@ function ShalomStatusLine({
   envio: SaleShippingDetails;
   pending: boolean;
 }) {
-  if (envio.shalomOrden) {
-    return (
-      <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#dc2626]/10 px-2.5 py-1 text-[11px] font-bold text-[#b91c1c]">
-        <Image
-          src="/envios/shalom.svg"
-          alt=""
-          width={14}
-          height={14}
-          unoptimized
-          className="size-3.5 shrink-0 rounded-[3px]"
-        />
-        <span className="truncate">
-          Orden {envio.shalomOrden}
-          {envio.shalomCodigo ? ` · Código ${envio.shalomCodigo}` : ""}
-        </span>
-      </span>
-    );
-  }
-
-  if (pending) {
+  if (pending && !envio.shalomOrden) {
     return (
       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[var(--color-input-bg)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-muted-foreground)]">
         <SpinnerGapIcon size={13} className="shrink-0 animate-spin" />

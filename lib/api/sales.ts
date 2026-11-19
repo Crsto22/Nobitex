@@ -197,8 +197,12 @@ export type VentaDetalleResponse = {
   };
 };
 
-export type SaleShippingAgency = "SHALOM" | "OLVA";
-export type SaleShippingLogisticsStatus =
+export type ShalomTrackingStep = {
+  nombre: string;
+  activo: boolean;
+};
+
+export type SaleShippingAgency = "SHALOM" | "OLVA";export type SaleShippingLogisticsStatus =
   | "POR_PREPARAR"
   | "POR_DESPACHAR"
   | "EN_TRANSITO"
@@ -231,11 +235,15 @@ export type SaleShippingDetails = {
   entregadoAt: string | null;
   shalomJobId: string | null;
   shalomEstado: string | null;
+  shalomEstadoLabel: string | null;
+  shalomProgreso: number | null;
+  shalomTimeline: ShalomTrackingStep[] | null;
   shalomOrden: string | null;
   shalomCodigo: string | null;
   shalomMonto: string | null;
   shalomError: string | null;
   shalomRegistradoAt: string | null;
+  shalomSyncAt: string | null;
   incidencias: Array<{
     publicId: string;
     motivo: string;
@@ -600,6 +608,9 @@ export type ShalomOrderStatusResponse = {  jobId: string | null;
   codigo: string | null;
   monto: string | number | null;
   estado: string | null;
+  estadoLabel?: string | null;
+  progreso?: number | null;
+  timeline?: ShalomTrackingStep[] | null;
   error: string | null;
   registradoAt: string | null;
   syncAt: string | null;
@@ -865,6 +876,13 @@ export const salesApi = {
 
   lookupDni(dni: string) {
     return authFetch<DniLookupResponse>(`/sales/dni/${dni}`);
+  },
+
+  trackShalom(publicId: string) {
+    return authFetch<ShalomOrderStatusResponse>(
+      `/sales/${publicId}/shalom-track`,
+      { method: "POST" },
+    );
   },
 
   registerShalom(publicId: string, payload: RegisterShalomPayload) {
