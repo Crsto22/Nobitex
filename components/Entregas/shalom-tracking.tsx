@@ -15,7 +15,6 @@ import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   salesApi,
   type SaleShippingDetails,
-  type ShalomTrackingStep,
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
 
@@ -48,8 +47,9 @@ export function ShalomMiniProgress({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
 
-  const stages = resolveStages(envio);
+  const stages = resolveStages();
   const progress = resolveProgress(envio);
+  const currentLabel = resolveCurrentLabel(envio, stages, progress);
   const isCanceled = envio.shalomEstado === "ANULADO";
   const isIncident = envio.shalomEstado === "INCIDENCIA";
 
@@ -193,8 +193,7 @@ export function ShalomMiniProgress({
               )}
               title={envio.shalomEstadoLabel ?? undefined}
             >
-              {envio.shalomEstadoLabel ??
-                stages[Math.min(progress, stages.length - 1)]}
+              {currentLabel}
             </span>
           </>
         )}
@@ -222,6 +221,7 @@ export function ShalomMiniProgress({
         envio={envio}
         stages={stages}
         progress={progress}
+        currentLabel={currentLabel}
         isIncident={isIncident}
         isCanceled={isCanceled}
       />
@@ -236,6 +236,7 @@ function ShalomTimelineModal({
   envio,
   stages,
   progress,
+  currentLabel,
   isIncident,
   isCanceled,
 }: {
@@ -245,13 +246,11 @@ function ShalomTimelineModal({
   envio: SaleShippingDetails;
   stages: string[];
   progress: number;
+  currentLabel: string;
   isIncident: boolean;
   isCanceled: boolean;
 }) {
-  const label =
-    envio.shalomEstadoLabel ??
-    stages[Math.min(progress, stages.length - 1)] ??
-    "Registrado";
+  const label = currentLabel;
 
   const events = [...envio.historial]
     .filter((item) => /shalom/i.test(item.detalle ?? ""))
@@ -508,12 +507,27 @@ function isShalomWaiting(estado: string | null) {
 }
 
 /** Nombres reales del timeline de Shalom o nuestros estados por defecto. */
-function resolveStages(envio: SaleShippingDetails): string[] {
-  const timeline: ShalomTrackingStep[] | null = envio.shalomTimeline;
-  if (timeline && timeline.length > 0) {
-    return timeline.map((step) => step.nombre).slice(0, 4);
-  }
+function resolveStages(): string[] {
+  // Siempre nuestras 4 etapas: los nombres de Shalom ("En origen") confunden
+  // cuando la guia aun no fue recepcionada en la agencia.
   return [...DEFAULT_STAGES];
+}
+
+/**
+ * Texto del estado actual. Con progreso 0 la guia existe pero el paquete
+ * todavia no fue llevado a la agencia: "Envio no confirmado".
+ */
+function resolveCurrentLabel(
+  envio: SaleShippingDetails,
+  stages: string[],
+  progress: number,
+) {
+  if (progress === 0) return "Envío no confirmado";
+  return (
+    envio.shalomEstadoLabel ??
+    stages[Math.min(progress, stages.length - 1)] ??
+    "Registrado"
+  );
 }
 
 /** 0..3 segun el progreso real de Shalom. */
