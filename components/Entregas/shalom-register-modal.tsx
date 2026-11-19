@@ -248,7 +248,7 @@ export function ShalomRegisterModal({
       onClose={onClose}
       title="Registrar en Shalom"
       description={sale ? `${sale.correlativo} · ${customerNameOf(sale)}` : undefined}
-      size="lg"
+      size="xl"
     >
       <div className="space-y-4">
         <div className="flex items-start gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3">
@@ -282,11 +282,13 @@ export function ShalomRegisterModal({
           </span>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
         <div>
           <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
             Destinatario
           </span>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <label className="min-w-0">
               <span className="mb-1.5 block text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
                 Documento
@@ -348,12 +350,14 @@ export function ShalomRegisterModal({
             apellidos son obligatorios cuando Shalom no reconoce el documento.
           </p>
         </div>
+          </div>
 
+          <div className="space-y-4">
         <div>
           <span className="mb-2 block text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
             Tamaño del paquete
           </span>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2">
             {PACKAGE_OPTIONS.map((option) => {
               const active = packageType === option.type;
               return (
@@ -430,7 +434,7 @@ export function ShalomRegisterModal({
           </span>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2">
           <ToggleOption
             label="Sobreprotegido"
             description="Servicio adicional de Shalom"
@@ -443,6 +447,8 @@ export function ShalomRegisterModal({
             active={cashOnDelivery}
             onToggle={() => setCashOnDelivery((current) => !current)}
           />
+        </div>
+          </div>
         </div>
 
         <div>
