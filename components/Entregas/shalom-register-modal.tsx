@@ -242,6 +242,133 @@ export function ShalomRegisterModal({
     }
   };
 
+  const originSelector = (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+          Agencia de origen
+        </span>
+        {origin && !needsOrigin ? (
+          <button
+            type="button"
+            onClick={() => setOriginPickerOpen(true)}
+            className="text-[11px] font-circular-bold text-[var(--color-primary)]"
+          >
+            Cambiar
+          </button>
+        ) : null}
+      </div>
+
+      {isLoadingSettings ? (
+        <div className="flex items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+          <SpinnerGapIcon size={14} className="animate-spin" />
+          Revisando la agencia de origen…
+        </div>
+      ) : needsOrigin ? (
+        <>
+          <div className="relative">
+            <MagnifyingGlassIcon
+              size={17}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
+            />
+            <input
+              value={originQuery}
+              onChange={(event) => setOriginQuery(event.target.value)}
+              placeholder="Busca por código, agencia o distrito…"
+              aria-label="Buscar agencia de origen"
+              className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            />
+          </div>
+
+          <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+            {isLoadingOrigins ? (
+              <div className="flex items-center justify-center gap-2 rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-4 text-xs text-[var(--color-muted-foreground)]">
+                <SpinnerGapIcon size={15} className="animate-spin" />
+                Buscando agencias…
+              </div>
+            ) : origins.length === 0 ? (
+              <div className="rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-4 text-center text-xs text-[var(--color-muted-foreground)]">
+                No encontramos agencias para esta búsqueda.
+              </div>
+            ) : (
+              origins.map((item) => {
+                const active = origin === item.nombre;
+                return (
+                  <button
+                    key={item.externalId}
+                    type="button"
+                    onClick={() => {
+                      setOrigin(item.nombre);
+                      setOriginPickerOpen(false);
+                    }}
+                    aria-pressed={active}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left transition-colors",
+                      active
+                        ? "bg-[var(--color-primary)]/10"
+                        : "bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]",
+                    )}
+                  >
+                    <MapPinIcon
+                      size={16}
+                      weight="fill"
+                      className={cn(
+                        "shrink-0",
+                        active ? "text-[var(--color-primary)]" : "text-[#dc2626]",
+                      )}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "block truncate text-sm",
+                          active
+                            ? "font-circular-bold text-[var(--color-primary)]"
+                            : "text-[var(--color-text)]",
+                        )}
+                      >
+                        {item.nombre}
+                      </span>
+                      {item.departamento || item.provincia ? (
+                        <span className="block truncate text-[10px] text-[var(--color-muted-foreground)]">
+                          {[item.departamento, item.provincia, item.distrito]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      ) : null}
+                    </span>
+                    {active ? (
+                      <CheckCircleIcon
+                        size={17}
+                        weight="fill"
+                        className="shrink-0 text-[#059669]"
+                      />
+                    ) : null}
+                  </button>
+                );
+              })
+            )}
+          </div>
+          {origin ? (
+            <button
+              type="button"
+              onClick={() => setOriginPickerOpen(false)}
+              className="mt-2 text-[11px] font-circular-bold text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]"
+            >
+              Mantener {origin}
+            </button>
+          ) : null}
+        </>
+      ) : (
+        <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3 py-2.5">
+          <MapPinIcon size={16} weight="fill" className="shrink-0 text-[#dc2626]" />
+          <span className="min-w-0 flex-1 truncate text-sm font-circular-bold text-[var(--color-text)]">
+            {origin}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <Modal
       isOpen={isOpen}
@@ -251,35 +378,38 @@ export function ShalomRegisterModal({
       size="xl"
     >
       <div className="space-y-4">
-        <div className="flex items-start gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3">
-          <MapPinIcon
-            size={16}
-            weight="fill"
-            className="mt-0.5 shrink-0 text-[#dc2626]"
-          />
-          <div className="min-w-0">
-            <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-              Agencia de destino
-            </p>
-            <p
-              className="truncate text-sm font-circular-bold text-[var(--color-text)]"
-              title={sale?.envio?.agenciaNombre ?? undefined}
-            >
-              {sale?.envio?.agenciaNombre ?? "Agencia seleccionada"}
-            </p>
-            <p className="truncate text-[11px] text-[var(--color-muted-foreground)]">
-              {[
-                sale?.envio?.agenciaDistrito,
-                sale?.envio?.agenciaProvincia,
-                sale?.envio?.agenciaDepartamento,
-              ]
-                .filter(Boolean)
-                .join(" · ") || "La eligió el cliente en el enlace de envío"}
-            </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          {originSelector}
+          <div className="flex items-start gap-2 rounded-[14px] bg-[var(--color-input-bg)] p-3">
+            <MapPinIcon
+              size={16}
+              weight="fill"
+              className="mt-0.5 shrink-0 text-[#dc2626]"
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
+                Agencia de destino
+              </p>
+              <p
+                className="truncate text-sm font-circular-bold text-[var(--color-text)]"
+                title={sale?.envio?.agenciaNombre ?? undefined}
+              >
+                {sale?.envio?.agenciaNombre ?? "Agencia seleccionada"}
+              </p>
+              <p className="truncate text-[11px] text-[var(--color-muted-foreground)]">
+                {[
+                  sale?.envio?.agenciaDistrito,
+                  sale?.envio?.agenciaProvincia,
+                  sale?.envio?.agenciaDepartamento,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "La eligió el cliente en el enlace de envío"}
+              </p>
+            </div>
+            <span className="ml-auto shrink-0 rounded-full bg-[var(--color-card)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
+              Aéreo según destino
+            </span>
           </div>
-          <span className="ml-auto shrink-0 rounded-full bg-[var(--color-card)] px-2 py-1 text-[10px] font-circular-bold text-[var(--color-muted-foreground)]">
-            Aéreo según destino
-          </span>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -449,133 +579,6 @@ export function ShalomRegisterModal({
           />
         </div>
           </div>
-        </div>
-
-        <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-[11px] font-circular-bold uppercase text-[var(--color-muted-foreground)]">
-              Agencia de origen
-            </span>
-            {origin && !needsOrigin ? (
-              <button
-                type="button"
-                onClick={() => setOriginPickerOpen(true)}
-                className="text-[11px] font-circular-bold text-[var(--color-primary)]"
-              >
-                Cambiar
-              </button>
-            ) : null}
-          </div>
-
-          {isLoadingSettings ? (
-            <div className="flex items-center gap-2 rounded-[12px] bg-[var(--color-input-bg)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
-              <SpinnerGapIcon size={14} className="animate-spin" />
-              Revisando la agencia de origen…
-            </div>
-          ) : needsOrigin ? (
-            <>
-            <div className="relative">
-              <MagnifyingGlassIcon
-                size={17}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]"
-              />
-              <input
-                value={originQuery}
-                onChange={(event) => setOriginQuery(event.target.value)}
-                placeholder="Busca por código, agencia o distrito…"
-                aria-label="Buscar agencia de origen"
-                className="h-11 w-full rounded-[14px] bg-[var(--color-input-bg)] pl-11 pr-4 text-sm text-[var(--color-input-text)] outline-none placeholder:text-[var(--color-placeholder)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-              />
-            </div>
-
-            <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto pr-1">
-              {isLoadingOrigins ? (
-                <div className="flex items-center justify-center gap-2 rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-4 text-xs text-[var(--color-muted-foreground)]">
-                  <SpinnerGapIcon size={15} className="animate-spin" />
-                  Buscando agencias…
-                </div>
-              ) : origins.length === 0 ? (
-                <div className="rounded-[12px] border border-dashed border-[var(--color-border)] px-3 py-4 text-center text-xs text-[var(--color-muted-foreground)]">
-                  No encontramos agencias para esta búsqueda.
-                </div>
-              ) : (
-                origins.map((item) => {
-                  const active = origin === item.nombre;
-                  return (
-                    <button
-                      key={item.externalId}
-                      type="button"
-                      onClick={() => {
-                        setOrigin(item.nombre);
-                        setOriginPickerOpen(false);
-                      }}
-                      aria-pressed={active}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left transition-colors",
-                        active
-                          ? "bg-[var(--color-primary)]/10"
-                          : "bg-[var(--color-sidebar-bg)] hover:bg-[var(--color-button-hover)]",
-                      )}
-                    >
-                      <MapPinIcon
-                        size={16}
-                        weight="fill"
-                        className={cn(
-                          "shrink-0",
-                          active
-                            ? "text-[var(--color-primary)]"
-                            : "text-[#dc2626]",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={cn(
-                            "block truncate text-sm",
-                            active
-                              ? "font-circular-bold text-[var(--color-primary)]"
-                              : "text-[var(--color-text)]",
-                          )}
-                        >
-                          {item.nombre}
-                        </span>
-                        {item.departamento || item.provincia ? (
-                          <span className="block truncate text-[10px] text-[var(--color-muted-foreground)]">
-                            {[item.departamento, item.provincia, item.distrito]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </span>
-                        ) : null}
-                      </span>
-                      {active ? (
-                        <CheckCircleIcon
-                          size={17}
-                          weight="fill"
-                          className="shrink-0 text-[#059669]"
-                        />
-                      ) : null}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-            {origin ? (
-              <button
-                type="button"
-                onClick={() => setOriginPickerOpen(false)}
-                className="mt-2 text-[11px] font-circular-bold text-[var(--color-muted-foreground)] hover:text-[var(--color-text)]"
-              >
-                Mantener {origin}
-              </button>
-            ) : null}
-            </>
-          ) : (
-            <div className="flex items-center gap-2 rounded-[14px] bg-[var(--color-input-bg)] px-3 py-2.5">
-              <MapPinIcon size={16} weight="fill" className="shrink-0 text-[#dc2626]" />
-              <span className="min-w-0 flex-1 truncate text-sm font-circular-bold text-[var(--color-text)]">
-                {origin}
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="flex gap-3 pt-1">
