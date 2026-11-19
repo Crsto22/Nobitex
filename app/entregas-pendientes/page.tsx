@@ -215,7 +215,17 @@ function formatDateTime(value: string | null) {
 }
 
 function logisticsStatus(sale: VentaResponse): SaleShippingLogisticsStatus {
-  if (sale.envio) return sale.envio.estadoLogistico;
+  if (sale.envio) {
+    const shalomFailed =
+      sale.envio.agencia === "SHALOM" &&
+      !sale.envio.shalomOrden &&
+      Boolean(sale.envio.shalomError);
+
+    // Un envio Shalom rechazado no puede mostrarse como enviado.
+    if (shalomFailed) return "POR_PREPARAR";
+
+    return sale.envio.estadoLogistico;
+  }
   return sale.estadoEntrega === "entregada" ? "ENTREGADO" : "POR_PREPARAR";
 }
 
