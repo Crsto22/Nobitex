@@ -2017,6 +2017,12 @@ function DeliveryRow({
                             : "Esperando datos del cliente"}
                       </span>
                     </p>
+                    {sale.envio.agencia === "SHALOM" &&
+                    sale.envio.shalomCodigo ? (
+                      <span className="mt-1 inline-flex rounded bg-[var(--color-card)] px-1.5 py-0.5 text-[9px] font-circular-bold text-[var(--color-muted-foreground)]">
+                        Cód. seguimiento {sale.envio.shalomCodigo}
+                      </span>
+                    ) : null}
                   </div>
                   {sale.envio.agencia === "SHALOM" ? (
                     <div className="shrink-0">
