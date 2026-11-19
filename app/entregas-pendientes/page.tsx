@@ -321,6 +321,19 @@ function shalomNeedsSync(envio: SaleShippingDetails | null | undefined) {
   return envio.shalomEstado === "COMPLETED" || envio.shalomEstado === "REGISTRADO";
 }
 
+/** Texto del boton de Shalom segun el estado del envio. */
+function shalomActionLabel(envio: SaleShippingDetails | null | undefined) {
+  if (shalomNeedsSync(envio)) return "Sincronizar Shalom";
+
+  const error = envio?.shalomError?.toLowerCase() ?? "";
+  if (error.includes("vencid") || error.includes("anulad")) {
+    return "Generar nueva guía";
+  }
+  if (error) return "Reintentar en Shalom";
+
+  return "Registrar en Shalom";
+}
+
 function canRegisterInShalom(sale: VentaResponse) {
   const envio = sale.envio;
   if (!envio || envio.agencia !== "SHALOM") return false;
@@ -2130,11 +2143,7 @@ function DeliveryRow({
               title="Registrar el envío en Shalom PRO"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[#dc2626] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:bg-[#b91c1c]"
             >
-              {shalomNeedsSync(sale.envio)
-                ? "Sincronizar Shalom"
-                : sale.envio?.shalomError
-                  ? "Reintentar en Shalom"
-                  : "Registrar en Shalom"}
+              {shalomActionLabel(sale.envio)}
             </button>
           ) : null}
           {!isCourier ? (
