@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
+import Image from "next/image";
 import {
-  CheckCircleIcon,
   EnvelopeSimpleIcon,
-  InfoIcon,
   KeyIcon,
   PackageIcon,
-  ShieldCheckIcon,
+  SealCheckIcon,
   SpinnerGapIcon,
+  UserCircleIcon,
   WarningCircleIcon,
+  WebhooksLogoIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
@@ -49,6 +50,22 @@ const STATUS_UI: Record<
     label: "Requiere atención",
     className: "bg-[#dc2626]/10 text-[#dc2626]",
   },
+};
+
+type StatusTone = "ok" | "warn" | "error" | "muted";
+
+const TONE: Record<StatusTone, { tile: string; color: string }> = {
+  ok: { tile: "bg-[#10b981]/10", color: "text-[#10b981]" },
+  warn: { tile: "bg-[#f59e0b]/10", color: "text-[#f59e0b]" },
+  error: { tile: "bg-[#ef4444]/10", color: "text-[#ef4444]" },
+  muted: { tile: "bg-[#64748b]/10", color: "text-[#64748b]" },
+};
+
+type StatusCard = {
+  label: string;
+  value: string;
+  icon: ComponentType<{ size?: number; weight?: "fill"; className?: string }>;
+  tone: StatusTone;
 };
 
 export default function ShalomProPage() {
@@ -149,6 +166,39 @@ export default function ShalomProPage() {
   const ui = STATUS_UI[status?.status ?? "SIN_CONECTAR"];
   const connected = status?.connected ?? false;
 
+  const statusCards: StatusCard[] = [
+    {
+      label: "Cuenta de Shalom",
+      value: isLoading ? "Consultando" : connected ? "Conectada" : "Sin conectar",
+      icon: connected ? SealCheckIcon : UserCircleIcon,
+      tone: connected ? "ok" : "warn",
+    },
+    {
+      label: "Webhook",
+      value: isLoading ? "Consultando" : status?.hasWebhook ? "Registrado" : "Pendiente",
+      icon: WebhooksLogoIcon,
+      tone: status?.hasWebhook ? "ok" : "muted",
+    },
+    {
+      label: "Sesión",
+      value: isLoading
+        ? "Consultando"
+        : status?.valid === true
+          ? "Validada"
+          : status?.valid === false
+            ? "Rechazada"
+            : "Sin validar",
+      icon:
+        status?.valid === true
+          ? SealCheckIcon
+          : status?.valid === false
+            ? WarningCircleIcon
+            : KeyIcon,
+      tone:
+        status?.valid === true ? "ok" : status?.valid === false ? "error" : "muted",
+    },
+  ];
+
   return (
     <DashboardShell
       headerTitle="Shalom PRO"
@@ -156,9 +206,14 @@ export default function ShalomProPage() {
     >
       <div className="content-scrollbar flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 overflow-y-auto bg-[var(--color-background)] p-3 transition-colors duration-200 sm:gap-4 sm:p-4 lg:px-6">
         <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e11d2e]/10 text-[#e11d2e]">
-            <ShieldCheckIcon size={24} weight="fill" />
-          </span>
+          <Image
+            src="/envios/shalom.svg"
+            alt="Shalom PRO"
+            width={44}
+            height={44}
+            unoptimized
+            className="h-11 w-11 shrink-0 rounded-xl object-contain"
+          />
           <div className="min-w-0">
             <h2 className="text-sm font-circular-bold text-[var(--color-text)]">
               Cuenta de Shalom PRO de la empresa
@@ -182,6 +237,36 @@ export default function ShalomProPage() {
               </span>
             )}
           </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          {statusCards.map((card) => {
+            const Icon = card.icon;
+            const tone = TONE[card.tone];
+
+            return (
+              <div
+                key={card.label}
+                className="flex flex-col gap-4 rounded-2xl p-5 shadow-sm bg-[var(--color-sidebar-bg)]"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone.tile}`}
+                  >
+                    <Icon size={22} weight="fill" className={tone.color} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--color-muted-foreground)]">
+                      {card.label}
+                    </p>
+                    <p className="truncate text-xl leading-tight text-[var(--color-text)] font-circular-bold">
+                      {card.value}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -287,40 +372,6 @@ export default function ShalomProPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-              <h3 className="text-xs font-circular-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
-                Estado del servicio
-              </h3>
-              <ul className="mt-3 space-y-2 text-xs text-[var(--color-muted-foreground)]">
-                <li className="flex items-center gap-2">
-                  {connected ? (
-                    <CheckCircleIcon size={16} weight="fill" className="text-[#059669]" />
-                  ) : (
-                    <WarningCircleIcon size={16} className="text-amber-500" />
-                  )}
-                  {connected ? "Cuenta conectada" : "Cuenta sin conectar"}
-                </li>
-                <li className="flex items-center gap-2">
-                  {status?.hasWebhook ? (
-                    <CheckCircleIcon size={16} weight="fill" className="text-[#059669]" />
-                  ) : (
-                    <InfoIcon size={16} />
-                  )}
-                  {status?.hasWebhook ? "Webhook registrado" : "Webhook pendiente"}
-                </li>
-                {status?.valid !== undefined ? (
-                  <li className="flex items-center gap-2">
-                    {status.valid ? (
-                      <CheckCircleIcon size={16} weight="fill" className="text-[#059669]" />
-                    ) : (
-                      <WarningCircleIcon size={16} className="text-[#dc2626]" />
-                    )}
-                    {status.valid ? "Login validado" : "Login no validado"}
-                  </li>
-                ) : null}
-              </ul>
-            </div>
-
             <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
               <h3 className="text-xs font-circular-bold uppercase tracking-wide text-[var(--color-muted-foreground)]">
                 Cómo funciona
