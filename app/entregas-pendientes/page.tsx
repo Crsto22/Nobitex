@@ -236,6 +236,12 @@ function canMarkShipped(sale: VentaResponse) {
   if (sale.envio?.estado !== "recibido") return false;
   if (sale.envio.metodoEnvio === "RECOJO") return false;
   if (
+    sale.envio.agencia === "SHALOM" &&
+    shalomInProgress(sale.envio)
+  ) {
+    return false;
+  }
+  if (
     sale.envio.estadoLogistico !== "POR_PREPARAR" &&
     sale.envio.estadoLogistico !== "POR_DESPACHAR"
   ) {
@@ -2105,7 +2111,10 @@ function DeliveryRow({
               Gestionar enlace
             </PrimaryButton>
           ) : (status === "POR_PREPARAR" || status === "POR_DESPACHAR") &&
-            !(sale.envio?.agencia === "SHALOM" && shalomPrimary) ? (
+            !(
+              sale.envio?.agencia === "SHALOM" &&
+              (shalomPrimary || shalomPending)
+            ) ? (
             <button
               type="button"
               onClick={() => void markShipped()}
