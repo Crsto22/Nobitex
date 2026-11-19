@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import {
   ArrowsClockwiseIcon,
   CalendarIcon,
@@ -2080,14 +2079,6 @@ function DeliveryRow({
               title="Registrar el envío en Shalom PRO"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] bg-[#dc2626] px-4 text-xs font-bold text-white shadow-[0_6px_18px_rgba(17,37,58,0.16)] hover:bg-[#b91c1c]"
             >
-              <Image
-                src="/envios/shalom.svg"
-                alt=""
-                width={16}
-                height={16}
-                unoptimized
-                className="size-4 shrink-0 rounded-[4px]"
-              />
               {shalomNeedsSync(sale.envio)
                 ? "Sincronizar Shalom"
                 : sale.envio?.shalomError
