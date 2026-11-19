@@ -7,6 +7,7 @@ import {
   CheckIcon,
   HashIcon,
   SpinnerGapIcon,
+  WarningCircleIcon,
   WarningOctagonIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -98,10 +99,10 @@ export function ShalomMiniProgress({
     </button>
   );
 
-  const stepper = (
+  const renderStepper = (activeIndex: number) => (
     <>
       {stages.map((label, index) => {
-        const done = index <= current;
+        const done = activeIndex >= 0 && index <= activeIndex;
 
         return (
           <Fragment key={`${label}-${index}`}>
@@ -109,7 +110,7 @@ export function ShalomMiniProgress({
               <span
                 className={cn(
                   "mx-1 mt-[5px] h-0.5 min-w-3 flex-1 sm:mt-[7px] sm:min-w-8",
-                  index <= current
+                  activeIndex >= 0 && index <= activeIndex
                     ? "bg-[#dc2626]"
                     : "bg-[var(--color-border)]",
                 )}
@@ -122,7 +123,7 @@ export function ShalomMiniProgress({
                   done
                     ? "border-[#dc2626] bg-[#dc2626]"
                     : "border-[var(--color-border)] bg-transparent",
-                  index === current
+                  index === activeIndex
                     ? "ring-2 ring-[#dc2626]/15 sm:ring-4"
                     : "",
                 )}
@@ -130,7 +131,7 @@ export function ShalomMiniProgress({
               <span
                 className={cn(
                   "hidden max-w-20 truncate text-[10px] leading-none sm:block",
-                  index <= current
+                  done
                     ? "font-circular-bold text-[#dc2626]"
                     : "text-[var(--color-muted-foreground)]",
                 )}
@@ -158,13 +159,15 @@ export function ShalomMiniProgress({
             className="flex pointer-events-none select-none items-start opacity-50 blur-[1.5px]"
             aria-hidden="true"
           >
-            {stepper}
+            {renderStepper(-1)}
           </div>
           <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[var(--color-card)] px-2 py-1 text-[9px] font-circular-bold text-[var(--color-muted-foreground)] shadow-sm ring-1 ring-[var(--color-border)]">
+            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#f59e0b]/10 px-2 py-1 text-[9px] font-circular-bold text-[#b45309] shadow-sm ring-1 ring-[#f59e0b]/20">
               {isShalomWaiting(envio.shalomEstado) ? (
                 <SpinnerGapIcon size={10} className="animate-spin" />
-              ) : null}
+              ) : (
+                <WarningCircleIcon size={11} weight="fill" />
+              )}
               Llevar a la agencia
             </span>
           </span>
@@ -204,7 +207,7 @@ export function ShalomMiniProgress({
               }
               className="flex min-w-0 items-start rounded-lg px-1 py-0.5 hover:bg-[var(--color-button-hover)]"
             >
-              {stepper}
+              {renderStepper(current)}
             </button>
             <span
               className={cn(
