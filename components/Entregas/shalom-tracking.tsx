@@ -112,28 +112,28 @@ export function ShalomMiniProgress({
                   {index > 0 ? (
                     <span
                       className={cn(
-                        "mx-0.5 mt-[5px] h-px min-w-3 flex-1 sm:min-w-5",
+                        "mx-1 mt-[7px] h-0.5 min-w-5 flex-1 sm:min-w-8",
                         index <= progress
                           ? "bg-[#dc2626]"
                           : "bg-[var(--color-border)]",
                       )}
                     />
                   ) : null}
-                  <span className="flex flex-col items-center gap-1">
+                  <span className="flex flex-col items-center gap-1.5">
                     <span
                       className={cn(
-                        "size-2.5 rounded-full border-2 transition-colors",
+                        "size-4 rounded-full border-2 transition-colors",
                         done
                           ? "border-[#dc2626] bg-[#dc2626]"
                           : "border-[var(--color-border)] bg-transparent",
                         index === progress
-                          ? "ring-2 ring-[#dc2626]/20"
+                          ? "ring-4 ring-[#dc2626]/15"
                           : "",
                       )}
                     />
                     <span
                       className={cn(
-                        "max-w-14 truncate text-[9px] leading-none",
+                        "max-w-20 truncate text-[10px] leading-none sm:text-[11px]",
                         index <= progress
                           ? "font-circular-bold text-[#dc2626]"
                           : "text-[var(--color-muted-foreground)]",
@@ -231,17 +231,17 @@ function ShalomTimelineModal({
                   {index > 0 ? (
                     <span
                       className={cn(
-                        "mx-1 mt-[7px] h-0.5 flex-1",
+                        "mx-1.5 mt-2 h-1 flex-1 rounded-full",
                         index <= progress
                           ? "bg-[#dc2626]"
                           : "bg-[var(--color-border)]",
                       )}
                     />
                   ) : null}
-                  <span className="flex flex-col items-center gap-1.5">
+                  <span className="flex flex-col items-center gap-2">
                     <span
                       className={cn(
-                        "size-4 rounded-full border-2",
+                        "size-5 rounded-full border-2",
                         done
                           ? "border-[#dc2626] bg-[#dc2626]"
                           : "border-[var(--color-border)] bg-[var(--color-card)]",
@@ -249,7 +249,7 @@ function ShalomTimelineModal({
                     />
                     <span
                       className={cn(
-                        "max-w-20 truncate text-[11px]",
+                        "max-w-24 truncate text-xs",
                         index <= progress
                           ? "font-circular-bold text-[#dc2626]"
                           : "text-[var(--color-muted-foreground)]",
@@ -301,7 +301,7 @@ function ShalomTimelineModal({
                   <div className="flex flex-col items-center">
                     <span
                       className={cn(
-                        "flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-bold",
+                        "flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold",
                         done
                           ? "border-[#dc2626] bg-[#dc2626] text-white"
                           : current
@@ -309,7 +309,7 @@ function ShalomTimelineModal({
                             : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted-foreground)]",
                       )}
                     >
-                      {done ? <CheckIcon size={12} weight="bold" /> : index + 1}
+                      {done ? <CheckIcon size={14} weight="bold" /> : index + 1}
                     </span>
                     {index < stages.length - 1 ? (
                       <span
@@ -322,10 +322,10 @@ function ShalomTimelineModal({
                       />
                     ) : null}
                   </div>
-                  <div className="min-w-0 pb-3">
+                  <div className="min-w-0 pb-4">
                     <p
                       className={cn(
-                        "text-sm",
+                        "text-[15px]",
                         current
                           ? "font-circular-bold text-[#dc2626]"
                           : done
@@ -335,7 +335,7 @@ function ShalomTimelineModal({
                     >
                       {stage}
                     </p>
-                    <p className="text-[11px] text-[var(--color-muted-foreground)]">
+                    <p className="text-xs text-[var(--color-muted-foreground)]">
                       {pending ? "Pendiente" : current ? label : "Completado"}
                     </p>
                   </div>
