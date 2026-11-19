@@ -6,6 +6,7 @@ import {
   BarcodeIcon,
   CheckIcon,
   HashIcon,
+  SpinnerGapIcon,
   WarningOctagonIcon,
 } from "@phosphor-icons/react/ssr";
 
@@ -77,6 +78,75 @@ export function ShalomMiniProgress({
     }
   };
 
+  const stepper = (
+    <>
+      {stages.map((label, index) => {
+        const done = index <= progress;
+
+        return (
+          <Fragment key={`${label}-${index}`}>
+            {index > 0 ? (
+              <span
+                className={cn(
+                  "mx-1 mt-[5px] h-0.5 min-w-3 flex-1 sm:mt-[7px] sm:min-w-8",
+                  index <= progress
+                    ? "bg-[#dc2626]"
+                    : "bg-[var(--color-border)]",
+                )}
+              />
+            ) : null}
+            <span className="flex flex-col items-center gap-1.5">
+              <span
+                className={cn(
+                  "size-3 rounded-full border-2 transition-colors sm:size-4",
+                  done
+                    ? "border-[#dc2626] bg-[#dc2626]"
+                    : "border-[var(--color-border)] bg-transparent",
+                  index === progress
+                    ? "ring-2 ring-[#dc2626]/15 sm:ring-4"
+                    : "",
+                )}
+              />
+              <span
+                className={cn(
+                  "hidden max-w-20 truncate text-[10px] leading-none sm:block",
+                  index <= progress
+                    ? "font-circular-bold text-[#dc2626]"
+                    : "text-[var(--color-muted-foreground)]",
+                )}
+                title={label}
+              >
+                {label}
+              </span>
+            </span>
+          </Fragment>
+        );
+      })}
+    </>
+  );
+
+  // Sin orden de Shalom el avance no es real: se muestra difuminado.
+  if (!envio.shalomOrden) {
+    return (
+      <div className="relative flex items-start rounded-lg px-1 py-0.5">
+        <div
+          className="pointer-events-none select-none opacity-50 blur-[1.5px]"
+          aria-hidden="true"
+        >
+          {stepper}
+        </div>
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[var(--color-card)] px-2 py-1 text-[9px] font-circular-bold text-[var(--color-muted-foreground)] shadow-sm ring-1 ring-[var(--color-border)]">
+            {isShalomWaiting(envio.shalomEstado) ? (
+              <SpinnerGapIcon size={10} className="animate-spin" />
+            ) : null}
+            Envío no confirmado
+          </span>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex items-center gap-1.5">
@@ -107,57 +177,19 @@ export function ShalomMiniProgress({
               }
               className="flex min-w-0 items-start rounded-lg px-1 py-0.5 hover:bg-[var(--color-button-hover)]"
             >
-              {stages.map((label, index) => {
-                const done = index <= progress;
-
-                return (
-                  <Fragment key={`${label}-${index}`}>
-                    {index > 0 ? (
-                      <span
-                        className={cn(
-                          "mx-1 mt-[5px] h-0.5 min-w-3 flex-1 sm:mt-[7px] sm:min-w-8",
-                          index <= progress
-                            ? "bg-[#dc2626]"
-                            : "bg-[var(--color-border)]",
-                        )}
-                      />
-                    ) : null}
-                    <span className="flex flex-col items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "size-3 rounded-full border-2 transition-colors sm:size-4",
-                          done
-                            ? "border-[#dc2626] bg-[#dc2626]"
-                            : "border-[var(--color-border)] bg-transparent",
-                          index === progress
-                            ? "ring-2 ring-[#dc2626]/15 sm:ring-4"
-                            : "",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "hidden max-w-20 truncate text-[10px] leading-none sm:block",
-                          index <= progress
-                            ? "font-circular-bold text-[#dc2626]"
-                            : "text-[var(--color-muted-foreground)]",
-                        )}
-                        title={label}
-                      >
-                        {label}
-                      </span>
-                    </span>
-                  </Fragment>
-                );
-              })}
+              {stepper}
             </button>
             <span
               className={cn(
                 "max-w-24 truncate text-[10px] leading-none sm:hidden",
-                isCanceled ? "text-[#b45309]" : "font-circular-bold text-[#dc2626]",
+                isCanceled
+                  ? "text-[#b45309]"
+                  : "font-circular-bold text-[#dc2626]",
               )}
               title={envio.shalomEstadoLabel ?? undefined}
             >
-              {envio.shalomEstadoLabel ?? stages[Math.min(progress, stages.length - 1)]}
+              {envio.shalomEstadoLabel ??
+                stages[Math.min(progress, stages.length - 1)]}
             </span>
           </>
         )}
@@ -454,6 +486,20 @@ function ShalomTimelineModal({
       </div>
     </Modal>
   );
+}
+
+/** Estados intermedios mientras Shalom procesa el registro. */
+const WAITING_STATES = new Set([
+  "QUEUED",
+  "PENDING",
+  "PROCESSING",
+  "RUNNING",
+  "RETRYING",
+  "RETRY",
+]);
+
+function isShalomWaiting(estado: string | null) {
+  return Boolean(estado && WAITING_STATES.has(estado));
 }
 
 /** Nombres reales del timeline de Shalom o nuestros estados por defecto. */

@@ -2065,7 +2065,7 @@ function DeliveryRow({
                   </div>
                   {sale.envio.agencia === "SHALOM" ? (
                     <div className="shrink-0">
-                      {sale.envio.shalomOrden ? (
+                      {sale.envio.estado === "recibido" ? (
                         <ShalomMiniProgress
                           publicId={sale.publicId}
                           correlativo={sale.correlativo}
