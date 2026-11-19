@@ -552,6 +552,7 @@ export function ShalomRegisterModal({
             <InfoIcon size={13} className="mt-0.5 shrink-0" />
             Corrige el documento si la venta lo tiene mal. Nombres y ambos
             apellidos son obligatorios cuando Shalom no reconoce el documento.
+            Al registrar, estos datos también se guardan en el envío.
           </p>
         </div>
           </div>

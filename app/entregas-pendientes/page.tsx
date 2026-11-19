@@ -1549,11 +1549,12 @@ export default function DeliveriesPage() {
         sale={shalomSale}
         defaultPackageType={shalomPackage}
         onClose={() => setShalomSale(null)}
-        onRegistered={(publicId) =>
+        onRegistered={(publicId) => {
           setShalomPolling((current) =>
             current.includes(publicId) ? current : [...current, publicId],
-          )
-        }
+          );
+          refreshDeliveries();
+        }}
         onShipWithoutShalom={() => {
           if (!shalomSale) return;
           const sale = shalomSale;
