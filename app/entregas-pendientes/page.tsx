@@ -240,6 +240,8 @@ function customerName(sale: VentaResponse) {
 function canMarkShipped(sale: VentaResponse) {
   if (sale.envio?.estado !== "recibido") return false;
   if (sale.envio.metodoEnvio === "RECOJO") return false;
+  // Con guia Shalom ya creada el despacho es automatico.
+  if (sale.envio.shalomOrden) return false;
   if (
     sale.envio.agencia === "SHALOM" &&
     shalomInProgress(sale.envio)
@@ -2244,6 +2246,7 @@ function DeliveryRow({
               Gestionar enlace
             </PrimaryButton>
           ) : (status === "POR_PREPARAR" || status === "POR_DESPACHAR") &&
+            !sale.envio?.shalomOrden &&
             !(
               sale.envio?.agencia === "SHALOM" &&
               (shalomPrimary || shalomPending)
