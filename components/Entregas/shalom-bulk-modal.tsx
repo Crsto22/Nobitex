@@ -106,6 +106,7 @@ export function ShalomBulkModal({
   const canSubmit =
     !isSaving &&
     !result &&
+    !isLoadingSettings &&
     sales.length > 0 &&
     !tooMany &&
     overLimit.length === 0 &&
