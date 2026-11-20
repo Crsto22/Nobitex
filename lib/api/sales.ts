@@ -595,6 +595,29 @@ export type RegisterShalomResponse = {
   codigo?: string | null;
 };
 
+export type BulkRegisterShalomPayload = {
+  publicIds: string[];
+  /** Clave global de retiro para todo el lote. */
+  securityKey: string;
+  packageType?: ShalomPackageType;
+  extraSecurity?: boolean;
+  cashOnDelivery?: boolean;
+};
+
+export type BulkRegisterShalomResponse = {
+  results: Array<{
+    publicId: string;
+    ok: boolean;
+    jobId?: string | null;
+    status?: string | null;
+    orden?: string | null;
+    codigo?: string | null;
+    alreadyRegistered?: boolean;
+    error?: string;
+  }>;
+  totals: { ok: number; failed: number; total: number };
+};
+
 export type DniLookupResponse = {
   success: boolean;
   dni: string;
@@ -890,6 +913,16 @@ export const salesApi = {
   registerShalom(publicId: string, payload: RegisterShalomPayload) {
     return authFetch<RegisterShalomResponse>(
       `/sales/${publicId}/shalom-register`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  registerShalomBulk(payload: BulkRegisterShalomPayload) {
+    return authFetch<BulkRegisterShalomResponse>(
+      "/sales/shalom-register-bulk",
       {
         method: "POST",
         body: JSON.stringify(payload),

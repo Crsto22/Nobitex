@@ -19,7 +19,7 @@ import {
   type ShalomPackageType,
   type VentaResponse,
 } from "@/lib/api/sales";
-import { securityKeyIssue } from "@/lib/shalom/security-key";
+import { generateSecurityKey, securityKeyIssue } from "@/lib/shalom/security-key";
 import { cn } from "@/lib/utils";
 
 const PACKAGE_OPTIONS: Array<{
@@ -154,15 +154,7 @@ export function ShalomRegisterModal({
   }, [isOpen, needsOrigin, debouncedOriginQuery]);
 
   const generatePin = () => {
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      const buffer = new Uint32Array(1);
-      crypto.getRandomValues(buffer);
-      const candidate = String(1000 + (buffer[0] % 9000));
-      if (!securityKeyIssue(candidate)) {
-        setSecurityKey(candidate);
-        return;
-      }
-    }
+    setSecurityKey(generateSecurityKey());
   };
 
   const lookupDni = async () => {

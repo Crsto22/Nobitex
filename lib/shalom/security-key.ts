@@ -26,3 +26,15 @@ export function securityKeyIssue(key: string): string | null {
 
   return null;
 }
+
+/** Genera una clave de 4 digitos valida para Shalom. */
+export function generateSecurityKey(): string {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const buffer = new Uint32Array(1);
+    crypto.getRandomValues(buffer);
+    const candidate = String(1000 + (buffer[0] % 9000));
+    if (!securityKeyIssue(candidate)) return candidate;
+  }
+
+  return "1962";
+}
