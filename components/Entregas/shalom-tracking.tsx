@@ -66,6 +66,7 @@ export function ShalomMiniProgress({
       toast.showToast({
         title: "Estado actualizado",
         description:
+          result.message ??
           result.estadoLabel ??
           (result.estado ? traducirEstado(result.estado) : undefined),
         variant: "success",

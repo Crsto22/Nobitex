@@ -616,6 +616,7 @@ export type ShalomOrderStatusResponse = {  jobId: string | null;
   registradoAt: string | null;
   syncAt: string | null;
   estadoLogistico: string;
+  message?: string | null;
 };
 
 export type ComprobanteSunatEstado =
