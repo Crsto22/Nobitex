@@ -102,6 +102,9 @@ export default function ShippingDetailsPage() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [form, setForm] = useState({
     nombreCompleto: "",
+    nombres: "",
+    apellidoPaterno: "",
+    apellidoMaterno: "",
     dni: "",
     tipoDocumento: "DNI" as "DNI" | "CE",
     celular: "",
@@ -282,6 +285,9 @@ export default function ShippingDetailsPage() {
     try {
       await shippingLinksApi.submit(code, {
         nombreCompleto: form.nombreCompleto.trim(),
+        nombres: form.nombres.trim() || undefined,
+        apellidoPaterno: form.apellidoPaterno.trim() || undefined,
+        apellidoMaterno: form.apellidoMaterno.trim() || undefined,
         dni: form.dni,
         tipoDocumento: form.tipoDocumento,
         celular: form.celular,
@@ -523,6 +529,9 @@ function StepOne({
   code: string;
   form: {
     nombreCompleto: string;
+    nombres: string;
+    apellidoPaterno: string;
+    apellidoMaterno: string;
     dni: string;
     tipoDocumento: "DNI" | "CE";
     celular: string;
@@ -579,7 +588,13 @@ function StepOne({
           onFormChange((current) => {
             const currentName = current.nombreCompleto.trim();
             if (currentName && currentName !== previousAuto) return current;
-            return { ...current, nombreCompleto: full };
+            return {
+              ...current,
+              nombreCompleto: full,
+              nombres: data.nombres ?? "",
+              apellidoPaterno: data.apellidoPaterno ?? "",
+              apellidoMaterno: data.apellidoMaterno ?? "",
+            };
           });
           setDniLookup("idle");
         })
@@ -616,12 +631,17 @@ function StepOne({
           maxLength={150}
           autoComplete="name"
           value={form.nombreCompleto}
-          onChange={(event) =>
+          onChange={(event) => {
+            autoNameRef.current = "";
+            const value = event.target.value;
             onFormChange((current) => ({
               ...current,
-              nombreCompleto: event.target.value,
-            }))
-          }
+              nombreCompleto: value,
+              nombres: "",
+              apellidoPaterno: "",
+              apellidoMaterno: "",
+            }));
+          }}
           className="public-shipping-input"
           placeholder="Ej. María López"
         />

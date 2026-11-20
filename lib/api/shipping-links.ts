@@ -41,6 +41,9 @@ export type PublicShippingLink = {
 
 export type SubmitShippingDetails = {
   nombreCompleto: string;
+  nombres?: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
   dni: string;
   tipoDocumento: "DNI" | "CE";
   celular: string;
