@@ -38,6 +38,7 @@ import {
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ShalomExportSettingsModal } from "@/components/Entregas/shalom-export-settings-modal";
+import { ShalomBulkModal } from "@/components/Entregas/shalom-bulk-modal";
 import { ShalomRegisterModal } from "@/components/Entregas/shalom-register-modal";
 import { ShalomMiniProgress } from "@/components/Entregas/shalom-tracking";
 import { Modal } from "@/components/Modal/modal";
@@ -411,6 +412,10 @@ export default function DeliveriesPage() {
   const [shalomShipWithout, setShalomShipWithout] =
     useState<VentaResponse | null>(null);
   const [isShalomShipping, setIsShalomShipping] = useState(false);
+  const [shalomBulkSales, setShalomBulkSales] = useState<VentaResponse[] | null>(
+    null,
+  );
+  const pollCursorRef = useRef(0);
 
   const dateFilter = useMemo(() => {
     const empty = {
@@ -640,7 +645,18 @@ export default function DeliveriesPage() {
 
     let active = true;
     const poll = async () => {
-      for (const publicId of shalomPolling) {
+      // Lotes grandes: se consultan de a 12 por ciclo, rotando.
+      const batchSize = 12;
+      const start = pollCursorRef.current % shalomPolling.length;
+      const ids = [
+        ...shalomPolling.slice(start),
+        ...shalomPolling.slice(0, start),
+      ].slice(0, batchSize);
+      pollCursorRef.current = start + ids.length;
+
+      let shouldRefresh = false;
+
+      for (const publicId of ids) {
         try {
           const status = await salesApi.syncShalom(publicId);
           if (!active) return;
@@ -657,7 +673,7 @@ export default function DeliveriesPage() {
               }`,
               variant: "success",
             });
-            refreshDeliveries();
+            shouldRefresh = true;
           } else if (
             status.estado &&
             ["DEAD", "FAILED", "ERROR"].includes(status.estado)
@@ -671,18 +687,20 @@ export default function DeliveriesPage() {
                 status.error ?? "Revisa los datos e intenta nuevamente.",
               variant: "error",
             });
-            refreshDeliveries();
+            shouldRefresh = true;
           }
         } catch {
           // Se reintenta en el siguiente ciclo.
         }
       }
+
+      if (shouldRefresh) refreshDeliveries();
     };
 
     void poll();
     const interval = window.setInterval(() => {
       void poll();
-    }, 5000);
+    }, 6000);
 
     return () => {
       active = false;
@@ -964,6 +982,12 @@ export default function DeliveriesPage() {
   const selectedShalomSales = selectedShippingSales.filter(
     (sale) => sale.envio?.agencia === "SHALOM",
   );
+  const selectedShalomBulk = useMemo(
+    () => selectedShippingSales.filter((sale) => canRegisterInShalom(sale)),
+    [selectedShippingSales],
+  );
+  const showBulkShalom =
+    canUseShalom && shalomConnected && selectedShalomBulk.length > 0;
   const canExportShalom =
     viewMode === "courier" && (servicio === "" || servicio === "SHALOM");
   const activeShalomSettings = useMemo(() => {
@@ -1039,11 +1063,15 @@ export default function DeliveriesPage() {
   const showBulkDelivery =
     viewMode === "pickup" && deliverableSelected.length > 0;
   const showBulkPrint = printableSelected.length > 0;
+  const bulkActionCount = [
+    showBulkShip,
+    showBulkDelivery,
+    showBulkShalom,
+    showBulkPrint,
+  ].filter(Boolean).length;
   const mobileBulkActionsClassName = cn(
     "grid gap-2 lg:hidden",
-    (showBulkShip || showBulkDelivery) && showBulkPrint
-      ? "grid-cols-2"
-      : "grid-cols-1",
+    bulkActionCount > 1 ? "grid-cols-2" : "grid-cols-1",
   );
 
   return (
@@ -1064,6 +1092,15 @@ export default function DeliveriesPage() {
             >
               <TruckIcon size={17} weight="bold" />
               Enviar ({markableSelected.length})
+            </button>
+          ) : null}
+          {showBulkShalom ? (
+            <button
+              type="button"
+              onClick={() => setShalomBulkSales(selectedShalomBulk)}
+              className="hidden h-10 items-center gap-2 rounded-[14px] bg-[#dc2626] px-4 text-xs font-bold text-white hover:bg-[#b91c1c] lg:inline-flex"
+            >
+              Shalom ({selectedShalomBulk.length})
             </button>
           ) : null}
           {viewMode === "pickup" && deliverableSelected.length > 0 ? (
@@ -1099,8 +1136,17 @@ export default function DeliveriesPage() {
         </div>
 
         <div className="sticky -top-4 z-30 -mx-3 space-y-3 bg-[var(--color-background)] px-3 py-2 sm:-mx-4 sm:px-4 lg:-mx-6 lg:px-6">
-          {showBulkShip || showBulkDelivery || showBulkPrint ? (
+          {showBulkShip || showBulkDelivery || showBulkShalom || showBulkPrint ? (
             <div className={mobileBulkActionsClassName}>
+              {showBulkShalom ? (
+                <button
+                  type="button"
+                  onClick={() => setShalomBulkSales(selectedShalomBulk)}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#dc2626] px-3 text-xs font-bold text-white hover:bg-[#b91c1c] lg:hidden"
+                >
+                  Shalom ({selectedShalomBulk.length})
+                </button>
+              ) : null}
               {showBulkShip ? (
                 <button
                   type="button"
@@ -1601,6 +1647,27 @@ export default function DeliveriesPage() {
           const sale = shalomSale;
           setShalomSale(null);
           setShalomShipWithout(sale);
+        }}
+      />
+      <ShalomBulkModal
+        isOpen={Boolean(shalomBulkSales)}
+        sales={shalomBulkSales ?? []}
+        defaultPackageType={shalomPackage}
+        onClose={() => setShalomBulkSales(null)}
+        onCompleted={(result) => {
+          const ok = result.results
+            .filter((item) => item.ok)
+            .map((item) => item.publicId);
+
+          if (ok.length > 0) {
+            setShalomPolling((current) => [
+              ...new Set([...current, ...ok]),
+            ]);
+          }
+
+          setSelectedShippingSales([]);
+          clearApiCache();
+          refreshDeliveries();
         }}
       />
       <ConfirmDialog
