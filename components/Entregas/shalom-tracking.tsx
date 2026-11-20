@@ -46,6 +46,7 @@ export function ShalomMiniProgress({
 }: ShalomMiniProgressProps) {
   const toast = useSystemToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
 
   const stages = resolveStages(envio);
@@ -99,6 +100,66 @@ export function ShalomMiniProgress({
     </button>
   );
 
+  const verify = async () => {
+    if (isVerifying) return;
+    setIsVerifying(true);
+    try {
+      const result = await salesApi.syncShalom(publicId);
+      const failed =
+        result.estado === "DEAD" ||
+        result.estado === "FAILED" ||
+        result.estado === "ERROR";
+
+      if (result.orden) {
+        toast.showToast({
+          title: "Guía registrada en Shalom",
+          description: `Orden ${result.orden}${
+            result.codigo ? ` · Código ${result.codigo}` : ""
+          }`,
+          variant: "success",
+        });
+      } else if (failed) {
+        toast.showToast({
+          title: "El registro falló en Shalom",
+          description: result.error ?? "Revisa e intenta de nuevo.",
+          variant: "error",
+        });
+      } else {
+        toast.showToast({
+          title: "Shalom aún está procesando",
+          description: "Vuelve a verificar en unos minutos.",
+          variant: "info",
+        });
+      }
+      onRefreshed();
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo verificar el registro",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const verifyButton = (
+    <button
+      type="button"
+      onClick={() => void verify()}
+      disabled={isVerifying}
+      className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-[var(--color-card)] px-2 text-[9px] font-circular-bold text-[var(--color-muted-foreground)] ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-button-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
+    >
+      <ArrowsClockwiseIcon
+        size={11}
+        weight="bold"
+        className={cn(isVerifying && "animate-spin")}
+      />
+      Verificar
+    </button>
+  );
+
   const renderStepper = (activeIndex: number) => (
     <>
       {stages.map((label, index) => {
@@ -146,10 +207,8 @@ export function ShalomMiniProgress({
     </>
   );
 
-  const hasAttempt = Boolean(
-    envio.shalomOrden || envio.shalomJobId || envio.shalomEstado,
-  );
-  if (!hasAttempt) return null;
+  const waitingJob = !envio.shalomOrden && isShalomWaiting(envio.shalomEstado);
+  if (!envio.shalomOrden && !waitingJob) return null;
 
   if (notConfirmed) {
     return (
@@ -172,7 +231,11 @@ export function ShalomMiniProgress({
             </span>
           </span>
         </div>
-        {refreshButton}
+        {envio.shalomOrden
+          ? refreshButton
+          : envio.shalomJobId
+            ? verifyButton
+            : null}
       </div>
     );
   }

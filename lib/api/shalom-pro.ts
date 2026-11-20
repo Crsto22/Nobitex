@@ -38,4 +38,11 @@ export const shalomProApi = {
       method: "POST",
     });
   },
+
+  repairWebhook() {
+    return authFetch<{ registered: boolean; message: string }>(
+      "/company/shalom-pro/webhook",
+      { method: "POST" },
+    );
+  },
 };

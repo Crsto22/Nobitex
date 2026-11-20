@@ -56,6 +56,7 @@ export default function ShalomProPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [isRepairingWebhook, setIsRepairingWebhook] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [packageType, setPackageType] = useState("PAQUETE S");
@@ -139,8 +140,30 @@ export default function ShalomProPage() {
     };
   }, [debouncedOriginQuery]);
 
-  const chooseOrigin = async (nombre: string) => {
-    if (isSavingOrigin || nombre === origin) return;
+  const repairWebhook = async () => {
+    if (isRepairingWebhook) return;
+    setIsRepairingWebhook(true);
+    try {
+      const result = await shalomProApi.repairWebhook();
+      toast.showToast({
+        title: result.registered ? "Webhook registrado" : "Sin cambios",
+        description: result.message,
+        variant: "success",
+      });
+      await loadStatus();
+    } catch (error) {
+      toast.showToast({
+        title: "No se pudo registrar el webhook",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsRepairingWebhook(false);
+    }
+  };
+
+  const chooseOrigin = async (nombre: string) => {    if (isSavingOrigin || nombre === origin) return;
     setIsSavingOrigin(true);
     try {
       const base: ShalomExportSettings = exportSettings ?? {
@@ -488,6 +511,19 @@ export default function ShalomProPage() {
                 {isValidating ? <SpinnerGapIcon size={16} className="animate-spin" /> : null}
                 Validar credenciales
               </button>
+              {connected && !status?.hasWebhook ? (
+                <button
+                  type="button"
+                  onClick={() => void repairWebhook()}
+                  disabled={isRepairingWebhook || isLoading}
+                  className="flex h-11 items-center gap-2 rounded-[14px] bg-[#f59e0b]/10 px-5 text-sm font-circular-bold text-[#b45309] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isRepairingWebhook ? (
+                    <SpinnerGapIcon size={16} className="animate-spin" />
+                  ) : null}
+                  Registrar webhook
+                </button>
+              ) : null}
             </div>
 
             {status?.lastError ? (
