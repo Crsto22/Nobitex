@@ -16,6 +16,7 @@ import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   salesApi,
   type SaleShippingDetails,
+  type ShalomOrderStatusResponse,
 } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,8 @@ type ShalomMiniProgressProps = {
   correlativo: string;
   envio: SaleShippingDetails;
   onRefreshed: () => void;
+  /** Aplica el estado devuelto por el backend sin esperar la recarga. */
+  onUpdated?: (status: ShalomOrderStatusResponse) => void;
 };
 
 /**
@@ -43,6 +46,7 @@ export function ShalomMiniProgress({
   correlativo,
   envio,
   onRefreshed,
+  onUpdated,
 }: ShalomMiniProgressProps) {
   const toast = useSystemToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -63,6 +67,7 @@ export function ShalomMiniProgress({
     setIsRefreshing(true);
     try {
       const result = await salesApi.trackShalom(publicId);
+      onUpdated?.(result);
       toast.showToast({
         title: "Estado actualizado",
         description:
@@ -106,6 +111,7 @@ export function ShalomMiniProgress({
     setIsVerifying(true);
     try {
       const result = await salesApi.syncShalom(publicId);
+      onUpdated?.(result);
       const failed =
         result.estado === "DEAD" ||
         result.estado === "FAILED" ||

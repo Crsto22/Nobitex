@@ -47,6 +47,7 @@ import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";
 import { ShippingLinkModal } from "@/components/Ventas/shipping-link-modal";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { clearApiCache } from "@/lib/api/client";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import {
   GenericClientAvatar,
@@ -569,6 +570,7 @@ export default function DeliveriesPage() {
   }, [isLoading, meta.totalPages]);
 
   const refreshDeliveries = useCallback(() => {
+    clearApiCache();
     setSelectedShippingSales([]);
     setSales([]);
     if (page === 1) {
@@ -589,11 +591,15 @@ export default function DeliveriesPage() {
               ...sale.envio,
               shalomJobId: status.jobId,
               shalomEstado: status.estado,
+              shalomEstadoLabel: status.estadoLabel ?? null,
+              shalomProgreso: status.progreso ?? null,
+              shalomTimeline: status.timeline ?? null,
               shalomOrden: status.orden,
               shalomCodigo: status.codigo,
               shalomMonto: status.monto === null ? null : String(status.monto),
               shalomError: status.error,
               shalomRegistradoAt: status.registradoAt,
+              shalomSyncAt: status.syncAt,
               estadoLogistico:
                 status.estadoLogistico as SaleShippingLogisticsStatus,
             },
@@ -1445,6 +1451,9 @@ export default function DeliveriesPage() {
                   }
                   setShalomSale(sale);
                 }}
+                onShalomUpdated={(status) =>
+                  applyShalomStatus(sale.publicId, status)
+                }
               />
             ))
           )}
@@ -1703,6 +1712,7 @@ function DeliveryRow({
   canRegisterShalom,
   isShalomPolling,
   onRegisterShalom,
+  onShalomUpdated,
 }: {
   sale: VentaResponse;
   canManageLink: boolean;
@@ -1717,6 +1727,7 @@ function DeliveryRow({
   canRegisterShalom: boolean;
   isShalomPolling: boolean;
   onRegisterShalom: () => void;
+  onShalomUpdated: (status: ShalomOrderStatusResponse) => void;
 }) {
   const [isMarkingShipped, setIsMarkingShipped] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -2084,6 +2095,7 @@ function DeliveryRow({
                           correlativo={sale.correlativo}
                           envio={sale.envio}
                           onRefreshed={onMarkShipped}
+                          onUpdated={onShalomUpdated}
                         />
                       ) : (
                         <ShalomStatusLine
