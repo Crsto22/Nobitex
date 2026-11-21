@@ -2115,7 +2115,7 @@ function DeliveryRow({
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] leading-none">
                         {sale.envio.shalomCodigo ? (
                           <span
-                            className="inline-flex items-center rounded-full bg-[#dc2626] px-2 py-1 font-circular-bold text-white shadow-sm ring-1 ring-[#b91c1c]"
+                            className="inline-flex items-center rounded-full bg-[#6d28d9] px-2 py-1 font-circular-bold text-white shadow-sm ring-1 ring-[#5b21b6]"
                             title={`Código de seguimiento ${sale.envio.shalomCodigo}`}
                           >
                             {sale.envio.shalomCodigo}
