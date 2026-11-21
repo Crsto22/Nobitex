@@ -10,6 +10,7 @@ import {
   CheckSquareIcon,
   ClockIcon,
   ColumnsIcon,
+  CopyIcon,
   DownloadSimpleIcon,
   DotsThreeVerticalIcon,
   FunnelIcon,
@@ -2110,27 +2111,11 @@ function DeliveryRow({
                             : "Esperando datos del cliente"}
                       </span>
                     </p>
-                    {sale.envio.agencia === "SHALOM" &&
-                    (sale.envio.shalomCodigo || sale.envio.shalomOrden) ? (
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] leading-none">
-                        <span
-                          className="inline-flex min-w-0 items-center rounded-full border border-[#86efac] bg-[#dcfce7] px-2 py-1 font-circular-bold text-[#166534] dark:border-[#065f46] dark:bg-[#064e3b] dark:text-[#d1fae5]"
-                          title={
-                            sale.envio.shalomCodigo && sale.envio.shalomOrden
-                              ? `Código ${sale.envio.shalomCodigo} · Orden ${sale.envio.shalomOrden}`
-                              : sale.envio.shalomCodigo
-                                ? `Código de seguimiento ${sale.envio.shalomCodigo}`
-                                : `Número de orden ${sale.envio.shalomOrden}`
-                          }
-                        >
-                          <span className="max-w-60 truncate">
-                            Cdgo Seguimiento{" "}
-                            {[sale.envio.shalomCodigo, sale.envio.shalomOrden]
-                              .filter(Boolean)
-                              .join(" / ")}
-                          </span>
-                        </span>
-                      </div>
+                    {sale.envio.agencia === "SHALOM" ? (
+                      <ShalomCodeChip
+                        codigo={sale.envio.shalomCodigo}
+                        orden={sale.envio.shalomOrden}
+                      />
                     ) : null}
                   </div>
                   {sale.envio.agencia === "SHALOM" ? (
@@ -2300,6 +2285,57 @@ function ShalomStatusLine({
   }
 
   return null;
+}
+
+/**
+ * Codigo corto + numero de orden en un chip compacto, con boton para copiar
+ * ambos valores separados por " / ".
+ */
+function ShalomCodeChip({
+  codigo,
+  orden,
+}: {
+  codigo: string | null;
+  orden: string | null;
+}) {
+  const [copied, setCopied] = useState(false);
+  const value = [codigo, orden].filter(Boolean).join(" / ");
+
+  if (!value) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // El navegador puede bloquear el portapapeles sin HTTPS.
+    }
+  };
+
+  return (
+    <div className="mt-1.5 inline-flex max-w-full items-stretch overflow-hidden rounded-[10px] border border-[#a7f3d0] bg-[#ecfdf5] shadow-sm dark:border-[#065f46] dark:bg-[#052e22]">
+      <span className="flex shrink-0 items-center px-2 py-1 text-[8px] font-circular-bold uppercase leading-none tracking-[0.06em] text-[#047857] dark:text-[#6ee7b7]">
+        Cdgo Seguimiento
+      </span>
+      <span className="flex min-w-0 items-center border-l border-[#a7f3d0] px-2 py-1 text-[10px] font-circular-bold leading-none tabular-nums text-[#065f46] dark:border-[#065f46] dark:text-[#d1fae5]">
+        <span className="max-w-44 truncate">{value}</span>
+      </span>
+      <button
+        type="button"
+        onClick={() => void copy()}
+        aria-label="Copiar código de seguimiento"
+        title={copied ? "Copiado" : "Copiar código y orden"}
+        className="flex shrink-0 items-center border-l border-[#a7f3d0] px-1.5 text-[#047857] transition-colors hover:bg-[#d1fae5] dark:border-[#065f46] dark:text-[#6ee7b7] dark:hover:bg-[#064e3b]"
+      >
+        {copied ? (
+          <CheckIcon size={12} weight="bold" />
+        ) : (
+          <CopyIcon size={12} weight="bold" />
+        )}
+      </button>
+    </div>
+  );
 }
 
 function InfoItem({
