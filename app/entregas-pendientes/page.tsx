@@ -2114,7 +2114,7 @@ function DeliveryRow({
                     (sale.envio.shalomCodigo || sale.envio.shalomOrden) ? (
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] leading-none">
                         <span
-                          className="inline-flex min-w-0 items-center rounded-full border border-[var(--color-border)] px-2 py-1 font-circular-bold text-[var(--color-text)]"
+                          className="inline-flex min-w-0 items-center rounded-full border border-[#86efac] bg-[#dcfce7] px-2 py-1 font-circular-bold text-[#166534] dark:border-[#065f46] dark:bg-[#064e3b] dark:text-[#d1fae5]"
                           title={
                             sale.envio.shalomCodigo && sale.envio.shalomOrden
                               ? `Código ${sale.envio.shalomCodigo} · Orden ${sale.envio.shalomOrden}`
