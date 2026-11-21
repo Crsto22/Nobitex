@@ -2113,24 +2113,22 @@ function DeliveryRow({
                     {sale.envio.agencia === "SHALOM" &&
                     (sale.envio.shalomCodigo || sale.envio.shalomOrden) ? (
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] leading-none">
-                        {sale.envio.shalomCodigo ? (
-                          <span
-                            className="inline-flex items-center rounded-full bg-[#6d28d9] px-2 py-1 font-circular-bold text-white shadow-sm ring-1 ring-[#5b21b6]"
-                            title={`Código de seguimiento ${sale.envio.shalomCodigo}`}
-                          >
-                            {sale.envio.shalomCodigo}
+                        <span
+                          className="inline-flex min-w-0 items-center rounded-full border border-[var(--color-border)] px-2 py-1 font-circular-bold text-[var(--color-text)]"
+                          title={
+                            sale.envio.shalomCodigo && sale.envio.shalomOrden
+                              ? `Código ${sale.envio.shalomCodigo} · Orden ${sale.envio.shalomOrden}`
+                              : sale.envio.shalomCodigo
+                                ? `Código de seguimiento ${sale.envio.shalomCodigo}`
+                                : `Número de orden ${sale.envio.shalomOrden}`
+                          }
+                        >
+                          <span className="max-w-48 truncate">
+                            {[sale.envio.shalomCodigo, sale.envio.shalomOrden]
+                              .filter(Boolean)
+                              .join(" / ")}
                           </span>
-                        ) : null}
-                        {sale.envio.shalomOrden ? (
-                          <span
-                            className="inline-flex min-w-0 items-center rounded-full bg-[var(--color-primary)] px-2 py-1 font-circular-bold text-white shadow-sm ring-1 ring-black/10"
-                            title={`Número de orden ${sale.envio.shalomOrden}`}
-                          >
-                            <span className="max-w-36 truncate">
-                              {sale.envio.shalomOrden}
-                            </span>
-                          </span>
-                        ) : null}
+                        </span>
                       </div>
                     ) : null}
                   </div>
