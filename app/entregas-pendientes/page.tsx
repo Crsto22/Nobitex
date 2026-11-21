@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowsClockwiseIcon,
-  BarcodeIcon,
   CalendarIcon,
   CaretDownIcon,
   CheckCircleIcon,
@@ -11,12 +10,10 @@ import {
   CheckSquareIcon,
   ClockIcon,
   ColumnsIcon,
-  CurrencyCircleDollarIcon,
   DownloadSimpleIcon,
   DotsThreeVerticalIcon,
   FunnelIcon,
   GearSixIcon,
-  HashIcon,
   HouseIcon,
   LinkIcon,
   MagnifyingGlassIcon,
@@ -2118,39 +2115,20 @@ function DeliveryRow({
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] leading-none">
                         {sale.envio.shalomCodigo ? (
                           <span
-                            className="inline-flex items-center gap-1 rounded-full bg-[#dc2626]/10 px-2 py-1 font-circular-bold text-[#b91c1c] ring-1 ring-[#dc2626]/15"
+                            className="inline-flex items-center rounded-full bg-[#dc2626] px-2 py-1 font-circular-bold text-white shadow-sm ring-1 ring-[#b91c1c]"
                             title={`Código de seguimiento ${sale.envio.shalomCodigo}`}
                           >
-                            <BarcodeIcon size={11} weight="bold" className="shrink-0" />
                             {sale.envio.shalomCodigo}
                           </span>
                         ) : null}
                         {sale.envio.shalomOrden ? (
                           <span
-                            className="inline-flex min-w-0 items-center gap-1 rounded-full bg-[var(--color-card)] px-2 py-1 font-circular-bold text-[var(--color-text)] ring-1 ring-[var(--color-border)]"
+                            className="inline-flex min-w-0 items-center rounded-full bg-[var(--color-primary)] px-2 py-1 font-circular-bold text-white shadow-sm ring-1 ring-black/10"
                             title={`Número de orden ${sale.envio.shalomOrden}`}
                           >
-                            <HashIcon
-                              size={11}
-                              weight="bold"
-                              className="shrink-0 text-[var(--color-muted-foreground)]"
-                            />
                             <span className="max-w-36 truncate">
                               {sale.envio.shalomOrden}
                             </span>
-                          </span>
-                        ) : null}
-                        {sale.envio.shalomMonto ? (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full bg-[#059669]/10 px-2 py-1 font-circular-bold text-[#047857] ring-1 ring-[#059669]/15"
-                            title={`Monto de la guía ${sale.envio.shalomMonto}`}
-                          >
-                            <CurrencyCircleDollarIcon
-                              size={11}
-                              weight="bold"
-                              className="shrink-0"
-                            />
-                            S/ {Number(sale.envio.shalomMonto).toFixed(2)}
                           </span>
                         ) : null}
                       </div>

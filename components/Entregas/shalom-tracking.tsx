@@ -225,7 +225,7 @@ export function ShalomMiniProgress({
             type="button"
             onClick={() => setTimelineOpen(true)}
             title="Ver estado del envío"
-            className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#f59e0b]/10 px-2 py-1 text-[9px] font-circular-bold text-[#b45309] shadow-sm ring-1 ring-[#f59e0b]/20 transition-colors hover:bg-[#f59e0b]/20"
+            className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#d97706] px-2 py-1 text-[9px] font-circular-bold text-white shadow-sm ring-1 ring-[#b45309] transition-colors hover:bg-[#b45309]"
           >
             {isShalomWaiting(envio.shalomEstado) ? (
               <SpinnerGapIcon size={10} className="animate-spin" />
