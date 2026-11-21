@@ -219,31 +219,40 @@ export function ShalomMiniProgress({
 
   if (notConfirmed) {
     return (
-      <div className="flex items-center gap-1.5">
-        <div className="relative flex min-w-0 items-start rounded-lg px-1 py-0.5">
-          <div
-            className="flex pointer-events-none select-none items-start opacity-50 blur-[1.5px]"
-            aria-hidden="true"
+      <>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTimelineOpen(true)}
+            title="Ver estado del envío"
+            className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#f59e0b]/10 px-2 py-1 text-[9px] font-circular-bold text-[#b45309] shadow-sm ring-1 ring-[#f59e0b]/20 transition-colors hover:bg-[#f59e0b]/20"
           >
-            {renderStepper(-1)}
-          </div>
-          <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#f59e0b]/10 px-2 py-1 text-[9px] font-circular-bold text-[#b45309] shadow-sm ring-1 ring-[#f59e0b]/20">
-              {isShalomWaiting(envio.shalomEstado) ? (
-                <SpinnerGapIcon size={10} className="animate-spin" />
-              ) : (
-                <WarningCircleIcon size={11} weight="fill" />
-              )}
-              Llevar a la agencia
-            </span>
-          </span>
+            {isShalomWaiting(envio.shalomEstado) ? (
+              <SpinnerGapIcon size={10} className="animate-spin" />
+            ) : (
+              <WarningCircleIcon size={11} weight="fill" />
+            )}
+            Llevar a la agencia
+          </button>
+          {envio.shalomOrden
+            ? refreshButton
+            : envio.shalomJobId
+              ? verifyButton
+              : null}
         </div>
-        {envio.shalomOrden
-          ? refreshButton
-          : envio.shalomJobId
-            ? verifyButton
-            : null}
-      </div>
+
+        <ShalomTimelineModal
+          isOpen={timelineOpen}
+          onClose={() => setTimelineOpen(false)}
+          correlativo={correlativo}
+          envio={envio}
+          stages={stages}
+          current={-1}
+          currentLabel="Llevar a la agencia"
+          isIncident={isIncident}
+          isCanceled={isCanceled}
+        />
+      </>
     );
   }
 
