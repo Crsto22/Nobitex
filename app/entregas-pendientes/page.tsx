@@ -2123,7 +2123,8 @@ function DeliveryRow({
                                 : `Número de orden ${sale.envio.shalomOrden}`
                           }
                         >
-                          <span className="max-w-48 truncate">
+                          <span className="max-w-60 truncate">
+                            Cdgo Seguimiento{" "}
                             {[sale.envio.shalomCodigo, sale.envio.shalomOrden]
                               .filter(Boolean)
                               .join(" / ")}
