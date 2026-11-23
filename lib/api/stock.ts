@@ -1,4 +1,4 @@
-import { authFetch } from "@/lib/api/auth-fetch";
+import { authBlobFetch, authFetch } from "@/lib/api/auth-fetch";
 
 export type StockDirection = "entrada" | "salida";
 export type StockMovementType =
@@ -205,6 +205,15 @@ export const stockApi = {
   ) {
     return authFetch<StockKardex>(
       `/stock/kardex/${variantPublicId}${queryString(query)}`,
+    );
+  },
+
+  exportKardex(
+    variantPublicId: string,
+    query: { sucursalId?: string; from?: string; to?: string } = {},
+  ) {
+    return authBlobFetch(
+      `/stock/kardex/${variantPublicId}/export${queryString(query)}`,
     );
   },
 

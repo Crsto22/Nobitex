@@ -6,7 +6,9 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChartLineUpIcon,
+  DownloadSimpleIcon,
   PackageIcon,
+  SpinnerGapIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
@@ -14,6 +16,7 @@ import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { Select } from "@/components/ui/select";
 import { stockApi, stockProductLabel, type StockKardex } from "@/lib/api/stock";
+import { downloadBlob } from "@/lib/utils/download";
 
 type Location = Awaited<ReturnType<typeof stockApi.locations>>[number];
 
@@ -43,6 +46,7 @@ export default function StockKardexDetailPage() {
   const [page, setPage] = useState(1);
   const [kardex, setKardex] = useState<StockKardex | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     stockApi
@@ -79,6 +83,35 @@ export default function StockKardexDetailPage() {
     const timeoutId = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timeoutId);
   }, [load]);
+
+  const exportExcel = async () => {
+    if (!variantPublicId || isExporting) return;
+    setIsExporting(true);
+    try {
+      const blob = await stockApi.exportKardex(variantPublicId, {
+        sucursalId: branchId || undefined,
+        from: from || undefined,
+        to: to || undefined,
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const code = kardex?.producto.sku || variantPublicId;
+      downloadBlob(blob, `kardex-${code}-${stamp}.xlsx`);
+      showToast({
+        title: "Kardex exportado",
+        description: "Se descargó el Excel con todos los movimientos.",
+        variant: "success",
+      });
+    } catch (error) {
+      showToast({
+        title: "No se pudo exportar el Kardex",
+        description:
+          error instanceof Error ? error.message : "Intenta nuevamente.",
+        variant: "error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const selectedLabel = kardex?.producto
     ? stockProductLabel(kardex.producto)
@@ -142,7 +175,7 @@ export default function StockKardexDetailPage() {
         </div>
 
         <section>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-[1fr_0.8fr_0.8fr_auto]">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-[1fr_0.8fr_0.8fr_auto_auto]">
             <Select
               className="order-2 md:order-1"
               value={branchId}
@@ -184,6 +217,19 @@ export default function StockKardexDetailPage() {
               className="order-3 h-11 rounded-[14px] bg-[#102a43] px-4 text-sm font-circular-bold text-white md:order-4"
             >
               Actualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => void exportExcel()}
+              disabled={isExporting}
+              className="order-4 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#10b981] px-4 text-sm font-circular-bold text-white transition-colors hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-60 md:order-5"
+            >
+              {isExporting ? (
+                <SpinnerGapIcon size={17} className="animate-spin" />
+              ) : (
+                <DownloadSimpleIcon size={17} weight="bold" />
+              )}
+              Excel
             </button>
           </div>
         </section>
