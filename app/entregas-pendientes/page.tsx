@@ -65,6 +65,7 @@ import {
   type VentaResponse,
 } from "@/lib/api/sales";
 import { shalomProApi } from "@/lib/api/shalom-pro";
+import { COURIER_META } from "@/lib/shipping/courier-meta";
 import { cn } from "@/lib/utils";
 import { downloadBlob } from "@/lib/utils/download";
 
@@ -96,6 +97,7 @@ const emptyDeliveryCounts: DeliveryCounts = {
   todos: 0,
   shalom: 0,
   olva: 0,
+  marvisur: 0,
   motorizado: 0,
   domicilio: 0,
   recojo: 0,
@@ -109,7 +111,13 @@ const pickupTabConfig: Array<{ label: string; value: PageTab }> = [
   { label: "Entregados", value: "entregada" },
 ];
 
-type ServiceTab = "" | "SHALOM" | "OLVA" | "MOTORIZADO" | "DOMICILIO";
+type ServiceTab =
+  | ""
+  | "SHALOM"
+  | "OLVA"
+  | "MARVISUR"
+  | "MOTORIZADO"
+  | "DOMICILIO";
 
 const serviceTabConfig: Array<{
   label: string;
@@ -122,14 +130,19 @@ const serviceTabConfig: Array<{
     activeClass: "bg-[var(--color-primary)] text-white shadow-sm",
   },
   {
-    label: "Shalom",
+    label: COURIER_META.SHALOM.label,
     value: "SHALOM",
-    activeClass: "bg-[#dc2626] text-white shadow-sm hover:bg-[#b91c1c]",
+    activeClass: COURIER_META.SHALOM.tabClass,
   },
   {
-    label: "Olva",
+    label: COURIER_META.OLVA.label,
     value: "OLVA",
-    activeClass: "bg-[#facc15] text-black shadow-sm hover:bg-[#eab308]",
+    activeClass: COURIER_META.OLVA.tabClass,
+  },
+  {
+    label: COURIER_META.MARVISUR.label,
+    value: "MARVISUR",
+    activeClass: COURIER_META.MARVISUR.tabClass,
   },
   {
     label: "Motorizado",
@@ -293,7 +306,8 @@ function canDeliverToClient(sale: VentaResponse) {
 function serviceLabel(sale: VentaResponse) {
   if (sale.envio?.metodoEnvio === "MOTORIZADO") return "Motorizado";
   if (sale.envio?.metodoEnvio === "DOMICILIO") return "Envío a domicilio";
-  return sale.envio?.agencia === "OLVA" ? "Olva" : "Shalom";
+  const agencia = sale.envio?.agencia;
+  return agencia ? COURIER_META[agencia].label : "Envío";
 }
 
 function serviceDestination(sale: VentaResponse) {
@@ -798,6 +812,8 @@ export default function DeliveriesPage() {
         return meta.counts.shalom;
       case "OLVA":
         return meta.counts.olva;
+      case "MARVISUR":
+        return meta.counts.marvisur;
       case "MOTORIZADO":
         return meta.counts.motorizado;
       case "DOMICILIO":
@@ -1808,6 +1824,9 @@ function DeliveryRow({
     sale.envio?.metodoEnvio === "MOTORIZADO" ||
     sale.envio?.metodoEnvio === "DOMICILIO";
   const isCourier = Boolean(sale.envio) && !isRecojoMetodo;
+  const courierMeta = sale.envio?.agencia
+    ? COURIER_META[sale.envio.agencia]
+    : null;
   const documentLabel =
     sale.cliente?.tipoDocumento === "ruc"
       ? "RUC"
@@ -2076,12 +2095,11 @@ function DeliveryRow({
                   <span
                     className={cn(
                       "mt-0.5 rounded-md px-2 py-1 text-[10px] font-black",
-                      sale.envio.agencia === "OLVA"
-                        ? "bg-[#eab308] text-black"
-                        : "bg-[#dc2626] text-white",
+                      courierMeta?.badgeClass ??
+                        "bg-[var(--color-primary)] text-white",
                     )}
                   >
-                    {sale.envio.agencia === "OLVA" ? "OLVA" : "SHALOM"}
+                    {courierMeta?.shortLabel ?? "ENVÍO"}
                   </span>
                 ) : (
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-secondary)] text-white">

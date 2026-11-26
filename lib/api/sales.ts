@@ -202,7 +202,9 @@ export type ShalomTrackingStep = {
   activo: boolean;
 };
 
-export type SaleShippingAgency = "SHALOM" | "OLVA";export type SaleShippingLogisticsStatus =
+export type SaleShippingAgency = "SHALOM" | "OLVA" | "MARVISUR";
+
+export type SaleShippingLogisticsStatus =
   | "POR_PREPARAR"
   | "POR_DESPACHAR"
   | "EN_TRANSITO"
@@ -470,7 +472,7 @@ export type DeliveriesQuery = HistoryPeriodQuery & {
   search?: string;
   courier?: SaleShippingAgency;
   sucursalId?: string;
-  servicio?: "SHALOM" | "OLVA" | "MOTORIZADO" | "DOMICILIO";
+  servicio?: "SHALOM" | "OLVA" | "MARVISUR" | "MOTORIZADO" | "DOMICILIO";
   fechaEnvioDesde?: string;
   fechaEnvioHasta?: string;
 };
@@ -522,6 +524,7 @@ export type DeliveryCounts = {
   todos: number;
   shalom: number;
   olva: number;
+  marvisur: number;
   motorizado: number;
   domicilio: number;
   recojo: number;

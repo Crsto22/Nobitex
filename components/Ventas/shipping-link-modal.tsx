@@ -23,6 +23,7 @@ import {
   type SaleShippingDetails,
   type VentaResponse,
 } from "@/lib/api/sales";
+import { COURIER_META } from "@/lib/shipping/courier-meta";
 
 type ShippingLinkModalProps = {
   isOpen: boolean;
@@ -80,6 +81,9 @@ export function ShippingLinkModal({
     shipping && typeof window !== "undefined"
       ? `${window.location.origin}/e/${shipping.codigo}`
       : "";
+  const agenciaMeta = shipping?.agencia
+    ? COURIER_META[shipping.agencia]
+    : null;
 
   const copyLink = async () => {
     if (!link) return;
@@ -147,19 +151,10 @@ export function ShippingLinkModal({
         <div className="space-y-4">
           <div className="rounded-xl p-4">
             <div className="flex items-center gap-3">
-              {shipping.agencia === "OLVA" ? (
+              {agenciaMeta ? (
                 <Image
-                  src="/envios/olva.webp"
-                  alt="Olva"
-                  width={48}
-                  height={48}
-                  unoptimized
-                  className="h-12 w-12 shrink-0 object-contain"
-                />
-              ) : shipping.agencia === "SHALOM" ? (
-                <Image
-                  src="/envios/shalom.svg"
-                  alt="Shalom"
+                  src={agenciaMeta.image}
+                  alt={agenciaMeta.label}
                   width={48}
                   height={48}
                   unoptimized
@@ -208,12 +203,11 @@ export function ShippingLinkModal({
               {shipping.agencia ? (
                 <span
                   className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-black ${
-                    shipping.agencia === "OLVA"
-                      ? "bg-[#eab308] text-black"
-                      : "bg-[#dc2626] text-white"
+                    agenciaMeta?.badgeClass ??
+                    "bg-[var(--color-primary)] text-white"
                   }`}
                 >
-                  {shipping.agencia === "OLVA" ? "OLVA" : "SHALOM"}
+                  {agenciaMeta?.shortLabel ?? shipping.agencia}
                 </span>
               ) : null}
             </div>
@@ -231,7 +225,11 @@ export function ShippingLinkModal({
               <div className="mt-3 space-y-2 pt-3">
                 <DataRow
                   label="Agencia"
-                  value={shipping.agenciaNombre ?? shipping.agencia}
+                  value={
+                    shipping.agenciaNombre ??
+                    agenciaMeta?.label ??
+                    shipping.agencia
+                  }
                 />
                 {shipping.agenciaDireccion ? (
                   <DataRow

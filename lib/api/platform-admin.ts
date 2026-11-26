@@ -745,7 +745,7 @@ export type PlatformAdminDashboardResponse = {
 };
 
 export type CourierAgencySyncStatus = {
-  courier: "SHALOM" | "OLVA";
+  courier: "SHALOM" | "OLVA" | "MARVISUR";
   estado: "procesando" | "completada" | "fallida";
   iniciadaAt: string;
   finalizadaAt: string | null;
@@ -757,7 +757,7 @@ export type CourierAgencySyncStatus = {
 };
 
 export type CourierAgencySyncResult = {
-  courier: "SHALOM" | "OLVA";
+  courier: "SHALOM" | "OLVA" | "MARVISUR";
   ok: boolean;
   totalRecibidas?: number;
   creadas?: number;

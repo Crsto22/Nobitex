@@ -52,6 +52,10 @@ const metodosCatalog: Record<
     image: "/envios/olva.webp",
     descripcion: "Entrega a agencias Olva",
   },
+  MARVISUR: {
+    image: "/envios/marvisurexpreso.webp",
+    descripcion: "Entrega a agencias Marvisur",
+  },
 };
 
 const statusConfig = {

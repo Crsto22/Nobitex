@@ -44,20 +44,26 @@ import {
   type SearchShippingAgenciesOptions,
 } from "@/lib/api/shipping-links";
 import type { SaleShippingAgency } from "@/lib/api/sales";
+import { COURIER_META } from "@/lib/shipping/courier-meta";
 
 const metodoVisuals: Record<
   string,
   { image?: string; selectedBg: string; iconColor?: string; checkColor?: string }
 > = {
   SHALOM: {
-    image: "/envios/shalom.svg",
-    selectedBg: "bg-[#e52421] ring-2 ring-[#e52421]",
-    checkColor: "text-white",
+    image: COURIER_META.SHALOM.image,
+    selectedBg: COURIER_META.SHALOM.publicSelectedBg,
+    checkColor: COURIER_META.SHALOM.publicCheckColor,
   },
   OLVA: {
-    image: "/envios/olva.webp",
-    selectedBg: "bg-[#fba832] ring-2 ring-[#fba832]",
-    checkColor: "text-[#1f2937]",
+    image: COURIER_META.OLVA.image,
+    selectedBg: COURIER_META.OLVA.publicSelectedBg,
+    checkColor: COURIER_META.OLVA.publicCheckColor,
+  },
+  MARVISUR: {
+    image: COURIER_META.MARVISUR.image,
+    selectedBg: COURIER_META.MARVISUR.publicSelectedBg,
+    checkColor: COURIER_META.MARVISUR.publicCheckColor,
   },
   RECOJO: {
     selectedBg: "bg-[#f97316] ring-2 ring-[#f97316]",
@@ -1065,7 +1071,8 @@ function StepTwo({
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const courierLabel = courier === "SHALOM" ? "Shalom" : "Olva";
+  const courierMeta = COURIER_META[courier];
+  const courierLabel = courierMeta.label;
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
@@ -1153,7 +1160,7 @@ function StepTwo({
             : `${agencies.length} agencias disponibles`}
         </p>
         <div className="flex items-center gap-3 text-[11px] font-bold text-[var(--color-muted-foreground)]">
-          <span className={`h-2.5 w-2.5 rounded-full ${courier === "SHALOM" ? "bg-[#dc2626]" : "bg-[#eab308]"}`} />
+          <span className={`h-2.5 w-2.5 rounded-full ${courierMeta.legendDotClass}`} />
           Agencia {courierLabel}
           {userLocation ? <span className="h-2.5 w-2.5 rounded-full bg-[#2563eb]" /> : null}
           {userLocation ? "Tu ubicación" : null}
@@ -1186,7 +1193,7 @@ function StepTwo({
               <MapPinIcon
                 size={20}
                 weight="fill"
-                className={`mt-0.5 shrink-0 ${courier === "SHALOM" ? "text-[#dc2626]" : "text-[#ca8a04]"}`}
+                className={`mt-0.5 shrink-0 ${courierMeta.pinClass}`}
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">

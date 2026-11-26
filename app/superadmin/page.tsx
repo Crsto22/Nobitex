@@ -31,6 +31,7 @@ import {
   type CourierAgencySyncStatus,
 } from "@/lib/api/platform-admin";
 import { cn } from "@/lib/utils";
+import { COURIER_META } from "@/lib/shipping/courier-meta";
 
 const numberFormatter = new Intl.NumberFormat("es-PE");
 const currencyFormatter = new Intl.NumberFormat("es-PE", {
@@ -225,7 +226,8 @@ function CourierAgencySyncCard({
   isSyncing: boolean;
   onSync: () => void;
 }) {
-  const statusFor = (courier: "SHALOM" | "OLVA") =>
+  const courierCodes = ["SHALOM", "OLVA", "MARVISUR"] as const;
+  const statusFor = (courier: CourierAgencySyncStatus["courier"]) =>
     statuses.find((status) => status?.courier === courier) ?? null;
 
   return (
@@ -236,7 +238,7 @@ function CourierAgencySyncCard({
             Agencias courier
           </h2>
           <p className="mt-1 text-xs leading-5 text-[var(--color-muted-foreground)]">
-            Catálogo de Shalom y Olva
+            Catálogo de Shalom, Olva y Marvisur
           </p>
         </div>
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
@@ -245,7 +247,7 @@ function CourierAgencySyncCard({
       </div>
 
       <div className="mt-5 space-y-2">
-        {(["SHALOM", "OLVA"] as const).map((courier) => {
+        {courierCodes.map((courier) => {
           const status = statusFor(courier);
           const successful = status?.estado === "completada";
           return (
@@ -255,7 +257,7 @@ function CourierAgencySyncCard({
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-circular-bold text-[var(--color-text)]">
-                  {courier === "SHALOM" ? "Shalom" : "Olva"}
+                  {COURIER_META[courier].label}
                 </span>
                 <span
                   className={cn(

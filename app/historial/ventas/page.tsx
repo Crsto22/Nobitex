@@ -24,6 +24,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
+import { COURIER_META } from "@/lib/shipping/courier-meta";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import {
@@ -755,6 +756,9 @@ export default function HistorialVentasPage() {
               const showConvertAction = canConvertSale(venta);
               const bajaStatus = sunatBajaStatusConfig[venta.sunatBaja.estado];
               const showBajaBadge = hasSunatBaja(venta);
+              const courierMeta = venta.envio?.agencia
+                ? COURIER_META[venta.envio.agencia]
+                : null;
 
               return (
                 <div
@@ -902,17 +906,15 @@ export default function HistorialVentasPage() {
                           "flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-full",
                           venta.envio.estado !== "recibido"
                             ? "w-10 bg-[#f59e0b] text-white"
-                            : venta.envio.agencia === "SHALOM"
-                              ? "px-3 bg-[#dc2626] text-white"
-                              : venta.envio.agencia === "OLVA"
-                                ? "px-3 bg-[#eab308] text-black"
-                                : venta.envio.metodoEnvio === "RECOJO"
-                                  ? "w-10 bg-[#f97316] text-white"
-                                  : venta.envio.metodoEnvio === "MOTORIZADO"
-                                    ? "w-10 bg-[#3b82f6] text-white"
-                                    : venta.envio.metodoEnvio === "DOMICILIO"
-                                      ? "w-10 bg-[#10b981] text-white"
-                                      : "w-10 bg-[var(--color-primary)] text-white",
+                            : courierMeta
+                              ? `px-3 ${courierMeta.badgeClass}`
+                              : venta.envio.metodoEnvio === "RECOJO"
+                                ? "w-10 bg-[#f97316] text-white"
+                                : venta.envio.metodoEnvio === "MOTORIZADO"
+                                  ? "w-10 bg-[#3b82f6] text-white"
+                                  : venta.envio.metodoEnvio === "DOMICILIO"
+                                    ? "w-10 bg-[#10b981] text-white"
+                                    : "w-10 bg-[var(--color-primary)] text-white",
                         )}
                         title={
                           venta.envio.estado === "recibido"
@@ -927,13 +929,9 @@ export default function HistorialVentasPage() {
                             weight="fill"
                             className="animate-pulse"
                           />
-                        ) : venta.envio.agencia === "SHALOM" ? (
+                        ) : courierMeta ? (
                           <span className="text-[10px] font-black tracking-wide">
-                            SHALOM
-                          </span>
-                        ) : venta.envio.agencia === "OLVA" ? (
-                          <span className="text-[10px] font-black tracking-wide">
-                            OLVA
+                            {courierMeta.shortLabel}
                           </span>
                         ) : venta.envio.metodoEnvio === "RECOJO" ? (
                           <StorefrontIcon size={22} weight="fill" />

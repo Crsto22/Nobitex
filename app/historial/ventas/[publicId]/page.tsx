@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
+import { COURIER_META } from "@/lib/shipping/courier-meta";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { UserAvatar } from "@/components/UserAvatar/user-avatar";
 import {
@@ -600,6 +601,9 @@ export default function VentaDetallePage() {
   const showConsultSunatBaja = showSunatBaja && canConsultSunatBaja(venta);
   const showAnnulledInfo = venta.estado === "anulada" && Boolean(venta.anuladoAt);
   const showShippingCard = venta.estado !== "anulada" && canUseShipping;
+  const shippingAgenciaMeta = venta.envio?.agencia
+    ? COURIER_META[venta.envio.agencia]
+    : null;
 
   return (
     <DashboardShell
@@ -921,14 +925,10 @@ export default function VentaDetallePage() {
                       weight="fill"
                       className="text-[var(--color-primary)]"
                     />
-                  ) : venta.envio.agencia ? (
+                  ) : shippingAgenciaMeta ? (
                     <Image
-                      src={
-                        venta.envio.agencia === "OLVA"
-                          ? "/envios/olva.webp"
-                          : "/envios/shalom.svg"
-                      }
-                      alt={venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}
+                      src={shippingAgenciaMeta.image}
+                      alt={shippingAgenciaMeta.label}
                       width={44}
                       height={44}
                       unoptimized
@@ -999,7 +999,8 @@ export default function VentaDetallePage() {
                           <>
                             Agencia:{" "}
                             <span className="text-[var(--color-text)]">
-                              {venta.envio.agencia === "OLVA" ? "Olva" : "Shalom"}
+                              {shippingAgenciaMeta?.label ??
+                                venta.envio.agencia}
                             </span>
                           </>
                         ) : (
