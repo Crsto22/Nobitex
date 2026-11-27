@@ -1,6 +1,6 @@
 "use client";
 
-import { MoonIcon, SunIcon } from "@phosphor-icons/react/ssr";
+import { MoonIcon, SunIcon } from "@/lib/icons";
 
 import { useTheme } from "@/lib/theme/use-theme";
 import { cn } from "@/lib/utils";
@@ -25,9 +25,9 @@ export function ThemeToggle({ className, iconSize = 20 }: ThemeToggleProps) {
       )}
     >
       {isDark ? (
-        <SunIcon size={iconSize} weight="bold" />
+        <SunIcon size={iconSize} />
       ) : (
-        <MoonIcon size={iconSize} weight="bold" />
+        <MoonIcon size={iconSize} />
       )}
     </button>
   );

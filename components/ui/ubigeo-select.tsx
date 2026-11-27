@@ -3,7 +3,7 @@
 import {
   CaretDownIcon,
   MagnifyingGlassIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import { useEffect, useId, useRef, useState } from "react";
 
 import peruUbigeos from "@/lib/data/peru-ubigeos.json";

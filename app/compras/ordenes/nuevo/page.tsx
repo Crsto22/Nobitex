@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon, ReceiptIcon } from "@phosphor-icons/react/ssr";
+import { CheckIcon, ReceiptIcon } from "@/lib/icons";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import {
   StockItemPicker,

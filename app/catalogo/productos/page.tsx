@@ -10,8 +10,9 @@ import {
   PackageIcon,
   PlusIcon,
   SpinnerGapIcon,
+  UploadSimpleIcon,
   WifiHighIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { BranchFilter } from "@/components/ProductCatalog/branch-filter";
 import { CategoryFilter } from "@/components/ProductCatalog/category-filter";
@@ -550,6 +551,14 @@ export default function CatalogoProductosPage() {
                   </div>
                 ) : null}
               </div>
+
+              <Link
+                href="/catalogo/productos/importar"
+                className="flex h-11 items-center justify-center gap-2 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-circular-bold text-[var(--color-text)] transition-colors hover:bg-[var(--color-button-hover)]"
+              >
+                <UploadSimpleIcon size={17} weight="bold" />
+                <span className="hidden sm:inline">Importar</span>
+              </Link>
 
               <Link
                 href="/catalogo/productos/crear"

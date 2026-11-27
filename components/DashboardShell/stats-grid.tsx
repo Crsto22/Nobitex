@@ -9,7 +9,7 @@ import {
   FileTextIcon,
   PackageIcon,
   TrashIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import type { DashboardSummary } from "@/lib/api/dashboard";
 
 type StatCardProps = {

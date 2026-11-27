@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FileXlsIcon, SpinnerGapIcon } from "@phosphor-icons/react/ssr";
+import { FileXlsIcon, SpinnerGapIcon } from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { FilterBar } from "@/components/DashboardShell/filter-bar";

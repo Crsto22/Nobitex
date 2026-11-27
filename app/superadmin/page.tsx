@@ -8,7 +8,7 @@ import {
   ClockCountdownIcon,
   CreditCardIcon,
   CurrencyCircleDollarIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";

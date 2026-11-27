@@ -15,7 +15,7 @@ import {
   UserIcon,
   UsersThreeIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";

@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { CaretRightIcon } from "@phosphor-icons/react/ssr";
+import { CaretRightIcon } from "@/lib/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 

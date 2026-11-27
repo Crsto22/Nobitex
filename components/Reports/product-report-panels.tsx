@@ -6,7 +6,7 @@ import {
   CirclesFourIcon,
   CubeIcon,
   WarningIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import {
   Bar,

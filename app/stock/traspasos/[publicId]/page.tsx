@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowRightIcon, PackageIcon, TruckIcon, UserIcon } from "@phosphor-icons/react/ssr";
+import { ArrowRightIcon, PackageIcon, TruckIcon, UserIcon } from "@/lib/icons";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { stockApi, stockProductLabel, type StockTransfer } from "@/lib/api/stock";

@@ -1,6 +1,6 @@
 "use client";
 
-import { CaretDownIcon } from "@phosphor-icons/react/ssr";
+import { CaretDownIcon } from "@/lib/icons";
 
 import type { Category } from "@/lib/api/categories";
 import { cn } from "@/lib/utils";

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   CaretDownIcon,
   MagnifyingGlassIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { Modal } from "@/components/Modal/modal";
 import { useSystemToast } from "@/components/SystemToast/system-toast";

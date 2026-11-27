@@ -13,7 +13,7 @@ import {
   StorefrontIcon,
   TruckIcon,
   WhatsappLogoIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { Modal } from "@/components/Modal/modal";
 import { ConfirmDialog } from "@/components/Modal/confirm-dialog";

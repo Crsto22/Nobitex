@@ -35,20 +35,29 @@ export class ApiError extends Error {
   }
 }
 
+export type ApiRequestInit = RequestInit & {
+  timeoutMs?: number;
+};
+
 export async function apiRequest<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiRequestInit = {},
 ): Promise<T> {
-  const method = (options.method ?? "GET").toUpperCase();
+  const { timeoutMs, ...requestOptions } = options;
+  const method = (requestOptions.method ?? "GET").toUpperCase();
   const url = `${API_BASE_URL}${path}`;
-  const headers = new Headers(options.headers);
+  const headers = new Headers(requestOptions.headers);
 
-  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
+  if (
+    !(requestOptions.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
     headers.set("Content-Type", "application/json");
   }
 
   const cacheKey = `${method}:${url}:${headers.get("authorization") ?? ""}`;
-  const canUseCache = method === "GET" && !options.signal && getCacheMs() > 0;
+  const canUseCache =
+    method === "GET" && !requestOptions.signal && getCacheMs() > 0;
   const cached = canUseCache ? getCache.get(cacheKey) : null;
 
   if (cached && cached.expiresAt > Date.now()) {
@@ -60,11 +69,14 @@ export async function apiRequest<T>(
   }
 
   const request = (async () => {
-    const timeout = withTimeoutSignal(options.signal, getTimeoutMs(method));
+    const timeout = withTimeoutSignal(
+      requestOptions.signal,
+      timeoutMs ?? getTimeoutMs(method),
+    );
     try {
       const response = await fetch(url, {
-        ...options,
-        credentials: options.credentials ?? "include",
+        ...requestOptions,
+        credentials: requestOptions.credentials ?? "include",
         headers,
         signal: timeout.signal,
       });

@@ -22,7 +22,7 @@ import {
   StorefrontIcon,
   TagIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { formatDate } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";

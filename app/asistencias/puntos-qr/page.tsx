@@ -19,7 +19,7 @@ import {
   QrCodeIcon,
   TrashIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";

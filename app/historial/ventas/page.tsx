@@ -21,7 +21,7 @@ import {
   MotorcycleIcon,
   HouseIcon,
   HourglassMediumIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 import { COURIER_META } from "@/lib/shipping/courier-meta";

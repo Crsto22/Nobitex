@@ -1,6 +1,6 @@
 "use client";
 
-import { XIcon } from "@phosphor-icons/react/ssr";
+import { XIcon } from "@/lib/icons";
 import {
   useEffect,
   useEffectEvent,

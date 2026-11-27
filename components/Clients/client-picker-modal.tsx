@@ -6,7 +6,7 @@ import {
   MagnifyingGlassIcon,
   NotePencilIcon,
   PlusIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { ClientCreateModal } from "@/components/Clients/client-create-modal";
 import { Modal } from "@/components/Modal/modal";

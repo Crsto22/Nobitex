@@ -14,7 +14,7 @@ import {
   StorefrontIcon,
   UserIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { authFetch } from "@/lib/api/auth-fetch";

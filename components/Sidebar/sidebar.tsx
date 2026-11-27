@@ -9,8 +9,8 @@ import {
 } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import type { Icon } from "@phosphor-icons/react";
-import { PlusIcon } from "@phosphor-icons/react/ssr";
+import type { Icon } from "@/lib/icons";
+import { PlusIcon } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/auth-provider";

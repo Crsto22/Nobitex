@@ -10,7 +10,7 @@ import {
   WarningCircleIcon,
   BuildingsIcon,
   CaretDownIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import type { TooltipContentProps } from "recharts";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";

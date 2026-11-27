@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { XIcon } from "@phosphor-icons/react/ssr";
+import { XIcon } from "@/lib/icons";
 
 import type { PendingColorImage } from "./types";
 

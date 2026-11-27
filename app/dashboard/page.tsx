@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { ArrowUpRightIcon, TagIcon } from "@phosphor-icons/react/ssr";
+import { ArrowUpRightIcon, TagIcon } from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { FilterBar } from "@/components/DashboardShell/filter-bar";

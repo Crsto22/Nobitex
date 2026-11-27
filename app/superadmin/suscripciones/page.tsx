@@ -28,7 +28,7 @@ import {
   UsersThreeIcon,
   WarningCircleIcon,
   XIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import {
   formatCurrency,

@@ -5,6 +5,7 @@ import {
   clearApiCache,
   getBlobTimeoutMs,
   withTimeoutSignal,
+  type ApiRequestInit,
 } from "@/lib/api/client";
 import { getAccessToken, setAccessToken } from "@/lib/auth/token-store";
 import { publishAuthEvent } from "@/lib/auth/multi-tab-sync";
@@ -28,7 +29,7 @@ let refreshPromise: Promise<void> | null = null;
 
 export async function authFetch<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiRequestInit = {},
 ): Promise<T> {
   return requestWithAuth<T>(path, options, true);
 }
@@ -42,7 +43,7 @@ export async function authBlobFetch(
 
 async function requestWithAuth<T>(
   path: string,
-  options: RequestInit,
+  options: ApiRequestInit,
   canRefresh: boolean,
 ): Promise<T> {
   if (shouldRefreshProactively()) {
@@ -162,7 +163,7 @@ async function ensureFreshToken(): Promise<void> {
   }
 }
 
-function withAuthorization(options: RequestInit) {
+function withAuthorization(options: ApiRequestInit): ApiRequestInit {
   const token = getAccessToken();
 
   return {

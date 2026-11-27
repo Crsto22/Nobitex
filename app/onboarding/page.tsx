@@ -17,7 +17,7 @@ import {
   PackageIcon,
   TagIcon,
   UsersIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSystemToast } from "@/components/SystemToast/system-toast";

@@ -1,6 +1,6 @@
 "use client";
 
-import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react/ssr";
+import { MagnifyingGlassIcon, PlusIcon } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 

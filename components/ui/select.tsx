@@ -6,7 +6,7 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   XIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import {
   Children,
   isValidElement,

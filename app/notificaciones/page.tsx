@@ -9,7 +9,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   EnvelopeOpenIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import { useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";

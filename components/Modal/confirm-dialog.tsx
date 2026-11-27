@@ -1,6 +1,6 @@
 "use client";
 
-import { WarningIcon } from "@phosphor-icons/react/ssr";
+import { WarningIcon } from "@/lib/icons";
 import { useState } from "react";
 
 import { Modal } from "@/components/Modal/modal";

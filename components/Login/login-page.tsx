@@ -10,7 +10,7 @@ import {
   HouseIcon,
   KeyIcon,
   UserIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { useSystemToast } from "@/components/SystemToast/system-toast";
 import { ThemeToggle } from "@/components/ThemeToggle/theme-toggle";

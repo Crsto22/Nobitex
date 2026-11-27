@@ -9,7 +9,7 @@ import {
   PackageIcon,
   PlusIcon,
   TruckIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";
 import { Select } from "@/components/ui/select";

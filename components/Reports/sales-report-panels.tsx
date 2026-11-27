@@ -4,7 +4,7 @@ import {
   ChartLineUpIcon,
   FileTextIcon,
   ReceiptIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import {
   Bar,

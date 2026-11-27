@@ -7,7 +7,7 @@ import {
   CaretRightIcon,
   PackageIcon,
   ProhibitIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import type { Branch } from "@/lib/api/branches";
 import { cn } from "@/lib/utils";

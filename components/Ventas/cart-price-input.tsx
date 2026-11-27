@@ -5,7 +5,7 @@ import {
   CheckCircleIcon,
   CheckIcon,
   PencilSimpleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import { Modal } from "@/components/Modal/modal";
 import { cn } from "@/lib/utils";
 

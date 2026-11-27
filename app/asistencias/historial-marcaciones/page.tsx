@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
+import { MagnifyingGlassIcon } from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { EmptyIllustration } from "@/components/ui/empty-illustration";

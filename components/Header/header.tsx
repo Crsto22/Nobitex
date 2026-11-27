@@ -11,7 +11,7 @@ import {
   UserCircleIcon,
   WarningCircleIcon,
   XCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import {
   useCallback,
   useEffect,

@@ -5,7 +5,7 @@ import {
   ArrowsClockwiseIcon,
   NotePencilIcon,
   SpinnerGapIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { ClientPickerModal } from "@/components/Clients/client-picker-modal";
 import { Modal } from "@/components/Modal/modal";

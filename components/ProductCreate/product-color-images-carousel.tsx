@@ -5,7 +5,7 @@ import {
   CaretRightIcon,
   UploadSimpleIcon,
   XIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import type { CatalogColor, ProductColorImage } from "./types";
 

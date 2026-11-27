@@ -24,7 +24,7 @@ import {
   ReceiptIcon,
   StorefrontIcon,
   UserCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import {
   CashMovementModal,

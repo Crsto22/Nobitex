@@ -8,7 +8,7 @@ import {
   MagnifyingGlassIcon,
   PackageIcon,
   WifiHighIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { BranchFilter } from "@/components/ProductCatalog/branch-filter";
 import { CategoryFilter } from "@/components/ProductCatalog/category-filter";

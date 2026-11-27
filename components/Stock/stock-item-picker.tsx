@@ -6,7 +6,7 @@ import {
   MinusIcon,
   PlusIcon,
   TrashIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import { productsApi, type ProductResponse } from "@/lib/api/products";
 import { cn } from "@/lib/utils";
 

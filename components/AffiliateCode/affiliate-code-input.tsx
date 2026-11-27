@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TagIcon } from "@phosphor-icons/react/ssr";
+import { TagIcon } from "@/lib/icons";
 
 import { plansApi } from "@/lib/api/plans";
 

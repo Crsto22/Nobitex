@@ -24,7 +24,7 @@ import {
   UserIcon,
   XCircleIcon,
   XIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { formatDate, formatTime } from "@/lib/intl";

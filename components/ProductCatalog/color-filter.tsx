@@ -1,6 +1,6 @@
 "use client";
 
-import { CaretRightIcon } from "@phosphor-icons/react/ssr";
+import { CaretRightIcon } from "@/lib/icons";
 
 import type { Color } from "@/lib/api/colors";
 import { cn } from "@/lib/utils";

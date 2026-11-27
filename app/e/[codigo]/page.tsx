@@ -30,7 +30,7 @@ import {
   StorefrontIcon,
   UserIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { AgencyMap } from "@/components/shipping/agency-map";
 import {

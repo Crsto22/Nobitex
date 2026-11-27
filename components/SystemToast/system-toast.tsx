@@ -21,7 +21,7 @@ import {
   XCircleIcon,
   SpinnerGapIcon,
   TicketIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 type ToastVariant = "success" | "error" | "warning" | "info" | "loading";
 

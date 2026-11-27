@@ -9,7 +9,7 @@ import {
   RulerIcon,
   SpinnerGapIcon,
   XIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/Modal/modal";

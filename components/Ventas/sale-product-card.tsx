@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
-import { PackageIcon } from "@phosphor-icons/react/ssr";
+import { PackageIcon } from "@/lib/icons";
 
 import type { SaleProduct, SaleProductVariant } from "@/lib/api/sales";
 import { cn } from "@/lib/utils";
@@ -104,26 +104,6 @@ export function SaleProductCard({
   const productStock = colors.reduce((total, color) => total + color.stock, 0);
   const isSoldOut = controlsStock && productStock <= 0;
 
-  const rowRef = useRef<HTMLDivElement>(null);
-  const measureRef = useRef<HTMLDivElement>(null);
-  const [priceOverflows, setPriceOverflows] = useState(false);
-
-  useEffect(() => {
-    const row = rowRef.current;
-    const measure = measureRef.current;
-    if (!row || !measure) return;
-
-    const update = () => {
-      setPriceOverflows(measure.scrollWidth > row.clientWidth + 1);
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(row);
-    observer.observe(measure);
-    return () => observer.disconnect();
-  }, [selectedVariant?.precioVenta, stock]);
-
   if (!hasAvailableSaleProductStock(product, cartQuantities)) return null;
 
   const addSelected = () => {
@@ -147,32 +127,6 @@ export function SaleProductCard({
         isSoldOut && "cursor-not-allowed opacity-60",
       )}
     >
-      <div
-        ref={measureRef}
-        aria-hidden="true"
-        className="pointer-events-none invisible absolute left-0 top-0 flex w-max items-center gap-2 whitespace-nowrap"
-      >
-        <span className="text-sm font-circular-bold">
-          S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
-        </span>
-        {controlsStock ? (
-          <span
-            className={cn(
-              "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px]",
-              stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
-            )}
-          >
-            <PackageIcon size={14} weight="bold" />
-            {stock}
-          </span>
-        ) : (
-          <span className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-sidebar-active)] px-2 text-[10px] font-circular-bold text-white">
-            <PackageIcon size={12} weight="bold" />
-            Sin control de stock
-          </span>
-        )}
-      </div>
-
       {isSoldOut ? (
         <span className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 rounded-lg bg-[#ef4444] px-3 py-1 text-xs font-circular-bold text-white">
           Agotado
@@ -206,22 +160,41 @@ export function SaleProductCard({
             {selectedVariant.talla.nombre}
           </span>
         ) : null}
-        {priceOverflows ? (
-          <span
-            className={cn(
-              "font-onest-extrabold absolute right-0 top-0 z-10 flex h-6 items-center gap-1 rounded-full px-2 text-xs text-white shadow-sm",
-              !controlsStock
-                ? "bg-[var(--color-sidebar-active)] text-[10px]"
-                : stock >= 3
-                  ? "bg-[var(--color-sidebar-active)]"
-                  : "bg-[#ef4444]",
-            )}
-          >
-            <PackageIcon size={12} weight="bold" />
-            {controlsStock ? stock : "Sin control de stock"}
-          </span>
-        ) : null}
+        <span
+          className={cn(
+            "font-onest-extrabold absolute right-0 top-0 z-10 flex h-6 items-center gap-1 rounded-full px-2 text-xs text-white shadow-sm",
+            !controlsStock
+              ? "bg-[var(--color-sidebar-active)] text-[10px]"
+              : stock >= 3
+                ? "bg-[var(--color-sidebar-active)]"
+                : "bg-[#ef4444]",
+          )}
+        >
+          <PackageIcon size={12} weight="bold" />
+          {controlsStock ? stock : "Sin control de stock"}
+        </span>
       </div>
+
+      <p className="mt-3 line-clamp-2 text-sm font-circular-regular text-[var(--color-muted-foreground)]">
+        {product.nombre}
+      </p>
+      <p className="mt-1 truncate text-sm font-circular-black text-[var(--color-text)]">
+        S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
+      </p>
+      {isNormal ? (
+        <p className="truncate text-[10px] text-[var(--color-muted-foreground)]">
+          {selectedVariant?.sku ?? selectedVariant?.codigoBarras ?? "Sin codigo"}
+        </p>
+      ) : null}
+      {!isNormal && selectedVariant ? (
+        <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] font-circular-regular uppercase text-[var(--color-muted-foreground)]">
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: selectedVariant.color.hex }}
+          />
+          {selectedVariant.color.nombre}
+        </p>
+      ) : null}
 
       {!isNormal ? (
         <div className="relative z-10 mt-2 flex flex-col items-start gap-1.5">
@@ -301,49 +274,6 @@ export function SaleProductCard({
           </div>
         </div>
       ) : null}
-
-      <p className="mt-4 line-clamp-2 text-sm font-black text-[var(--color-text)]">
-        {product.nombre}
-      </p>
-      <p className="truncate text-[10px] text-[var(--color-muted-foreground)]">
-        {selectedVariant?.sku ?? selectedVariant?.codigoBarras ?? "Sin codigo"}
-      </p>
-      {!isNormal && selectedVariant ? (
-        <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] font-circular-regular uppercase text-[var(--color-muted-foreground)]">
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: selectedVariant.color.hex }}
-          />
-          {selectedVariant.color.nombre}
-        </p>
-      ) : null}
-      <div
-        ref={rowRef}
-        className={cn(
-          "mt-auto flex items-center pt-3",
-          priceOverflows ? "justify-start" : "justify-between gap-2",
-        )}
-      >
-        <span className="truncate text-sm font-circular-bold text-[var(--color-muted-foreground)]">
-          S/{Number(selectedVariant?.precioVenta ?? 0).toFixed(2)}
-        </span>
-        {priceOverflows ? null : controlsStock ? (
-          <span
-            className={cn(
-              "font-onest-extrabold flex h-7 items-center gap-1 rounded-full px-2 text-[15px] text-white",
-              stock >= 3 ? "bg-[var(--color-sidebar-active)]" : "bg-[#ef4444]",
-            )}
-          >
-            <PackageIcon size={14} weight="bold" />
-            {stock}
-          </span>
-        ) : (
-          <span className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-sidebar-active)] px-2 text-[10px] font-circular-bold text-white">
-            <PackageIcon size={12} weight="bold" />
-            Sin control de stock
-          </span>
-        )}
-      </div>
     </article>
   );
 }

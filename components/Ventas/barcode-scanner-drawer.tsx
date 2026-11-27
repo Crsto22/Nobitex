@@ -10,7 +10,7 @@ import {
   WarningCircleIcon,
   XIcon,
   XCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import {
   BrowserMultiFormatReader,
   type IScannerControls,

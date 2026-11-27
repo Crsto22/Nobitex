@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, CheckIcon } from "@phosphor-icons/react/ssr";
+import { ArrowRightIcon, CheckIcon } from "@/lib/icons";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import {
   StockItemPicker,

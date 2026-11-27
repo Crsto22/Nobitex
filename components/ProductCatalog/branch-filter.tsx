@@ -8,7 +8,7 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
-import { BuildingsIcon, CaretDownIcon, StorefrontIcon, XIcon } from "@phosphor-icons/react/ssr";
+import { BuildingsIcon, CaretDownIcon, StorefrontIcon, XIcon } from "@/lib/icons";
 
 import type { Branch } from "@/lib/api/branches";
 import { cn } from "@/lib/utils";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DownloadSimpleIcon, QrCodeIcon } from "@phosphor-icons/react/ssr";
+import { DownloadSimpleIcon, QrCodeIcon } from "@/lib/icons";
 
 import { Modal } from "@/components/Modal/modal";
 import { Button } from "@/components/ui/button";

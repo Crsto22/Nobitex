@@ -1,4 +1,4 @@
-import type { Icon } from "@phosphor-icons/react";
+import type { Icon } from "@/lib/icons";
 import {
   ChartBarIcon,
   BellIcon,
@@ -28,7 +28,7 @@ import {
   UsersThreeIcon,
   WrenchIcon,
   QrCodeIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 export type SidebarModule = {
   key: string;

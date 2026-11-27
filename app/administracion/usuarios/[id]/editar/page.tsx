@@ -10,7 +10,7 @@ import {
   SquaresFourIcon,
   BuildingsIcon,
   EyeIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { LoadingScreen } from "@/components/loading-screen";

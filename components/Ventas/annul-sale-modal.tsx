@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { XIcon, WarningCircleIcon, SpinnerGapIcon } from "@phosphor-icons/react/ssr";
+import { XIcon, WarningCircleIcon, SpinnerGapIcon } from "@/lib/icons";
 
 import { salesApi, type VentaAnnulResponse } from "@/lib/api/sales";
 import { useSystemToast } from "@/components/SystemToast/system-toast";

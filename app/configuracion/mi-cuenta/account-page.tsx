@@ -5,7 +5,7 @@ import {
   CheckCircleIcon,
   FloppyDiskIcon,
   KeyIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { ProfileSkeleton } from "@/components/ProfileSkeleton/profile-skeleton";

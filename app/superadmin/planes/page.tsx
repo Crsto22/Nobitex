@@ -21,7 +21,7 @@ import {
   StorefrontIcon,
   WarningCircleIcon,
   XIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { formatCurrency } from "@/lib/intl";
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";

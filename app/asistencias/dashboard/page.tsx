@@ -14,7 +14,7 @@ import {
   UsersThreeIcon,
   WarningCircleIcon,
   XCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 import type { TooltipContentProps } from "recharts";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";

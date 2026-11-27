@@ -17,7 +17,7 @@ import {
   PowerIcon,
   ReceiptIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import { DashboardShell } from "@/components/DashboardShell/dashboard-shell";
 import { Modal } from "@/components/Modal/modal";

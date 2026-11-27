@@ -1,4 +1,4 @@
-import { UserIcon } from "@phosphor-icons/react/ssr";
+import { UserIcon } from "@/lib/icons";
 
 const avatarColors = [
   "#101d69",

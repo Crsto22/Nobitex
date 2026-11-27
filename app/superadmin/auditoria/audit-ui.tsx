@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import {
   ArrowClockwiseIcon,
   MagnifyingGlassIcon,
-} from "@phosphor-icons/react/ssr";
+} from "@/lib/icons";
 
 import {
   type PlatformAuditCategory,
