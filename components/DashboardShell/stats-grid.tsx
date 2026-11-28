@@ -3,14 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+} from "@/components/DashboardShell/recharts-components";
+import {
   BagIcon,
   BankIcon,
   EyeIcon,
-  FileTextIcon,
   PackageIcon,
-  TrashIcon,
 } from "@/lib/icons";
-import type { DashboardSummary } from "@/lib/api/dashboard";
+import type {
+  DashboardSalesTrendItem,
+  DashboardSummary,
+} from "@/lib/api/dashboard";
 
 type StatCardProps = {
   label: string;
@@ -23,6 +29,7 @@ type StatCardProps = {
   badge?: string;
   bgColor?: string;
   textColor?: string;
+  chart?: React.ReactNode;
 };
 
 function StatCard({
@@ -36,6 +43,7 @@ function StatCard({
   badge,
   bgColor,
   textColor,
+  chart,
 }: StatCardProps) {
   return (
     <div
@@ -64,31 +72,62 @@ function StatCard({
           </span>
         )}
       </div>
-      <div className="flex flex-col gap-1">
-        <span
-          className={cn(
-            "text-sm font-medium",
-            textColor ||
-              (active
-                ? "text-white/70"
-                : "text-[var(--color-muted-foreground)]"),
-          )}
-        >
-          {label}
-        </span>
-        <span
-          className={cn(
-            "font-circular-bold text-2xl leading-none text-fixed-2xl",
-            textColor || (active ? "text-white" : "text-[var(--color-text)]"),
-          )}
-        >
-          {animatedCurrencyValue !== undefined ? (
-            <AnimatedCurrencyValue value={animatedCurrencyValue} />
-          ) : (
-            value
-          )}
-        </span>
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span
+            className={cn(
+              "text-sm font-medium",
+              textColor ||
+                (active
+                  ? "text-white/70"
+                  : "text-[var(--color-muted-foreground)]"),
+            )}
+          >
+            {label}
+          </span>
+          <span
+            className={cn(
+              "font-circular-bold text-2xl leading-none text-fixed-2xl",
+              textColor || (active ? "text-white" : "text-[var(--color-text)]"),
+            )}
+          >
+            {animatedCurrencyValue !== undefined ? (
+              <AnimatedCurrencyValue value={animatedCurrencyValue} />
+            ) : (
+              value
+            )}
+          </span>
+        </div>
+        {chart ? <div className="shrink-0">{chart}</div> : null}
       </div>
+    </div>
+  );
+}
+
+function MiniSalesTrendChart({ data }: { data: DashboardSalesTrendItem[] }) {
+  if (!data.length) return null;
+
+  return (
+    <div className="h-10 w-20 sm:w-24">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="miniSalesGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.45} />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#ffffff"
+            strokeWidth={2}
+            fill="url(#miniSalesGradient)"
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -284,6 +323,7 @@ const hiddenAmount = "S/ ••••";
 function buildStatsData(
   summary: DashboardSummary,
   hideAmounts: boolean,
+  salesTrend: DashboardSalesTrendItem[],
 ): StatCardProps[] {
   return [
     {
@@ -299,6 +339,7 @@ function buildStatsData(
       iconColor: "text-[#3b82f6] dark:text-[#7c9cff]",
       active: true,
       badge: `${summary.emittedCount} ventas`,
+      chart: <MiniSalesTrendChart data={salesTrend} />,
     },
     {
       label: "Ventas del periodo",
@@ -315,16 +356,6 @@ function buildStatsData(
       textColor: "text-white",
     },
     {
-      label: "Ticket promedio",
-      value: hideAmounts ? hiddenAmount : formatCurrency(summary.averageTicket),
-      animatedCurrencyValue: hideAmounts
-        ? undefined
-        : parseMoney(summary.averageTicket),
-      icon: <FileTextIcon size={18} weight="bold" />,
-      iconBg: "bg-[#ecfdf5] dark:bg-[#0f2f26]",
-      iconColor: "text-[#10b981] dark:text-[#34d399]",
-    },
-    {
       label: "Unidades vendidas",
       value: String(summary.unitsSold),
       icon: <PackageIcon size={18} weight="bold" />,
@@ -338,34 +369,24 @@ function buildStatsData(
       iconBg: "bg-[#ecfdf5] dark:bg-[#0f2f26]",
       iconColor: "text-[#10b981] dark:text-[#34d399]",
     },
-    {
-      label: "Monto anulado",
-      value: hideAmounts
-        ? hiddenAmount
-        : formatCurrency(summary.annulledAmount),
-      animatedCurrencyValue: hideAmounts
-        ? undefined
-        : parseMoney(summary.annulledAmount),
-      icon: <TrashIcon size={18} weight="bold" />,
-      iconBg: "bg-[#fff7ed] dark:bg-[#33210f]",
-      iconColor: "text-[#f97316] dark:text-[#fb923c]",
-    },
   ];
 }
 
 export function StatsGrid({
   summary,
   hideAmounts = false,
+  salesTrend = [],
 }: {
   summary?: DashboardSummary | null;
   hideAmounts?: boolean;
+  salesTrend?: DashboardSalesTrendItem[];
 }) {
   const currentSummary = summary ?? emptySummary;
-  const mainStatsData = buildStatsData(currentSummary, hideAmounts);
+  const mainStatsData = buildStatsData(currentSummary, hideAmounts, salesTrend);
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
-      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:gap-4">
         {mainStatsData.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}

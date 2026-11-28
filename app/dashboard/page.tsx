@@ -132,7 +132,11 @@ export default function DashboardPage() {
             {dashboardError}
           </div>
         ) : null}
-        <StatsGrid summary={dashboard?.summary} hideAmounts={hideAmounts} />
+        <StatsGrid
+          summary={dashboard?.summary}
+          salesTrend={dashboard?.salesTrend.data}
+          hideAmounts={hideAmounts}
+        />
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[2fr_1fr_1fr]">
           <SalesTrendChart
             data={dashboard?.salesTrend.data}
